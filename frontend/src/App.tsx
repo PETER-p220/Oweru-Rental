@@ -19,6 +19,18 @@ import AddListing from './pages/AddListing';
 import DashboardLayout from './components/DashboardLayout';
 import { ThemeProvider } from './contexts/ThemeContext';
 
+// Tenant pages
+import Contract from './pages/tenant/Contract';
+import Payments from './pages/tenant/Payments';
+import PaymentHistory from './pages/tenant/PaymentHistory';
+import Notifications from './pages/tenant/Notifications';
+import Messages from './pages/tenant/Messages';
+import SavedProperties from './pages/tenant/SavedProperties';
+
+// Landlord pages
+import MyProperties from './pages/landlord/MyProperties';
+import MyTenants from './pages/landlord/MyTenants';
+
 // ─────────────────────────────────────────────
 // Stub pages (no DashboardLayout — the shell provides it)
 // ─────────────────────────────────────────────
@@ -46,26 +58,20 @@ const ComingSoon = ({ title }: { title: string }) => (
   </div>
 );
 
-const SavedProperties = () => <ComingSoon title="Saved Properties" />;
-const MyProperties    = () => <ComingSoon title="My Properties" />;
 const AddProperty     = () => <ComingSoon title="Add Property" />;
-const MyListings      = () => <ComingSoon title="My Listings" />;
-const Leads           = () => <ComingSoon title="Leads" />;
-const Commissions     = () => <ComingSoon title="Commissions" />;
-const Tenants         = () => <ComingSoon title="Tenants" />;
 
-// Use actual components for agent-specific pages
-import AgentLeadsPage from './pages/AgentLeadsPage';
-import AgentCommissionsPage from './pages/AgentCommissionsPage';
+// Admin pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
 
-const AgentLeads = () => {
-  console.log('AgentLeads component called - should render AgentLeadsPage');
-  return <AgentLeadsPage />;
-};
-const AgentCommissions = () => {
-  console.log('AgentCommissions component called - should render AgentCommissionsPage');
-  return <AgentCommissionsPage />;
-};
+// Agent pages
+import MyListings from './pages/agent/MyListings';
+import LinkedOwners from './pages/agent/LinkedOwners';
+import QRCodes from './pages/agent/QRCodes';
+import ShareAndTrack from './pages/agent/ShareAndTrack';
+import PayoutHistory from './pages/agent/PayoutHistory';
+import LeadsAndVisitors from './pages/agent/LeadsAndVisitors';
+import MyCommissions from './pages/agent/MyCommissions';
 
 // ─────────────────────────────────────────────
 // Public routes  (Header + Footer)
@@ -110,11 +116,36 @@ const DashboardShell = () => {
   }, [location.pathname]); // Re-run on route change
 
   const getDashboardPage = () => {
-    if (!user) return <TenantDashboard />;
-    switch (user.userType || user.user_type) {
-      case 'landlord': return <LandlordDashboard />;
-      case 'agent':    return <AgentDashboard />;
-      default:         return <TenantDashboard />;
+    if (!user) {
+      console.log('No user found, defaulting to TenantDashboard');
+      return <TenantDashboard />;
+    }
+    
+    // Try multiple possible field names for user type
+    const userType = user.userType || 
+                     user.user_type || 
+                     user.role || 
+                     user.userRole || 
+                     user.user_role || 
+                     'tenant';
+    
+    console.log('User object:', user);
+    console.log('User object keys:', user ? Object.keys(user) : 'No user');
+    console.log('Detected user type:', userType);
+
+    switch (userType) {
+      case 'landlord':
+        console.log('Rendering LandlordDashboard');
+        return <LandlordDashboard />;
+      case 'agent':
+        console.log('Rendering AgentDashboard');
+        return <AgentDashboard />;
+      case 'admin':
+        console.log('Rendering AdminDashboard');
+        return <AdminDashboard />;
+      default:
+        console.log('Defaulting to TenantDashboard for type:', userType);
+        return <TenantDashboard />;
     }
   };
 
@@ -139,6 +170,12 @@ const DashboardShell = () => {
     '/dashboard/commissions':   'Commissions',
     '/dashboard/tenants':       'Tenants',
     '/dashboard/settings':      'Settings',
+    // Tenant pages
+    '/dashboard/contract':      'My Contract',
+    '/dashboard/payments':      'Rent Payments',
+    '/dashboard/payment-history': 'Payment History',
+    '/dashboard/notifications': 'Notifications',
+    '/dashboard/messages':      'Messages',
   };
 
   const path = window.location.pathname;
@@ -155,10 +192,24 @@ const DashboardShell = () => {
         <Route path="properties/add"     element={<AddListing />} />
         <Route path="my-listings"        element={<MyListings />} />
         <Route path="listings/add"       element={<AddListing />} />
-        <Route path="leads"              element={<AgentLeads />} />
-        <Route path="commissions"        element={<AgentCommissions />} />
-        <Route path="tenants"            element={<Tenants />} />
+        <Route path="tenants"            element={<MyTenants />} />
         <Route path="settings"           element={<SettingsPage />} />
+        {/* Admin pages */}
+        <Route path="users"              element={<UserManagement />} />
+        {/* Agent pages */}
+        <Route path="linked-owners"      element={<LinkedOwners />} />
+        <Route path="qr-codes"           element={<QRCodes />} />
+        <Route path="tracking"           element={<ShareAndTrack />} />
+        <Route path="payouts"            element={<PayoutHistory />} />
+        <Route path="leads"              element={<LeadsAndVisitors />} />
+        <Route path="commissions"        element={<MyCommissions />} />
+        {/* Tenant pages */}
+        <Route path="contract"           element={<Contract />} />
+        <Route path="payments"           element={<Payments />} />
+        <Route path="payment-history"    element={<PaymentHistory />} />
+        <Route path="notifications"      element={<Notifications />} />
+        <Route path="messages"           element={<Messages />} />
+        <Route path="saved-properties"   element={<SavedProperties />} />
         <Route path="*" element={<Navigate to="" replace />} />
       </Routes>
     </DashboardLayout>
@@ -174,19 +225,8 @@ function App() {
       <Router>
         <Routes>
           {/* Dashboard routes with sidebar - all under /dashboard */}
-          <Route path="/dashboard" element={<DashboardShell />} />
-          <Route path="/dashboard/applications" element={<DashboardShell />} />
-          <Route path="/dashboard/analytics" element={<DashboardShell />} />
-          <Route path="/dashboard/saved-properties" element={<DashboardShell />} />
-          <Route path="/dashboard/my-properties" element={<DashboardShell />} />
-          <Route path="/dashboard/properties/add" element={<DashboardShell />} />
-          <Route path="/dashboard/my-listings" element={<DashboardShell />} />
-          <Route path="/dashboard/listings/add" element={<DashboardShell />} />
-          <Route path="/dashboard/leads" element={<DashboardShell />} />
-          <Route path="/dashboard/commissions" element={<DashboardShell />} />
-          <Route path="/dashboard/tenants" element={<DashboardShell />} />
-          <Route path="/dashboard/settings" element={<DashboardShell />} />
-
+          <Route path="/dashboard/*" element={<DashboardShell />} />
+          
           {/* Public routes */}
           <Route path="/*" element={<PublicRoutes />} />
         </Routes>

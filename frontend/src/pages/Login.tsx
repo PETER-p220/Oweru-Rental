@@ -26,9 +26,9 @@ const Login = () => {
       
       // Store user data and token
       if (response.data) {
-        // Access user and token according to the LoginResponse interface
-        const token = response.data.data.token || 'simple_token_' + Date.now();
-        const user = response.data.data.user;
+        // Access user and token based on actual response structure
+        const token = response.data.token || 'simple_token_' + Date.now();
+        const user = response.data.user;
         
         if (user) {
           localStorage.setItem('token', token);
@@ -52,6 +52,7 @@ const Login = () => {
     { value: 'tenant',   label: 'Tenant' },
     { value: 'landlord', label: 'Landlord' },
     { value: 'agent',    label: 'Agent' },
+    { value: 'admin',    label: 'admin'},
   ];
 
   return (

@@ -28,18 +28,27 @@ interface Application {
     images?: string[];
     location: string;
     price: number;
+    type: string;
+    bedrooms: number;
+    bathrooms: number;
+    area: number;
+    image?: string | null;
   };
   applicant: {
+    id: number;
     firstName: string;
     lastName: string;
     email: string;
     phone: string;
+    occupation: string;
+    income: number;
+    references: string[];
+    idNumber: string;
   };
   status: ApplicationStatus;
-  submittedAt: string;
-  monthlyRent: number;
-  requestedMoveIn: string;
-  message?: string;
+  appliedDate: string;
+  message: string;
+  documents: string[];
 }
 
 const filters = ['all', 'pending', 'approved', 'rejected'] as const;
@@ -58,9 +67,105 @@ const Applications = () => {
   const loadApplications = async () => {
     try {
       setLoading(true);
-      const response = await Api.getApplications();
-      if (response.data) setApplications(response.data);
+      
+      // Mock data for now since API doesn't exist yet
+      const mockApplications: Application[] = [
+        {
+          id: 1,
+          property: {
+            id: 1,
+            title: 'Modern 2-Bedroom Apartment',
+            location: 'Masaki, Dar es Salaam',
+            price: 800000,
+            type: 'apartment',
+            bedrooms: 2,
+            bathrooms: 2,
+            area: 120,
+            image: null
+          },
+          applicant: {
+            id: 1,
+            firstName: 'Alice',
+            lastName: 'Johnson',
+            email: 'alice@example.com',
+            phone: '+255123456789',
+            occupation: 'Software Engineer',
+            income: 1500000,
+            references: ['John Doe - +255987654321'],
+            idNumber: '1234567890123'
+          },
+          status: 'pending',
+          appliedDate: '2024-03-15',
+          message: 'I am looking for a comfortable apartment for me and my partner. We both work in the tech industry and have stable income.',
+          documents: ['id-proof.pdf', 'income-proof.pdf', 'reference-letter.pdf']
+        },
+        {
+          id: 2,
+          property: {
+            id: 2,
+            title: 'Cozy Studio in Mikocheni',
+            location: 'Mikocheni, Dar es Salaam',
+            price: 350000,
+            type: 'studio',
+            bedrooms: 1,
+            bathrooms: 1,
+            area: 45,
+            image: null
+          },
+          applicant: {
+            id: 2,
+            firstName: 'Bob',
+            lastName: 'Smith',
+            email: 'bob@example.com',
+            phone: '+255987654321',
+            occupation: 'Marketing Manager',
+            income: 800000,
+            references: ['Jane Williams - +255555666777'],
+            idNumber: '9876543210987'
+          },
+          status: 'approved',
+          appliedDate: '2024-03-10',
+          message: 'I am a young professional looking for an affordable studio close to my workplace.',
+          documents: ['id-proof.pdf', 'income-proof.pdf']
+        },
+        {
+          id: 3,
+          property: {
+            id: 3,
+            title: 'Spacious House with Garden',
+            location: 'Upanga, Dar es Salaam',
+            price: 1500000,
+            type: 'house',
+            bedrooms: 3,
+            bathrooms: 2,
+            area: 200,
+            image: null
+          },
+          applicant: {
+            id: 3,
+            firstName: 'Carol',
+            lastName: 'Davis',
+            email: 'carol@example.com',
+            phone: '+255555444333',
+            occupation: 'Teacher',
+            income: 600000,
+            references: ['Michael Brown - +255777888999'],
+            idNumber: '4567890123456'
+          },
+          status: 'rejected',
+          appliedDate: '2024-03-05',
+          message: 'Looking for a family home with garden for my children.',
+          documents: ['id-proof.pdf', 'income-proof.pdf', 'reference-letter.pdf']
+        }
+      ];
+      
+      setApplications(mockApplications);
+      
+      // Uncomment when API is ready:
+      // const response = await Api.getApplications();
+      // if (response.data) setApplications(response.data);
     } catch (e) {
+      console.error('Failed to load applications:', e);
       setError('Failed to load applications');
     } finally {
       setLoading(false);

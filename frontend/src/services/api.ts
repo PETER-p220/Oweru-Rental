@@ -188,6 +188,88 @@ class Api {
     });
   }
 
+  // Contract endpoints
+  static async getMyContract() {
+    return this.request<any>('contracts/my-contract');
+  }
+
+  static async downloadContract(id: number) {
+    return this.request(`contracts/${id}/download`, {
+      headers: {
+        'Accept': 'application/pdf',
+      },
+    });
+  }
+
+  // Payment endpoints
+  static async getMyPayments() {
+    return this.request<any>('payments/my-payments');
+  }
+
+  static async getPaymentMethods() {
+    return this.request<any>('payments/methods');
+  }
+
+  static async getPaymentStats() {
+    return this.request<any>('payments/stats');
+  }
+
+  static async makePayment(paymentId: number, data: { paymentMethodId: string }) {
+    return this.request(`payments/${paymentId}/pay`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async getPaymentHistory() {
+    return this.request<any>('payments/history');
+  }
+
+  static async getPaymentSummary() {
+    return this.request<any>('payments/summary');
+  }
+
+  static async downloadReceipt(paymentId: number) {
+    return this.request(`payments/${paymentId}/receipt`, {
+      headers: {
+        'Accept': 'application/pdf',
+      },
+    });
+  }
+
+  // Notification endpoints
+  static async getNotifications() {
+    return this.request<any>('notifications');
+  }
+
+  static async getNotificationStats() {
+    return this.request<any>('notifications/stats');
+  }
+
+  static async markNotificationAsRead(notificationId: number) {
+    return this.request(`notifications/${notificationId}/read`, {
+      method: 'PATCH',
+    });
+  }
+
+  static async markAllNotificationsAsRead() {
+    return this.request('notifications/read-all', {
+      method: 'PATCH',
+    });
+  }
+
+  static async archiveNotification(notificationId: number) {
+    return this.request(`notifications/${notificationId}/archive`, {
+      method: 'PATCH',
+    });
+  }
+
+  static async deleteNotification(notificationId: number) {
+    return this.request(`notifications/${notificationId}`, {
+      method: 'DELETE',
+    });
+  }
+
   static async getAnalytics() {
     return this.request<any>('analytics');
   }

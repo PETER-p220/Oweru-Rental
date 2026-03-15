@@ -14,6 +14,7 @@ interface Property {
   bathrooms?: number;
   area?: number;
   type?: string;
+  tenant?: string;
 }
 
 const LandlordDashboard = () => {
@@ -30,20 +31,104 @@ const LandlordDashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [sr, pr] = await Promise.all([Api.getDashboardData(), Api.getMyProperties()]);
-      if (sr.data) {
-        // Handle optional properties with defaults
-        setStats({
-          ...sr.data,
-          // Provide default values for optional properties
-          activeTenants: sr.data.activeTenants || 0,
-          monthlyRevenue: sr.data.monthlyRevenue || 0,
-          totalRevenue: sr.data.totalRevenue || 0,
-          occupancyRate: sr.data.occupancyRate || 0,
-        });
-      }
-      if (pr.data) setProperties(pr.data.slice(0, 5));
+      
+      // Mock data for now since API doesn't exist yet
+      const mockStats = {
+        totalProperties: 4,
+        totalApplications: 12,
+        activeTenants: 3,
+        monthlyRevenue: 5350000,
+        totalRevenue: 16050000,
+        occupancyRate: 75
+      };
+
+      const mockProperties: Property[] = [
+        {
+          id: 1,
+          title: 'Modern 2-Bedroom Apartment',
+          location: 'Masaki, Dar es Salaam',
+          price: 800000,
+          type: 'apartment',
+          bedrooms: 2,
+          bathrooms: 2,
+          area: 120,
+          images: [],
+          status: 'rented',
+          tenant: 'Peter Mushy'
+        },
+        {
+          id: 2,
+          title: 'Cozy Studio in Mikocheni',
+          location: 'Mikocheni, Dar es Salaam',
+          price: 350000,
+          type: 'studio',
+          bedrooms: 1,
+          bathrooms: 1,
+          area: 45,
+          images: [],
+          status: 'available',
+          tenant: undefined
+        },
+        {
+          id: 3,
+          title: 'Spacious House with Garden',
+          location: 'Upanga, Dar es Salaam',
+          price: 1500000,
+          type: 'house',
+          bedrooms: 3,
+          bathrooms: 2,
+          area: 200,
+          images: [],
+          status: 'maintenance',
+          tenant: undefined
+        },
+        {
+          id: 4,
+          title: 'Executive Villa, Oyster Bay',
+          location: 'Oyster Bay, Dar es Salaam',
+          price: 3200000,
+          type: 'villa',
+          bedrooms: 4,
+          bathrooms: 3,
+          area: 340,
+          images: [],
+          status: 'available',
+          tenant: undefined
+        },
+        {
+          id: 5,
+          title: '1-Bedroom Apt in Kinondoni',
+          location: 'Kinondoni, Dar es Salaam',
+          price: 420000,
+          type: 'apartment',
+          bedrooms: 1,
+          bathrooms: 1,
+          area: 60,
+          images: [],
+          status: 'rented',
+          tenant: 'Alice Johnson'
+        }
+      ];
+      
+      setStats(mockStats);
+      setProperties(mockProperties.slice(0, 5));
+      
+      // Uncomment when API is ready:
+      // const [sr, pr] = await Promise.all([Api.getDashboardData(), Api.getMyProperties()]);
+      // if (sr.data) {
+      //   // Handle optional properties with defaults
+      //   setStats({
+      //     ...sr.data,
+      //     // Provide default values for optional properties
+      //     activeTenants: sr.data.activeTenants || 0,
+      //     monthlyRevenue: sr.data.monthlyRevenue || 0,
+      //     totalRevenue: sr.data.totalRevenue || 0,
+      //     occupancyRate: sr.data.occupancyRate || 0,
+      //   });
+      // }
+      // if (pr.data) setProperties(pr.data.slice(0, 5));
     } catch (e) {
+      console.error('Failed to load dashboard data:', e);
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);

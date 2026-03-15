@@ -1,39 +1,123 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { 
-  MapPin, 
-  Bed, 
-  Bath, 
-  Square, 
-  Home, 
-  Phone, 
-  Mail, 
-  Calendar,
-  Shield,
-  CheckCircle,
-  Heart,
-  Share2,
-  QrCode,
-  Download,
-  ArrowLeft
+import {
+  MapPin, Bed, Bath, Square, Phone, Mail,
+  Shield, CheckCircle, Heart, Share2, QrCode,
+  Download, ArrowLeft, X, Wifi, Zap,
+  Building, Star,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { Property } from '../types';
 
+/* ─────────────────────────────────────────────────────────────
+   SHARED STYLE TOKENS  (mirrors DashboardLayout / LeadsAndVisitors)
+───────────────────────────────────────────────────────────── */
+const t = {
+  gold:    '#c9a84c',
+  goldLt:  '#e8c97a',
+  dark:    '#080808',
+  dark2:   '#0e0e0e',
+  dark3:   '#141414',
+  cream:   '#e8e4dc',
+  muted:   '#7a7060',
+  border:  'rgba(201,168,76,0.12)',
+  green:   '#10b981',
+  red:     '#ef4444',
+  blue:    '#38bdf8',
+} as const;
+
+const body: React.CSSProperties = { fontFamily: 'DM Sans, sans-serif' };
+const serif: React.CSSProperties = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
+
+const card: React.CSSProperties = {
+  backgroundColor: t.dark2,
+  border: `1px solid ${t.border}`,
+  borderRadius: 10,
+  overflow: 'hidden',
+};
+
+const metaBox: React.CSSProperties = {
+  backgroundColor: 'rgba(201,168,76,0.03)',
+  border: `1px solid rgba(201,168,76,0.09)`,
+  borderRadius: 8,
+  padding: '14px 16px',
+  marginBottom: 14,
+};
+
+const label: React.CSSProperties = {
+  ...body,
+  fontSize: 10,
+  fontWeight: 500,
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: t.muted,
+  marginBottom: 4,
+};
+
+const pill = (color: string): React.CSSProperties => ({
+  ...body,
+  display: 'inline-flex', alignItems: 'center', gap: 4,
+  padding: '3px 9px',
+  backgroundColor: `${color}18`,
+  border: `1px solid ${color}30`,
+  color,
+  borderRadius: 999,
+  fontSize: 10,
+  fontWeight: 600,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+});
+
+const ghostBtn = (color: string): React.CSSProperties => ({
+  ...body,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  width: '100%',
+  padding: '12px 20px',
+  backgroundColor: `${color}10`,
+  border: `1px solid ${color}30`,
+  color,
+  borderRadius: 8,
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'all 0.2s',
+  letterSpacing: '0.03em',
+});
+
+const solidBtn: React.CSSProperties = {
+  ...body,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  width: '100%',
+  padding: '13px 20px',
+  background: `linear-gradient(135deg, ${t.gold}, ${t.goldLt})`,
+  border: 'none',
+  color: '#111',
+  borderRadius: 8,
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+  letterSpacing: '0.04em',
+  boxShadow: `0 4px 20px rgba(201,168,76,0.3)`,
+};
+
+/* ═════════════════════════════════════════════════════════════
+   COMPONENT
+═════════════════════════════════════════════════════════════ */
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [selectedImg, setSelectedImg] = useState(0);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // Mock property data - in real app this would come from API
   const property: Property = {
     id: id || '1',
     title: 'Modern 2-Bedroom Apartment in Masaki',
-    description: `Beautiful apartment with ocean view, fully furnished with modern amenities. 
-    This spacious apartment features large windows that allow plenty of natural light, 
-    creating a bright and welcoming atmosphere. The open-plan living area is perfect for 
-    entertaining guests, while the bedrooms offer privacy and comfort.`,
+    description: `Beautiful apartment with ocean view, fully furnished with modern amenities.
+This spacious apartment features large windows that allow plenty of natural light,
+creating a bright and welcoming atmosphere. The open-plan living area is perfect for
+entertaining guests, while the bedrooms offer privacy and comfort.`,
     price: 800000,
     address: 'Masaki, Dar es Salaam, Tanzania',
     bedrooms: 2,
@@ -42,17 +126,17 @@ const PropertyDetail = () => {
     type: 'apartment',
     furnished: true,
     images: [
-      '/api/placeholder/800/600',
-      '/api/placeholder/800/600',
-      '/api/placeholder/800/600',
-      '/api/placeholder/800/600'
+      '/api/placeholder/900/600',
+      '/api/placeholder/900/600',
+      '/api/placeholder/900/600',
+      '/api/placeholder/900/600',
     ],
     owner: {
       id: '1',
       name: 'John Smith',
       email: 'john.smith@example.com',
       phone: '+255 712 345 678',
-      verified: true
+      verified: true,
     },
     dalali: {
       id: '1',
@@ -61,337 +145,476 @@ const PropertyDetail = () => {
       phone: '+255 714 567 890',
       code: 'DAL001',
       verified: true,
-      commission: 10
+      commission: 10,
     },
     status: 'available',
     featured: true,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   const features = [
-    'Air Conditioning',
-    '24/7 Security',
-    'Parking Space',
-    'Balcony',
-    'Kitchen Appliances',
-    'High-Speed Internet',
-    'Backup Generator',
-    'Water Storage'
+    'Air Conditioning', '24/7 Security', 'Parking Space', 'Balcony',
+    'Kitchen Appliances', 'High-Speed Internet', 'Backup Generator', 'Water Storage',
   ];
 
   const amenities = [
-    'Gym Access',
-    'Swimming Pool',
-    'Children Playground',
-    'Community Center',
-    'Shopping Nearby',
-    'Public Transport Access'
+    'Gym Access', 'Swimming Pool', 'Children Playground', 'Community Center',
+    'Shopping Nearby', 'Public Transport Access',
   ];
 
   const generateQRCode = async () => {
     try {
-      // Generate unique tracking URL
-      const trackingUrl = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code || 'DIRECT'}_OWERU`;
-      const qrDataUrl = await QRCode.toDataURL(trackingUrl);
-      setQrCodeUrl(qrDataUrl);
+      const trackingUrl = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`;
+      const dataUrl = await QRCode.toDataURL(trackingUrl, {
+        color: { dark: '#c9a84c', light: '#0e0e0e' },
+        width: 260,
+      });
+      setQrCodeUrl(dataUrl);
       setShowQrModal(true);
-    } catch (error) {
-      console.error('Error generating QR code:', error);
+    } catch (e) {
+      console.error('QR error:', e);
     }
   };
 
   const downloadQRCode = () => {
-    if (qrCodeUrl) {
-      const link = document.createElement('a');
-      link.href = qrCodeUrl;
-      link.download = `property-${property.id}-qrcode.png`;
-      link.click();
-    }
+    if (!qrCodeUrl) return;
+    const a = document.createElement('a');
+    a.href = qrCodeUrl;
+    a.download = `oweru-property-${property.id}-qr.png`;
+    a.click();
   };
 
   const shareProperty = async () => {
-    const shareUrl = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code || 'DIRECT'}_OWERU`;
-    
+    const url = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`;
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: property.title,
-          text: `Check out this property: ${property.title} - ${property.address}`,
-          url: shareUrl
-        });
-      } catch (error) {
-        console.log('Error sharing:', error);
-      }
+        await navigator.share({ title: property.title, text: property.address, url });
+      } catch {}
     } else {
-      // Fallback - copy to clipboard
-      navigator.clipboard.writeText(shareUrl);
-      alert('Property link copied to clipboard!');
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
+  const trackingUrl = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`;
+
+  /* ─── render ─── */
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Back Button */}
-        <Link 
+    <div style={{ background: t.dark, minHeight: '100vh', color: t.cream, fontFamily: 'DM Sans, sans-serif' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+        * { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.15); border-radius: 2px; }
+        .pd-thumb { opacity: .45; transition: opacity .2s; cursor: pointer; }
+        .pd-thumb:hover { opacity: .75; }
+        .pd-thumb.active { opacity: 1; outline: 1.5px solid #c9a84c; }
+        .pd-icon-btn { background: rgba(14,14,14,0.7); border: 1px solid rgba(201,168,76,0.15); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: all .2s; }
+        .pd-icon-btn:hover { background: rgba(14,14,14,0.9); border-color: rgba(201,168,76,0.4); }
+        .pd-action-btn { transition: filter .15s, transform .15s; }
+        .pd-action-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .pd-action-btn:active { transform: scale(.98); }
+        .pd-contact-link { transition: color .18s; }
+        .pd-contact-link:hover { color: #c9a84c !important; }
+        .pd-feature-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(201,168,76,0.05); font-size: 13px; color: #c8c0b0; }
+        .pd-feature-row:last-child { border-bottom: none; }
+      `}</style>
+
+      <div style={{ maxWidth: 1160, margin: '0 auto', padding: '32px 20px 64px' }}>
+
+        {/* ── Back link ── */}
+        <Link
           to="/properties"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-oweru-gold mb-6 transition-colors"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            ...body, fontSize: 11, fontWeight: 500,
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: t.muted, textDecoration: 'none',
+            marginBottom: 28, transition: 'color .2s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = t.gold)}
+          onMouseLeave={e => (e.currentTarget.style.color = t.muted)}
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={14} />
           Back to Properties
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {/* Image Gallery */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-              <div className="relative">
-                <img 
-                  src={property.images[0]} 
-                  alt={property.title}
-                  className="w-full h-96 object-cover"
-                />
-                {property.featured && (
-                  <div className="absolute top-4 left-4 bg-oweru-gold text-white px-3 py-1 rounded">
-                    Featured
-                  </div>
-                )}
-                <div className="absolute top-4 right-4 flex gap-2">
-                  <button 
-                    onClick={() => setIsSaved(!isSaved)}
-                    className="p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
-                  >
-                    <Heart 
-                      size={20} 
-                      className={isSaved ? 'text-red-500 fill-red-500' : 'text-gray-600'} 
-                    />
-                  </button>
-                  <button 
-                    onClick={shareProperty}
-                    className="p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
-                  >
-                    <Share2 size={20} className="text-gray-600" />
-                  </button>
-                  <button 
-                    onClick={generateQRCode}
-                    className="p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
-                  >
-                    <QrCode size={20} className="text-gray-600" />
-                  </button>
-                </div>
-              </div>
-              
-              {/* Thumbnail Gallery */}
-              <div className="grid grid-cols-4 gap-2 p-4">
-                {property.images.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image}
-                    alt={`Property view ${index + 1}`}
-                    className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-75 transition-opacity"
-                  />
-                ))}
-              </div>
-            </div>
+        {/* ── Layout ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 24 }}>
 
-            {/* Property Details */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    {property.title}
-                  </h1>
-                  <div className="flex items-center text-gray-600 mb-4">
-                    <MapPin size={16} className="mr-2" />
-                    {property.address}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-oweru-gold">
-                    {property.price.toLocaleString()} TZS
-                  </div>
-                  <div className="text-sm text-gray-500">per month</div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Bed size={20} className="text-oweru-gold" />
-                  <span>{property.bedrooms} Bedrooms</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Bath size={20} className="text-oweru-gold" />
-                  <span>{property.bathrooms} Bathrooms</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Square size={20} className="text-oweru-gold" />
-                  <span>{property.area} m²</span>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3">Description</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {property.description}
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3">Features</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {features.map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <CheckCircle size={16} className="text-green-500" />
-                      <span className="text-gray-700">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
+            {/* ═══ LEFT COLUMN ═══ */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 24, alignItems: 'start' }}>
               <div>
-                <h3 className="text-lg font-semibold mb-3">Amenities</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {amenities.map((amenity, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <CheckCircle size={16} className="text-green-500" />
-                      <span className="text-gray-700">{amenity}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            {/* Contact Information */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Property Information</h3>
-              
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Property Type</span>
-                  <span className="font-medium capitalize">{property.type}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status</span>
-                  <span className="font-medium text-green-600 capitalize">{property.status}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Furnished</span>
-                  <span className="font-medium">{property.furnished ? 'Yes' : 'No'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Listed</span>
-                  <span className="font-medium">{property.createdAt.toLocaleDateString()}</span>
-                </div>
-              </div>
+                {/* ── Image gallery ── */}
+                <div style={{ ...card, marginBottom: 20 }}>
+                  <div style={{ position: 'relative', height: 420, overflow: 'hidden' }}>
+                    <img
+                      src={property.images[selectedImg]}
+                      alt={property.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity .3s' }}
+                    />
+                    {/* Dark gradient */}
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,8,.7) 0%, transparent 55%)' }} />
 
-              {/* Owner Information */}
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Shield size={16} className="text-oweru-gold" />
-                  Property Owner
-                </h4>
-                <div className="space-y-2">
-                  <div className="font-medium">{property.owner.name}</div>
-                  {property.owner.verified && (
-                    <div className="text-sm text-green-600 flex items-center gap-1">
-                      <CheckCircle size={14} />
-                      Verified Owner
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Phone size={14} />
-                    {property.owner.phone}
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Mail size={14} />
-                    {property.owner.email}
-                  </div>
-                </div>
-              </div>
-
-              {/* Agent Information */}
-              {property.dalali && (
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <Shield size={16} className="text-oweru-gold" />
-                    Listed by Agent
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="font-medium">{property.dalali.name}</div>
-                    {property.dalali.verified && (
-                      <div className="text-sm text-green-600 flex items-center gap-1">
-                        <CheckCircle size={14} />
-                        Verified Agent
+                    {/* Featured badge */}
+                    {property.featured && (
+                      <div style={{
+                        position: 'absolute', top: 16, left: 16,
+                        ...body, fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
+                        color: '#111', background: t.gold,
+                        padding: '4px 10px', borderRadius: 4,
+                        display: 'flex', alignItems: 'center', gap: 4,
+                      }}>
+                        <Star size={9} fill="currentColor" /> Featured
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Phone size={14} />
-                      {property.dalali.phone}
+
+                    {/* Action buttons top-right */}
+                    <div style={{ position: 'absolute', top: 14, right: 14, display: 'flex', gap: 8 }}>
+                      <button className="pd-icon-btn" onClick={() => setIsSaved(!isSaved)} title="Save">
+                        <Heart size={15} style={{ color: isSaved ? t.red : t.cream, fill: isSaved ? t.red : 'none' }} />
+                      </button>
+                      <button className="pd-icon-btn" onClick={shareProperty} title="Share">
+                        <Share2 size={15} style={{ color: copied ? t.green : t.cream }} />
+                      </button>
+                      <button className="pd-icon-btn" onClick={generateQRCode} title="QR Code">
+                        <QrCode size={15} style={{ color: t.cream }} />
+                      </button>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Mail size={14} />
-                      {property.dalali.email}
+
+                    {/* Price overlay */}
+                    <div style={{ position: 'absolute', bottom: 16, left: 16 }}>
+                      <div style={{ ...serif, fontSize: 26, fontWeight: 600, color: t.gold, lineHeight: 1.1 }}>
+                        {property.price.toLocaleString()} <span style={{ fontSize: 14, fontWeight: 400, color: t.muted }}>TZS/mo</span>
+                      </div>
+                      <div style={{ ...body, fontSize: 12, color: 'rgba(232,228,220,.7)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <MapPin size={11} />{property.address}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      Agent Code: {property.dalali.code}
+
+                    {/* Status badge */}
+                    <div style={{ position: 'absolute', bottom: 16, right: 16 }}>
+                      <span style={pill(t.green)}>{property.status}</span>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <button className="w-full py-3 bg-oweru-gold text-white rounded-lg hover:bg-oweru-dark transition-colors font-medium">
-                Apply Now
-              </button>
-              <button className="w-full py-3 border border-oweru-gold text-oweru-gold rounded-lg hover:bg-oweru-gold hover:text-white transition-colors font-medium">
-                Schedule Viewing
-              </button>
-              <button className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
-                Contact Owner
-              </button>
-            </div>
+                  {/* Thumbnails */}
+                  <div style={{ display: 'flex', gap: 8, padding: '12px 14px', background: t.dark3 }}>
+                    {property.images.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img}
+                        alt={`View ${i + 1}`}
+                        className={`pd-thumb${selectedImg === i ? ' active' : ''}`}
+                        onClick={() => setSelectedImg(i)}
+                        style={{ width: 72, height: 52, objectFit: 'cover', borderRadius: 5 }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── Property info card ── */}
+                <div style={{ ...card, padding: '24px 26px', marginBottom: 20 }}>
+
+                  {/* Title + specs */}
+                  <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${t.border}` }}>
+                    <h1 style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream, margin: '0 0 10px', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
+                      {property.title}
+                    </h1>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={pill(t.blue)}>{property.type}</span>
+                      {property.furnished && <span style={pill(t.gold)}>Furnished</span>}
+                    </div>
+                  </div>
+
+                  {/* Specs row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 22 }}>
+                    {[
+                      { icon: Bed,    label: 'Bedrooms',  value: property.bedrooms },
+                      { icon: Bath,   label: 'Bathrooms', value: property.bathrooms },
+                      { icon: Square, label: 'Area',      value: `${property.area} m²` },
+                    ].map(({ icon: Icon, label: lbl, value }) => (
+                      <div key={lbl} style={{ ...metaBox, marginBottom: 0, textAlign: 'center', padding: '14px 10px' }}>
+                        <Icon size={18} style={{ color: t.gold, marginBottom: 6 }} />
+                        <div style={{ ...body, fontSize: 16, fontWeight: 600, color: t.cream }}>{value}</div>
+                        <div style={{ ...label, marginBottom: 0 }}>{lbl}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Description */}
+                  <div style={{ marginBottom: 22 }}>
+                    <div style={{ ...label, marginBottom: 10 }}>Description</div>
+                    <p style={{ ...body, fontSize: 13.5, lineHeight: 1.8, color: '#b8b0a0', margin: 0, whiteSpace: 'pre-line' }}>
+                      {property.description}
+                    </p>
+                  </div>
+
+                  {/* Features */}
+                  <div style={{ marginBottom: 22 }}>
+                    <div style={{ ...label, marginBottom: 10 }}>Features</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
+                      {features.map((f) => (
+                        <div key={f} className="pd-feature-row">
+                          <CheckCircle size={13} style={{ color: t.green, flexShrink: 0 }} />
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Amenities */}
+                  <div>
+                    <div style={{ ...label, marginBottom: 10 }}>Amenities</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
+                      {amenities.map((a) => (
+                        <div key={a} className="pd-feature-row">
+                          <CheckCircle size={13} style={{ color: t.blue, flexShrink: 0 }} />
+                          {a}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* ── Tracking link ── */}
+                <div style={{ ...card, padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <Zap size={14} style={{ color: t.gold }} />
+                    <span style={{ ...label, marginBottom: 0, color: t.gold }}>Smart Tracking Link</span>
+                  </div>
+                  <div style={{
+                    ...body, fontSize: 12, color: t.blue,
+                    background: 'rgba(56,189,248,0.05)', border: '1px solid rgba(56,189,248,0.12)',
+                    borderRadius: 6, padding: '10px 14px', wordBreak: 'break-all', lineHeight: 1.6,
+                  }}>
+                    {trackingUrl}
+                  </div>
+                  <div style={{ ...body, fontSize: 11, color: t.muted, marginTop: 8 }}>
+                    Every click through this link is tracked and attributed to the assigned dalali.
+                  </div>
+                </div>
+
+              </div>{/* /left main */}
+
+              {/* ═══ RIGHT SIDEBAR ═══ */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                {/* ── Property meta ── */}
+                <div style={{ ...card, padding: '20px 22px' }}>
+                  <div style={{ ...serif, fontSize: 16, fontWeight: 500, color: t.cream, marginBottom: 16 }}>
+                    Property Details
+                  </div>
+                  {[
+                    { k: 'Type',      v: property.type,      mono: false },
+                    { k: 'Status',    v: property.status,    mono: false, highlight: t.green },
+                    { k: 'Furnished', v: property.furnished ? 'Yes' : 'No', mono: false },
+                    { k: 'Listed',    v: property.createdAt.toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }), mono: true },
+                  ].map(({ k, v, mono, highlight }) => (
+                    <div key={k} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '9px 0', borderBottom: `1px solid rgba(201,168,76,0.06)`,
+                    }}>
+                      <span style={{ ...body, fontSize: 12, color: t.muted }}>{k}</span>
+                      <span style={{
+                        ...body, fontSize: 12.5, fontWeight: 500,
+                        color: highlight ?? t.cream,
+                        fontFamily: mono ? 'monospace' : undefined,
+                        textTransform: 'capitalize',
+                      }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ── Owner ── */}
+                <div style={{ ...card, padding: '20px 22px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14 }}>
+                    <Shield size={14} style={{ color: t.gold }} />
+                    <span style={{ ...serif, fontSize: 15, fontWeight: 500, color: t.cream }}>Property Owner</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: '50%',
+                      background: 'rgba(201,168,76,0.08)',
+                      border: `1px solid rgba(201,168,76,0.2)`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <span style={{ ...serif, fontSize: 16, color: t.gold }}>
+                        {property.owner.name.charAt(0)}
+                      </span>
+                    </div>
+                    <div>
+                      <div style={{ ...body, fontSize: 14, fontWeight: 500, color: t.cream }}>{property.owner.name}</div>
+                      {property.owner.verified && (
+                        <span style={pill(t.green)}>
+                          <CheckCircle size={9} /> Verified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    <a href={`tel:${property.owner.phone}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
+                      <Phone size={12} style={{ flexShrink: 0 }} /> {property.owner.phone}
+                    </a>
+                    <a href={`mailto:${property.owner.email}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
+                      <Mail size={12} style={{ flexShrink: 0 }} /> {property.owner.email}
+                    </a>
+                  </div>
+                </div>
+
+                {/* ── Dalali / Agent ── */}
+                {property.dalali && (
+                  <div style={{ ...card, padding: '20px 22px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14 }}>
+                      <Building size={14} style={{ color: t.blue }} />
+                      <span style={{ ...serif, fontSize: 15, fontWeight: 500, color: t.cream }}>Listed by Dalali</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%',
+                        background: 'rgba(56,189,248,0.08)',
+                        border: `1px solid rgba(56,189,248,0.2)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        <span style={{ ...serif, fontSize: 16, color: t.blue }}>
+                          {property.dalali.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <div style={{ ...body, fontSize: 14, fontWeight: 500, color: t.cream }}>{property.dalali.name}</div>
+                        {property.dalali.verified && (
+                          <span style={pill(t.blue)}>
+                            <CheckCircle size={9} /> Verified Agent
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 12 }}>
+                      <a href={`tel:${property.dalali.phone}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
+                        <Phone size={12} style={{ flexShrink: 0 }} /> {property.dalali.phone}
+                      </a>
+                      <a href={`mailto:${property.dalali.email}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
+                        <Mail size={12} style={{ flexShrink: 0 }} /> {property.dalali.email}
+                      </a>
+                    </div>
+
+                    <div style={{
+                      ...body, fontSize: 11, color: t.muted,
+                      background: 'rgba(56,189,248,0.04)',
+                      border: '1px solid rgba(56,189,248,0.10)',
+                      borderRadius: 6, padding: '8px 12px',
+                    }}>
+                      Agent Code: <strong style={{ color: t.blue, fontFamily: 'monospace' }}>{property.dalali.code}</strong>
+                      &nbsp;·&nbsp; Commission: <strong style={{ color: t.gold }}>{property.dalali.commission}%</strong>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── CTA buttons ── */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <button style={solidBtn} className="pd-action-btn">
+                    Apply Now
+                  </button>
+                  <button style={ghostBtn(t.gold)} className="pd-action-btn">
+                    Schedule Viewing
+                  </button>
+                  <button style={ghostBtn('#e8e4dc')} className="pd-action-btn">
+                    Contact Owner
+                  </button>
+                  <button style={ghostBtn(t.blue)} className="pd-action-btn" onClick={generateQRCode}>
+                    <QrCode size={14} /> Generate QR Code
+                  </button>
+                </div>
+
+              </div>{/* /sidebar */}
+            </div>{/* /grid */}
           </div>
         </div>
       </div>
 
-      {/* QR Code Modal */}
+      {/* ══ QR MODAL ══ */}
       {showQrModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
-            <h3 className="text-lg font-semibold mb-4">Property QR Code</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Scan this code to view property details and track referrals
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 20, zIndex: 999,
+        }}>
+          <div style={{ ...card, padding: 28, maxWidth: 380, width: '100%', position: 'relative' }}>
+
+            {/* Close */}
+            <button
+              onClick={() => setShowQrModal(false)}
+              style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: t.muted, cursor: 'pointer' }}
+            >
+              <X size={18} />
+            </button>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <QrCode size={16} style={{ color: t.gold }} />
+              <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: t.cream, margin: 0 }}>
+                Property QR Code
+              </h3>
+            </div>
+            <p style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 20, lineHeight: 1.6 }}>
+              Scan to view property details. Every scan is tracked and attributed to the dalali.
             </p>
+
+            {/* QR image */}
             {qrCodeUrl && (
-              <div className="flex justify-center mb-4">
-                <img src={qrCodeUrl} alt="Property QR Code" className="w-48 h-48" />
+              <div style={{
+                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                background: t.dark3, borderRadius: 10,
+                border: `1px solid ${t.border}`,
+                padding: 20, marginBottom: 16,
+              }}>
+                <img src={qrCodeUrl} alt="Property QR Code" style={{ width: 200, height: 200 }} />
               </div>
             )}
-            <div className="text-xs text-gray-500 text-center mb-4 break-all">
-              https://oweru.co/p/{property.id}?ref={property.dalali?.code || 'DIRECT'}_OWERU
+
+            {/* URL */}
+            <div style={{
+              ...body, fontSize: 10, color: t.blue,
+              background: 'rgba(56,189,248,0.05)',
+              border: '1px solid rgba(56,189,248,0.12)',
+              borderRadius: 6, padding: '8px 12px',
+              wordBreak: 'break-all', marginBottom: 18,
+            }}>
+              {trackingUrl}
             </div>
-            <div className="flex gap-3">
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={downloadQRCode}
-                className="flex-1 py-2 bg-oweru-gold text-white rounded hover:bg-oweru-dark transition-colors flex items-center justify-center gap-2"
+                style={{ ...solidBtn, flex: 1 }}
+                className="pd-action-btn"
               >
-                <Download size={16} />
-                Download
+                <Download size={14} /> Download
               </button>
               <button
                 onClick={() => setShowQrModal(false)}
-                className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                style={{ ...ghostBtn(t.muted), flex: 1 }}
+                className="pd-action-btn"
               >
                 Close
               </button>
             </div>
+
           </div>
         </div>
       )}

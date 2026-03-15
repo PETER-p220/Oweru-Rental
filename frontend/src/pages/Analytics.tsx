@@ -45,10 +45,70 @@ const Analytics: React.FC = () => {
   const loadAnalyticsData = async () => {
     try {
       setLoading(true);
-      const response = await Api.getAnalytics();
-      if (response.data) {
-        setAnalyticsData(response.data);
-      }
+      
+      // Mock data for now since API doesn't exist yet
+      const mockAnalyticsData: AnalyticsData = {
+        totalViews: 15420,
+        totalClicks: 3284,
+        totalInquiries: 156,
+        conversionRate: 4.8,
+        monthlyViews: 1247,
+        monthlyInquiries: 12,
+        monthlyRevenue: 5350000,
+        topProperties: [
+          {
+            id: 1,
+            title: 'Modern 2-Bedroom Apartment',
+            views: 3420,
+            clicks: 892,
+            inquiries: 45
+          },
+          {
+            id: 2,
+            title: 'Executive Villa, Oyster Bay',
+            views: 2890,
+            clicks: 721,
+            inquiries: 38
+          },
+          {
+            id: 3,
+            title: 'Cozy Studio in Mikocheni',
+            views: 2156,
+            clicks: 543,
+            inquiries: 28
+          },
+          {
+            id: 4,
+            title: 'Spacious House with Garden',
+            views: 1987,
+            clicks: 467,
+            inquiries: 22
+          },
+          {
+            id: 5,
+            title: '1-Bedroom Apt in Kinondoni',
+            views: 1789,
+            clicks: 412,
+            inquiries: 15
+          }
+        ],
+        monthlyTrend: [
+          { month: 'Jan', views: 890, inquiries: 8, revenue: 3200000 },
+          { month: 'Feb', views: 1120, inquiries: 11, revenue: 4100000 },
+          { month: 'Mar', views: 1247, inquiries: 12, revenue: 5350000 },
+          { month: 'Apr', views: 1380, inquiries: 15, revenue: 5800000 },
+          { month: 'May', views: 1520, inquiries: 18, revenue: 6200000 },
+          { month: 'Jun', views: 1680, inquiries: 20, revenue: 6800000 }
+        ]
+      };
+      
+      setAnalyticsData(mockAnalyticsData);
+      
+      // Uncomment when API is ready:
+      // const response = await Api.getAnalytics();
+      // if (response.data) {
+      //   setAnalyticsData(response.data);
+      // }
     } catch (error: any) {
       console.error('Error loading analytics data:', error);
       setError('Failed to load analytics data');

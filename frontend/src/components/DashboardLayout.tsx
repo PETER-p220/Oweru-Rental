@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Search, Bell, Settings, LogOut, Menu, Building, Users,
-  TrendingUp, DollarSign, Star, BarChart3, FileText, Plus, X, ChevronRight
+  TrendingUp, DollarSign, Star, BarChart3, FileText, Plus, X,
+  ChevronRight, QrCode, Link2, ShieldCheck, CreditCard, Wallet,
+  Receipt, UserCheck, MessageSquare, AlertCircle, PieChart,
+  RefreshCw, Clock, BookOpen, Landmark, Eye,
 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -11,50 +14,106 @@ interface DashboardLayoutProps {
   user?: any;
 }
 
-type UserRole = 'tenant' | 'landlord' | 'agent';
+type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin';
 
 const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const userType: UserRole = user?.userType || user?.user_type || 'tenant';
-  console.log('DashboardLayout userType:', userType, 'user:', user); // Debug log
-  console.log('User fields:', Object.keys(user || {})); // Debug: Show all user fields
+  // Try multiple possible field names for user type
+  const userType: UserRole = user?.userType || 
+                           user?.user_type || 
+                           user?.role || 
+                           user?.userRole || 
+                           user?.user_role || 
+                           'tenant';
+  
+  // Debug logging
+  console.log('DashboardLayout - User object:', user);
+  console.log('DashboardLayout - User object keys:', user ? Object.keys(user) : 'No user');
+  console.log('DashboardLayout - Detected user type:', userType);
 
-  // Role-specific navigation with unique items and styling
-  const navigation = {
+  /* ─────────────────────────────────────────────────────────────
+     ROLE-BASED NAVIGATION  (aligned with PDF spec)
+  ───────────────────────────────────────────────────────────── */
+  const navigation: Record<UserRole, { name: string; icon: any; href: string; color: string; badge?: string }[]> = {
+
+    /* ── TENANT ──────────────────────────────────────────────── */
     tenant: [
-      { name: 'Dashboard',         icon: Home,       href: '/dashboard', color: '#70c490' },
-      { name: 'Browse Properties', icon: Search,     href: '/properties', color: '#3b82f6' },
-      { name: 'Saved Properties',  icon: Star,       href: '/dashboard/saved-properties', color: '#f59e0b' },
-      { name: 'Applications',      icon: FileText,   href: '/dashboard/applications', color: '#8b5cf6' },
-      { name: 'Messages',          icon: Bell,       href: '/dashboard/messages', color: '#ef4444' },
+      { name: 'Overview',           icon: Home,         href: '/dashboard',                        color: '#c9a84c' },
+      { name: 'Browse Properties',  icon: Search,       href: '/properties',                       color: '#60a5fa' },
+      { name: 'My Applications',    icon: FileText,     href: '/dashboard/applications',           color: '#a78bfa' },
+      { name: 'Saved Properties',   icon: Star,         href: '/dashboard/saved-properties',       color: '#f59e0b' },
+      { name: 'My Contract',        icon: BookOpen,     href: '/dashboard/contract',               color: '#34d399' },
+      { name: 'Rent Payments',      icon: CreditCard,   href: '/dashboard/payments',               color: '#10b981' },
+      { name: 'Payment History',    icon: Receipt,      href: '/dashboard/payment-history',        color: '#6ee7b7' },
+      { name: 'Messages',           icon: MessageSquare,href: '/dashboard/messages',               color: '#f87171' },
+      { name: 'Notifications',      icon: Bell,         href: '/dashboard/notifications',          color: '#fb923c' },
     ],
+
+    /* ── LANDLORD / OWNER ────────────────────────────────────── */
     landlord: [
-      { name: 'Dashboard',         icon: Home,       href: '/dashboard', color: '#10b981' },
-      { name: 'My Properties',     icon: Building,   href: '/dashboard/my-properties', color: '#f59e0b' },
-      { name: 'Add Property',      icon: Plus,       href: '/dashboard/properties/add', color: '#22c55e' },
-      { name: 'Applications',      icon: FileText,   href: '/dashboard/applications', color: '#3b82f6' },
-      { name: 'Tenants',           icon: Users,      href: '/dashboard/tenants', color: '#8b5cf6' },
-      { name: 'Analytics',         icon: BarChart3,  href: '/dashboard/analytics', color: '#ef4444' },
+      { name: 'Overview',           icon: Home,         href: '/dashboard',                        color: '#c9a84c' },
+      { name: 'My Properties',      icon: Building,     href: '/dashboard/my-properties',          color: '#f59e0b' },
+      { name: 'Add Property',       icon: Plus,         href: '/dashboard/properties/add',         color: '#34d399' },
+      { name: 'Applications',       icon: FileText,     href: '/dashboard/applications',           color: '#60a5fa' },
+      { name: 'My Tenants',         icon: Users,        href: '/dashboard/tenants',                color: '#a78bfa' },
+      { name: 'Digital Contracts',  icon: BookOpen,     href: '/dashboard/contracts',              color: '#f472b6' },
+      { name: 'Rent Collection',    icon: Wallet,       href: '/dashboard/rent-collection',        color: '#10b981' },
+      { name: 'Payment Receipts',   icon: Receipt,      href: '/dashboard/receipts',               color: '#6ee7b7' },
+      { name: 'Commission Reports', icon: PieChart,     href: '/dashboard/commissions',            color: '#fb923c' },
+      { name: 'Analytics',          icon: BarChart3,    href: '/dashboard/analytics',              color: '#f87171' },
+      { name: 'Messages',           icon: MessageSquare,href: '/dashboard/messages',               color: '#94a3b8' },
     ],
+
+    /* ── DALALI / AGENT ──────────────────────────────────────── */
     agent: [
-      { name: 'Dashboard',         icon: Home,       href: '/dashboard', color: '#06b6d4' },
-      { name: 'My Listings',       icon: Building,   href: '/dashboard/my-listings', color: '#f59e0b' },
-      { name: 'Add Listing',       icon: Plus,       href: '/dashboard/listings/add', color: '#10b981' },
-      { name: 'Leads',             icon: Users,      href: '/dashboard/leads', color: '#8b5cf6' },
-      { name: 'Commissions',       icon: DollarSign, href: '/dashboard/commissions', color: '#22c55e' },
-      { name: 'Analytics',         icon: TrendingUp, href: '/dashboard/analytics', color: '#ef4444' },
+      { name: 'Overview',           icon: Home,         href: '/dashboard',                        color: '#c9a84c' },
+      { name: 'My Listings',        icon: Building,     href: '/dashboard/my-listings',            color: '#f59e0b' },
+      { name: 'Add Listing',        icon: Plus,         href: '/dashboard/listings/add',           color: '#34d399' },
+      { name: 'Linked Owners',      icon: Landmark,     href: '/dashboard/linked-owners',          color: '#60a5fa' },
+      { name: 'Share & Track',      icon: Link2,        href: '/dashboard/tracking',               color: '#a78bfa' },
+      { name: 'QR Codes',           icon: QrCode,       href: '/dashboard/qr-codes',               color: '#f472b6' },
+      { name: 'Leads & Visitors',   icon: Eye,          href: '/dashboard/leads',                  color: '#38bdf8' },
+      { name: 'Applications',       icon: FileText,     href: '/dashboard/applications',           color: '#94a3b8' },
+      { name: 'My Commissions',     icon: DollarSign,   href: '/dashboard/commissions',            color: '#10b981' },
+      { name: 'Payout History',     icon: Receipt,      href: '/dashboard/payouts',                color: '#6ee7b7' },
+      { name: 'Analytics',          icon: TrendingUp,   href: '/dashboard/analytics',              color: '#f87171' },
+      { name: 'Messages',           icon: MessageSquare,href: '/dashboard/messages',               color: '#fb923c' },
+    ],
+
+    /* ── ADMIN ───────────────────────────────────────────────── */
+    admin: [
+      { name: 'Overview',           icon: Home,         href: '/dashboard',                        color: '#c9a84c' },
+      { name: 'All Properties',     icon: Building,     href: '/admin/properties',                 color: '#f59e0b' },
+      { name: 'Users',              icon: Users,        href: '/admin/users',                      color: '#60a5fa' },
+      { name: 'Verification',       icon: ShieldCheck,  href: '/admin/verification',               color: '#34d399' },
+      { name: 'Contracts',          icon: BookOpen,     href: '/admin/contracts',                  color: '#a78bfa' },
+      { name: 'Payments',           icon: CreditCard,   href: '/admin/payments',                   color: '#f472b6' },
+      { name: 'Commission Control', icon: PieChart,     href: '/admin/commissions',                color: '#10b981' },
+      { name: 'Reconciliation',     icon: RefreshCw,    href: '/admin/reconciliation',             color: '#6ee7b7' },
+      { name: 'Tracking Logs',      icon: Clock,        href: '/admin/tracking-logs',              color: '#38bdf8' },
+      { name: 'Revenue Reports',    icon: BarChart3,    href: '/admin/revenue',                    color: '#fb923c' },
+      { name: 'Alerts',             icon: AlertCircle,  href: '/admin/alerts',                     color: '#f87171' },
     ],
   };
+
+  const roleConfig: Record<UserRole, { label: string; accent: string; sidebarBg: string; border: string }> = {
+    tenant:   { label: 'Tenant',   accent: '#70c490', sidebarBg: 'linear-gradient(160deg,#0c1610 0%,#111a14 100%)', border: 'rgba(112,196,144,0.12)' },
+    landlord: { label: 'Landlord', accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1507 0%,#1f1a0b 100%)', border: 'rgba(201,168,76,0.12)' },
+    agent:    { label: 'Dalali',   accent: '#38bdf8', sidebarBg: 'linear-gradient(160deg,#05101a 0%,#0c1824 100%)', border: 'rgba(56,189,248,0.12)' },
+    admin:    { label: 'Admin',    accent: '#f87171', sidebarBg: 'linear-gradient(160deg,#1a0505 0%,#1f0c0c 100%)', border: 'rgba(248,113,113,0.12)' },
+  };
+
+  const cfg = roleConfig[userType] ?? roleConfig.tenant;
 
   const handleLogout = async () => {
     try {
       await fetch('http://localhost:8000/api/logout', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json',
         },
       });
@@ -72,52 +131,72 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
     (path !== '/dashboard' && location.pathname.startsWith(path));
 
   const initials =
-    `${user?.firstName?.charAt(0) || ''}${user?.lastName?.charAt(0) || ''}` || 'U';
+    `${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}` || 'U';
 
-  const roleLabelMap: Record<UserRole, string> = { tenant: 'Tenant', landlord: 'Landlord', agent: 'Agent' };
+  const navItems = navigation[userType] ?? navigation.tenant;
+
+  /* ── Group nav into sections ── */
+  const sectionMap: Record<UserRole, { label: string; items: string[] }[]> = {
+    tenant: [
+      { label: 'Explore',   items: ['Overview','Browse Properties','Saved Properties'] },
+      { label: 'My Rental', items: ['My Applications','My Contract','Rent Payments','Payment History'] },
+      { label: 'Connect',   items: ['Messages','Notifications'] },
+    ],
+    landlord: [
+      { label: 'Properties', items: ['Overview','My Properties','Add Property'] },
+      { label: 'Tenants',    items: ['Applications','My Tenants','Digital Contracts'] },
+      { label: 'Finance',    items: ['Rent Collection','Payment Receipts','Commission Reports'] },
+      { label: 'Insights',   items: ['Analytics','Messages'] },
+    ],
+    agent: [
+      { label: 'Listings',   items: ['Overview','My Listings','Add Listing','Linked Owners'] },
+      { label: 'Tracking',   items: ['Share & Track','QR Codes','Leads & Visitors','Applications'] },
+      { label: 'Finance',    items: ['My Commissions','Payout History'] },
+      { label: 'Insights',   items: ['Analytics','Messages'] },
+    ],
+    admin: [
+      { label: 'Platform',   items: ['Overview','All Properties','Users','Verification'] },
+      { label: 'Operations', items: ['Contracts','Payments','Commission Control','Reconciliation'] },
+      { label: 'Monitoring', items: ['Tracking Logs','Revenue Reports','Alerts'] },
+    ],
+  };
+
+  const sections = sectionMap[userType] ?? sectionMap.tenant;
 
   return (
     <div style={{
-      fontFamily: "'Cormorant Garamond', Georgia, serif",
-      background: '#0a0a0a',
-      color: '#f5f0e8',
+      fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+      background: '#080808',
+      color: '#e8e4dc',
       minHeight: '100vh',
       display: 'flex',
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --gold: #c9a84c;
-          --dark: #0a0a0a;
-          --dark-2: #111;
-          --cream: #f5f0e8;
-          --muted: #8a8070;
-          --border: rgba(201,168,76,0.12);
+          --gold:    #c9a84c;
+          --gold-lt: #e8c97a;
+          --dark:    #080808;
+          --dark-2:  #0e0e0e;
+          --dark-3:  #141414;
+          --cream:   #e8e4dc;
+          --muted:   #7a7060;
+          --accent:  ${cfg.accent};
+          --border:  ${cfg.border};
         }
 
-        /* Role-specific sidebar themes */
-        .dl-sidebar.tenant {
-          background: linear-gradient(135deg, #0f1419 0%, #1a1f29 100%);
-          border-right: 1px solid rgba(112,196,144,0.15);
-        }
+        /* scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
-        .dl-sidebar.landlord {
-          background: linear-gradient(135deg, #0f1a14 0%, #1a291f 100%);
-          border-right: 1px solid rgba(245,158,11,0.15);
-        }
-
-        .dl-sidebar.agent {
-          background: linear-gradient(135deg, #0f141a 0%, #1a1f29 100%);
-          border-right: 1px solid rgba(6,182,212,0.15);
-        }
-
-        /* ── Sidebar ── */
+        /* ── SIDEBAR ── */
         .dl-sidebar {
-          width: 240px;
-          background: var(--dark-2);
+          width: 256px;
+          background: ${cfg.sidebarBg};
           border-right: 1px solid var(--border);
           display: flex;
           flex-direction: column;
@@ -125,11 +204,18 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           position: sticky;
           top: 0;
           height: 100vh;
-          overflow-y: auto;
-          transition: transform 0.3s ease;
+          overflow: hidden;
+          transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
           z-index: 100;
         }
 
+        .dl-sidebar-scroll {
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        /* ── Logo ── */
         .dl-logo-bar {
           padding: 22px 24px 20px;
           border-bottom: 1px solid var(--border);
@@ -143,97 +229,135 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           text-decoration: none;
           display: flex;
           align-items: baseline;
-          gap: 1px;
+          gap: 0;
         }
 
         .dl-logo-text {
           font-family: 'Cormorant Garamond', serif;
-          font-size: 18px;
-          font-weight: 300;
-          letter-spacing: 0.15em;
+          font-size: 22px;
+          font-weight: 500;
+          letter-spacing: 0.22em;
           text-transform: uppercase;
           color: var(--cream);
         }
 
-        .dl-logo-dot { color: var(--gold); font-size: 18px; }
+        .dl-logo-dot {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 26px;
+          font-weight: 300;
+          color: var(--accent);
+          line-height: 1;
+          margin-left: 1px;
+        }
+
+        .dl-tagline {
+          font-size: 9px;
+          font-weight: 400;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--muted);
+          margin-top: 2px;
+        }
 
         .dl-close-btn {
           display: none;
           background: none; border: none;
-          color: var(--muted); cursor: pointer;
-          padding: 4px;
+          color: var(--muted); cursor: pointer; padding: 4px;
+          transition: color 0.2s;
         }
+        .dl-close-btn:hover { color: var(--cream); }
 
+        /* ── User block ── */
         .dl-user {
-          padding: 20px 24px;
+          padding: 18px 24px 16px;
           border-bottom: 1px solid var(--border);
           flex-shrink: 0;
         }
 
         .dl-avatar {
-          width: 36px; height: 36px;
-          background: rgba(201,168,76,0.1);
-          border: 1px solid rgba(201,168,76,0.25);
+          width: 38px; height: 38px;
+          background: rgba(201,168,76,0.08);
+          border: 1px solid rgba(201,168,76,0.22);
+          border-radius: 2px;
           display: flex; align-items: center; justify-content: center;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12px; font-weight: 500;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 15px; font-weight: 500;
           color: var(--gold);
-          letter-spacing: 0.05em;
-          margin-bottom: 10px;
+          letter-spacing: 0.04em;
+          margin-bottom: 11px;
+          flex-shrink: 0;
         }
 
         .dl-user-name {
-          font-size: 15px; font-weight: 400;
-          color: var(--cream); letter-spacing: -0.01em;
-          margin-bottom: 3px;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 16px; font-weight: 500;
+          color: var(--cream); letter-spacing: 0.01em;
+          margin-bottom: 2px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         .dl-user-email {
-          font-family: 'DM Sans', sans-serif;
           font-size: 11px; font-weight: 300;
-          color: var(--muted); margin-bottom: 8px;
+          color: var(--muted); margin-bottom: 10px;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         .dl-role-tag {
-          display: inline-flex; align-items: center; gap: 5px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 9px; font-weight: 500;
-          letter-spacing: 0.18em; text-transform: uppercase;
-          color: var(--gold);
-          border: 1px solid rgba(201,168,76,0.2);
-          padding: 3px 9px;
-          background: rgba(201,168,76,0.05);
-        }
-
-        .dl-nav {
-          flex: 1;
-          padding: 12px 0;
-          overflow-y: auto;
-        }
-
-        .dl-nav-section {
-          padding: 8px 24px 4px;
-          font-family: 'DM Sans', sans-serif;
+          display: inline-flex; align-items: center; gap: 6px;
           font-size: 9px; font-weight: 500;
           letter-spacing: 0.2em; text-transform: uppercase;
-          color: rgba(138,128,112,0.4);
+          color: var(--accent);
+          border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+          padding: 4px 10px;
+          background: color-mix(in srgb, var(--accent) 6%, transparent);
+          border-radius: 2px;
+        }
+
+        .dl-role-dot {
+          width: 5px; height: 5px;
+          border-radius: 50%;
+          background: var(--accent);
+          flex-shrink: 0;
+          box-shadow: 0 0 6px var(--accent);
+          animation: glow-pulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes glow-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.45; }
+        }
+
+        /* ── Nav ── */
+        .dl-nav { padding: 8px 0 12px; }
+
+        .dl-nav-section {
+          padding: 14px 24px 4px;
+          font-size: 9px; font-weight: 500;
+          letter-spacing: 0.22em; text-transform: uppercase;
+          color: rgba(122,112,96,0.45);
+          display: flex; align-items: center; gap: 8px;
+        }
+
+        .dl-nav-section::after {
+          content: '';
+          flex: 1; height: 1px;
+          background: linear-gradient(to right, rgba(122,112,96,0.15), transparent);
         }
 
         .dl-nav-link {
           display: flex; align-items: center; gap: 11px;
-          padding: 10px 24px;
+          padding: 9px 24px;
           text-decoration: none;
           color: var(--muted);
-          font-family: 'DM Sans', sans-serif;
-          font-size: 13px; font-weight: 400;
-          transition: all 0.2s;
+          font-size: 12.5px; font-weight: 400;
+          transition: all 0.18s;
           border-left: 2px solid transparent;
+          position: relative;
         }
 
         .dl-nav-link:hover {
           color: var(--nav-color, var(--cream));
-          background: var(--nav-hover-bg, rgba(201,168,76,0.04));
+          background: var(--nav-hover-bg, rgba(255,255,255,0.03));
           border-left-color: var(--nav-color, rgba(201,168,76,0.3));
         }
 
@@ -243,10 +367,28 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           border-left-color: var(--nav-color, var(--gold));
         }
 
+        .dl-nav-link-icon {
+          width: 16px; height: 16px;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .dl-nav-badge {
+          margin-left: auto;
+          font-size: 9px; font-weight: 600;
+          letter-spacing: 0.04em;
+          padding: 2px 6px;
+          border-radius: 999px;
+          background: rgba(248,113,113,0.15);
+          color: #f87171;
+          border: 1px solid rgba(248,113,113,0.2);
+        }
+
+        /* ── Sidebar footer ── */
         .dl-sidebar-footer {
-          padding: 16px 24px;
+          padding: 14px 24px 18px;
           border-top: 1px solid var(--border);
-          display: flex; flex-direction: column; gap: 2px;
+          display: flex; flex-direction: column; gap: 1px;
           flex-shrink: 0;
         }
 
@@ -256,9 +398,10 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           background: none; border: none;
           color: var(--muted);
           font-family: 'DM Sans', sans-serif;
-          font-size: 13px; font-weight: 400;
+          font-size: 12.5px; font-weight: 400;
           cursor: pointer; text-decoration: none;
-          transition: color 0.2s; text-align: left;
+          transition: color 0.18s; text-align: left;
+          border-radius: 2px;
         }
 
         .dl-sidebar-footer-btn:hover { color: var(--cream); }
@@ -272,56 +415,59 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           min-height: 100vh;
           overflow: hidden;
           min-width: 0;
+          background: var(--dark);
         }
 
+        /* ── Top bar ── */
         .dl-topbar {
-          background: var(--dark-2);
-          border-bottom: 1px solid var(--border);
-          padding: 0 32px;
-          height: 60px;
+          background: rgba(14,14,14,0.95);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+          padding: 0 36px;
+          height: 58px;
           display: flex; align-items: center;
           justify-content: space-between;
           gap: 16px;
           flex-shrink: 0;
           position: sticky;
           top: 0; z-index: 50;
+          backdrop-filter: blur(12px);
         }
 
         .dl-topbar-left {
-          display: flex; align-items: center; gap: 16px;
+          display: flex; align-items: center; gap: 14px;
         }
 
         .dl-menu-toggle {
           display: none;
-          background: none; border: none;
+          background: none; border: 1px solid rgba(255,255,255,0.07);
           color: var(--muted); cursor: pointer;
-          padding: 6px; transition: color 0.2s;
+          padding: 7px; border-radius: 4px;
+          transition: all 0.2s;
         }
-
-        .dl-menu-toggle:hover { color: var(--cream); }
+        .dl-menu-toggle:hover { color: var(--cream); border-color: rgba(255,255,255,0.15); }
 
         .dl-breadcrumb {
-          display: flex; align-items: center; gap: 6px;
+          display: flex; align-items: center; gap: 7px;
         }
 
-        .dl-breadcrumb-home {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 11px; font-weight: 400;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          color: rgba(138,128,112,0.5); text-decoration: none;
+        .dl-bc-home {
+          font-size: 10px; font-weight: 400;
+          letter-spacing: 0.12em; text-transform: uppercase;
+          color: rgba(122,112,96,0.5); text-decoration: none;
+          transition: color 0.18s;
         }
+        .dl-bc-home:hover { color: var(--muted); }
 
-        .dl-breadcrumb-sep { color: rgba(138,128,112,0.3); }
+        .dl-bc-sep { color: rgba(122,112,96,0.25); display: flex; align-items: center; }
 
-        .dl-breadcrumb-current {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 11px; font-weight: 500;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          color: var(--gold);
+        .dl-bc-current {
+          font-size: 10px; font-weight: 500;
+          letter-spacing: 0.12em; text-transform: uppercase;
+          color: var(--accent);
         }
 
         .dl-topbar-right {
-          display: flex; align-items: center; gap: 4px;
+          display: flex; align-items: center; gap: 3px;
         }
 
         .dl-topbar-btn {
@@ -330,145 +476,210 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           border: 1px solid transparent;
           color: var(--muted);
           display: flex; align-items: center; justify-content: center;
-          cursor: pointer; text-decoration: none;
-          transition: all 0.2s;
+          cursor: pointer; text-decoration: none; border-radius: 4px;
+          transition: all 0.18s;
         }
-
         .dl-topbar-btn:hover {
           color: var(--cream);
-          border-color: rgba(201,168,76,0.2);
-          background: rgba(201,168,76,0.05);
+          border-color: rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.04);
         }
 
-        /* ── Content area — NO extra top padding ── */
+        .dl-topbar-divider {
+          width: 1px; height: 18px;
+          background: rgba(255,255,255,0.06);
+          margin: 0 4px;
+        }
+
+        /* Role badge in topbar */
+        .dl-topbar-role {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 9px; font-weight: 500;
+          letter-spacing: 0.18em; text-transform: uppercase;
+          color: var(--accent);
+          padding: 4px 10px;
+          border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+          background: color-mix(in srgb, var(--accent) 5%, transparent);
+          border-radius: 2px;
+        }
+
+        /* ── Content ── */
         .dl-content {
           flex: 1;
-          padding: 32px;
+          padding: 36px 40px;
           overflow-y: auto;
-          background: var(--dark);
         }
 
         /* ── Mobile overlay ── */
         .dl-overlay {
           position: fixed; inset: 0;
-          background: rgba(0,0,0,0.7);
+          background: rgba(0,0,0,0.75);
           z-index: 90;
-          backdrop-filter: blur(4px);
+          backdrop-filter: blur(6px);
         }
 
         /* ── Responsive ── */
-        @media (max-width: 900px) {
+        @media (max-width: 960px) {
           .dl-sidebar {
             position: fixed;
             top: 0; left: 0; bottom: 0;
             transform: translateX(-100%);
+            box-shadow: 8px 0 40px rgba(0,0,0,0.6);
           }
           .dl-sidebar.open { transform: translateX(0); }
           .dl-close-btn { display: flex; }
           .dl-menu-toggle { display: flex; }
-          .dl-content { padding: 20px; }
           .dl-topbar { padding: 0 20px; }
+          .dl-content { padding: 24px 20px; }
+          .dl-topbar-role { display: none; }
         }
       `}</style>
 
-      {/* Mobile overlay — only rendered when open */}
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="dl-overlay" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* ── Sidebar ── */}
-      <aside className={`dl-sidebar ${userType}${sidebarOpen ? ' open' : ''}`}>
+      {/* ══ SIDEBAR ══ */}
+      <aside className={`dl-sidebar${sidebarOpen ? ' open' : ''}`}>
+
+        {/* Logo */}
         <div className="dl-logo-bar">
-          <Link to="/" className="dl-logo">
-            <span className="dl-logo-text">OWERU</span>
-            <span className="dl-logo-dot">.</span>
-          </Link>
+          <div>
+            <Link to="/" className="dl-logo">
+              <span className="dl-logo-text">OWERU</span>
+              <span className="dl-logo-dot">.</span>
+            </Link>
+            <div className="dl-tagline">Real Estate Management</div>
+          </div>
           <button className="dl-close-btn" onClick={() => setSidebarOpen(false)}>
-            <X size={16} />
+            <X size={15} />
           </button>
         </div>
 
+        {/* User info */}
         <div className="dl-user">
           <div className="dl-avatar">{initials}</div>
           <div className="dl-user-name">{user?.firstName} {user?.lastName}</div>
           <div className="dl-user-email">{user?.email}</div>
           <div className="dl-role-tag">
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0 }} />
-            {roleLabelMap[userType] || userType}
+            <span className="dl-role-dot" />
+            {cfg.label}
           </div>
         </div>
 
-        <nav className="dl-nav">
-          <div className="dl-nav-section">Navigation</div>
-          {(navigation[userType] || []).map((item) => {
-            console.log('Rendering navigation item:', item.name, 'href:', item.href, 'userType:', userType);
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`dl-nav-link${isActive(item.href) ? ' active' : ''}`}
-                onClick={() => setSidebarOpen(false)}
-                style={{
-                  '--nav-color': item.color,
-                  '--nav-hover-bg': `${item.color}15`,
-                  '--nav-active-bg': `${item.color}25`,
-                } as React.CSSProperties}
-              >
-                <item.icon size={14} style={{ color: 'var(--nav-color)' }} />
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Scrollable nav */}
+        <div className="dl-sidebar-scroll">
+          <nav className="dl-nav">
+            {sections.map((section) => {
+              const sectionItems = navItems.filter((item) =>
+                section.items.includes(item.name)
+              );
+              if (!sectionItems.length) return null;
+              return (
+                <div key={section.label}>
+                  <div className="dl-nav-section">{section.label}</div>
+                  {sectionItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className={`dl-nav-link${isActive(item.href) ? ' active' : ''}`}
+                      onClick={() => setSidebarOpen(false)}
+                      style={{
+                        '--nav-color': item.color,
+                        '--nav-hover-bg': `${item.color}10`,
+                        '--nav-active-bg': `${item.color}18`,
+                      } as React.CSSProperties}
+                    >
+                      <span className="dl-nav-link-icon" style={{ color: isActive(item.href) ? item.color : 'var(--muted)' }}>
+                        <item.icon size={14} />
+                      </span>
+                      {item.name}
+                      {item.badge && (
+                        <span className="dl-nav-badge">{item.badge}</span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              );
+            })}
+          </nav>
+        </div>
 
+        {/* Footer */}
         <div className="dl-sidebar-footer">
           <Link to="/settings" className="dl-sidebar-footer-btn">
-            <Settings size={14} />
-            Settings
+            <Settings size={13} style={{ color: 'var(--muted)' }} />
+            Account Settings
           </Link>
           <button className="dl-sidebar-footer-btn danger" onClick={handleLogout}>
-            <LogOut size={14} />
+            <LogOut size={13} />
             Sign Out
           </button>
         </div>
       </aside>
 
-      {/* ── Main ── */}
+      {/* ══ MAIN ══ */}
       <main className="dl-main">
+
+        {/* Top bar */}
         <header className="dl-topbar">
           <div className="dl-topbar-left">
             <button className="dl-menu-toggle" onClick={() => setSidebarOpen(true)}>
-              <Menu size={18} />
+              <Menu size={16} />
             </button>
-            <div className="dl-breadcrumb">
-              <Link to="/dashboard" className="dl-breadcrumb-home">Dashboard</Link>
+
+            <nav className="dl-breadcrumb">
+              <Link to="/dashboard" className="dl-bc-home">Dashboard</Link>
               {title && title !== 'Dashboard' && (
                 <>
-                  <ChevronRight size={10} className="dl-breadcrumb-sep" />
-                  <span className="dl-breadcrumb-current">{title}</span>
+                  <ChevronRight size={9} className="dl-bc-sep" />
+                  <span className="dl-bc-current">{title}</span>
                 </>
               )}
-            </div>
+            </nav>
           </div>
 
           <div className="dl-topbar-right">
-            <Link to="/messages" className="dl-topbar-btn" title="Messages">
-              <Bell size={15} />
+            {/* Role badge */}
+            <span className="dl-topbar-role">
+              <span style={{
+                width: 5, height: 5, borderRadius: '50%',
+                background: 'var(--accent)',
+                boxShadow: '0 0 5px var(--accent)',
+                flexShrink: 0,
+              }} />
+              {cfg.label}
+            </span>
+
+            <div className="dl-topbar-divider" />
+
+            <Link to="/dashboard/messages" className="dl-topbar-btn" title="Messages">
+              <MessageSquare size={14} />
             </Link>
+            <Link to="/dashboard/notifications" className="dl-topbar-btn" title="Notifications">
+              <Bell size={14} />
+            </Link>
+
+            <div className="dl-topbar-divider" />
+
             <Link to="/settings" className="dl-topbar-btn" title="Settings">
-              <Settings size={15} />
+              <Settings size={14} />
             </Link>
             <button
-              className="dl-topbar-btn"
+              className="dl-topbar-btn danger"
               onClick={handleLogout}
               title="Sign out"
-              style={{ borderColor: 'rgba(224,112,112,0.15)' }}
+              style={{ color: 'rgba(224,112,112,0.5)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#e07070')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(224,112,112,0.5)')}
             >
-              <LogOut size={15} />
+              <LogOut size={14} />
             </button>
           </div>
         </header>
 
+        {/* Content */}
         <div className="dl-content">
           {children}
         </div>
