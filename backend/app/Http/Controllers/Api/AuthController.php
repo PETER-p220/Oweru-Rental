@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
+
+class AuthController extends Controller
+{
+    public function register(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'required|string|max:20',
+            'user_type' => 'required|in:tenant,landlord,agent',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::create([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'phone' => $request->phone,
+            'user_type' => $request->user_type,
+        ]);
+
+        // For now, return a simple success response without tokens
+        // TODO: Add proper authentication tokens later
+
+        return response()->json([
+            'message' => 'Registration successful',
+            'data' => [
+                'user' => $user,
+                'token' => 'simple_token_' . time(), // Temporary token
+            ]
+        ], 201);
+    }
+
+    public function login(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => 'required',
+            'user_type' => 'required|in:tenant,landlord,agent',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Invalid credentials'
+            ], 401);
+        }
+
+        if ($user->user_type !== $request->user_type) {
+            return response()->json([
+                'message' => 'User type mismatch'
+            ], 401);
+        }
+
+        if (!$user->is_active) {
+            return response()->json([
+                'message' => 'Account is inactive'
+            ], 401);
+        }
+
+        // For now, return a simple success response without tokens
+        // TODO: Add proper authentication tokens later
+
+        return response()->json([
+            'message' => 'Login successful',
+            'data' => [
+                'user' => $user,
+                'token' => 'simple_token_' . time(), // Temporary token
+            ]
+        ]);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'message' => 'Logout successful'
+        ]);
+    }
+
+    public function user(Request $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $request->user()
+        ]);
+    }
+}

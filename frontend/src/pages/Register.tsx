@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Phone, AlertCircle, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import Api from '../services/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -48,10 +49,32 @@ const Register = () => {
     if (!validateStep2()) return;
     setIsLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1200));
-      navigate('/login');
-    } catch {
-      setErrors(['Registration failed. Please try again.']);
+      // Call the actual backend API
+      const response = await Api.register({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.confirmPassword,
+        phone: formData.phone,
+        user_type: formData.userType
+      });
+      
+      // Store user data and token
+      if (response.data) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        navigate('/dashboard');
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      if (error.message) {
+        setErrors([error.message]);
+      } else {
+        setErrors(['Registration failed. Please try again.']);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -866,6 +889,7 @@ const Register = () => {
                       type={showPassword ? 'text' : 'password'}
                       name="password" value={formData.password} onChange={handleChange}
                       placeholder="Create a password" required
+                      autoComplete="new-password"
                     />
                     <button type="button" className="rg-eye-btn" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -881,6 +905,7 @@ const Register = () => {
                       type={showConfirmPassword ? 'text' : 'password'}
                       name="confirmPassword" value={formData.confirmPassword} onChange={handleChange}
                       placeholder="Repeat your password" required
+                      autoComplete="new-password"
                     />
                     <button type="button" className="rg-eye-btn" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                       {showConfirmPassword ? <EyeOff size={13} /> : <Eye size={13} />}

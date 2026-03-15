@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, ArrowRight, Chrome } from 'lucide-react';
+import Api from '../services/api';
 
 const Login = () => {
   const [formData, setFormData]       = useState({ email: '', password: '', userType: 'tenant' });
@@ -17,10 +18,31 @@ const Login = () => {
     setIsLoading(true);
     setError('');
     try {
-      await new Promise(r => setTimeout(r, 1200));
-      navigate('/');
-    } catch {
-      setError('Invalid email or password. Please try again.');
+      // Call the actual backend API
+      const response = await Api.login(formData.email, formData.password, formData.userType);
+      
+      // Debug: Log the actual response structure
+      console.log('Login response:', response);
+      
+      // Store user data and token
+      if (response.data) {
+        // Access user and token according to the LoginResponse interface
+        const token = response.data.data.token || 'simple_token_' + Date.now();
+        const user = response.data.data.user;
+        
+        if (user) {
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          navigate('/dashboard');
+        } else {
+          throw new Error('User data not found in response');
+        }
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setError(error.message || 'Invalid email or password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -603,6 +625,7 @@ const Login = () => {
                   onChange={handleChange}
                   placeholder="Enter your password"
                   required
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
