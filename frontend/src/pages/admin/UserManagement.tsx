@@ -72,130 +72,25 @@ const UserManagement = () => {
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [searchTerm, roleFilter, statusFilter]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       
-      // Mock data for now since API doesn't exist yet
-      const mockUsers: User[] = [
-        {
-          id: 1,
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@example.com',
-          phone: '+255123456789',
-          role: 'tenant',
-          status: 'active',
-          registrationDate: '2024-01-15',
-          lastLogin: '2024-03-20T10:30:00Z',
-          propertiesCount: 1,
-          transactionsCount: 6,
-          emailVerified: true,
-          phoneVerified: true,
-          profileCompleted: true,
-          permissions: ['view_properties', 'make_payments'],
-          notes: 'Regular tenant, good payment history'
-        },
-        {
-          id: 2,
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane.smith@example.com',
-          phone: '+255987654321',
-          role: 'landlord',
-          status: 'active',
-          registrationDate: '2024-02-01',
-          lastLogin: '2024-03-19T16:45:00Z',
-          propertiesCount: 3,
-          transactionsCount: 12,
-          emailVerified: true,
-          phoneVerified: false,
-          profileCompleted: true,
-          permissions: ['manage_properties', 'view_tenants', 'receive_payments'],
-          notes: 'Property owner with 3 properties'
-        },
-        {
-          id: 3,
-          firstName: 'Mike',
-          lastName: 'Johnson',
-          email: 'mike.johnson@example.com',
-          phone: '+255555666777',
-          role: 'agent',
-          status: 'active',
-          registrationDate: '2024-01-20',
-          lastLogin: '2024-03-20T09:15:00Z',
-          propertiesCount: 8,
-          transactionsCount: 24,
-          emailVerified: true,
-          phoneVerified: true,
-          profileCompleted: true,
-          permissions: ['manage_listings', 'view_analytics', 'manage_commissions'],
-          notes: 'Top performing agent'
-        },
-        {
-          id: 4,
-          firstName: 'Sarah',
-          lastName: 'Williams',
-          email: 'sarah.williams@example.com',
-          phone: '+255444555666',
-          role: 'tenant',
-          status: 'inactive',
-          registrationDate: '2024-03-01',
-          lastLogin: '2024-03-10T14:30:00Z',
-          propertiesCount: 0,
-          transactionsCount: 0,
-          emailVerified: false,
-          phoneVerified: false,
-          profileCompleted: false,
-          permissions: [],
-          notes: 'Registered but never completed profile'
-        },
-        {
-          id: 5,
-          firstName: 'Admin',
-          lastName: 'User',
-          email: 'admin@oweru.com',
-          phone: '+255777888999',
-          role: 'admin',
-          status: 'active',
-          registrationDate: '2023-12-01',
-          lastLogin: '2024-03-20T11:00:00Z',
-          propertiesCount: 0,
-          transactionsCount: 0,
-          emailVerified: true,
-          phoneVerified: true,
-          profileCompleted: true,
-          permissions: ['admin_full_access'],
-          notes: 'System administrator'
-        }
-      ];
-
-      const mockStats: UserStats = {
-        total: 5,
-        active: 4,
-        inactive: 1,
-        suspended: 0,
-        admins: 1,
-        agents: 1,
-        landlords: 1,
-        tenants: 2,
-        newThisMonth: 2,
-        activeThisMonth: 4
-      };
+      // Load users from API with filters
+      const filters: any = {};
+      if (searchTerm) filters.search = searchTerm;
+      if (roleFilter !== 'all') filters.user_type = roleFilter;
+      if (statusFilter !== 'all') filters.status = statusFilter;
       
-      setUsers(mockUsers);
-      setStats(mockStats);
+      const response = await Api.getUsers(filters);
+      setUsers(response.data);
       
-      // Uncomment when API is ready:
-      // const [usersRes, statsRes] = await Promise.all([
-      //   Api.getUsers(),
-      //   Api.getUserStats()
-      // ]);
-      // 
-      // if (usersRes.data) setUsers(usersRes.data);
-      // if (statsRes.data) setStats(statsRes.data);
+      // Load user stats
+      const statsResponse = await Api.getUserStats();
+      setStats(statsResponse.data);
+      
     } catch (e) {
       console.error('Failed to load users:', e);
       setError('Failed to load users');
@@ -228,21 +123,22 @@ const UserManagement = () => {
     try {
       setLoading(true);
       
-      // Mock user creation
-      const newUser: User = {
-        id: users.length + 1,
-        ...formData,
-        registrationDate: new Date().toISOString().split('T')[0],
-        lastLogin: new Date().toISOString(),
-        propertiesCount: 0,
-        transactionsCount: 0,
-        emailVerified: false,
-        phoneVerified: false,
-        profileCompleted: false,
-        permissions: getDefaultPermissions(formData.role)
-      };
+      // Create user via API
+      await Api.createUser({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        user_type: formData.role,
+        password: formData.password,
+        status: formData.status,
+        notes: formData.notes
+      });
       
-      setUsers([...users, newUser]);
+      // Reload users to get updated list
+      await loadUsers();
+      
+      // Reset form
       setShowCreateModal(false);
       setFormData({
         firstName: '',
@@ -256,9 +152,6 @@ const UserManagement = () => {
         notes: ''
       });
       setFormErrors({});
-      
-      // Uncomment when API is ready:
-      // await Api.createUser(formData);
       
     } catch (e) {
       console.error('Failed to create user:', e);
@@ -292,14 +185,22 @@ const UserManagement = () => {
     try {
       setLoading(true);
       
-      // Mock user update
-      const updatedUsers = users.map(user => 
-        user.id === selectedUser?.id 
-          ? { ...user, ...formData, permissions: getDefaultPermissions(formData.role) }
-          : user
-      );
+      // Update user via API
+      await Api.updateUser(selectedUser!.id, {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        user_type: formData.role,
+        ...(formData.password && { password: formData.password }),
+        status: formData.status,
+        notes: formData.notes
+      });
       
-      setUsers(updatedUsers);
+      // Reload users to get updated list
+      await loadUsers();
+      
+      // Reset form
       setShowEditModal(false);
       setSelectedUser(null);
       setFormData({
@@ -315,9 +216,6 @@ const UserManagement = () => {
       });
       setFormErrors({});
       
-      // Uncomment when API is ready:
-      // await Api.updateUser(selectedUser.id, formData);
-      
     } catch (e) {
       console.error('Failed to update user:', e);
       setError('Failed to update user');
@@ -332,11 +230,11 @@ const UserManagement = () => {
     try {
       setLoading(true);
       
-      // Mock user deletion
-      setUsers(users.filter(user => user.id !== userId));
+      // Delete user via API
+      await Api.deleteUser(userId);
       
-      // Uncomment when API is ready:
-      // await Api.deleteUser(userId);
+      // Reload users to get updated list
+      await loadUsers();
       
     } catch (e) {
       console.error('Failed to delete user:', e);
@@ -350,15 +248,11 @@ const UserManagement = () => {
     try {
       setLoading(true);
       
-      // Mock status update
-      const updatedUsers = users.map(user => 
-        user.id === userId ? { ...user, status: newStatus } : user
-      );
+      // Update user status via API
+      await Api.updateUserStatus(userId, newStatus);
       
-      setUsers(updatedUsers);
-      
-      // Uncomment when API is ready:
-      // await Api.updateUserStatus(userId, newStatus);
+      // Reload users to get updated list
+      await loadUsers();
       
     } catch (e) {
       console.error('Failed to update user status:', e);
@@ -383,18 +277,7 @@ const UserManagement = () => {
     }
   };
 
-  const filteredUsers = users
-    .filter(user => {
-      const matchesSearch = user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.phone.includes(searchTerm);
-      
-      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-      const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-      
-      return matchesSearch && matchesRole && matchesStatus;
-    });
+  const filteredUsers = users; // Filtering is now done on the server side
 
   const getRoleColor = (role: string) => {
     switch (role) {

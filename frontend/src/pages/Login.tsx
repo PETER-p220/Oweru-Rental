@@ -1,48 +1,58 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, AlertCircle, ArrowRight, Chrome } from 'lucide-react';
-import Api from '../services/api';
+import { Eye, EyeOff, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
+import Api, { TOKEN_KEY } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
-  const [formData, setFormData]       = useState({ email: '', password: '', userType: 'tenant' });
+  const [formData, setFormData]         = useState({ email: '', password: '', userType: 'tenant' });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading]     = useState(false);
-  const [error, setError]             = useState('');
-  const [remember, setRemember]       = useState(false);
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading]       = useState(false);
+  const [error, setError]               = useState('');
+  const [remember, setRemember]         = useState(false);
+  const navigate  = useNavigate();
+  const { login } = useAuth();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
     try {
-      // Call the actual backend API
       const response = await Api.login(formData.email, formData.password, formData.userType);
-      
-      // Debug: Log the actual response structure
-      console.log('Login response:', response);
-      
-      // Store user data and token
-      if (response.data) {
-        // Access user and token based on actual response structure
-        const token = response.data.token || 'simple_token_' + Date.now();
-        const user = response.data.user;
-        
-        if (user) {
-          localStorage.setItem('token', token);
-          localStorage.setItem('user', JSON.stringify(user));
-          navigate('/dashboard');
-        } else {
-          throw new Error('User data not found in response');
-        }
-      } else {
+
+      // response.data  →  { user: {...camelCase...}, token: "..." }
+      const { user, token } = response.data as any;
+
+      if (!user || !token) {
         throw new Error('Invalid response from server');
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      setError(error.message || 'Invalid email or password. Please try again.');
+
+      // Clear any existing user data first
+      localStorage.removeItem('user');
+      
+      // Persist token under the same key api.ts reads from
+      localStorage.setItem(TOKEN_KEY, token);
+
+      // Push camelCase user into AuthContext
+      login(user);
+
+      // Route to the correct role dashboard
+      navigate(`/dashboard/${user.userType}`);
+
+    } catch (err: any) {
+      console.error('Login error:', err);
+
+      // Laravel 401/422 errors 
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Invalid email or password. Please try again.';
+
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +62,7 @@ const Login = () => {
     { value: 'tenant',   label: 'Tenant' },
     { value: 'landlord', label: 'Landlord' },
     { value: 'agent',    label: 'Agent' },
-    { value: 'admin',    label: 'admin'},
+    { value: 'admin',    label: 'Admin' },
   ];
 
   return (
@@ -74,7 +84,6 @@ const Login = () => {
           --error: #e07070;
         }
 
-        /* ── Layout ── */
         .lg-left {
           flex: 1;
           display: flex;
@@ -130,10 +139,7 @@ const Login = () => {
           letter-spacing: -0.05em;
         }
 
-        .lg-right-content {
-          position: relative;
-          z-index: 2;
-        }
+        .lg-right-content { position: relative; z-index: 2; }
 
         .lg-right-eyebrow {
           font-family: 'DM Sans', sans-serif;
@@ -147,7 +153,6 @@ const Login = () => {
           align-items: center;
           gap: 8px;
         }
-
         .lg-right-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--gold); }
 
         .lg-right-title {
@@ -158,7 +163,6 @@ const Login = () => {
           color: var(--cream);
           margin-bottom: 20px;
         }
-
         .lg-right-title em { font-style: italic; color: var(--gold-light); }
 
         .lg-right-desc {
@@ -202,13 +206,8 @@ const Login = () => {
           color: rgba(138,128,112,0.6);
         }
 
-        /* ── Form panel ── */
-        .lg-panel {
-          width: 100%;
-          max-width: 420px;
-        }
+        .lg-panel { width: 100%; max-width: 420px; }
 
-        /* Logo */
         .lg-logo {
           display: flex;
           align-items: baseline;
@@ -216,7 +215,6 @@ const Login = () => {
           text-decoration: none;
           margin-bottom: 48px;
         }
-
         .lg-logo-text {
           font-family: 'Cormorant Garamond', serif;
           font-size: 24px;
@@ -225,10 +223,8 @@ const Login = () => {
           text-transform: uppercase;
           color: var(--cream);
         }
-
         .lg-logo-dot { color: var(--gold); font-size: 24px; font-family: 'Cormorant Garamond', serif; }
 
-        /* Page title */
         .lg-title {
           font-size: clamp(32px, 3.5vw, 44px);
           font-weight: 300;
@@ -237,7 +233,6 @@ const Login = () => {
           color: var(--cream);
           margin-bottom: 8px;
         }
-
         .lg-title em { font-style: italic; color: var(--gold-light); }
 
         .lg-subtitle {
@@ -248,7 +243,6 @@ const Login = () => {
           margin-bottom: 40px;
         }
 
-        /* User type tabs */
         .lg-tabs {
           display: flex;
           gap: 0;
@@ -274,14 +268,8 @@ const Login = () => {
           border-right: 1px solid var(--border);
           position: relative;
         }
-
         .lg-tab:last-child { border-right: none; }
-
-        .lg-tab.active {
-          background: rgba(201,168,76,0.1);
-          color: var(--gold);
-        }
-
+        .lg-tab.active { background: rgba(201,168,76,0.1); color: var(--gold); }
         .lg-tab.active::after {
           content: '';
           position: absolute;
@@ -289,10 +277,8 @@ const Login = () => {
           height: 2px;
           background: var(--gold);
         }
-
         .lg-tab:hover:not(.active) { color: var(--cream); background: rgba(255,255,255,0.03); }
 
-        /* Error */
         .lg-error {
           display: flex;
           align-items: center;
@@ -307,7 +293,6 @@ const Login = () => {
           color: var(--error);
         }
 
-        /* Form fields */
         .lg-form { display: flex; flex-direction: column; gap: 0; }
 
         .lg-field {
@@ -317,7 +302,6 @@ const Login = () => {
           position: relative;
           transition: background 0.2s, border-color 0.2s;
         }
-
         .lg-field:last-of-type { border-bottom: 1px solid rgba(201,168,76,0.12); }
         .lg-field:focus-within { background: rgba(201,168,76,0.03); border-color: rgba(201,168,76,0.35); z-index: 1; }
 
@@ -353,7 +337,6 @@ const Login = () => {
           font-weight: 300;
           padding: 4px 44px 12px 44px;
         }
-
         .lg-input::placeholder { color: rgba(138,128,112,0.4); }
 
         .lg-eye-btn {
@@ -370,10 +353,8 @@ const Login = () => {
           padding: 4px;
           transition: color 0.2s;
         }
-
         .lg-eye-btn:hover { color: var(--gold); }
 
-        /* Options row */
         .lg-options {
           display: flex;
           align-items: center;
@@ -382,174 +363,88 @@ const Login = () => {
           gap: 12px;
         }
 
-        .lg-remember {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          cursor: pointer;
-        }
+        .lg-remember { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 
         .lg-checkbox {
-          width: 14px;
-          height: 14px;
+          width: 14px; height: 14px;
           border: 1px solid rgba(201,168,76,0.25);
           background: rgba(201,168,76,0.04);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          cursor: pointer;
-          transition: all 0.2s;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0; cursor: pointer; transition: all 0.2s;
         }
-
-        .lg-checkbox.checked {
-          background: rgba(201,168,76,0.15);
-          border-color: rgba(201,168,76,0.5);
-        }
-
-        .lg-checkbox.checked::after {
-          content: '';
-          width: 6px;
-          height: 6px;
-          background: var(--gold);
-          display: block;
-        }
+        .lg-checkbox.checked { background: rgba(201,168,76,0.15); border-color: rgba(201,168,76,0.5); }
+        .lg-checkbox.checked::after { content: ''; width: 6px; height: 6px; background: var(--gold); display: block; }
 
         .lg-remember-label {
           font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          font-weight: 300;
-          color: var(--muted);
+          font-size: 12px; font-weight: 300; color: var(--muted);
         }
 
         .lg-forgot {
           font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          font-weight: 400;
-          color: var(--muted);
-          text-decoration: none;
-          transition: color 0.2s;
-          white-space: nowrap;
+          font-size: 12px; font-weight: 400; color: var(--muted);
+          text-decoration: none; transition: color 0.2s; white-space: nowrap;
         }
-
         .lg-forgot:hover { color: var(--gold); }
 
-        /* Submit */
         .lg-submit {
           width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
           background: var(--gold);
           color: #0a0a0a;
           padding: 14px 24px;
           font-family: 'DM Sans', sans-serif;
-          font-size: 13px;
-          font-weight: 500;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          border: none;
-          cursor: pointer;
-          transition: all 0.25s;
+          font-size: 13px; font-weight: 500;
+          letter-spacing: 0.1em; text-transform: uppercase;
+          border: none; cursor: pointer; transition: all 0.25s;
           clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
           margin-bottom: 24px;
         }
-
         .lg-submit:hover:not(:disabled) { background: var(--gold-light); gap: 16px; }
         .lg-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .lg-spinner {
-          width: 14px;
-          height: 14px;
+          width: 14px; height: 14px;
           border: 2px solid rgba(0,0,0,0.2);
           border-top-color: #0a0a0a;
           border-radius: 50%;
           animation: lg-spin 0.7s linear infinite;
         }
-
         @keyframes lg-spin { to { transform: rotate(360deg); } }
 
-        /* Divider */
         .lg-divider {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 20px;
+          display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
         }
-
-        .lg-divider-line {
-          flex: 1;
-          height: 1px;
-          background: rgba(201,168,76,0.1);
-        }
-
+        .lg-divider-line { flex: 1; height: 1px; background: rgba(201,168,76,0.1); }
         .lg-divider-text {
           font-family: 'DM Sans', sans-serif;
-          font-size: 10px;
-          font-weight: 400;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          color: rgba(138,128,112,0.45);
-          white-space: nowrap;
+          font-size: 10px; font-weight: 400; letter-spacing: 0.15em;
+          text-transform: uppercase; color: rgba(138,128,112,0.45); white-space: nowrap;
         }
 
-        /* Social buttons */
-        .lg-socials {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 8px;
-          margin-bottom: 36px;
-        }
+        .lg-socials { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 36px; }
 
         .lg-social-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
           background: rgba(255,255,255,0.03);
           border: 1px solid rgba(201,168,76,0.12);
           color: var(--muted);
           padding: 11px 16px;
           font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          font-weight: 400;
-          letter-spacing: 0.06em;
-          cursor: pointer;
-          transition: all 0.2s;
+          font-size: 12px; font-weight: 400; letter-spacing: 0.06em;
+          cursor: pointer; transition: all 0.2s;
         }
+        .lg-social-btn:hover { border-color: rgba(201,168,76,0.35); color: var(--cream); background: rgba(255,255,255,0.05); }
+        .lg-social-icon { width: 14px; height: 14px; flex-shrink: 0; }
 
-        .lg-social-btn:hover {
-          border-color: rgba(201,168,76,0.35);
-          color: var(--cream);
-          background: rgba(255,255,255,0.05);
-        }
-
-        .lg-social-icon {
-          width: 14px;
-          height: 14px;
-          flex-shrink: 0;
-        }
-
-        /* Footer */
         .lg-footer {
           font-family: 'DM Sans', sans-serif;
-          font-size: 13px;
-          font-weight: 300;
-          color: var(--muted);
-          text-align: center;
+          font-size: 13px; font-weight: 300;
+          color: var(--muted); text-align: center;
         }
-
-        .lg-footer a {
-          color: var(--gold);
-          text-decoration: none;
-          font-weight: 400;
-          transition: color 0.2s;
-        }
-
+        .lg-footer a { color: var(--gold); text-decoration: none; font-weight: 400; transition: color 0.2s; }
         .lg-footer a:hover { color: var(--gold-light); }
 
-        /* Responsive */
         @media (max-width: 900px) {
           .lg-right { display: none; }
           .lg-left { padding: 40px 24px; }
@@ -560,16 +455,12 @@ const Login = () => {
       <div className="lg-left">
         <div className="lg-panel">
 
-          {/* Logo */}
           <Link to="/" className="lg-logo">
             <span className="lg-logo-text">OWERU</span>
             <span className="lg-logo-dot">.</span>
           </Link>
 
-          {/* Title */}
-          <h1 className="lg-title">
-            Welcome<br /><em>Back</em>
-          </h1>
+          <h1 className="lg-title">Welcome<br /><em>Back</em></h1>
           <p className="lg-subtitle">Sign in to access your account</p>
 
           {/* User type tabs */}
@@ -586,7 +477,6 @@ const Login = () => {
             ))}
           </div>
 
-          {/* Error */}
           {error && (
             <div className="lg-error">
               <AlertCircle size={14} style={{ flexShrink: 0 }} />
@@ -594,7 +484,6 @@ const Login = () => {
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit}>
             <div className="lg-form">
 
@@ -628,18 +517,13 @@ const Login = () => {
                   required
                   autoComplete="current-password"
                 />
-                <button
-                  type="button"
-                  className="lg-eye-btn"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
+                <button type="button" className="lg-eye-btn" onClick={() => setShowPassword(!showPassword)}>
                   {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
 
             </div>
 
-            {/* Options */}
             <div className="lg-options">
               <div className="lg-remember" onClick={() => setRemember(!remember)}>
                 <div className={`lg-checkbox${remember ? ' checked' : ''}`} />
@@ -648,27 +532,22 @@ const Login = () => {
               <Link to="/forgot-password" className="lg-forgot">Forgot password?</Link>
             </div>
 
-            {/* Submit */}
             <button type="submit" className="lg-submit" disabled={isLoading}>
-              {isLoading ? (
-                <><div className="lg-spinner" />Signing in…</>
-              ) : (
-                <>Sign In <ArrowRight size={14} /></>
-              )}
+              {isLoading
+                ? <><div className="lg-spinner" />Signing in…</>
+                : <>Sign In <ArrowRight size={14} /></>
+              }
             </button>
           </form>
 
-          {/* Divider */}
           <div className="lg-divider">
             <div className="lg-divider-line" />
             <span className="lg-divider-text">Or continue with</span>
             <div className="lg-divider-line" />
           </div>
 
-          {/* Social */}
           <div className="lg-socials">
             <button className="lg-social-btn">
-              {/* Google SVG */}
               <svg className="lg-social-icon" viewBox="0 0 24 24">
                 <path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 12 4.9c1.69 0 3.22.6 4.41 1.58l3.3-3.3A11.95 11.95 0 0 0 12 1C8.37 1 5.17 2.91 3.27 5.76l2 4z"/>
                 <path fill="#34A853" d="M16.04 18.01A7.05 7.05 0 0 1 12 19.1c-2.86 0-5.3-1.69-6.49-4.15l-3.95 3.06A11.97 11.97 0 0 0 12 23c2.93 0 5.63-1.05 7.69-2.77l-3.65-2.22z"/>
@@ -678,7 +557,6 @@ const Login = () => {
               Google
             </button>
             <button className="lg-social-btn">
-              {/* Facebook SVG */}
               <svg className="lg-social-icon" viewBox="0 0 24 24">
                 <path fill="#1877F2" d="M24 12.07C24 5.41 18.63 0 12 0S0 5.41 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.32 0 2.7.24 2.7.24v2.97h-1.52c-1.5 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.5h-2.8V24C19.62 23.1 24 18.1 24 12.07z"/>
               </svg>
@@ -686,7 +564,6 @@ const Login = () => {
             </button>
           </div>
 
-          {/* Sign up link */}
           <div className="lg-footer">
             Don't have an account?{' '}
             <Link to="/register">Create one</Link>
@@ -700,22 +577,18 @@ const Login = () => {
         <div className="lg-right-bg" />
         <div className="lg-right-grid" />
         <div className="lg-right-watermark">TZ</div>
-
         <div className="lg-right-content">
           <div className="lg-right-eyebrow">Tanzania's #1 Platform</div>
-          <h2 className="lg-right-title">
-            Find Your<br /><em>Perfect</em><br />Rental
-          </h2>
+          <h2 className="lg-right-title">Find Your<br /><em>Perfect</em><br />Rental</h2>
           <p className="lg-right-desc">
-            Join thousands of landlords, agents, and tenants using 
+            Join thousands of landlords, agents, and tenants using
             Oweru to simplify property rental across Tanzania.
           </p>
-
           <div className="lg-right-stats">
             {[
-              { num: '10K+',  lbl: 'Active Users' },
-              { num: '5K+',   lbl: 'Listings' },
-              { num: '98%',   lbl: 'Satisfaction' },
+              { num: '10K+', lbl: 'Active Users' },
+              { num: '5K+',  lbl: 'Listings' },
+              { num: '98%',  lbl: 'Satisfaction' },
             ].map(s => (
               <div key={s.lbl} className="lg-right-stat">
                 <div className="lg-right-stat-num">{s.num}</div>

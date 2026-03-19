@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('first_name')->after('id');
             $table->string('last_name')->after('first_name');
             $table->string('phone')->nullable()->after('email');
-            $table->enum('user_type', ['tenant', 'landlord', 'agent'])->default('tenant')->after('phone');
+            $table->enum('user_type', ['tenant', 'landlord', 'agent', 'admin'])->default('tenant')->after('phone');
             $table->string('profile_image')->nullable()->after('user_type');
             $table->text('bio')->nullable()->after('profile_image');
             $table->boolean('is_active')->default(true)->after('bio');

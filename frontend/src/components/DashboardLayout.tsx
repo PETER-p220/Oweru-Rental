@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Home, Search, Bell, Settings, LogOut, Menu, Building, Users,
   TrendingUp, DollarSign, Star, BarChart3, FileText, Plus, X,
@@ -11,91 +12,81 @@ import {
 interface DashboardLayoutProps {
   children: React.ReactNode;
   title?: string;
-  user?: any;
 }
 
 type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin';
 
-const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
+const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
+  const { pathname } = useLocation();
+  const { user } = useAuth();
 
-  // Try multiple possible field names for user type
-  const userType: UserRole = user?.userType || 
-                           user?.user_type || 
-                           user?.role || 
-                           user?.userRole || 
-                           user?.user_role || 
+  const userType: UserRole = user?.userType ||
+                           user?.user_type ||
+                           user?.role ||
+                           user?.userRole ||
+                           user?.user_role ||
                            'tenant';
-  
-  // Debug logging
+
   console.log('DashboardLayout - User object:', user);
   console.log('DashboardLayout - User object keys:', user ? Object.keys(user) : 'No user');
   console.log('DashboardLayout - Detected user type:', userType);
 
-  /* ─────────────────────────────────────────────────────────────
-     ROLE-BASED NAVIGATION  (aligned with PDF spec)
-  ───────────────────────────────────────────────────────────── */
   const navigation: Record<UserRole, { name: string; icon: any; href: string; color: string; badge?: string }[]> = {
 
-    /* ── TENANT ──────────────────────────────────────────────── */
     tenant: [
-      { name: 'Overview',           icon: Home,         href: '/dashboard',                        color: '#c9a84c' },
-      { name: 'Browse Properties',  icon: Search,       href: '/properties',                       color: '#60a5fa' },
-      { name: 'My Applications',    icon: FileText,     href: '/dashboard/applications',           color: '#a78bfa' },
-      { name: 'Saved Properties',   icon: Star,         href: '/dashboard/saved-properties',       color: '#f59e0b' },
-      { name: 'My Contract',        icon: BookOpen,     href: '/dashboard/contract',               color: '#34d399' },
-      { name: 'Rent Payments',      icon: CreditCard,   href: '/dashboard/payments',               color: '#10b981' },
-      { name: 'Payment History',    icon: Receipt,      href: '/dashboard/payment-history',        color: '#6ee7b7' },
-      { name: 'Messages',           icon: MessageSquare,href: '/dashboard/messages',               color: '#f87171' },
-      { name: 'Notifications',      icon: Bell,         href: '/dashboard/notifications',          color: '#fb923c' },
+      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
+      { name: 'Browse Properties',  icon: Search,        href: '/properties',         color: '#60a5fa' },
+      { name: 'My Applications',    icon: FileText,      href: 'applications',        color: '#a78bfa' },
+      { name: 'Saved Properties',   icon: Star,          href: 'saved-properties',    color: '#f59e0b' },
+      { name: 'My Contract',        icon: BookOpen,      href: 'contract',            color: '#34d399' },
+      { name: 'Rent Payments',      icon: CreditCard,    href: 'payments',            color: '#10b981' },
+      { name: 'Payment History',    icon: Receipt,       href: 'payment-history',     color: '#6ee7b7' },
+      { name: 'Messages',           icon: MessageSquare, href: 'messages',            color: '#f87171' },
+      { name: 'Notifications',      icon: Bell,          href: 'notifications',       color: '#fb923c' },
     ],
 
-    /* ── LANDLORD / OWNER ────────────────────────────────────── */
     landlord: [
-      { name: 'Overview',           icon: Home,         href: '/dashboard',                        color: '#c9a84c' },
-      { name: 'My Properties',      icon: Building,     href: '/dashboard/my-properties',          color: '#f59e0b' },
-      { name: 'Add Property',       icon: Plus,         href: '/dashboard/properties/add',         color: '#34d399' },
-      { name: 'Applications',       icon: FileText,     href: '/dashboard/applications',           color: '#60a5fa' },
-      { name: 'My Tenants',         icon: Users,        href: '/dashboard/tenants',                color: '#a78bfa' },
-      { name: 'Digital Contracts',  icon: BookOpen,     href: '/dashboard/contracts',              color: '#f472b6' },
-      { name: 'Rent Collection',    icon: Wallet,       href: '/dashboard/rent-collection',        color: '#10b981' },
-      { name: 'Payment Receipts',   icon: Receipt,      href: '/dashboard/receipts',               color: '#6ee7b7' },
-      { name: 'Commission Reports', icon: PieChart,     href: '/dashboard/commissions',            color: '#fb923c' },
-      { name: 'Analytics',          icon: BarChart3,    href: '/dashboard/analytics',              color: '#f87171' },
-      { name: 'Messages',           icon: MessageSquare,href: '/dashboard/messages',               color: '#94a3b8' },
+      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
+      { name: 'My Properties',      icon: Building,      href: 'my-properties',       color: '#f59e0b' },
+      { name: 'Add Property',       icon: Plus,          href: 'properties/add',      color: '#34d399' },
+      { name: 'Applications',       icon: FileText,      href: 'applications',        color: '#60a5fa' },
+      { name: 'My Tenants',         icon: Users,         href: 'tenants',             color: '#a78bfa' },
+      { name: 'Digital Contracts',  icon: BookOpen,      href: 'contracts',           color: '#f472b6' },
+      { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection',     color: '#10b981' },
+      { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts',            color: '#6ee7b7' },
+      { name: 'Commission Reports', icon: PieChart,      href: 'commissions',         color: '#fb923c' },
+      { name: 'Analytics',          icon: BarChart3,     href: 'analytics',           color: '#f87171' },
+      { name: 'Messages',           icon: MessageSquare, href: 'messages',            color: '#94a3b8' },
     ],
 
-    /* ── DALALI / AGENT ──────────────────────────────────────── */
     agent: [
-      { name: 'Overview',           icon: Home,         href: '/dashboard',                        color: '#c9a84c' },
-      { name: 'My Listings',        icon: Building,     href: '/dashboard/my-listings',            color: '#f59e0b' },
-      { name: 'Add Listing',        icon: Plus,         href: '/dashboard/listings/add',           color: '#34d399' },
-      { name: 'Linked Owners',      icon: Landmark,     href: '/dashboard/linked-owners',          color: '#60a5fa' },
-      { name: 'Share & Track',      icon: Link2,        href: '/dashboard/tracking',               color: '#a78bfa' },
-      { name: 'QR Codes',           icon: QrCode,       href: '/dashboard/qr-codes',               color: '#f472b6' },
-      { name: 'Leads & Visitors',   icon: Eye,          href: '/dashboard/leads',                  color: '#38bdf8' },
-      { name: 'Applications',       icon: FileText,     href: '/dashboard/applications',           color: '#94a3b8' },
-      { name: 'My Commissions',     icon: DollarSign,   href: '/dashboard/commissions',            color: '#10b981' },
-      { name: 'Payout History',     icon: Receipt,      href: '/dashboard/payouts',                color: '#6ee7b7' },
-      { name: 'Analytics',          icon: TrendingUp,   href: '/dashboard/analytics',              color: '#f87171' },
-      { name: 'Messages',           icon: MessageSquare,href: '/dashboard/messages',               color: '#fb923c' },
+      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
+      { name: 'My Listings',        icon: Building,      href: 'my-listings',         color: '#f59e0b' },
+      { name: 'Add Listing',        icon: Plus,          href: 'listings/add',        color: '#34d399' },
+      { name: 'Linked Owners',      icon: Landmark,      href: 'linked-owners',       color: '#60a5fa' },
+      { name: 'Share & Track',      icon: Link2,         href: 'tracking',            color: '#a78bfa' },
+      { name: 'QR Codes',           icon: QrCode,        href: 'qr-codes',            color: '#f472b6' },
+      { name: 'Leads & Visitors',   icon: Eye,           href: 'leads',               color: '#38bdf8' },
+      { name: 'Applications',       icon: FileText,      href: 'applications',        color: '#94a3b8' },
+      { name: 'My Commissions',     icon: DollarSign,    href: 'commissions',         color: '#10b981' },
+      { name: 'Payout History',     icon: Receipt,       href: 'payouts',             color: '#6ee7b7' },
+      { name: 'Analytics',          icon: TrendingUp,    href: 'analytics',           color: '#f87171' },
+      { name: 'Messages',           icon: MessageSquare, href: 'messages',            color: '#fb923c' },
     ],
 
-    /* ── ADMIN ───────────────────────────────────────────────── */
     admin: [
-      { name: 'Overview',           icon: Home,         href: '/dashboard',                        color: '#c9a84c' },
-      { name: 'All Properties',     icon: Building,     href: '/admin/properties',                 color: '#f59e0b' },
-      { name: 'Users',              icon: Users,        href: '/admin/users',                      color: '#60a5fa' },
-      { name: 'Verification',       icon: ShieldCheck,  href: '/admin/verification',               color: '#34d399' },
-      { name: 'Contracts',          icon: BookOpen,     href: '/admin/contracts',                  color: '#a78bfa' },
-      { name: 'Payments',           icon: CreditCard,   href: '/admin/payments',                   color: '#f472b6' },
-      { name: 'Commission Control', icon: PieChart,     href: '/admin/commissions',                color: '#10b981' },
-      { name: 'Reconciliation',     icon: RefreshCw,    href: '/admin/reconciliation',             color: '#6ee7b7' },
-      { name: 'Tracking Logs',      icon: Clock,        href: '/admin/tracking-logs',              color: '#38bdf8' },
-      { name: 'Revenue Reports',    icon: BarChart3,    href: '/admin/revenue',                    color: '#fb923c' },
-      { name: 'Alerts',             icon: AlertCircle,  href: '/admin/alerts',                     color: '#f87171' },
+      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
+      { name: 'Users',              icon: Users,         href: 'users',               color: '#60a5fa' },
+      { name: 'Properties',         icon: Building,      href: 'properties',          color: '#f59e0b' },
+      { name: 'Transactions',       icon: RefreshCw,     href: 'transactions',        color: '#6ee7b7' },
+      { name: 'Commission',         icon: PieChart,      href: 'commission',          color: '#10b981' },
+      { name: 'Payments',           icon: CreditCard,    href: 'payments',            color: '#f472b6' },
+      { name: 'Contracts',          icon: BookOpen,      href: 'contracts',           color: '#a78bfa' },
+      { name: 'Verification',       icon: ShieldCheck,   href: 'verification',        color: '#34d399' },
+      { name: 'Alerts',             icon: AlertCircle,   href: 'alerts',              color: '#f87171' },
+      { name: 'Settings',           icon: Settings,      href: 'settings',            color: '#fb923c' },
     ],
   };
 
@@ -126,16 +117,28 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
     }
   };
 
-  const isActive = (path: string) =>
-    location.pathname === path ||
-    (path !== '/dashboard' && location.pathname.startsWith(path));
+  // ── FIX 1: always use `pathname` from useLocation (not global `location`) ──
+  // ── FIX 2: build absolute paths so active state is always correct          ──
+  const getFullPath = (href: string): string => {
+    if (href === '') return `/dashboard/${userType}`;
+    if (href.startsWith('/')) return href;           // already absolute (e.g. /properties)
+    return `/dashboard/${userType}/${href}`;
+  };
+
+  const isActive = (href: string): boolean => {
+    const fullPath = getFullPath(href);
+    if (href === '') {
+      // Only exact match for Overview so it doesn't light up everything
+      return pathname === fullPath || pathname === '/dashboard';
+    }
+    return pathname === fullPath || pathname.startsWith(fullPath + '/');
+  };
 
   const initials =
     `${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}` || 'U';
 
   const navItems = navigation[userType] ?? navigation.tenant;
 
-  /* ── Group nav into sections ── */
   const sectionMap: Record<UserRole, { label: string; items: string[] }[]> = {
     tenant: [
       { label: 'Explore',   items: ['Overview','Browse Properties','Saved Properties'] },
@@ -155,9 +158,9 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
       { label: 'Insights',   items: ['Analytics','Messages'] },
     ],
     admin: [
-      { label: 'Platform',   items: ['Overview','All Properties','Users','Verification'] },
-      { label: 'Operations', items: ['Contracts','Payments','Commission Control','Reconciliation'] },
-      { label: 'Monitoring', items: ['Tracking Logs','Revenue Reports','Alerts'] },
+      { label: 'Platform',   items: ['Overview','Users','Properties','Verification'] },
+      { label: 'Operations', items: ['Transactions','Commission','Payments','Contracts'] },
+      { label: 'Monitoring', items: ['Alerts','Settings'] },
     ],
   };
 
@@ -188,12 +191,10 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           --border:  ${cfg.border};
         }
 
-        /* scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
-        /* ── SIDEBAR ── */
         .dl-sidebar {
           width: 256px;
           background: ${cfg.sidebarBg};
@@ -215,7 +216,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           overflow-x: hidden;
         }
 
-        /* ── Logo ── */
         .dl-logo-bar {
           padding: 22px 24px 20px;
           border-bottom: 1px solid var(--border);
@@ -267,7 +267,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
         }
         .dl-close-btn:hover { color: var(--cream); }
 
-        /* ── User block ── */
         .dl-user {
           padding: 18px 24px 16px;
           border-bottom: 1px solid var(--border);
@@ -327,7 +326,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           50% { opacity: 0.45; }
         }
 
-        /* ── Nav ── */
         .dl-nav { padding: 8px 0 12px; }
 
         .dl-nav-section {
@@ -384,7 +382,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           border: 1px solid rgba(248,113,113,0.2);
         }
 
-        /* ── Sidebar footer ── */
         .dl-sidebar-footer {
           padding: 14px 24px 18px;
           border-top: 1px solid var(--border);
@@ -407,7 +404,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
         .dl-sidebar-footer-btn:hover { color: var(--cream); }
         .dl-sidebar-footer-btn.danger:hover { color: #e07070; }
 
-        /* ── Main ── */
         .dl-main {
           flex: 1;
           display: flex;
@@ -418,7 +414,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           background: var(--dark);
         }
 
-        /* ── Top bar ── */
         .dl-topbar {
           background: rgba(14,14,14,0.95);
           border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -491,7 +486,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           margin: 0 4px;
         }
 
-        /* Role badge in topbar */
         .dl-topbar-role {
           display: flex; align-items: center; gap: 6px;
           font-size: 9px; font-weight: 500;
@@ -503,14 +497,12 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           border-radius: 2px;
         }
 
-        /* ── Content ── */
         .dl-content {
           flex: 1;
           padding: 36px 40px;
           overflow-y: auto;
         }
 
-        /* ── Mobile overlay ── */
         .dl-overlay {
           position: fixed; inset: 0;
           background: rgba(0,0,0,0.75);
@@ -518,7 +510,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           backdrop-filter: blur(6px);
         }
 
-        /* ── Responsive ── */
         @media (max-width: 960px) {
           .dl-sidebar {
             position: fixed;
@@ -535,7 +526,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
         }
       `}</style>
 
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="dl-overlay" onClick={() => setSidebarOpen(false)} />
       )}
@@ -543,7 +533,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
       {/* ══ SIDEBAR ══ */}
       <aside className={`dl-sidebar${sidebarOpen ? ' open' : ''}`}>
 
-        {/* Logo */}
         <div className="dl-logo-bar">
           <div>
             <Link to="/" className="dl-logo">
@@ -557,7 +546,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           </button>
         </div>
 
-        {/* User info */}
         <div className="dl-user">
           <div className="dl-avatar">{initials}</div>
           <div className="dl-user-name">{user?.firstName} {user?.lastName}</div>
@@ -568,7 +556,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           </div>
         </div>
 
-        {/* Scrollable nav */}
         <div className="dl-sidebar-scroll">
           <nav className="dl-nav">
             {sections.map((section) => {
@@ -581,8 +568,9 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
                   <div className="dl-nav-section">{section.label}</div>
                   {sectionItems.map((item) => (
                     <Link
-                      key={item.href}
-                      to={item.href}
+                      key={item.name}
+                      // ── FIX: always navigate to a fully-resolved absolute path ──
+                      to={getFullPath(item.href)}
                       className={`dl-nav-link${isActive(item.href) ? ' active' : ''}`}
                       onClick={() => setSidebarOpen(false)}
                       style={{
@@ -606,7 +594,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           </nav>
         </div>
 
-        {/* Footer */}
         <div className="dl-sidebar-footer">
           <Link to="/settings" className="dl-sidebar-footer-btn">
             <Settings size={13} style={{ color: 'var(--muted)' }} />
@@ -622,7 +609,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
       {/* ══ MAIN ══ */}
       <main className="dl-main">
 
-        {/* Top bar */}
         <header className="dl-topbar">
           <div className="dl-topbar-left">
             <button className="dl-menu-toggle" onClick={() => setSidebarOpen(true)}>
@@ -630,7 +616,7 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
             </button>
 
             <nav className="dl-breadcrumb">
-              <Link to="/dashboard" className="dl-bc-home">Dashboard</Link>
+              <Link to={`/dashboard/${userType}`} className="dl-bc-home">Dashboard</Link>
               {title && title !== 'Dashboard' && (
                 <>
                   <ChevronRight size={9} className="dl-bc-sep" />
@@ -641,7 +627,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           </div>
 
           <div className="dl-topbar-right">
-            {/* Role badge */}
             <span className="dl-topbar-role">
               <span style={{
                 width: 5, height: 5, borderRadius: '50%',
@@ -654,16 +639,16 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
 
             <div className="dl-topbar-divider" />
 
-            <Link to="/dashboard/messages" className="dl-topbar-btn" title="Messages">
+            <Link to={`/dashboard/${userType}/messages`} className="dl-topbar-btn" title="Messages">
               <MessageSquare size={14} />
             </Link>
-            <Link to="/dashboard/notifications" className="dl-topbar-btn" title="Notifications">
+            <Link to={`/dashboard/${userType}/notifications`} className="dl-topbar-btn" title="Notifications">
               <Bell size={14} />
             </Link>
 
             <div className="dl-topbar-divider" />
 
-            <Link to="/settings" className="dl-topbar-btn" title="Settings">
+            <Link to={`/dashboard/${userType}/settings`} className="dl-topbar-btn" title="Settings">
               <Settings size={14} />
             </Link>
             <button
@@ -679,7 +664,6 @@ const DashboardLayout = ({ children, title, user }: DashboardLayoutProps) => {
           </div>
         </header>
 
-        {/* Content */}
         <div className="dl-content">
           {children}
         </div>

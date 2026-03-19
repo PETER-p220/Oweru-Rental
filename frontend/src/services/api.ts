@@ -1,6 +1,11 @@
 // API service for connecting to Laravel backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// ── The single source of truth for the token key ──────────────────────────────
+// Make sure localStorage.setItem uses this same key when you save the token
+// after login/register.
+export const TOKEN_KEY = 'token';
+
 export interface ApiResponse<T = any> {
   data: T;
   message?: string;
@@ -10,9 +15,9 @@ export interface ApiResponse<T = any> {
 export interface DashboardStats {
   totalProperties: number;
   savedProperties: number;
-  totalApplications: number;  // Changed from 'applications' to 'totalApplications'
+  totalApplications: number;
   messages: number;
-  // Landlord-specific stats
+  // Landlord-specific
   activeTenants?: number;
   monthlyRevenue?: number;
   totalRevenue?: number;
@@ -25,7 +30,7 @@ export interface User {
   lastName: string;
   email: string;
   phone: string;
-  userType: 'tenant' | 'landlord' | 'agent';
+  userType: 'tenant' | 'landlord' | 'agent' | 'admin';
   emailVerifiedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -42,17 +47,8 @@ export interface Property {
   bathrooms: number;
   area: number;
   images: string[];
-  owner: {
-    id: number;
-    firstName: string;
-    lastName: string;
-  };
-  agent?: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    commission: number;
-  };
+  owner: { id: number; firstName: string; lastName: string };
+  agent?: { id: number; firstName: string; lastName: string; commission: number };
   featured: boolean;
   available: boolean;
   createdAt: string;
@@ -78,15 +74,21 @@ class Api {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}/api/${endpoint}`;
+
+    // Don't set Content-Type for FormData - let browser set it with boundary
+    const isFormData = options.body instanceof FormData;
     
     const defaultHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
       'Accept': 'application/json',
       'X-Requested-With': 'XMLHttpRequest',
     };
 
-    // Add auth token if available
-    const token = localStorage.getItem('auth_token');
+    if (!isFormData) {
+      defaultHeaders['Content-Type'] = 'application/json';
+    }
+
+    // ── FIX: use TOKEN_KEY consistently everywhere ──────────────────────────
+    const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
       defaultHeaders['Authorization'] = `Bearer ${token}`;
     }
@@ -99,19 +101,24 @@ class Api {
       },
     });
 
+    // ── Return structured error so callers can read response.data.errors ────
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      let errorBody: any = {};
+      try { errorBody = await response.json(); } catch { /* ignore */ }
+      // eslint-disable-next-line @typescript-eslint/no-throw-literal
+      throw { response: { data: errorBody, status: response.status } };
     }
 
     const data = await response.json();
     return {
-      data: data.data || data,
+      data: data.data ?? data,
       message: data.message,
       status: response.status,
     };
   }
 
-  // Auth endpoints
+  // ── Auth ────────────────────────────────────────────────────────────────────
+
   static async login(email: string, password: string, userType: string) {
     return this.request<LoginResponse>('login', {
       method: 'POST',
@@ -135,22 +142,148 @@ class Api {
   }
 
   static async logout() {
-    return this.request('logout', {
-      method: 'POST',
-    });
+    return this.request('logout', { method: 'POST' });
   }
 
   static async getUser() {
     return this.request<User>('user');
   }
 
-  // Property endpoints
+  // ── Admin – Users ───────────────────────────────────────────────────────────
+
+  static async getUsers(filters?: { search?: string; user_type?: string; status?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.search)    params.append('search',    filters.search);
+    if (filters?.user_type) params.append('user_type', filters.user_type);
+    if (filters?.status)    params.append('status',    filters.status);
+    const qs = params.toString();
+    return this.request<any[]>(`admin/users${qs ? `?${qs}` : ''}`);
+  }
+
+  static async getUserStats() {
+    return this.request<any>('admin/users/stats');
+  }
+
+  static async createUser(userData: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    user_type: string;
+    password: string;
+    status?: string;
+    notes?: string;
+  }) {
+    return this.request<any>('admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  static async updateUser(userId: number, userData: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+    user_type?: string;
+    status?: string;
+    password?: string;
+    notes?: string;
+  }) {
+    return this.request<any>(`admin/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  static async deleteUser(userId: number) {
+    return this.request<any>(`admin/users/${userId}`, { method: 'DELETE' });
+  }
+
+  static async updateUserStatus(userId: number, status: string) {
+    return this.request<any>(`admin/users/${userId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // ── Admin – Properties ──────────────────────────────────────────────────────
+
+  static async getAdminProperties(filters?: {
+    search?: string; type?: string; status?: string;
+    min_price?: number; max_price?: number;
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any[]>(`admin/properties${params ? `?${params}` : ''}`);
+  }
+
+  static async getAdminPropertyStats() {
+    return this.request<any>('admin/properties/stats');
+  }
+
+  // ── Admin – Transactions ────────────────────────────────────────────────────
+
+  static async getAdminTransactions(filters?: {
+    search?: string; type?: string; status?: string;
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any[]>(`admin/transactions${params ? `?${params}` : ''}`);
+  }
+
+  static async getAdminTransactionStats() {
+    return this.request<any>('admin/transactions/stats');
+  }
+
+  // ── Admin – Commission ──────────────────────────────────────────────────────
+
+  static async getCommissionRules()    { return this.request<any[]>('admin/commission/rules'); }
+  static async getCommissionPayments() { return this.request<any[]>('admin/commission/payments'); }
+  static async getCommissionStats()    { return this.request<any>('admin/commission/stats'); }
+
+  // ── Admin – Settings ────────────────────────────────────────────────────────
+
+  static async getSystemSettings() {
+    return this.request<any>('admin/settings');
+  }
+
+  static async updateSystemSettings(settings: any) {
+    return this.request<any>('admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  }
+
+  // ── Admin – Verification ────────────────────────────────────────────────────
+
+  static async getVerificationRequests(filters?: {
+    search?: string; type?: string; status?: string;
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any[]>(`admin/verification/requests${params ? `?${params}` : ''}`);
+  }
+
+  static async getVerificationStats() {
+    return this.request<any>('admin/verification/stats');
+  }
+
+  // ── Admin – Alerts ──────────────────────────────────────────────────────────
+
+  static async getAlerts(filters?: {
+    search?: string; type?: string; severity?: string; status?: string;
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any[]>(`admin/alerts${params ? `?${params}` : ''}`);
+  }
+
+  static async getAlertStats() {
+    return this.request<any>('admin/alerts/stats');
+  }
+
+  // ── Properties (public) ─────────────────────────────────────────────────────
+
   static async getProperties(filters?: {
-    search?: string;
-    type?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    location?: string;
+    search?: string; type?: string;
+    minPrice?: number; maxPrice?: number; location?: string;
   }) {
     const params = new URLSearchParams(filters as any).toString();
     return this.request<Property[]>(`properties${params ? `?${params}` : ''}`);
@@ -160,154 +293,169 @@ class Api {
     return this.request<Property>(`properties/${id}`);
   }
 
+  // ── Tenant ──────────────────────────────────────────────────────────────────
+
+  static async getTenantDashboard()      { return this.request<any>('tenant/dashboard'); }
+  static async getSavedProperties()      { return this.request<Property[]>('tenant/saved-properties'); }
+  static async getTenantApplications()   { return this.request<any[]>('tenant/applications'); }
+  static async getMyContract()           { return this.request<any>('tenant/contract'); }
+  static async getMyPayments()           { return this.request<any>('tenant/payments'); }
+  static async getPaymentMethods()       { return this.request<any>('tenant/payment-methods'); }
+  static async getPaymentStats()         { return this.request<any>('tenant/payment-stats'); }
+  static async getPaymentHistory()       { return this.request<any>('tenant/payment-history'); }
+  static async getPaymentSummary()       { return this.request<any>('tenant/payment-summary'); }
+
   static async saveProperty(propertyId: number) {
-    return this.request(`properties/${propertyId}/save`, {
-      method: 'POST',
-    });
+    return this.request(`tenant/properties/${propertyId}/save`, { method: 'POST' });
   }
 
   static async unsaveProperty(propertyId: number) {
-    return this.request(`properties/${propertyId}/save`, {
-      method: 'DELETE',
+    return this.request(`tenant/properties/${propertyId}/save`, { method: 'DELETE' });
+  }
+
+  static async createApplication(applicationData: any) {
+    return this.request<any>('tenant/applications', {
+      method: 'POST',
+      body: JSON.stringify(applicationData),
     });
-  }
-
-  static async getApplications() {
-    return this.request<any[]>('applications');
-  }
-
-  static async approveApplication(id: number) {
-    return this.request(`applications/${id}/approve`, {
-      method: 'PATCH',
-    });
-  }
-
-  static async rejectApplication(id: number) {
-    return this.request(`applications/${id}/reject`, {
-      method: 'PATCH',
-    });
-  }
-
-  // Contract endpoints
-  static async getMyContract() {
-    return this.request<any>('contracts/my-contract');
-  }
-
-  static async downloadContract(id: number) {
-    return this.request(`contracts/${id}/download`, {
-      headers: {
-        'Accept': 'application/pdf',
-      },
-    });
-  }
-
-  // Payment endpoints
-  static async getMyPayments() {
-    return this.request<any>('payments/my-payments');
-  }
-
-  static async getPaymentMethods() {
-    return this.request<any>('payments/methods');
-  }
-
-  static async getPaymentStats() {
-    return this.request<any>('payments/stats');
   }
 
   static async makePayment(paymentId: number, data: { paymentMethodId: string }) {
-    return this.request(`payments/${paymentId}/pay`, {
+    return this.request(`tenant/payments/${paymentId}/pay`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  static async getPaymentHistory() {
-    return this.request<any>('payments/history');
-  }
-
-  static async getPaymentSummary() {
-    return this.request<any>('payments/summary');
-  }
-
   static async downloadReceipt(paymentId: number) {
-    return this.request(`payments/${paymentId}/receipt`, {
-      headers: {
-        'Accept': 'application/pdf',
-      },
+    return this.request(`tenant/payments/${paymentId}/receipt`, {
+      headers: { 'Accept': 'application/pdf' },
     });
   }
 
-  // Notification endpoints
-  static async getNotifications() {
-    return this.request<any>('notifications');
+  static async downloadContract(id: number) {
+    return this.request(`tenant/contracts/${id}/download`, {
+      headers: { 'Accept': 'application/pdf' },
+    });
   }
 
-  static async getNotificationStats() {
-    return this.request<any>('notifications/stats');
+  // ── Notifications (tenant-scoped) ───────────────────────────────────────────
+
+  static async getNotifications()          { return this.request<any>('tenant/notifications'); }
+  static async getNotificationStats()      { return this.request<any>('tenant/notification-stats'); }
+  static async markAllNotificationsAsRead(){ return this.request('tenant/notifications/read-all', { method: 'PATCH' }); }
+
+  static async markNotificationAsRead(id: number) {
+    return this.request(`tenant/notifications/${id}/read`, { method: 'PATCH' });
   }
 
-  static async markNotificationAsRead(notificationId: number) {
-    return this.request(`notifications/${notificationId}/read`, {
+  static async archiveNotification(id: number) {
+    return this.request(`tenant/notifications/${id}/archive`, { method: 'PATCH' });
+  }
+
+  static async deleteNotification(id: number) {
+    return this.request(`tenant/notifications/${id}`, { method: 'DELETE' });
+  }
+
+  // ── Agent ───────────────────────────────────────────────────────────────────
+
+  static async getAgentDashboard()        { return this.request<any>('agent/dashboard'); }
+  static async getMyListings()            { return this.request<any[]>('agent/my-listings'); }
+  static async getLinkedOwners()          { return this.request<any[]>('agent/linked-owners'); }
+  static async getTrackingLinks()         { return this.request<any[]>('agent/tracking'); }
+  static async getLeads()                 { return this.request<any[]>('agent/leads'); }
+  static async getLeadStats()             { return this.request<any>('agent/lead-stats'); }
+  static async getAgentApplications()     { return this.request<any[]>('agent/applications'); }
+  static async getMyCommissions()         { return this.request<any[]>('agent/my-commissions'); }
+  static async getAgentCommissionStats()  { return this.request<any>('agent/commission-stats'); }
+  static async getPayoutHistory()         { return this.request<any[]>('agent/payouts'); }
+  static async getAgentAnalytics()        { return this.request<any>('agent/analytics'); }
+
+  static async createListing(data: any) {
+    return this.request<any>('agent/listings', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  static async updateListing(id: number, data: any) {
+    return this.request(`agent/listings/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  static async deleteListing(id: number) {
+    return this.request(`agent/listings/${id}`, { method: 'DELETE' });
+  }
+
+  static async getPropertyAnalytics(id: number) {
+    return this.request(`agent/listings/${id}/analytics`);
+  }
+
+  static async linkOwner(ownerData: any) {
+    return this.request<any>('agent/link-owner', { method: 'POST', body: JSON.stringify(ownerData) });
+  }
+
+  static async generateQRCode(propertyId: number) {
+    return this.request(`agent/qr-codes/${propertyId}`);
+  }
+
+  // ── Owner / Landlord ────────────────────────────────────────────────────────
+
+  static async getOwnerDashboard()        { return this.request<any>('owner/dashboard'); }
+  static async getOwnerProperties()       { return this.request<any[]>('owner/my-properties'); }
+  static async getOwnerApplications()     { return this.request<any[]>('owner/applications'); }
+  static async getMyTenants()             { return this.request<any[]>('owner/tenants'); }
+  static async getOwnerContracts()        { return this.request<any[]>('owner/contracts'); }
+  static async getRentCollection()        { return this.request<any[]>('owner/rent-collection'); }
+  static async getRentCollectionStats()   { return this.request<any>('owner/rent-collection-stats'); }
+  static async getReceipts()              { return this.request<any[]>('owner/receipts'); }
+  static async getCommissionReports()     { return this.request<any[]>('owner/commission-reports'); }
+  static async getOwnerAnalytics()        { return this.request<any>('owner/analytics'); }
+
+  static async createOwnerProperty(data: any) {
+    return this.request<any>('owner/properties', { 
+      method: 'POST', 
+      body: data
+    });
+  }
+
+  static async updateOwnerProperty(id: number, data: any) {
+    return this.request(`owner/properties/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  static async deleteOwnerProperty(id: number) {
+    return this.request(`owner/properties/${id}`, { method: 'DELETE' });
+  }
+
+  static async getOwnerPropertyAnalytics(id: number) {
+    return this.request(`owner/properties/${id}/analytics`);
+  }
+
+  static async approveApplication(id: number) {
+    return this.request(`owner/applications/${id}/approve`, { method: 'PATCH' });
+  }
+
+  static async rejectApplication(id: number, reason: string) {
+    return this.request(`owner/applications/${id}/reject`, {
       method: 'PATCH',
+      body: JSON.stringify({ rejection_reason: reason }),
     });
   }
 
-  static async markAllNotificationsAsRead() {
-    return this.request('notifications/read-all', {
-      method: 'PATCH',
+  static async createOwnerContract(data: any) {
+    return this.request<any>('owner/contracts', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  static async downloadOwnerReceipt(paymentId: number) {
+    return this.request(`owner/receipts/${paymentId}/download`, {
+      headers: { 'Accept': 'application/pdf' },
     });
   }
 
-  static async archiveNotification(notificationId: number) {
-    return this.request(`notifications/${notificationId}/archive`, {
-      method: 'PATCH',
-    });
-  }
+  // ── Dashboard (generic) ─────────────────────────────────────────────────────
 
-  static async deleteNotification(notificationId: number) {
-    return this.request(`notifications/${notificationId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  static async getAnalytics() {
-    return this.request<any>('analytics');
-  }
-
-  static async getSavedProperties() {
-    return this.request<Property[]>('properties/saved');
-  }
-
-  // Dashboard endpoints
   static async getDashboardData() {
     return this.request<DashboardStats>('dashboard');
   }
 
-  static async createProperty(propertyData: any) {
-    return this.request<any>('properties', {
-      method: 'POST',
-      body: JSON.stringify(propertyData),
-    });
-  }
-
-  static async getMyProperties() {
-    return this.request<any[]>('my-properties');
-  }
-
-  static async getMyListings() {
-    return this.request<any[]>('my-listings');
-  }
-
-  static async getPropertyAnalytics(propertyId: number) {
-    return this.request(`properties/${propertyId}/analytics`);
-  }
-
-  static async getCommissions() {
-    return this.request('commissions');
-  }
-
-  static async getLeads() {
-    return this.request('leads');
+  static async getAnalytics() {
+    return this.request<any>('analytics');
   }
 }
 

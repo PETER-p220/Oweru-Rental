@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Building, Plus, Search, Filter, MapPin, Bed, Bath, Square, DollarSign, Eye, Edit, Trash2, Users, Calendar, TrendingUp, AlertCircle, CheckCircle, X, Home } from 'lucide-react';
+import { Building, Plus, Search, Filter, MapPin, Bed, Bath, Square, DollarSign, Eye, Edit, Trash2, Users, Calendar, TrendingUp, AlertCircle, CheckCircle, X, Home, ChevronLeft, ChevronRight } from 'lucide-react';
 import Api from '../../services/api';
 
 interface Property {
@@ -56,6 +56,7 @@ const MyProperties = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('listedDate');
+  const [carouselStates, setCarouselStates] = useState<Record<number, number>>({});
 
   useEffect(() => {
     loadProperties();
@@ -64,137 +65,88 @@ const MyProperties = () => {
   const loadProperties = async () => {
     try {
       setLoading(true);
+      setError('');
       
-      // Mock data for now since API doesn't exist yet
-      const mockProperties: Property[] = [
-        {
-          id: 1,
-          title: 'Modern 2-Bedroom Apartment',
-          location: 'Masaki, Dar es Salaam',
-          address: '123 Kimweri Avenue, Masaki',
-          price: 800000,
-          type: 'apartment',
-          bedrooms: 2,
-          bathrooms: 2,
-          area: 120,
-          image: null,
-          description: 'Beautiful modern apartment in the heart of Masaki with stunning city views and premium finishes.',
-          amenities: ['Air Conditioning', 'Security', 'Parking', 'Gym', 'Pool', 'Balcony'],
-          status: 'rented',
-          listedDate: '2024-01-15',
-          views: 245,
-          inquiries: 18,
-          currentTenant: {
-            id: 1,
-            firstName: 'Peter',
-            lastName: 'Mushy',
-            email: 'mushyp420@gmail.com',
-            phone: '0753511713',
-            contractStart: '2024-01-01',
-            contractEnd: '2024-12-31'
-          },
+      // Fetch real properties from API
+      const response = await Api.getOwnerProperties();
+      
+      console.log('API Response:', response);
+      console.log('Response data:', response.data);
+      
+      let transformedProperties: Property[] = [];
+      
+      if (response.data) {
+        console.log('Raw property data:', response.data[0]); // Debug first property
+        // Transform API data to match our interface
+        transformedProperties = response.data.map((property: any) => ({
+          id: property.id,
+          title: property.title,
+          location: property.location,
+          address: property.address || '',
+          price: parseFloat(property.price),
+          type: property.type,
+          bedrooms: property.bedrooms,
+          bathrooms: property.bathrooms,
+          area: property.area,
+          image: property.images && property.images.length > 0 
+            ? (property.images[0].startsWith('http') ? property.images[0] : `http://localhost:8000/storage/${property.images[0]}`)
+            : null,
+          description: property.description,
+          amenities: property.amenities || [],
+          status: property.available ? 'available' : 'rented', // Simplified status
+          listedDate: property.created_at ? new Date(property.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          views: 0, // Add view count if available in API
+          inquiries: 0, // Add inquiry count if available in API
+          currentTenant: property.tenant || null,
           documents: {
-            images: ['property1-1.jpg', 'property1-2.jpg'],
-            floorPlan: 'property1-floor.jpg',
-            certificates: ['occupancy-cert.pdf', 'safety-cert.pdf']
+            images: property.images ? property.images.map((img: string) => 
+              img.startsWith('http') ? img : `http://localhost:8000/storage/${img}`
+            ) : [],
+            floorPlan: '',
+            certificates: []
           }
-        },
-        {
-          id: 2,
-          title: 'Cozy Studio in Mikocheni',
-          location: 'Mikocheni, Dar es Salaam',
-          address: '456 Nyerere Road, Mikocheni',
-          price: 350000,
-          type: 'studio',
-          bedrooms: 1,
-          bathrooms: 1,
-          area: 45,
-          image: null,
-          description: 'Perfect studio for young professionals. Close to public transport and shopping centers.',
-          amenities: ['Air Conditioning', 'Security', 'Parking', 'Kitchenette'],
-          status: 'available',
-          listedDate: '2024-02-20',
-          views: 189,
-          inquiries: 12,
-          documents: {
-            images: ['property2-1.jpg'],
-            floorPlan: 'property2-floor.jpg',
-            certificates: ['occupancy-cert.pdf']
-          }
-        },
-        {
-          id: 3,
-          title: 'Spacious House with Garden',
-          location: 'Upanga, Dar es Salaam',
-          address: '789 Independence Avenue, Upanga',
-          price: 1500000,
-          type: 'house',
-          bedrooms: 3,
-          bathrooms: 2,
-          area: 200,
-          image: null,
-          description: 'Lovely family home with private garden. Perfect for families looking for space and comfort.',
-          amenities: ['Garden', 'Parking', 'Security', 'Storage', 'Terrace'],
-          status: 'maintenance',
-          listedDate: '2023-12-01',
-          views: 367,
-          inquiries: 25,
-          documents: {
-            images: ['property3-1.jpg', 'property3-2.jpg', 'property3-3.jpg'],
-            floorPlan: 'property3-floor.jpg',
-            certificates: ['occupancy-cert.pdf', 'safety-cert.pdf', 'building-permit.pdf']
-          }
-        },
-        {
-          id: 4,
-          title: 'Executive Villa, Oyster Bay',
-          location: 'Oyster Bay, Dar es Salaam',
-          address: '321 Ocean View Drive, Oyster Bay',
-          price: 3200000,
-          type: 'villa',
-          bedrooms: 4,
-          bathrooms: 3,
-          area: 340,
-          image: null,
-          description: 'Luxurious villa with ocean views, private pool, and premium finishes. Ideal for executives.',
-          amenities: ['Pool', 'Garden', 'Security', 'Parking', 'Gym', 'Maid Room', 'Ocean View'],
-          status: 'available',
-          listedDate: '2024-03-01',
-          views: 523,
-          inquiries: 8,
-          documents: {
-            images: ['property4-1.jpg', 'property4-2.jpg'],
-            floorPlan: 'property4-floor.jpg',
-            certificates: ['occupancy-cert.pdf', 'safety-cert.pdf', 'luxury-cert.pdf']
-          }
+        }));
+        
+        console.log('Transformed property:', transformedProperties[0]); // Debug transformed
+        setProperties(transformedProperties);
+      }
+      
+      // Load stats if available
+      try {
+        const statsResponse = await Api.getOwnerAnalytics();
+        if (statsResponse.data) {
+          const transformedStats: PropertyStats = {
+            total: statsResponse.data.property_performance?.total_properties || 0,
+            available: statsResponse.data.property_performance?.available_properties || 0,
+            rented: statsResponse.data.property_performance?.occupied_properties || 0,
+            maintenance: 0,
+            totalValue: 0,
+            monthlyRevenue: statsResponse.data.financial_metrics?.monthly_revenue || 0,
+            avgOccupancy: statsResponse.data.property_performance?.occupancy_rate || 0,
+            pendingInquiries: 0
+          };
+          setStats(transformedStats);
         }
-      ];
-
-      const mockStats: PropertyStats = {
-        total: 4,
-        available: 2,
-        rented: 1,
-        maintenance: 1,
-        totalValue: 5850000,
-        monthlyRevenue: 800000,
-        avgOccupancy: 75,
-        pendingInquiries: 20
-      };
+      } catch (statsError) {
+        console.warn('Could not load stats:', statsError);
+        // Set default stats if stats API fails
+        setStats({
+          total: transformedProperties.length || 0,
+          available: transformedProperties.filter(p => p.status === 'available').length || 0,
+          rented: transformedProperties.filter(p => p.status === 'rented').length || 0,
+          maintenance: 0,
+          totalValue: 0,
+          monthlyRevenue: 0,
+          avgOccupancy: 0,
+          pendingInquiries: 0
+        });
+      }
       
-      setProperties(mockProperties);
-      setStats(mockStats);
-      
-      // Uncomment when API is ready:
-      // const [propertiesRes, statsRes] = await Promise.all([
-      //   Api.getLandlordProperties(),
-      //   Api.getPropertyStats()
-      // ]);
-      // 
-      // if (propertiesRes.data) setProperties(propertiesRes.data);
-      // if (statsRes.data) setStats(statsRes.data);
-    } catch (e) {
-      console.error('Failed to load properties:', e);
-      setError('Failed to load properties');
+    } catch (err: any) {
+      console.error('Error loading properties:', err);
+      setError('Failed to load properties. Please try again.');
+      setProperties([]);
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -202,8 +154,10 @@ const MyProperties = () => {
 
   const deleteProperty = async (propertyId: number) => {
     try {
-      // await Api.deleteProperty(propertyId);
+      await Api.deleteOwnerProperty(propertyId);
       setProperties(prev => prev.filter(p => p.id !== propertyId));
+      // Refresh properties list to get updated stats
+      loadProperties();
     } catch (e) {
       setError('Failed to delete property');
     }
@@ -314,7 +268,7 @@ const MyProperties = () => {
           </div>
           
           <Link
-            to="/dashboard/properties/add"
+            to="/dashboard/landlord/add-property"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -519,16 +473,128 @@ const MyProperties = () => {
                 transition: 'all 0.3s ease'
               }}
             >
-              {/* Property Image/Placeholder */}
+              {/* Property Image Carousel */}
               <div style={{ 
                 height: '200px', 
                 backgroundColor: 'rgba(201, 168, 76, 0.05)', 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
-                position: 'relative'
+                position: 'relative',
+                overflow: 'hidden'
               }}>
-                <Building size={48} style={{ color: '#c9a84c' }} />
+                {property.documents.images.length > 0 ? (
+                  <>
+                    {/* Carousel Images */}
+                    <div style={{
+                      display: 'flex',
+                      transition: 'transform 0.3s ease',
+                      transform: `translateX(-${(carouselStates[property.id] || 0) * 100}%)`
+                    }}>
+                      {property.documents.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image.startsWith('http') ? image : `http://localhost:8000${image}`}
+                          alt={`${property.title} - Image ${index + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '200px',
+                            objectFit: 'cover',
+                            flexShrink: 0
+                          }}
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder-property.jpg';
+                          }}
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Carousel Controls */}
+                    {property.documents.images.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => {
+                            const currentIndex = carouselStates[property.id] || 0;
+                            const newIndex = currentIndex === 0 ? property.documents.images.length - 1 : currentIndex - 1;
+                            setCarouselStates(prev => ({ ...prev, [property.id]: newIndex }));
+                          }}
+                          style={{
+                            position: 'absolute',
+                            left: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 2
+                          }}
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            const currentIndex = carouselStates[property.id] || 0;
+                            const newIndex = currentIndex === property.documents.images.length - 1 ? 0 : currentIndex + 1;
+                            setCarouselStates(prev => ({ ...prev, [property.id]: newIndex }));
+                          }}
+                          style={{
+                            position: 'absolute',
+                            right: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 2
+                          }}
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                        
+                        {/* Image Indicators */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '8px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          display: 'flex',
+                          gap: '4px',
+                          zIndex: 2
+                        }}>
+                          {property.documents.images.map((_, index) => (
+                            <div
+                              key={index}
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                backgroundColor: (carouselStates[property.id] || 0) === index ? '#c9a84c' : 'rgba(255, 255, 255, 0.5)',
+                                transition: 'background-color 0.3s ease'
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <Building size={48} style={{ color: '#c9a84c' }} />
+                )}
                 
                 {/* Status Badge */}
                 <div style={{
@@ -562,6 +628,11 @@ const MyProperties = () => {
                   gap: '8px'
                 }}>
                   <button
+                    onClick={() => {
+                      // Test the original route with EditPropertySimple
+                      console.log('Edit button clicked, property ID:', property.id);
+                      window.location.href = `/dashboard/landlord/properties/${property.id}/edit`;
+                    }}
                     style={{
                       width: '32px',
                       height: '32px',
@@ -750,7 +821,7 @@ const MyProperties = () => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }

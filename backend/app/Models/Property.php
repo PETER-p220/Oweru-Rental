@@ -105,7 +105,42 @@ class Property extends Model
     public function getMainImageAttribute(): string
     {
         $images = $this->images ?? [];
-        return $images[0] ?? '/placeholder-property.jpg';
+        if (empty($images)) {
+            return '/placeholder-property.jpg';
+        }
+        
+        $firstImage = $images[0];
+        
+        // Check if it's already a full URL
+        if (str_starts_with($firstImage, 'http')) {
+            return $firstImage;
+        }
+        
+        // Check if it's a storage path
+        if (str_starts_with($firstImage, 'properties/')) {
+            return '/storage/' . $firstImage;
+        }
+        
+        return $firstImage;
+    }
+
+    public function getImageUrlsAttribute(): array
+    {
+        $images = $this->images ?? [];
+        
+        return array_map(function ($image) {
+            // Check if it's already a full URL
+            if (str_starts_with($image, 'http')) {
+                return $image;
+            }
+            
+            // Check if it's a storage path
+            if (str_starts_with($image, 'properties/')) {
+                return '/storage/' . $image;
+            }
+            
+            return $image;
+        }, $images);
     }
 
     public function getOwnerNameAttribute(): string

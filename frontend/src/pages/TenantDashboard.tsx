@@ -277,7 +277,7 @@ const TenantDashboard = () => {
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
         {/* Stats */}
-        <div className="td-eyebrow">Welcome back{user?.first_name ? `, ${user.first_name}` : ''}</div>
+        <div className="td-eyebrow">Welcome back{user?.firstName ? `, ${user.firstName}` : ''}</div>
         <div className="td-stats">
           {statCards.map(s => (
             <div key={s.label} className="td-stat">

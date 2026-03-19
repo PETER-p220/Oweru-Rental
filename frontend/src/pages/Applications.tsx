@@ -181,7 +181,7 @@ const Applications = () => {
 
   const handleReject = async (id: number) => {
     try {
-      await Api.rejectApplication(id);
+      await Api.rejectApplication(id, 'Application rejected');
       setApplications(prev => prev.map(a => a.id === id ? { ...a, status: 'rejected' } : a));
     } catch (e) { console.error(e); }
   };
@@ -617,7 +617,7 @@ const Applications = () => {
                       {sc.label}
                     </div>
 
-                    <div className="ap-date">{formatDate(app.submittedAt)}</div>
+                    <div className="ap-date">{formatDate((app as any).submittedAt || (app as any).created_at || new Date())}</div>
 
                     <div className="ap-actions">
                       <Link to={`/properties/${app.property.id}`} className="ap-btn ghost">

@@ -137,7 +137,7 @@ const Contract = () => {
     try {
       const response = await Api.downloadContract(contract.id);
       // Create download link
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blob = new Blob([response.data as any], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -651,7 +651,7 @@ const Contract = () => {
         </Link>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }

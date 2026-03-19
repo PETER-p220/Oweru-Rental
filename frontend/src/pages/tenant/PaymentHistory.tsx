@@ -146,7 +146,7 @@ const PaymentHistory = () => {
   const downloadReceipt = async (paymentId: number) => {
     try {
       const response = await Api.downloadReceipt(paymentId);
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blob = new Blob([response.data as any], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -606,7 +606,7 @@ const PaymentHistory = () => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }

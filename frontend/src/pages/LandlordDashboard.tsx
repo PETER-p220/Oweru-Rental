@@ -145,10 +145,10 @@ const LandlordDashboard = () => {
   ];
 
   const quickActions = [
-    { label: 'Add Property',       icon: Plus,      to: '/properties/add',  primary: true },
-    { label: 'My Properties',      icon: Building,  to: '/my-properties',   primary: false },
-    { label: 'Applications',       icon: FileText,  to: '/applications',    primary: false },
-    { label: 'Analytics',          icon: BarChart3, to: '/analytics',       primary: false },
+    { label: 'Add Property',       icon: Plus,      to: 'properties/add',  primary: true },
+    { label: 'My Properties',      icon: Building,  to: 'my-properties',   primary: false },
+    { label: 'Applications',       icon: FileText,  to: 'applications',    primary: false },
+    { label: 'Analytics',          icon: BarChart3, to: 'analytics',       primary: false },
   ];
 
   if (loading) {
@@ -471,7 +471,7 @@ const LandlordDashboard = () => {
             <div className="ld-empty-icon"><Building size={20} /></div>
             <div className="ld-empty-title">No properties yet</div>
             <p className="ld-empty-desc">Add your first listing to start attracting tenants.</p>
-            <Link to="/properties/add" className="ld-action-btn primary" style={{ display: 'inline-flex' }}>
+            <Link to="properties/add" className="ld-action-btn primary" style={{ display: 'inline-flex' }}>
               <Plus size={13} /> Add Property <ArrowRight size={12} />
             </Link>
           </div>
@@ -479,7 +479,7 @@ const LandlordDashboard = () => {
 
         {properties.length > 0 && (
           <div style={{ marginTop: 16, textAlign: 'right' }}>
-            <Link to="/my-properties" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c9a84c', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Link to="my-properties" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c9a84c', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               View all properties <ArrowRight size={12} />
             </Link>
           </div>

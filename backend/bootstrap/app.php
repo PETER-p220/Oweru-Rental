@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,6 +23,14 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        $middleware->alias([
+            // 'role:admin', 'role:tenant' etc. in routes.php will now resolve correctly
+            'role' => RoleMiddleware::class,
+        ]);
+
+        // Do NOT override 'auth' — Laravel's built-in auth middleware
+        // handles Sanctum correctly. Overriding it breaks auth:sanctum.
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

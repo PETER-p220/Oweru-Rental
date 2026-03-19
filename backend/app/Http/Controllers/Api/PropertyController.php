@@ -64,7 +64,41 @@ class PropertyController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+        // For FormData, we need to use input() method
+        $data = [
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
+            'price' => $request->input('price'),
+            'location' => $request->input('location'),
+            'address' => $request->input('address'),
+            'type' => $request->input('type'),
+            'bedrooms' => $request->input('bedrooms'),
+            'bathrooms' => $request->input('bathrooms'),
+            'area' => $request->input('area'),
+            'amenities' => $request->input('amenities'),
+            'featured' => $request->input('featured'),
+            'latitude' => $request->input('latitude'),
+            'longitude' => $request->input('longitude'),
+        ];
+        
+        // Ensure we have the required fields
+        $finalData = [
+            'title' => $data['title'] ?? '',
+            'description' => $data['description'] ?? '',
+            'price' => $data['price'] ?? 0,
+            'location' => $data['location'] ?? '',
+            'address' => $data['address'] ?? '',
+            'type' => $data['type'] ?? 'apartment',
+            'bedrooms' => $data['bedrooms'] ?? 1,
+            'bathrooms' => $data['bathrooms'] ?? 1,
+            'area' => $data['area'] ?? 0,
+            'amenities' => $data['amenities'] ?? [],
+            'featured' => $data['featured'] ?? false,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+        ];
+        
+        $validator = \Illuminate\Support\Facades\Validator::make($finalData, [
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
@@ -75,9 +109,11 @@ class PropertyController extends Controller
             'bathrooms' => 'required|integer|min:0',
             'area' => 'required|numeric|min:0',
             'images' => 'array',
-            'images.*' => 'url',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'amenities' => 'array',
             'featured' => 'boolean',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         if ($validator->fails()) {
@@ -87,19 +123,36 @@ class PropertyController extends Controller
             ], 422);
         }
 
+        // Handle image uploads
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('properties', 'public');
+                $imagePaths[] = $path;
+            }
+        }
+
+        // Parse amenities from JSON string if needed
+        $amenities = $finalData['amenities'];
+        if (is_string($amenities)) {
+            $amenities = json_decode($amenities, true);
+        }
+
         $property = Property::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'price' => $request->price,
-            'location' => $request->location,
-            'address' => $request->address,
-            'type' => $request->type,
-            'bedrooms' => $request->bedrooms,
-            'bathrooms' => $request->bathrooms,
-            'area' => $request->area,
-            'images' => $request->images ?? [],
-            'amenities' => $request->amenities ?? [],
-            'featured' => $request->featured ?? false,
+            'title' => $finalData['title'],
+            'description' => $finalData['description'],
+            'price' => $finalData['price'],
+            'location' => $finalData['location'],
+            'address' => $finalData['address'],
+            'type' => $finalData['type'],
+            'bedrooms' => $finalData['bedrooms'],
+            'bathrooms' => $finalData['bathrooms'],
+            'area' => $finalData['area'],
+            'images' => $imagePaths,
+            'amenities' => $amenities ?? [],
+            'featured' => filter_var($finalData['featured'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'latitude' => $finalData['latitude'],
+            'longitude' => $finalData['longitude'],
             'owner_id' => Auth::id(),
         ]);
 
