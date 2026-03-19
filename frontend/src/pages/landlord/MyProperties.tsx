@@ -89,7 +89,7 @@ const MyProperties = () => {
           bathrooms: property.bathrooms,
           area: property.area,
           image: property.images && property.images.length > 0 
-            ? (property.images[0].startsWith('http') ? property.images[0] : `http://localhost:8000/storage/${property.images[0]}`)
+            ? (property.images[0].startsWith('http') ? property.images[0] : `${import.meta.env.VITE_API_URL}/storage/${property.images[0]}`)
             : null,
           description: property.description,
           amenities: property.amenities || [],
@@ -100,7 +100,7 @@ const MyProperties = () => {
           currentTenant: property.tenant || null,
           documents: {
             images: property.images ? property.images.map((img: string) => 
-              img.startsWith('http') ? img : `http://localhost:8000/storage/${img}`
+              img.startsWith('http') ? img : `${import.meta.env.VITE_API_URL}/storage/${img}`
             ) : [],
             floorPlan: '',
             certificates: []
