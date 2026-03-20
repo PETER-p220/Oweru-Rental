@@ -98,6 +98,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   };
 
   const cfg = roleConfig[userType] ?? roleConfig.tenant;
+  const dashboardRoot = `/dashboard/${userType}`;
 
   const handleLogout = async () => {
     try {
@@ -120,9 +121,9 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   // ── FIX 1: always use `pathname` from useLocation (not global `location`) ──
   // ── FIX 2: build absolute paths so active state is always correct          ──
   const getFullPath = (href: string): string => {
-    if (href === '') return `/dashboard/${userType}`;
+    if (href === '') return dashboardRoot;
     if (href.startsWith('/')) return href;           // already absolute (e.g. /properties)
-    return `/dashboard/${userType}/${href}`;
+    return `${dashboardRoot}/${href}`;
   };
 
   const isActive = (href: string): boolean => {
@@ -165,6 +166,39 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   };
 
   const sections = sectionMap[userType] ?? sectionMap.tenant;
+
+  const roleQuickLinks: Record<UserRole, { primary: string; primaryLabel: string; secondary: string; secondaryLabel: string; settings?: string }> = {
+    tenant: {
+      primary: getFullPath('messages'),
+      primaryLabel: 'Messages',
+      secondary: getFullPath('notifications'),
+      secondaryLabel: 'Notifications',
+      settings: getFullPath('settings'),
+    },
+    landlord: {
+      primary: getFullPath('tenants'),
+      primaryLabel: 'Tenants',
+      secondary: getFullPath('my-properties'),
+      secondaryLabel: 'Properties',
+      settings: getFullPath('settings'),
+    },
+    agent: {
+      primary: getFullPath('leads'),
+      primaryLabel: 'Leads',
+      secondary: getFullPath('tracking'),
+      secondaryLabel: 'Tracking',
+    },
+    admin: {
+      primary: getFullPath('verification'),
+      primaryLabel: 'Verification',
+      secondary: getFullPath('alerts'),
+      secondaryLabel: 'Alerts',
+      settings: getFullPath('settings'),
+    },
+  };
+
+  const quickLinks = roleQuickLinks[userType] ?? roleQuickLinks.tenant;
+  const settingsPath = quickLinks.settings ?? dashboardRoot;
 
   return (
     <div style={{
@@ -595,7 +629,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         </div>
 
         <div className="dl-sidebar-footer">
-          <Link to="/settings" className="dl-sidebar-footer-btn">
+          <Link to={settingsPath} className="dl-sidebar-footer-btn" onClick={() => setSidebarOpen(false)}>
             <Settings size={13} style={{ color: 'var(--muted)' }} />
             Account Settings
           </Link>
@@ -639,16 +673,16 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
             <div className="dl-topbar-divider" />
 
-            <Link to={`/dashboard/${userType}/messages`} className="dl-topbar-btn" title="Messages">
+            <Link to={quickLinks.primary} className="dl-topbar-btn" title={quickLinks.primaryLabel}>
               <MessageSquare size={14} />
             </Link>
-            <Link to={`/dashboard/${userType}/notifications`} className="dl-topbar-btn" title="Notifications">
+            <Link to={quickLinks.secondary} className="dl-topbar-btn" title={quickLinks.secondaryLabel}>
               <Bell size={14} />
             </Link>
 
             <div className="dl-topbar-divider" />
 
-            <Link to={`/dashboard/${userType}/settings`} className="dl-topbar-btn" title="Settings">
+            <Link to={settingsPath} className="dl-topbar-btn" title="Settings">
               <Settings size={14} />
             </Link>
             <button
