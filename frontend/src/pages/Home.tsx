@@ -1,7 +1,62 @@
 import { Link } from 'react-router-dom';
-import { Search, Home as HomeIcon, Users, Shield, TrendingUp, ArrowRight, MapPin, Star, ChevronRight } from 'lucide-react';
+import { Search, Home as HomeIcon, Users, Shield, TrendingUp, ArrowRight, MapPin, Star, ChevronRight, Bed, Bath, Square, DollarSign } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import Api from '../services/api';
 
 const Home = () => {
+  const [properties, setProperties] = useState<any[]>([]);
+  const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalProperties: 0,
+    totalUsers: 0,
+    activeListings: 0,
+    avgResponseTime: '24 hr'
+  });
+
+  // Load properties on component mount
+  useEffect(() => {
+    loadProperties();
+    loadStats();
+  }, []);
+
+  const loadProperties = async () => {
+    try {
+      setLoading(true);
+      const response = await Api.getProperties();
+      setProperties(response.data || []);
+      
+      // Set featured properties (first 6)
+      setFeaturedProperties((response.data || []).slice(0, 6));
+    } catch (error) {
+      console.error('Failed to load properties:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      // You can create a stats endpoint or use mock data
+      setStats({
+        totalProperties: 1247,
+        totalUsers: 3842,
+        activeListings: 892,
+        avgResponseTime: '24 hr'
+      });
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-TZ', {
+      style: 'currency',
+      currency: 'TZS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
+  };
   return (
     <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", background: '#0a0a0a', color: '#f5f0e8', minHeight: '100vh', overflowX: 'hidden' }}>
       <style>{`
@@ -839,10 +894,10 @@ const Home = () => {
       <div className="stats-bar">
         <div className="stats-inner">
           {[
-            { num: '4,200+', lbl: 'Active Listings' },
-            { num: '12K+',   lbl: 'Registered Tenants' },
-            { num: '850+',   lbl: 'Verified Landlords' },
-            { num: '98%',    lbl: 'Satisfaction Rate' },
+            { num: stats.totalProperties.toLocaleString(), lbl: 'Active Listings' },
+            { num: stats.totalUsers.toLocaleString(), lbl: 'Registered Users' },
+            { num: stats.activeListings.toLocaleString(), lbl: 'Available Now' },
+            { num: stats.avgResponseTime, lbl: 'Avg. Response' },
           ].map((s) => (
             <div key={s.lbl} className="stat-item">
               <div className="stat-number">{s.num}</div>
@@ -851,6 +906,148 @@ const Home = () => {
           ))}
         </div>
       </div>
+
+      {/* Featured Properties */}
+      <section style={{ background: 'var(--dark-2)' }}>
+        <div className="section">
+          <div className="section-header">
+            <div>
+              <div className="section-eyebrow">Featured Listings</div>
+              <h2 className="section-title">
+                Popular<br />
+                <em>Properties</em>
+              </h2>
+            </div>
+            <Link to="/properties" className="btn-primary" style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)' }}>
+              View All
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--muted)' }}>
+              Loading featured properties...
+            </div>
+          ) : featuredProperties.length > 0 ? (
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+              gap: '20px',
+              marginBottom: '40px'
+            }}>
+              {featuredProperties.map((property) => (
+                <Link 
+                  key={property.id} 
+                  to={`/property/${property.id}`}
+                  style={{ 
+                    textDecoration: 'none', 
+                    color: 'inherit',
+                    background: 'var(--dark)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s ease',
+                    display: 'block'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--gold)';
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  {property.images && property.images.length > 0 && (
+                    <div style={{ 
+                      height: '200px', 
+                      background: `url(${property.images[0]}) center/cover`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    }} />
+                  )}
+                  <div style={{ padding: '20px' }}>
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '400', 
+                      color: 'var(--cream)', 
+                      marginBottom: '8px',
+                      lineHeight: '1.3'
+                    }}>
+                      {property.title}
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '16px', 
+                      marginBottom: '12px',
+                      color: 'var(--muted)',
+                      fontSize: '14px',
+                      fontFamily: "'DM Sans', sans-serif"
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Bed size={14} />
+                        {property.bedrooms} bed
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Bath size={14} />
+                        {property.bathrooms} bath
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Square size={14} />
+                        {property.area} sqm
+                      </div>
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '6px',
+                        color: 'var(--muted)',
+                        fontSize: '13px',
+                        fontFamily: "'DM Sans', sans-serif"
+                      }}>
+                        <MapPin size={14} />
+                        {property.location}
+                      </div>
+                    </div>
+                    <div style={{ 
+                      fontSize: '20px', 
+                      fontWeight: '500', 
+                      color: 'var(--gold)' 
+                    }}>
+                      {formatPrice(property.price)}
+                      <span style={{ 
+                        fontSize: '14px', 
+                        color: 'var(--muted)', 
+                        fontWeight: '300',
+                        marginLeft: '4px'
+                      }}>
+                        /month
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--muted)' }}>
+              <HomeIcon size={48} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
+              <h3 style={{ color: 'var(--cream)', fontSize: '18px', marginBottom: '8px' }}>
+                No featured properties available
+              </h3>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
+                Check back later for new listings or browse all properties.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Features */}
       <section style={{ background: 'var(--dark)' }}>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   MapPin, Bed, Bath, Square, Phone, Mail,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { Property } from '../types';
+import Api from '../services/api';
 
 /* ─────────────────────────────────────────────────────────────
    SHARED STYLE TOKENS  (mirrors DashboardLayout / LeadsAndVisitors)
@@ -110,47 +111,43 @@ const PropertyDetail = () => {
   const [showQrModal, setShowQrModal] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [property, setProperty] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const property: Property = {
-    id: id || '1',
-    title: 'Modern 2-Bedroom Apartment in Masaki',
-    description: `Beautiful apartment with ocean view, fully furnished with modern amenities.
-This spacious apartment features large windows that allow plenty of natural light,
-creating a bright and welcoming atmosphere. The open-plan living area is perfect for
-entertaining guests, while the bedrooms offer privacy and comfort.`,
-    price: 800000,
-    address: 'Masaki, Dar es Salaam, Tanzania',
-    bedrooms: 2,
-    bathrooms: 2,
-    area: 120,
-    type: 'apartment',
-    furnished: true,
-    images: [
-      '/api/placeholder/900/600',
-      '/api/placeholder/900/600',
-      '/api/placeholder/900/600',
-      '/api/placeholder/900/600',
-    ],
-    owner: {
-      id: '1',
-      name: 'John Smith',
-      email: 'john.smith@example.com',
-      phone: '+255 712 345 678',
-      verified: true,
-    },
-    dalali: {
-      id: '1',
-      name: 'Michael Agent',
-      email: 'michael@oweru.com',
-      phone: '+255 714 567 890',
-      code: 'DAL001',
-      verified: true,
-      commission: 10,
-    },
-    status: 'available',
-    featured: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+  useEffect(() => {
+    loadProperty();
+    checkIfSaved();
+  }, [id]);
+
+  const loadProperty = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await Api.getProperty(parseInt(id || '1'));
+      setProperty(response.data);
+    } catch (err) {
+      console.error('Failed to load property:', err);
+      setError('Failed to load property details');
+      setProperty(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkIfSaved = async () => {
+    try {
+      // Check if property is saved
+    } catch (err) {
+      console.error('Failed to check saved status:', err);
+    }
+  };
+
+  const generateQR = () => {
+    const url = `${window.location.origin}/property/${id || '1'}`;
+    const qr = QRCode.toDataURL(url, { width: 200, margin: 2 });
+    setQrCodeUrl(qr);
+    setShowQrModal(true);
   };
 
   const features = [
@@ -198,7 +195,18 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
     }
   };
 
-  const trackingUrl = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`;
+  const trackingUrl = property
+    ? `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`
+    : '';
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-TZ', {
+      style: 'currency',
+      currency: 'TZS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
 
   /* ─── render ─── */
   return (
@@ -225,36 +233,53 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
 
       <div style={{ maxWidth: 1160, margin: '0 auto', padding: '32px 20px 64px' }}>
 
-        {/* ── Back link ── */}
-        <Link
-          to="/properties"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7,
-            ...body, fontSize: 11, fontWeight: 500,
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-            color: t.muted, textDecoration: 'none',
-            marginBottom: 28, transition: 'color .2s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = t.gold)}
-          onMouseLeave={e => (e.currentTarget.style.color = t.muted)}
-        >
-          <ArrowLeft size={14} />
-          Back to Properties
-        </Link>
+        {/* ── Loading ── */}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '60px 40px', color: t.muted }}>
+            <div style={{ fontSize: '18px', marginBottom: '16px' }}>Loading property details...</div>
+            <div style={{ fontSize: '14px', opacity: '0.7' }}>Fetching property information from our database</div>
+          </div>
+        )}
 
-        {/* ── Layout ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 24 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 24 }}>
+        {/* ── Error ── */}
+        {!loading && error && (
+          <div style={{ textAlign: 'center', padding: '60px 40px', color: t.muted }}>
+            <div style={{ fontSize: '18px', marginBottom: '16px', color: t.red }}>{error}</div>
+            <div style={{ fontSize: '14px', opacity: '0.7' }}>Please try again later or contact support</div>
+          </div>
+        )}
 
-            {/* ═══ LEFT COLUMN ═══ */}
+        {/* ── Main content ── */}
+        {!loading && !error && property && (
+          <>
+            {/* ── Back link ── */}
+            <Link
+              to="/properties"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                ...body, fontSize: 11, fontWeight: 500,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                color: t.muted, textDecoration: 'none',
+                marginBottom: 28, transition: 'color .2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = t.gold)}
+              onMouseLeave={e => (e.currentTarget.style.color = t.muted)}
+            >
+              <ArrowLeft size={14} />
+              Back to Properties
+            </Link>
+
+            {/* ── Two-column layout ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 24, alignItems: 'start' }}>
+
+              {/* ═══ LEFT COLUMN ═══ */}
               <div>
 
                 {/* ── Image gallery ── */}
                 <div style={{ ...card, marginBottom: 20 }}>
                   <div style={{ position: 'relative', height: 420, overflow: 'hidden' }}>
                     <img
-                      src={property.images[selectedImg]}
+                      src={property.images && property.images.length > 0 ? property.images[selectedImg] : '/api/placeholder/900/600'}
                       alt={property.title}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity .3s' }}
                     />
@@ -282,7 +307,7 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
                       <button className="pd-icon-btn" onClick={shareProperty} title="Share">
                         <Share2 size={15} style={{ color: copied ? t.green : t.cream }} />
                       </button>
-                      <button className="pd-icon-btn" onClick={generateQRCode} title="QR Code">
+                      <button className="pd-icon-btn" onClick={generateQR} title="QR Code">
                         <QrCode size={15} style={{ color: t.cream }} />
                       </button>
                     </div>
@@ -290,22 +315,18 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
                     {/* Price overlay */}
                     <div style={{ position: 'absolute', bottom: 16, left: 16 }}>
                       <div style={{ ...serif, fontSize: 26, fontWeight: 600, color: t.gold, lineHeight: 1.1 }}>
-                        {property.price.toLocaleString()} <span style={{ fontSize: 14, fontWeight: 400, color: t.muted }}>TZS/mo</span>
+                        {formatPrice(property.price)}{' '}
+                        <span style={{ fontSize: 14, fontWeight: 400, color: t.muted }}>TZS/mo</span>
                       </div>
                       <div style={{ ...body, fontSize: 12, color: 'rgba(232,228,220,.7)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <MapPin size={11} />{property.address}
+                        <MapPin size={11} />{property.location || property.address}
                       </div>
-                    </div>
-
-                    {/* Status badge */}
-                    <div style={{ position: 'absolute', bottom: 16, right: 16 }}>
-                      <span style={pill(t.green)}>{property.status}</span>
                     </div>
                   </div>
 
                   {/* Thumbnails */}
                   <div style={{ display: 'flex', gap: 8, padding: '12px 14px', background: t.dark3 }}>
-                    {property.images.map((img, i) => (
+                    {property.images.map((img: string, i: number) => (
                       <img
                         key={i}
                         src={img}
@@ -321,7 +342,7 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
                 {/* ── Property info card ── */}
                 <div style={{ ...card, padding: '24px 26px', marginBottom: 20 }}>
 
-                  {/* Title + specs */}
+                  {/* Title + pills */}
                   <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${t.border}` }}>
                     <h1 style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream, margin: '0 0 10px', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
                       {property.title}
@@ -332,31 +353,8 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
                     </div>
                   </div>
 
-                  {/* Specs row */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 22 }}>
-                    {[
-                      { icon: Bed,    label: 'Bedrooms',  value: property.bedrooms },
-                      { icon: Bath,   label: 'Bathrooms', value: property.bathrooms },
-                      { icon: Square, label: 'Area',      value: `${property.area} m²` },
-                    ].map(({ icon: Icon, label: lbl, value }) => (
-                      <div key={lbl} style={{ ...metaBox, marginBottom: 0, textAlign: 'center', padding: '14px 10px' }}>
-                        <Icon size={18} style={{ color: t.gold, marginBottom: 6 }} />
-                        <div style={{ ...body, fontSize: 16, fontWeight: 600, color: t.cream }}>{value}</div>
-                        <div style={{ ...label, marginBottom: 0 }}>{lbl}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Description */}
-                  <div style={{ marginBottom: 22 }}>
-                    <div style={{ ...label, marginBottom: 10 }}>Description</div>
-                    <p style={{ ...body, fontSize: 13.5, lineHeight: 1.8, color: '#b8b0a0', margin: 0, whiteSpace: 'pre-line' }}>
-                      {property.description}
-                    </p>
-                  </div>
-
                   {/* Features */}
-                  <div style={{ marginBottom: 22 }}>
+                  <div style={{ marginBottom: 20 }}>
                     <div style={{ ...label, marginBottom: 10 }}>Features</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
                       {features.map((f) => (
@@ -380,7 +378,6 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
                       ))}
                     </div>
                   </div>
-
                 </div>
 
                 {/* ── Tracking link ── */}
@@ -401,7 +398,7 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
                   </div>
                 </div>
 
-              </div>{/* /left main */}
+              </div>{/* /left column */}
 
               {/* ═══ RIGHT SIDEBAR ═══ */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -415,7 +412,7 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
                     { k: 'Type',      v: property.type,      mono: false },
                     { k: 'Status',    v: property.status,    mono: false, highlight: t.green },
                     { k: 'Furnished', v: property.furnished ? 'Yes' : 'No', mono: false },
-                    { k: 'Listed',    v: property.createdAt.toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }), mono: true },
+                    { k: 'Listed',    v: new Date(property.createdAt).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }), mono: true },
                   ].map(({ k, v, mono, highlight }) => (
                     <div key={k} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -538,86 +535,87 @@ entertaining guests, while the bedrooms offer privacy and comfort.`,
                   </button>
                 </div>
 
-              </div>{/* /sidebar */}
-            </div>{/* /grid */}
-          </div>
-        </div>
-      </div>
+              </div>{/* /right sidebar */}
 
-      {/* ══ QR MODAL ══ */}
-      {showQrModal && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.8)',
-          backdropFilter: 'blur(10px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 20, zIndex: 999,
-        }}>
-          <div style={{ ...card, padding: 28, maxWidth: 380, width: '100%', position: 'relative' }}>
+            </div>{/* /two-column grid */}
 
-            {/* Close */}
-            <button
-              onClick={() => setShowQrModal(false)}
-              style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: t.muted, cursor: 'pointer' }}
-            >
-              <X size={18} />
-            </button>
-
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <QrCode size={16} style={{ color: t.gold }} />
-              <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: t.cream, margin: 0 }}>
-                Property QR Code
-              </h3>
-            </div>
-            <p style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 20, lineHeight: 1.6 }}>
-              Scan to view property details. Every scan is tracked and attributed to the dalali.
-            </p>
-
-            {/* QR image */}
-            {qrCodeUrl && (
+            {/* ══ QR MODAL ══ — rendered outside the grid so it overlays correctly */}
+            {showQrModal && (
               <div style={{
-                display: 'flex', justifyContent: 'center', alignItems: 'center',
-                background: t.dark3, borderRadius: 10,
-                border: `1px solid ${t.border}`,
-                padding: 20, marginBottom: 16,
+                position: 'fixed', inset: 0,
+                background: 'rgba(0,0,0,0.8)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: 20, zIndex: 999,
               }}>
-                <img src={qrCodeUrl} alt="Property QR Code" style={{ width: 200, height: 200 }} />
+                <div style={{ ...card, padding: 28, maxWidth: 380, width: '100%', position: 'relative' }}>
+                  {/* Close */}
+                  <button
+                    onClick={() => setShowQrModal(false)}
+                    style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: t.muted, cursor: 'pointer' }}
+                  >
+                    <X size={18} />
+                  </button>
+
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <QrCode size={16} style={{ color: t.gold }} />
+                    <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: t.cream, margin: 0 }}>
+                      Property QR Code
+                    </h3>
+                  </div>
+                  <p style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 20, lineHeight: 1.6 }}>
+                    Scan to view property details. Every scan is tracked and attributed to the dalali.
+                  </p>
+
+                  {/* QR image */}
+                  {qrCodeUrl && (
+                    <div style={{
+                      display: 'flex', justifyContent: 'center', alignItems: 'center',
+                      background: t.dark3, borderRadius: 10,
+                      border: `1px solid ${t.border}`,
+                      padding: 20, marginBottom: 16,
+                    }}>
+                      <img src={qrCodeUrl} alt="Property QR Code" style={{ width: 200, height: 200 }} />
+                    </div>
+                  )}
+
+                  {/* URL */}
+                  <div style={{
+                    ...body, fontSize: 10, color: t.blue,
+                    background: 'rgba(56,189,248,0.05)',
+                    border: '1px solid rgba(56,189,248,0.12)',
+                    borderRadius: 6, padding: '8px 12px',
+                    wordBreak: 'break-all', marginBottom: 18,
+                  }}>
+                    {trackingUrl}
+                  </div>
+
+                  {/* Buttons */}
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      onClick={downloadQRCode}
+                      style={{ ...solidBtn, flex: 1 }}
+                      className="pd-action-btn"
+                    >
+                      <Download size={14} /> Download
+                    </button>
+                    <button
+                      onClick={() => setShowQrModal(false)}
+                      style={{ ...ghostBtn(t.muted), flex: 1 }}
+                      className="pd-action-btn"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* URL */}
-            <div style={{
-              ...body, fontSize: 10, color: t.blue,
-              background: 'rgba(56,189,248,0.05)',
-              border: '1px solid rgba(56,189,248,0.12)',
-              borderRadius: 6, padding: '8px 12px',
-              wordBreak: 'break-all', marginBottom: 18,
-            }}>
-              {trackingUrl}
-            </div>
+          </>
+        )}
 
-            {/* Buttons */}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={downloadQRCode}
-                style={{ ...solidBtn, flex: 1 }}
-                className="pd-action-btn"
-              >
-                <Download size={14} /> Download
-              </button>
-              <button
-                onClick={() => setShowQrModal(false)}
-                style={{ ...ghostBtn(t.muted), flex: 1 }}
-                className="pd-action-btn"
-              >
-                Close
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

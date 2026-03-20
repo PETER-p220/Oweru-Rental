@@ -11,6 +11,71 @@ use Illuminate\Support\Facades\Auth;
 
 class PropertyController extends Controller
 {
+    /**
+     * Public property listing - no authentication required
+     */
+    public function publicIndex(Request $request): JsonResponse
+    {
+        $query = Property::with(['owner', 'agent']);
+
+        // Apply filters
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'like', "%{$request->search}%")
+                  ->orWhere('location', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%");
+            });
+        }
+
+        if ($request->type) {
+            $query->byType($request->type);
+        }
+
+        if ($request->min_price) {
+            $query->where('price', '>=', $request->min_price);
+        }
+
+        if ($request->max_price) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        if ($request->location) {
+            $query->byLocation($request->location);
+        }
+
+        if ($request->bedrooms) {
+            $query->where('bedrooms', $request->bedrooms);
+        }
+
+        if ($request->furnished !== null) {
+            $query->where('furnished', $request->furnished);
+        }
+
+        $properties = $query->available()->paginate(12);
+
+        return response()->json([
+            'data' => $properties->items(),
+            'pagination' => [
+                'current_page' => $properties->currentPage(),
+                'last_page' => $properties->lastPage(),
+                'per_page' => $properties->perPage(),
+                'total' => $properties->total(),
+            ]
+        ]);
+    }
+
+    /**
+     * Public property detail - no authentication required
+     */
+    public function publicShow(Property $property): JsonResponse
+    {
+        $property->load(['owner', 'agent']);
+
+        return response()->json([
+            'data' => $property
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Property::with(['owner', 'agent']);

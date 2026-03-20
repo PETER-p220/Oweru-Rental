@@ -284,13 +284,15 @@ class Api {
   static async getProperties(filters?: {
     search?: string; type?: string;
     minPrice?: number; maxPrice?: number; location?: string;
+    bedrooms?: number; furnished?: boolean;
+    page?: number;
   }) {
     const params = new URLSearchParams(filters as any).toString();
-    return this.request<Property[]>(`properties${params ? `?${params}` : ''}`);
+    return this.request<any>(`public/properties${params ? `?${params}` : ''}`);
   }
 
   static async getProperty(id: number) {
-    return this.request<Property>(`properties/${id}`);
+    return this.request<Property>(`public/properties/${id}`);
   }
 
   // ── Tenant ──────────────────────────────────────────────────────────────────
@@ -311,6 +313,17 @@ class Api {
 
   static async unsaveProperty(propertyId: number) {
     return this.request(`tenant/properties/${propertyId}/save`, { method: 'DELETE' });
+  }
+
+  // ── Public Save/Unsave (works without auth for demo) ──────────────────────────────
+  static async publicSaveProperty(propertyId: number) {
+    // For demo purposes, just return success
+    return Promise.resolve({ success: true });
+  }
+
+  static async publicUnsaveProperty(propertyId: number) {
+    // For demo purposes, just return success  
+    return Promise.resolve({ success: true });
   }
 
   static async createApplication(applicationData: any) {

@@ -16,6 +16,10 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
+// Public property routes (no authentication required)
+Route::get('/public/properties', [PropertyController::class, 'publicIndex']);
+Route::get('/public/properties/{property}', [PropertyController::class, 'publicShow']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // User
