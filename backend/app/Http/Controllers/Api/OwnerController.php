@@ -9,9 +9,11 @@ use App\Models\Application;
 use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\Tenant;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class OwnerController extends Controller
@@ -21,6 +23,16 @@ class OwnerController extends Controller
     {
         $user = Auth::user();
         $properties = Property::where('owner_id', $user->id);
+
+        if (! $this->landlordSupportTablesAvailable()) {
+            return response()->json(['data' => [
+                'total_properties' => $properties->count(),
+                'active_tenants' => 0,
+                'monthly_revenue' => 0,
+                'total_revenue' => 0,
+                'occupancy_rate' => $this->calculateOccupancyRate($user),
+            ]]);
+        }
         
         $stats = [
             'total_properties' => $properties->count(),
@@ -184,6 +196,18 @@ class OwnerController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        if (! $this->paymentsTableAvailable()) {
+            return response()->json(['data' => [
+                'views' => $property->views ?? 0,
+                'inquiries' => Application::where('property_id', $property->id)->count(),
+                'applications' => Application::where('property_id', $property->id)->count(),
+                'conversion_rate' => $this->calculateConversionRate($property),
+                'revenue' => 0,
+                'occupancy_rate' => $this->calculatePropertyOccupancyRate($property),
+                'avg_rent_collection_time' => $this->calculateAvgRentCollectionTime($property),
+            ]]);
+        }
+
         $analytics = [
             'views' => $property->views ?? 0,
             'inquiries' => Application::where('property_id', $property->id)->count(),
@@ -267,6 +291,10 @@ class OwnerController extends Controller
     // Tenants Management
     public function getMyTenants(): JsonResponse
     {
+        if (! $this->tenantTablesAvailable()) {
+            return $this->emptyPaginatedResponse();
+        }
+
         $user = Auth::user();
         $tenants = Tenant::with(['user', 'property', 'contract'])
             ->whereHas('property', function ($query) use ($user) {
@@ -291,6 +319,10 @@ class OwnerController extends Controller
     // Contracts Management
     public function getContracts(): JsonResponse
     {
+        if (! $this->tenantTablesAvailable()) {
+            return $this->emptyPaginatedResponse();
+        }
+
         $user = Auth::user();
         $contracts = Contract::with(['tenant.user', 'property'])
             ->whereHas('property', function ($query) use ($user) {
@@ -312,6 +344,10 @@ class OwnerController extends Controller
 
     public function createContract(Request $request): JsonResponse
     {
+        if (! $this->tenantTablesAvailable()) {
+            return response()->json(['message' => 'Contracts are unavailable until landlord tables are migrated'], 503);
+        }
+
         $validator = Validator::make($request->all(), [
             'tenant_id' => 'required|exists:tenants,id',
             'property_id' => 'required|exists:properties,id',
@@ -355,6 +391,10 @@ class OwnerController extends Controller
     // Rent Collection
     public function getRentCollection(): JsonResponse
     {
+        if (! $this->paymentsTableAvailable()) {
+            return $this->emptyPaginatedResponse();
+        }
+
         $user = Auth::user();
         $payments = Payment::with(['tenant.user', 'property'])
             ->whereHas('property', function ($query) use ($user) {
@@ -377,6 +417,15 @@ class OwnerController extends Controller
 
     public function getRentCollectionStats(): JsonResponse
     {
+        if (! $this->paymentsTableAvailable()) {
+            return response()->json(['data' => [
+                'total_collected' => 0,
+                'this_month' => 0,
+                'pending_payments' => 0,
+                'collection_rate' => 0,
+            ]]);
+        }
+
         $user = Auth::user();
         $stats = [
             'total_collected' => Payment::whereHas('property', function ($query) use ($user) {
@@ -397,6 +446,10 @@ class OwnerController extends Controller
     // Payment Receipts
     public function getReceipts(): JsonResponse
     {
+        if (! $this->paymentsTableAvailable()) {
+            return $this->emptyPaginatedResponse();
+        }
+
         $user = Auth::user();
         $payments = Payment::with(['tenant.user', 'property'])
             ->whereHas('property', function ($query) use ($user) {
@@ -432,6 +485,10 @@ class OwnerController extends Controller
     // Commission Reports
     public function getCommissionReports(): JsonResponse
     {
+        if (! $this->paymentsTableAvailable()) {
+            return $this->emptyPaginatedResponse();
+        }
+
         $user = Auth::user();
         $commissions = Payment::with(['agent', 'property'])
             ->whereHas('property', function ($query) use ($user) {
@@ -471,9 +528,15 @@ class OwnerController extends Controller
                 'occupancy_rate' => $totalProperties > 0 ? ($occupiedProperties / $totalProperties) * 100 : 0,
             ],
             'financial_metrics' => [
-                'total_revenue' => 0, // TODO: Implement when Payment table exists
-                'monthly_revenue' => 0, // TODO: Implement when Payment table exists
-                'total_commissions' => 0, // TODO: Implement when Payment table exists
+                'total_revenue' => $this->paymentsTableAvailable() ? Payment::whereHas('property', function ($query) use ($user) {
+                    $query->where('owner_id', $user->id);
+                })->sum('amount') : 0,
+                'monthly_revenue' => $this->paymentsTableAvailable() ? Payment::whereHas('property', function ($query) use ($user) {
+                    $query->where('owner_id', $user->id);
+                })->whereMonth('created_at', now()->month)->sum('amount') : 0,
+                'total_commissions' => $this->paymentsTableAvailable() ? Payment::whereHas('property', function ($query) use ($user) {
+                    $query->where('owner_id', $user->id);
+                })->where('type', 'commission')->sum('amount') : 0,
             ],
             'tenant_metrics' => [
                 'total_tenants' => $occupiedProperties, // Simplified: one tenant per occupied property
@@ -482,6 +545,129 @@ class OwnerController extends Controller
         ];
 
         return response()->json(['data' => $analytics]);
+    }
+
+    // Messages
+    public function getMessages(): JsonResponse
+    {
+        if (! $this->messagesTablesAvailable()) {
+            return $this->emptyPaginatedResponse();
+        }
+
+        $user = Auth::user();
+
+        $messages = Message::with(['sender', 'recipient', 'property'])
+            ->where(function ($query) use ($user) {
+                $query->where('sender_id', $user->id)
+                    ->orWhere('recipient_id', $user->id);
+            })
+            ->where(function ($query) use ($user) {
+                $query->whereHas('property', function ($propertyQuery) use ($user) {
+                    $propertyQuery->where('owner_id', $user->id);
+                })->orWhere(function ($innerQuery) use ($user) {
+                    $innerQuery->whereNull('property_id')
+                        ->where(function ($participantQuery) use ($user) {
+                            $participantQuery
+                                ->whereIn('sender_id', function ($tenantQuery) use ($user) {
+                                    $tenantQuery->select('user_id')
+                                        ->from('tenants')
+                                        ->whereIn('property_id', function ($propertyQuery) use ($user) {
+                                            $propertyQuery->select('id')
+                                                ->from('properties')
+                                                ->where('owner_id', $user->id);
+                                        });
+                                })
+                                ->orWhereIn('recipient_id', function ($tenantQuery) use ($user) {
+                                    $tenantQuery->select('user_id')
+                                        ->from('tenants')
+                                        ->whereIn('property_id', function ($propertyQuery) use ($user) {
+                                            $propertyQuery->select('id')
+                                                ->from('properties')
+                                                ->where('owner_id', $user->id);
+                                        });
+                                });
+                        });
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
+
+        Message::where('recipient_id', $user->id)
+            ->whereNull('read_at')
+            ->whereIn('id', collect($messages->items())->pluck('id'))
+            ->update(['read_at' => now()]);
+
+        return response()->json([
+            'data' => $messages->items(),
+            'pagination' => [
+                'current_page' => $messages->currentPage(),
+                'last_page' => $messages->lastPage(),
+                'per_page' => $messages->perPage(),
+                'total' => $messages->total(),
+            ]
+        ]);
+    }
+
+    public function sendMessage(Request $request): JsonResponse
+    {
+        if (! $this->messagesTablesAvailable()) {
+            return response()->json(['message' => 'Messaging is unavailable until landlord tables are migrated'], 503);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'recipient_id' => 'required|exists:users,id',
+            'property_id' => 'nullable|exists:properties,id',
+            'subject' => 'nullable|string|max:255',
+            'body' => 'required|string|max:5000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = Auth::user();
+        $recipientId = (int) $request->recipient_id;
+        $propertyId = $request->property_id ? (int) $request->property_id : null;
+
+        $recipientIsTenant = Tenant::where('user_id', $recipientId)
+            ->whereHas('property', function ($query) use ($user, $propertyId) {
+                $query->where('owner_id', $user->id);
+
+                if ($propertyId) {
+                    $query->where('id', $propertyId);
+                }
+            })
+            ->exists();
+
+        if (! $recipientIsTenant) {
+            return response()->json(['message' => 'Recipient must be one of your tenants'], 422);
+        }
+
+        if ($propertyId) {
+            $propertyOwnedByUser = Property::where('owner_id', $user->id)
+                ->where('id', $propertyId)
+                ->exists();
+
+            if (! $propertyOwnedByUser) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+        }
+
+        $message = Message::create([
+            'sender_id' => $user->id,
+            'recipient_id' => $recipientId,
+            'property_id' => $propertyId,
+            'subject' => $request->subject,
+            'body' => $request->body,
+        ])->load(['sender', 'recipient', 'property']);
+
+        return response()->json([
+            'message' => 'Message sent successfully',
+            'data' => $message,
+        ], 201);
     }
 
     // Helper methods
@@ -515,6 +701,10 @@ class OwnerController extends Controller
 
     private function calculateCollectionRate(User $user): float
     {
+        if (! $this->paymentsTableAvailable()) {
+            return 0;
+        }
+
         $totalPayments = Payment::whereHas('property', function ($query) use ($user) {
             $query->where('owner_id', $user->id);
         })->where('type', 'rent')->count();
@@ -524,5 +714,38 @@ class OwnerController extends Controller
         })->where('type', 'rent')->where('status', 'completed')->count();
         
         return $totalPayments > 0 ? ($paidPayments / $totalPayments) * 100 : 0;
+    }
+
+    private function emptyPaginatedResponse(): JsonResponse
+    {
+        return response()->json([
+            'data' => [],
+            'pagination' => [
+                'current_page' => 1,
+                'last_page' => 1,
+                'per_page' => 20,
+                'total' => 0,
+            ]
+        ]);
+    }
+
+    private function tenantTablesAvailable(): bool
+    {
+        return Schema::hasTable('tenants') && Schema::hasTable('contracts');
+    }
+
+    private function paymentsTableAvailable(): bool
+    {
+        return Schema::hasTable('payments') && class_exists(Payment::class);
+    }
+
+    private function messagesTablesAvailable(): bool
+    {
+        return Schema::hasTable('messages') && Schema::hasTable('tenants') && class_exists(Message::class);
+    }
+
+    private function landlordSupportTablesAvailable(): bool
+    {
+        return $this->tenantTablesAvailable() && $this->paymentsTableAvailable();
     }
 }

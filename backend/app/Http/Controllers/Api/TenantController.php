@@ -147,8 +147,10 @@ class TenantController extends Controller
     public function getMyContract(): JsonResponse
     {
         $user = Auth::user();
-        $contract = Contract::with('property', 'property.owner')
-            ->where('user_id', $user->id)
+        $contract = Contract::with('property', 'property.owner', 'tenant')
+            ->whereHas('tenant', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
             ->where('status', 'active')
             ->first();
 
@@ -163,7 +165,7 @@ class TenantController extends Controller
     {
         $user = Auth::user();
         
-        if ($contract->user_id !== $user->id) {
+        if (! $contract->tenant || $contract->tenant->user_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

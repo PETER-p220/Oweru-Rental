@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Tenant extends Model
 {
@@ -13,7 +14,6 @@ class Tenant extends Model
     protected $fillable = [
         'user_id',
         'property_id',
-        'contract_id',
         'move_in_date',
         'status',
     ];
@@ -32,8 +32,8 @@ class Tenant extends Model
         return $this->belongsTo(Property::class, 'property_id');
     }
 
-    public function contract(): BelongsTo
+    public function contract(): HasOne
     {
-        return $this->belongsTo(Contract::class, 'contract_id');
+        return $this->hasOne(Contract::class, 'tenant_id');
     }
 }

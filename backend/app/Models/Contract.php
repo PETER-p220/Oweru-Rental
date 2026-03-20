@@ -24,7 +24,6 @@ class Contract extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'rent_amount' => 'decimal:2',
-        'terms' => 'array',
     ];
 
     public function tenant(): BelongsTo

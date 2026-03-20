@@ -34,6 +34,13 @@ import MyProperties from './pages/landlord/MyProperties';
 import MyTenants from './pages/landlord/MyTenants';
 import AddProperty from './pages/landlord/AddProperty';
 import EditPropertySimple from './pages/landlord/EditPropertySimple';
+import ApplicationsPage from './pages/landlord/ApplicationsPage';
+import ContractsPage from './pages/landlord/ContractsPage';
+import RentCollectionPage from './pages/landlord/RentCollectionPage';
+import ReceiptsPage from './pages/landlord/ReceiptsPage';
+import CommissionReportsPage from './pages/landlord/CommissionReportsPage';
+import LandlordAnalyticsPage from './pages/landlord/AnalyticsPage';
+import LandlordMessagesPage from './pages/landlord/MessagesPage';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -108,8 +115,15 @@ const LandlordRoutes = () => (
         <Route path="" element={<LandlordDashboard />} />
         <Route path="my-properties" element={<MyProperties />} />
         <Route path="add-property" element={<AddProperty />} />
+        <Route path="applications" element={<ApplicationsPage />} />
         <Route path="properties/:id/edit" element={<EditPropertySimple />} />
         <Route path="tenants" element={<MyTenants />} />
+        <Route path="contracts" element={<ContractsPage />} />
+        <Route path="rent-collection" element={<RentCollectionPage />} />
+        <Route path="receipts" element={<ReceiptsPage />} />
+        <Route path="commissions" element={<CommissionReportsPage />} />
+        <Route path="analytics" element={<LandlordAnalyticsPage />} />
+        <Route path="messages" element={<LandlordMessagesPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="test-edit" element={<EditPropertySimple />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

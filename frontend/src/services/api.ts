@@ -420,6 +420,7 @@ class Api {
   static async getReceipts()              { return this.request<any[]>('owner/receipts'); }
   static async getCommissionReports()     { return this.request<any[]>('owner/commission-reports'); }
   static async getOwnerAnalytics()        { return this.request<any>('owner/analytics'); }
+  static async getOwnerMessages()         { return this.request<any[]>('owner/messages'); }
 
   static async createOwnerProperty(data: any) {
     return this.request<any>('owner/properties', { 
@@ -458,6 +459,18 @@ class Api {
   static async downloadOwnerReceipt(paymentId: number) {
     return this.request(`owner/receipts/${paymentId}/download`, {
       headers: { 'Accept': 'application/pdf' },
+    });
+  }
+
+  static async sendOwnerMessage(data: {
+    recipient_id: number;
+    property_id?: number;
+    subject?: string;
+    body: string;
+  }) {
+    return this.request<any>('owner/messages', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 

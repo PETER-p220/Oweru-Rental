@@ -1,486 +1,281 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building, Plus, FileText, Users, BarChart3, DollarSign, MapPin, ArrowRight, TrendingUp, Eye } from 'lucide-react';
+import { ArrowRight, BarChart3, Building, DollarSign, FileText, Plus, Users } from 'lucide-react';
 import Api from '../services/api';
+import { formatCurrency } from './landlord/landlordPageStyles';
 
-interface Property {
+interface DashboardStats {
+  total_properties?: number;
+  active_tenants?: number;
+  monthly_revenue?: number;
+  total_revenue?: number;
+  occupancy_rate?: number;
+}
+
+interface PropertyItem {
   id: number;
-  title: string;
-  images?: string[];
-  location: string;
-  price: number;
-  status: string;
+  title?: string;
+  location?: string;
+  price?: number | string;
   bedrooms?: number;
   bathrooms?: number;
   area?: number;
-  type?: string;
-  tenant?: string;
+  images?: string[];
+  available?: boolean;
 }
 
 const LandlordDashboard = () => {
-  const [stats, setStats] = useState({
-    totalProperties: 0, totalApplications: 0, activeTenants: 0,
-    monthlyRevenue: 0, totalRevenue: 0, occupancyRate: 0,
-  });
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({});
+  const [properties, setProperties] = useState<PropertyItem[]>([]);
+  const [applicationCount, setApplicationCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
 
-  useEffect(() => { loadDashboardData(); }, []);
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError('');
 
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      // Mock data for now since API doesn't exist yet
-      const mockStats = {
-        totalProperties: 4,
-        totalApplications: 12,
-        activeTenants: 3,
-        monthlyRevenue: 5350000,
-        totalRevenue: 16050000,
-        occupancyRate: 75
-      };
+        const [statsResponse, propertiesResponse, applicationsResponse] = await Promise.all([
+          Api.getOwnerDashboard(),
+          Api.getOwnerProperties(),
+          Api.getOwnerApplications(),
+        ]);
 
-      const mockProperties: Property[] = [
-        {
-          id: 1,
-          title: 'Modern 2-Bedroom Apartment',
-          location: 'Masaki, Dar es Salaam',
-          price: 800000,
-          type: 'apartment',
-          bedrooms: 2,
-          bathrooms: 2,
-          area: 120,
-          images: [],
-          status: 'rented',
-          tenant: 'Peter Mushy'
-        },
-        {
-          id: 2,
-          title: 'Cozy Studio in Mikocheni',
-          location: 'Mikocheni, Dar es Salaam',
-          price: 350000,
-          type: 'studio',
-          bedrooms: 1,
-          bathrooms: 1,
-          area: 45,
-          images: [],
-          status: 'available',
-          tenant: undefined
-        },
-        {
-          id: 3,
-          title: 'Spacious House with Garden',
-          location: 'Upanga, Dar es Salaam',
-          price: 1500000,
-          type: 'house',
-          bedrooms: 3,
-          bathrooms: 2,
-          area: 200,
-          images: [],
-          status: 'maintenance',
-          tenant: undefined
-        },
-        {
-          id: 4,
-          title: 'Executive Villa, Oyster Bay',
-          location: 'Oyster Bay, Dar es Salaam',
-          price: 3200000,
-          type: 'villa',
-          bedrooms: 4,
-          bathrooms: 3,
-          area: 340,
-          images: [],
-          status: 'available',
-          tenant: undefined
-        },
-        {
-          id: 5,
-          title: '1-Bedroom Apt in Kinondoni',
-          location: 'Kinondoni, Dar es Salaam',
-          price: 420000,
-          type: 'apartment',
-          bedrooms: 1,
-          bathrooms: 1,
-          area: 60,
-          images: [],
-          status: 'rented',
-          tenant: 'Alice Johnson'
-        }
-      ];
-      
-      setStats(mockStats);
-      setProperties(mockProperties.slice(0, 5));
-      
-      // Uncomment when API is ready:
-      // const [sr, pr] = await Promise.all([Api.getDashboardData(), Api.getMyProperties()]);
-      // if (sr.data) {
-      //   // Handle optional properties with defaults
-      //   setStats({
-      //     ...sr.data,
-      //     // Provide default values for optional properties
-      //     activeTenants: sr.data.activeTenants || 0,
-      //     monthlyRevenue: sr.data.monthlyRevenue || 0,
-      //     totalRevenue: sr.data.totalRevenue || 0,
-      //     occupancyRate: sr.data.occupancyRate || 0,
-      //   });
-      // }
-      // if (pr.data) setProperties(pr.data.slice(0, 5));
-    } catch (e) {
-      console.error('Failed to load dashboard data:', e);
-      setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
+        setStats(statsResponse.data || {});
+        setProperties(Array.isArray(propertiesResponse.data) ? propertiesResponse.data.slice(0, 5) : []);
+        setApplicationCount(Array.isArray(applicationsResponse.data) ? applicationsResponse.data.length : 0);
+      } catch (err: any) {
+        setError(err?.response?.data?.message || 'Failed to load dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const fmt = (n: number) => new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(n);
+    loadDashboardData();
+  }, []);
 
-  const statCards = [
-    { icon: Building,   label: 'Total Properties',   value: stats.totalProperties,                 suffix: '',  trend: null },
-    { icon: FileText,   label: 'Applications',        value: stats.totalApplications,               suffix: '',  trend: '+3 this week' },
-    { icon: Users,      label: 'Active Tenants',      value: stats.activeTenants,                   suffix: '',  trend: null },
-    { icon: DollarSign, label: 'Monthly Revenue',     value: fmt(stats.monthlyRevenue),             suffix: '',  trend: `${stats.occupancyRate || 0}% occupancy` },
-  ];
+  const statCards = useMemo(() => [
+    { icon: Building, label: 'Total Properties', value: stats.total_properties ?? 0, helper: 'Live owner portfolio' },
+    { icon: FileText, label: 'Applications', value: applicationCount, helper: 'Current submissions' },
+    { icon: Users, label: 'Active Tenants', value: stats.active_tenants ?? 0, helper: 'Active contracts' },
+    { icon: DollarSign, label: 'Monthly Revenue', value: formatCurrency(stats.monthly_revenue), helper: `${Number(stats.occupancy_rate ?? 0).toFixed(1)}% occupancy` },
+  ], [applicationCount, stats]);
 
   const quickActions = [
-    { label: 'Add Property',       icon: Plus,      to: 'properties/add',  primary: true },
-    { label: 'My Properties',      icon: Building,  to: 'my-properties',   primary: false },
-    { label: 'Applications',       icon: FileText,  to: 'applications',    primary: false },
-    { label: 'Analytics',          icon: BarChart3, to: 'analytics',       primary: false },
+    { label: 'Add Property', icon: Plus, to: 'add-property', primary: true },
+    { label: 'My Properties', icon: Building, to: 'my-properties', primary: false },
+    { label: 'Applications', icon: FileText, to: 'applications', primary: false },
+    { label: 'Analytics', icon: BarChart3, to: 'analytics', primary: false },
   ];
 
+  const imageUrl = (path?: string) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    return `${import.meta.env.VITE_API_URL}/storage/${path}`;
+  };
+
   if (loading) {
-    return (
-      <>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320 }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 32, height: 32, border: '1px solid rgba(201,168,76,0.3)', borderTop: '1px solid #c9a84c', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#8a8070', fontWeight: 300 }}>Loading dashboard…</p>
-          </div>
-        </div>
-      </>
-    );
+    return <div style={{ color: '#9f9587' }}>Loading landlord dashboard...</div>;
   }
 
   if (error) {
-    return (
-      <>
-        <div style={{ textAlign: 'center', padding: 64 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#e07070', marginBottom: 20 }}>{error}</p>
-          <button onClick={loadDashboardData} style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.25)', color: '#c9a84c', padding: '10px 20px', fontFamily: "'DM Sans', sans-serif", fontSize: 12, cursor: 'pointer', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Retry
-          </button>
-        </div>
-      </>
-    );
+    return <div style={{ color: '#e07070' }}>{error}</div>;
   }
 
   return (
     <>
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-
+        .ld-wrap { max-width: 1100px; margin: 0 auto; }
         .ld-eyebrow {
           font-family: 'DM Sans', sans-serif;
-          font-size: 10px; font-weight: 500;
-          letter-spacing: 0.22em; text-transform: uppercase;
-          color: #c9a84c; margin-bottom: 20px;
-          display: flex; align-items: center; gap: 8px;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: #c9a84c;
+          margin-bottom: 18px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
         .ld-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(201,168,76,0.15); }
-
-        .ld-section-title {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 26px; font-weight: 300;
-          letter-spacing: -0.02em; color: #f5f0e8;
-          margin-bottom: 20px;
-        }
-        .ld-section-title em { font-style: italic; color: #e8c97a; }
-
-        /* Stat cards */
         .ld-stats {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 1px;
-          background: rgba(201,168,76,0.15);
-          border: 1px solid rgba(201,168,76,0.15);
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 14px;
           margin-bottom: 40px;
         }
-
         .ld-stat {
-          background: #111;
+          background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%);
+          border: 1px solid rgba(201,168,76,0.14);
+          border-radius: 22px;
           padding: 24px;
-          position: relative;
-          overflow: hidden;
-          transition: background 0.2s;
+          color: #e8e4dc;
         }
-
-        .ld-stat:hover { background: rgba(20,20,16,0.9); }
-
-        .ld-stat::after {
-          content: '';
-          position: absolute; bottom: 0; left: 0; right: 0;
-          height: 2px;
-          background: linear-gradient(90deg, #c9a84c, transparent);
-          transform: scaleX(0); transform-origin: left;
-          transition: transform 0.4s;
-        }
-
-        .ld-stat:hover::after { transform: scaleX(1); }
-
         .ld-stat-icon {
-          width: 32px; height: 32px;
-          background: rgba(201,168,76,0.07);
-          border: 1px solid rgba(201,168,76,0.15);
-          display: flex; align-items: center; justify-content: center;
-          color: #c9a84c; margin-bottom: 16px;
-        }
-
-        .ld-stat-label {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 10px; font-weight: 500;
-          letter-spacing: 0.18em; text-transform: uppercase;
-          color: #8a8070; margin-bottom: 8px;
-        }
-
-        .ld-stat-value {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 32px; font-weight: 300;
-          letter-spacing: -0.03em; color: #f5f0e8;
-          line-height: 1; margin-bottom: 6px;
-        }
-
-        .ld-stat-trend {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 11px; font-weight: 300;
-          color: rgba(138,128,112,0.55);
-          letter-spacing: 0.04em;
-        }
-
-        /* Quick actions */
-        .ld-actions {
-          display: flex; gap: 8px; flex-wrap: wrap;
-          margin-bottom: 40px;
-        }
-
-        .ld-action-btn {
-          display: inline-flex; align-items: center; gap: 8px;
-          padding: 10px 18px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12px; font-weight: 500;
-          letter-spacing: 0.08em; text-transform: uppercase;
-          text-decoration: none; cursor: pointer;
-          transition: all 0.2s; border: none;
-        }
-
-        .ld-action-btn.primary {
-          background: #c9a84c; color: #0a0a0a;
-          clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
-        }
-
-        .ld-action-btn.primary:hover { background: #e8c97a; gap: 12px; }
-
-        .ld-action-btn.ghost {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(201,168,76,0.15);
-          color: #8a8070;
-        }
-
-        .ld-action-btn.ghost:hover { border-color: rgba(201,168,76,0.4); color: #f5f0e8; }
-
-        /* Property list */
-        .ld-prop-list { display: flex; flex-direction: column; gap: 1px; background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.12); }
-
-        .ld-prop-row {
-          background: #111;
-          display: flex; align-items: center; gap: 20px;
-          padding: 18px 20px;
-          transition: background 0.2s;
-          position: relative;
-        }
-
-        .ld-prop-row:hover { background: rgba(20,20,16,0.95); }
-
-        .ld-prop-img {
-          width: 80px; height: 56px;
-          background: rgba(201,168,76,0.05);
-          border: 1px solid rgba(201,168,76,0.1);
-          object-fit: cover;
-          flex-shrink: 0;
-          filter: brightness(0.8) saturate(0.7);
-        }
-
-        .ld-prop-info { flex: 1; min-width: 0; }
-
-        .ld-prop-title {
-          font-size: 15px; font-weight: 400;
-          color: #f5f0e8; letter-spacing: -0.01em;
-          margin-bottom: 4px;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
-        .ld-prop-meta {
-          display: flex; align-items: center; gap: 10px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 11px; font-weight: 300; color: #8a8070;
-        }
-
-        .ld-prop-price {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 18px; font-weight: 300;
-          color: #c9a84c; letter-spacing: -0.02em;
-          flex-shrink: 0;
-        }
-
-        .ld-prop-price span {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 10px; font-weight: 300; color: rgba(138,128,112,0.55);
-        }
-
-        .ld-prop-btns {
-          display: flex; gap: 6px; flex-shrink: 0;
-          opacity: 0; transition: opacity 0.2s;
-        }
-
-        .ld-prop-row:hover .ld-prop-btns { opacity: 1; }
-
-        .ld-prop-btn {
-          padding: 5px 12px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 10px; font-weight: 500;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          text-decoration: none; transition: all 0.2s;
-        }
-
-        .ld-prop-btn.outline {
-          border: 1px solid rgba(201,168,76,0.2);
-          color: #8a8070; background: transparent;
-        }
-
-        .ld-prop-btn.outline:hover { border-color: rgba(201,168,76,0.5); color: #f5f0e8; }
-
-        .ld-prop-btn.gold {
+          width: 40px;
+          height: 40px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
           background: rgba(201,168,76,0.12);
-          border: 1px solid rgba(201,168,76,0.25);
           color: #c9a84c;
+          margin-bottom: 16px;
         }
-
-        .ld-prop-btn.gold:hover { background: rgba(201,168,76,0.2); }
-
-        /* Empty */
-        .ld-empty {
-          text-align: center; padding: 56px 24px;
-          background: #111; border: 1px solid rgba(201,168,76,0.1);
+        .ld-stat-label {
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #9f9587;
         }
-
-        .ld-empty-icon {
-          width: 52px; height: 52px;
-          background: rgba(201,168,76,0.06);
-          border: 1px solid rgba(201,168,76,0.15);
-          display: flex; align-items: center; justify-content: center;
-          color: #c9a84c; margin: 0 auto 20px;
+        .ld-stat-value {
+          font-size: 32px;
+          margin-top: 8px;
+          margin-bottom: 6px;
         }
-
-        .ld-empty-title {
-          font-size: 22px; font-weight: 300;
-          color: #f5f0e8; margin-bottom: 6px;
-          letter-spacing: -0.02em;
+        .ld-stat-helper {
+          color: #9f9587;
+          font-size: 13px;
         }
-
-        .ld-empty-desc {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 13px; font-weight: 300;
-          color: #8a8070; margin-bottom: 24px;
+        .ld-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 42px;
         }
-
-        @media (max-width: 900px) {
-          .ld-stats { grid-template-columns: 1fr 1fr; }
-          .ld-prop-btns { opacity: 1; }
+        .ld-action {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 12px 16px;
+          text-decoration: none;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 600;
+          border: 1px solid rgba(255,255,255,0.1);
+          color: #e8e4dc;
+          background: rgba(255,255,255,0.04);
         }
-
-        @media (max-width: 560px) {
-          .ld-stats { grid-template-columns: 1fr; }
-          .ld-prop-row { flex-wrap: wrap; }
-          .ld-prop-img { display: none; }
+        .ld-action.primary {
+          color: #17120a;
+          background: #c9a84c;
+          border-color: #c9a84c;
+        }
+        .ld-list {
+          display: grid;
+          gap: 14px;
+        }
+        .ld-item {
+          display: grid;
+          grid-template-columns: 92px minmax(0, 1fr) auto auto;
+          gap: 18px;
+          align-items: center;
+          background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%);
+          border: 1px solid rgba(201,168,76,0.14);
+          border-radius: 22px;
+          padding: 18px;
+          color: #e8e4dc;
+        }
+        .ld-thumb {
+          width: 92px;
+          height: 68px;
+          border-radius: 16px;
+          object-fit: cover;
+          background: rgba(255,255,255,0.05);
+        }
+        .ld-title { font-size: 18px; margin-bottom: 6px; }
+        .ld-meta { color: #9f9587; font-size: 14px; line-height: 1.6; }
+        .ld-price { font-size: 22px; color: #c9a84c; white-space: nowrap; }
+        .ld-links {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+        }
+        .ld-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 14px;
+          border-radius: 999px;
+          text-decoration: none;
+          color: #e8e4dc;
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.04);
+          font-size: 13px;
+        }
+        @media (max-width: 820px) {
+          .ld-item {
+            grid-template-columns: 1fr;
+          }
+          .ld-links {
+            justify-content: flex-start;
+          }
         }
       `}</style>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-
-        {/* Stats */}
+      <div className="ld-wrap">
         <div className="ld-eyebrow">Overview</div>
         <div className="ld-stats">
-          {statCards.map((s) => (
-            <div key={s.label} className="ld-stat">
-              <div className="ld-stat-icon"><s.icon size={14} /></div>
-              <div className="ld-stat-label">{s.label}</div>
-              <div className="ld-stat-value">{s.value}</div>
-              {s.trend && <div className="ld-stat-trend">{s.trend}</div>}
+          {statCards.map((card) => (
+            <div key={card.label} className="ld-stat">
+              <div className="ld-stat-icon"><card.icon size={18} /></div>
+              <div className="ld-stat-label">{card.label}</div>
+              <div className="ld-stat-value">{card.value}</div>
+              <div className="ld-stat-helper">{card.helper}</div>
             </div>
           ))}
         </div>
 
-        {/* Quick actions */}
         <div className="ld-eyebrow">Quick Actions</div>
-        <div className="ld-actions" style={{ marginBottom: 48 }}>
-          {quickActions.map((a) => (
-            <Link key={a.to} to={a.to} className={`ld-action-btn ${a.primary ? 'primary' : 'ghost'}`}>
-              <a.icon size={13} />
-              {a.label}
-              {a.primary && <ArrowRight size={12} />}
+        <div className="ld-actions">
+          {quickActions.map((action) => (
+            <Link key={action.to} to={action.to} className={`ld-action${action.primary ? ' primary' : ''}`}>
+              <action.icon size={15} />
+              {action.label}
+              {action.primary && <ArrowRight size={14} />}
             </Link>
           ))}
         </div>
 
-        {/* Recent properties */}
         <div className="ld-eyebrow">Recent Properties</div>
-        <h2 className="ld-section-title">Your <em>Listings</em></h2>
-
-        {properties.length > 0 ? (
-          <div className="ld-prop-list">
-            {properties.map((p) => (
-              <div key={p.id} className="ld-prop-row">
-                <div className="ld-prop-img" style={{ background: 'rgba(201,168,76,0.05)' }}>
-                  {p.images?.[0] && (
-                    <img src={p.images[0]} alt={p.title} className="ld-prop-img" />
-                  )}
-                </div>
-                <div className="ld-prop-info">
-                  <div className="ld-prop-title">{p.title}</div>
-                  <div className="ld-prop-meta">
-                    <MapPin size={10} style={{ color: '#c9a84c' }} />
-                    {p.location}
-                    <span style={{ color: 'rgba(138,128,112,0.3)' }}>·</span>
-                    {p.bedrooms}bd · {p.bathrooms}ba · {p.area}m²
+        <div className="ld-list">
+          {properties.length === 0 ? (
+            <div style={{ color: '#9f9587' }}>No properties yet.</div>
+          ) : (
+            properties.map((property) => (
+              <div key={property.id} className="ld-item">
+                {property.images?.[0] ? (
+                  <img className="ld-thumb" src={imageUrl(property.images[0])} alt={property.title || 'Property'} />
+                ) : (
+                  <div className="ld-thumb" />
+                )}
+                <div>
+                  <div className="ld-title">{property.title || 'Untitled property'}</div>
+                  <div className="ld-meta">
+                    {property.location || 'No location'}
+                    <br />
+                    {property.bedrooms ?? 0} bd • {property.bathrooms ?? 0} ba • {property.area ?? 0} m²
+                    <br />
+                    {property.available ? 'Available' : 'Occupied'}
                   </div>
                 </div>
-                <div className="ld-prop-price">
-                  {fmt(p.price)}<span>/mo</span>
-                </div>
-                <div className="ld-prop-btns">
-                  <Link to={`/properties/${p.id}/edit`} className="ld-prop-btn outline">Edit</Link>
-                  <Link to={`/properties/${p.id}`}       className="ld-prop-btn gold">View</Link>
+                <div className="ld-price">{formatCurrency(property.price)}</div>
+                <div className="ld-links">
+                  <Link className="ld-link" to={`/dashboard/landlord/properties/${property.id}/edit`}>Edit</Link>
+                  <Link className="ld-link" to={`/property/${property.id}`}>View</Link>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="ld-empty">
-            <div className="ld-empty-icon"><Building size={20} /></div>
-            <div className="ld-empty-title">No properties yet</div>
-            <p className="ld-empty-desc">Add your first listing to start attracting tenants.</p>
-            <Link to="properties/add" className="ld-action-btn primary" style={{ display: 'inline-flex' }}>
-              <Plus size={13} /> Add Property <ArrowRight size={12} />
-            </Link>
-          </div>
-        )}
+            ))
+          )}
+        </div>
 
         {properties.length > 0 && (
-          <div style={{ marginTop: 16, textAlign: 'right' }}>
-            <Link to="my-properties" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#c9a84c', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              View all properties <ArrowRight size={12} />
+          <div style={{ marginTop: '18px', textAlign: 'right' }}>
+            <Link to="my-properties" style={{ color: '#c9a84c', textDecoration: 'none', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              View all properties <ArrowRight size={14} />
             </Link>
           </div>
         )}

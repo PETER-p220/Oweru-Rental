@@ -50,7 +50,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     landlord: [
       { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
       { name: 'My Properties',      icon: Building,      href: 'my-properties',       color: '#f59e0b' },
-      { name: 'Add Property',       icon: Plus,          href: 'properties/add',      color: '#34d399' },
+      { name: 'Add Property',       icon: Plus,          href: 'add-property',        color: '#34d399' },
       { name: 'Applications',       icon: FileText,      href: 'applications',        color: '#60a5fa' },
       { name: 'My Tenants',         icon: Users,         href: 'tenants',             color: '#a78bfa' },
       { name: 'Digital Contracts',  icon: BookOpen,      href: 'contracts',           color: '#f472b6' },

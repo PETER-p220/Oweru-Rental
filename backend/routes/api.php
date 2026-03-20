@@ -168,6 +168,10 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Analytics
         Route::get('/owner/analytics', [OwnerController::class, 'getAnalytics']);
+
+        // Messages
+        Route::get('/owner/messages', [OwnerController::class, 'getMessages']);
+        Route::post('/owner/messages', [OwnerController::class, 'sendMessage']);
     });
     
     // Admin specific routes
