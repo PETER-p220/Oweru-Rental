@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\Property;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Notification;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -327,6 +328,32 @@ class LandlordDemoDataSeeder extends Seeder
                 'read_at' => null,
                 'created_at' => now()->subHours(18),
                 'updated_at' => now()->subHours(18),
+            ]
+        );
+
+        Notification::firstOrCreate(
+            [
+                'user_id' => $mike->id,
+                'title' => 'Rent payment due soon',
+            ],
+            [
+                'message' => 'Your next rent payment for the Masaki apartment is due in a few days.',
+                'type' => 'payment',
+                'read_at' => null,
+                'archived_at' => null,
+            ]
+        );
+
+        Notification::firstOrCreate(
+            [
+                'user_id' => $mike->id,
+                'title' => 'Landlord replied to your message',
+            ],
+            [
+                'message' => 'Jane Landlord has responded to your latest maintenance follow-up.',
+                'type' => 'message',
+                'read_at' => now()->subDay(),
+                'archived_at' => null,
             ]
         );
 

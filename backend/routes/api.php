@@ -90,6 +90,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/tenant/notifications/read-all', [TenantController::class, 'markAllNotificationsAsRead']);
         Route::patch('/tenant/notifications/{notification}/archive', [TenantController::class, 'archiveNotification']);
         Route::delete('/tenant/notifications/{notification}', [TenantController::class, 'deleteNotification']);
+
+        // Messages
+        Route::get('/tenant/messages', [TenantController::class, 'getMessages']);
+        Route::post('/tenant/messages', [TenantController::class, 'sendMessage']);
         
         // Analytics
         Route::get('/tenant/analytics', [TenantController::class, 'getAnalytics']);

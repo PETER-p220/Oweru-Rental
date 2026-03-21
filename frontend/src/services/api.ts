@@ -306,6 +306,7 @@ class Api {
   static async getPaymentStats()         { return this.request<any>('tenant/payment-stats'); }
   static async getPaymentHistory()       { return this.request<any>('tenant/payment-history'); }
   static async getPaymentSummary()       { return this.request<any>('tenant/payment-summary'); }
+  static async getTenantAnalytics()      { return this.request<any>('tenant/analytics'); }
 
   static async saveProperty(propertyId: number) {
     return this.request(`tenant/properties/${propertyId}/save`, { method: 'POST' });
@@ -336,7 +337,7 @@ class Api {
   static async makePayment(paymentId: number, data: { paymentMethodId: string }) {
     return this.request(`tenant/payments/${paymentId}/pay`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ payment_method_id: data.paymentMethodId }),
     });
   }
 
@@ -357,6 +358,13 @@ class Api {
   static async getNotifications()          { return this.request<any>('tenant/notifications'); }
   static async getNotificationStats()      { return this.request<any>('tenant/notification-stats'); }
   static async markAllNotificationsAsRead(){ return this.request('tenant/notifications/read-all', { method: 'PATCH' }); }
+  static async getTenantMessages()         { return this.request<any[]>('tenant/messages'); }
+  static async sendTenantMessage(data: { subject?: string; body: string }) {
+    return this.request<any>('tenant/messages', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 
   static async markNotificationAsRead(id: number) {
     return this.request(`tenant/notifications/${id}/read`, { method: 'PATCH' });

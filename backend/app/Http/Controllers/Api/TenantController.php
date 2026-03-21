@@ -10,9 +10,11 @@ use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\SavedProperty;
 use App\Models\Notification;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class TenantController extends Controller
@@ -25,7 +27,9 @@ class TenantController extends Controller
             'total_properties' => Property::count(),
             'saved_properties' => SavedProperty::where('user_id', $user->id)->count(),
             'total_applications' => Application::where('user_id', $user->id)->count(),
-            'messages' => 0, // TODO: Implement messages
+            'messages' => $this->messagesTableAvailable()
+                ? Message::where('recipient_id', $user->id)->whereNull('read_at')->count()
+                : 0,
         ];
 
         return response()->json(['data' => $stats]);
@@ -146,6 +150,10 @@ class TenantController extends Controller
     // Contracts
     public function getMyContract(): JsonResponse
     {
+        if (! $this->tenantTablesAvailable()) {
+            return response()->json(['message' => 'No active contract found'], 404);
+        }
+
         $user = Auth::user();
         $contract = Contract::with('property', 'property.owner', 'tenant')
             ->whereHas('tenant', function ($query) use ($user) {
@@ -176,6 +184,10 @@ class TenantController extends Controller
     // Payments
     public function getMyPayments(): JsonResponse
     {
+        if (! $this->paymentsTableAvailable()) {
+            return $this->emptyPaginatedResponse(10);
+        }
+
         $user = Auth::user();
         $payments = Payment::with('property')
             ->where('user_id', $user->id)
@@ -224,6 +236,14 @@ class TenantController extends Controller
 
     public function getPaymentStats(): JsonResponse
     {
+        if (! $this->paymentsTableAvailable()) {
+            return response()->json(['data' => [
+                'total_paid' => 0,
+                'pending_payments' => 0,
+                'this_month' => 0,
+            ]]);
+        }
+
         $user = Auth::user();
         $stats = [
             'total_paid' => Payment::where('user_id', $user->id)->where('status', 'completed')->sum('amount'),
@@ -239,6 +259,10 @@ class TenantController extends Controller
 
     public function makePayment(Request $request, Payment $payment): JsonResponse
     {
+        if (! $this->paymentsTableAvailable()) {
+            return response()->json(['message' => 'Payments are unavailable until supporting tables are migrated'], 503);
+        }
+
         $user = Auth::user();
         
         if ($payment->user_id !== $user->id) {
@@ -290,6 +314,10 @@ class TenantController extends Controller
     // Notifications
     public function getNotifications(): JsonResponse
     {
+        if (! $this->notificationsTableAvailable()) {
+            return $this->emptyPaginatedResponse();
+        }
+
         $user = Auth::user();
         $notifications = Notification::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
@@ -308,6 +336,14 @@ class TenantController extends Controller
 
     public function getNotificationStats(): JsonResponse
     {
+        if (! $this->notificationsTableAvailable()) {
+            return response()->json(['data' => [
+                'total' => 0,
+                'unread' => 0,
+                'this_week' => 0,
+            ]]);
+        }
+
         $user = Auth::user();
         $stats = [
             'total' => Notification::where('user_id', $user->id)->count(),
@@ -322,6 +358,10 @@ class TenantController extends Controller
 
     public function markNotificationAsRead(Notification $notification): JsonResponse
     {
+        if (! $this->notificationsTableAvailable()) {
+            return response()->json(['message' => 'Notifications are unavailable until supporting tables are migrated'], 503);
+        }
+
         $user = Auth::user();
         
         if ($notification->user_id !== $user->id) {
@@ -335,6 +375,10 @@ class TenantController extends Controller
 
     public function markAllNotificationsAsRead(): JsonResponse
     {
+        if (! $this->notificationsTableAvailable()) {
+            return response()->json(['message' => 'Notifications are unavailable until supporting tables are migrated'], 503);
+        }
+
         $user = Auth::user();
         
         Notification::where('user_id', $user->id)
@@ -346,6 +390,10 @@ class TenantController extends Controller
 
     public function archiveNotification(Notification $notification): JsonResponse
     {
+        if (! $this->notificationsTableAvailable()) {
+            return response()->json(['message' => 'Notifications are unavailable until supporting tables are migrated'], 503);
+        }
+
         $user = Auth::user();
         
         if ($notification->user_id !== $user->id) {
@@ -359,6 +407,10 @@ class TenantController extends Controller
 
     public function deleteNotification(Notification $notification): JsonResponse
     {
+        if (! $this->notificationsTableAvailable()) {
+            return response()->json(['message' => 'Notifications are unavailable until supporting tables are migrated'], 503);
+        }
+
         $user = Auth::user();
         
         if ($notification->user_id !== $user->id) {
@@ -388,5 +440,111 @@ class TenantController extends Controller
         ];
 
         return response()->json(['data' => $analytics]);
+    }
+
+    public function getMessages(): JsonResponse
+    {
+        if (! $this->messagesTableAvailable()) {
+            return $this->emptyPaginatedResponse(50);
+        }
+
+        $user = Auth::user();
+
+        $messages = Message::with(['sender', 'recipient', 'property'])
+            ->where(function ($query) use ($user) {
+                $query->where('sender_id', $user->id)
+                    ->orWhere('recipient_id', $user->id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
+
+        Message::where('recipient_id', $user->id)
+            ->whereNull('read_at')
+            ->whereIn('id', collect($messages->items())->pluck('id'))
+            ->update(['read_at' => now()]);
+
+        return response()->json([
+            'data' => $messages->items(),
+            'pagination' => [
+                'current_page' => $messages->currentPage(),
+                'last_page' => $messages->lastPage(),
+                'per_page' => $messages->perPage(),
+                'total' => $messages->total(),
+            ]
+        ]);
+    }
+
+    public function sendMessage(Request $request): JsonResponse
+    {
+        if (! $this->messagesTableAvailable() || ! $this->tenantTablesAvailable()) {
+            return response()->json(['message' => 'Messaging is unavailable until supporting tables are migrated'], 503);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'subject' => 'nullable|string|max:255',
+            'body' => 'required|string|max:5000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = Auth::user();
+        $tenant = Tenant::with('property.owner')
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $tenant || ! $tenant->property || ! $tenant->property->owner) {
+            return response()->json(['message' => 'No landlord contact found for this tenant'], 422);
+        }
+
+        $message = Message::create([
+            'sender_id' => $user->id,
+            'recipient_id' => $tenant->property->owner->id,
+            'property_id' => $tenant->property_id,
+            'subject' => $request->subject,
+            'body' => $request->body,
+        ])->load(['sender', 'recipient', 'property']);
+
+        return response()->json([
+            'message' => 'Message sent successfully',
+            'data' => $message,
+        ], 201);
+    }
+
+    private function tenantTablesAvailable(): bool
+    {
+        return Schema::hasTable('tenants') && Schema::hasTable('contracts');
+    }
+
+    private function paymentsTableAvailable(): bool
+    {
+        return Schema::hasTable('payments') && class_exists(Payment::class);
+    }
+
+    private function notificationsTableAvailable(): bool
+    {
+        return Schema::hasTable('notifications');
+    }
+
+    private function messagesTableAvailable(): bool
+    {
+        return Schema::hasTable('messages');
+    }
+
+    private function emptyPaginatedResponse(int $perPage = 20): JsonResponse
+    {
+        return response()->json([
+            'data' => [],
+            'pagination' => [
+                'current_page' => 1,
+                'last_page' => 1,
+                'per_page' => $perPage,
+                'total' => 0,
+            ]
+        ]);
     }
 }

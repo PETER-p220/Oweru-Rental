@@ -12,8 +12,6 @@ import Register from './pages/Register';
 import TenantDashboard from './pages/TenantDashboard';
 import LandlordDashboard from './pages/LandlordDashboard';
 import AgentDashboard from './pages/AgentDashboard';
-import Applications from './pages/Applications';
-import Analytics from './pages/Analytics';
 import SettingsPage from './pages/Settings';
 import AddListing from './pages/AddListing';
 import DashboardLayout from './components/DashboardLayout';
@@ -28,6 +26,8 @@ import PaymentHistory from './pages/tenant/PaymentHistory';
 import Notifications from './pages/tenant/Notifications';
 import Messages from './pages/tenant/Messages';
 import SavedProperties from './pages/tenant/SavedProperties';
+import TenantApplicationsPage from './pages/tenant/ApplicationsPage';
+import TenantAnalyticsPage from './pages/tenant/AnalyticsPage';
 
 // Landlord pages
 import MyProperties from './pages/landlord/MyProperties';
@@ -90,13 +90,14 @@ const TenantRoutes = () => (
     <DashboardLayout title="Dashboard">
       <Routes>
         <Route path="" element={<TenantDashboard />} />
-        <Route path="applications" element={<Applications />} />
-        <Route path="analytics" element={<Analytics />} />
+        <Route path="applications" element={<TenantApplicationsPage />} />
+        <Route path="analytics" element={<TenantAnalyticsPage />} />
         <Route path="saved-properties" element={<SavedProperties />} />
         <Route path="my-properties" element={<SavedProperties />} />
         <Route path="properties/add" element={<AddListing />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="contract" element={<Contract />} />
+        <Route path="payments" element={<Payments />} />
         <Route path="rent-payments" element={<Payments />} />
         <Route path="payment-history" element={<PaymentHistory />} />
         <Route path="notifications" element={<Notifications />} />
