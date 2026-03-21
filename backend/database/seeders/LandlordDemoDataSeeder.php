@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Application;
 use App\Models\Contract;
+use App\Models\Commission;
+use App\Models\Lead;
 use App\Models\Message;
 use App\Models\Payment;
 use App\Models\Property;
@@ -301,6 +303,57 @@ class LandlordDemoDataSeeder extends Seeder
             ]
         );
 
+        Lead::updateOrCreate(
+            ['agent_id' => $agent->id, 'email' => 'prospect.one@oweru.com'],
+            [
+                'property_id' => $mikocheniStudio->id,
+                'user_id' => null,
+                'name' => 'Prospect One',
+                'phone' => '+255711111111',
+                'message' => 'Interested in scheduling a viewing this weekend.',
+                'source' => 'website',
+                'status' => 'new',
+            ]
+        );
+
+        Lead::updateOrCreate(
+            ['agent_id' => $agent->id, 'email' => 'prospect.two@oweru.com'],
+            [
+                'property_id' => $upangaHouse->id,
+                'user_id' => null,
+                'name' => 'Prospect Two',
+                'phone' => '+255722222222',
+                'message' => 'Looking for a family rental near the city center.',
+                'source' => 'facebook',
+                'status' => 'contacted',
+            ]
+        );
+
+        $marchRentPayment = Payment::where('reference', 'RENT-MIKE-2026-03')->first();
+        $commissionPayment = Payment::where('reference', 'COMM-MASAKI-2026-03')->first();
+
+        Commission::updateOrCreate(
+            ['agent_id' => $agent->id, 'property_id' => $masakiApartment->id],
+            [
+                'payment_id' => $commissionPayment?->id ?? $marchRentPayment?->id,
+                'amount' => 85000,
+                'percentage' => 10,
+                'status' => 'paid',
+                'paid_at' => now()->startOfMonth()->addDays(6),
+            ]
+        );
+
+        Commission::updateOrCreate(
+            ['agent_id' => $agent->id, 'property_id' => $oysterBayVilla->id],
+            [
+                'payment_id' => null,
+                'amount' => 120000,
+                'percentage' => 3.75,
+                'status' => 'pending',
+                'paid_at' => null,
+            ]
+        );
+
         Message::firstOrCreate(
             [
                 'sender_id' => $landlord->id,
@@ -328,6 +381,21 @@ class LandlordDemoDataSeeder extends Seeder
                 'read_at' => null,
                 'created_at' => now()->subHours(18),
                 'updated_at' => now()->subHours(18),
+            ]
+        );
+
+        Message::firstOrCreate(
+            [
+                'sender_id' => $agent->id,
+                'recipient_id' => $landlord->id,
+                'subject' => 'Viewing feedback',
+            ],
+            [
+                'property_id' => $mikocheniStudio->id,
+                'body' => 'Two qualified prospects asked for a second viewing this week.',
+                'read_at' => null,
+                'created_at' => now()->subHours(10),
+                'updated_at' => now()->subHours(10),
             ]
         );
 

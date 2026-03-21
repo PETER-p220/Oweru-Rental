@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Tenant;
 use App\Models\Property;
 use App\Models\Application;
 use App\Models\Contract;
@@ -445,10 +446,22 @@ class TenantController extends Controller
     public function getMessages(): JsonResponse
     {
         if (! $this->messagesTableAvailable()) {
-            return $this->emptyPaginatedResponse(50);
+            return response()->json([
+                'data' => [
+                    'messages' => [],
+                    'recipient' => null,
+                ],
+                'pagination' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 50,
+                    'total' => 0,
+                ]
+            ]);
         }
 
         $user = Auth::user();
+        $tenant = $this->getTenantRecord($user->id);
 
         $messages = Message::with(['sender', 'recipient', 'property'])
             ->where(function ($query) use ($user) {
@@ -464,7 +477,36 @@ class TenantController extends Controller
             ->update(['read_at' => now()]);
 
         return response()->json([
-            'data' => $messages->items(),
+            'data' => [
+                'messages' => array_map(function ($message) use ($user) {
+                    $direction = $message->sender_id === $user->id ? 'sent' : 'received';
+
+                    return [
+                        'id' => $message->id,
+                        'sender_id' => $message->sender_id,
+                        'recipient_id' => $message->recipient_id,
+                        'property_id' => $message->property_id,
+                        'subject' => $message->subject,
+                        'body' => $message->body,
+                        'read_at' => $message->read_at,
+                        'created_at' => $message->created_at,
+                        'updated_at' => $message->updated_at,
+                        'sender' => $message->sender,
+                        'recipient' => $message->recipient,
+                        'property' => $message->property,
+                        'direction' => $direction,
+                        'counterparty' => $direction === 'sent' ? $message->recipient : $message->sender,
+                    ];
+                }, $messages->items()),
+                'recipient' => $tenant && $tenant->property && $tenant->property->owner
+                    ? [
+                        'id' => $tenant->property->owner->id,
+                        'name' => trim($tenant->property->owner->first_name . ' ' . $tenant->property->owner->last_name),
+                        'property_id' => $tenant->property_id,
+                        'property_title' => $tenant->property->title,
+                    ]
+                    : null,
+            ],
             'pagination' => [
                 'current_page' => $messages->currentPage(),
                 'last_page' => $messages->lastPage(),
@@ -493,9 +535,7 @@ class TenantController extends Controller
         }
 
         $user = Auth::user();
-        $tenant = Tenant::with('property.owner')
-            ->where('user_id', $user->id)
-            ->first();
+        $tenant = $this->getTenantRecord($user->id);
 
         if (! $tenant || ! $tenant->property || ! $tenant->property->owner) {
             return response()->json(['message' => 'No landlord contact found for this tenant'], 422);
@@ -513,6 +553,17 @@ class TenantController extends Controller
             'message' => 'Message sent successfully',
             'data' => $message,
         ], 201);
+    }
+
+    private function getTenantRecord(int $userId): ?Tenant
+    {
+        if (! Schema::hasTable('tenants')) {
+            return null;
+        }
+
+        return Tenant::with('property.owner')
+            ->where('user_id', $userId)
+            ->first();
     }
 
     private function tenantTablesAvailable(): bool

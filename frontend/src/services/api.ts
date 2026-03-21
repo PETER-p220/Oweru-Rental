@@ -234,6 +234,14 @@ class Api {
     return this.request<any>('admin/transactions/stats');
   }
 
+  static async getAdminContracts() {
+    return this.request<any[]>('admin/contracts');
+  }
+
+  static async getAdminContractStats() {
+    return this.request<any>('admin/contracts/stats');
+  }
+
   // ── Admin – Commission ──────────────────────────────────────────────────────
 
   static async getCommissionRules()    { return this.request<any[]>('admin/commission/rules'); }
@@ -358,7 +366,7 @@ class Api {
   static async getNotifications()          { return this.request<any>('tenant/notifications'); }
   static async getNotificationStats()      { return this.request<any>('tenant/notification-stats'); }
   static async markAllNotificationsAsRead(){ return this.request('tenant/notifications/read-all', { method: 'PATCH' }); }
-  static async getTenantMessages()         { return this.request<any[]>('tenant/messages'); }
+  static async getTenantMessages()         { return this.request<any>('tenant/messages'); }
   static async sendTenantMessage(data: { subject?: string; body: string }) {
     return this.request<any>('tenant/messages', {
       method: 'POST',
@@ -391,6 +399,10 @@ class Api {
   static async getAgentCommissionStats()  { return this.request<any>('agent/commission-stats'); }
   static async getPayoutHistory()         { return this.request<any[]>('agent/payouts'); }
   static async getAgentAnalytics()        { return this.request<any>('agent/analytics'); }
+  static async getAgentMessages()         { return this.request<any>('agent/messages'); }
+  static async sendAgentMessage(data: { recipient_id: number; property_id?: number; subject?: string; body: string }) {
+    return this.request<any>('agent/messages', { method: 'POST', body: JSON.stringify(data) });
+  }
 
   static async createListing(data: any) {
     return this.request<any>('agent/listings', { method: 'POST', body: JSON.stringify(data) });

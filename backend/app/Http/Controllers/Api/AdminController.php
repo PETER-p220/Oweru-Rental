@@ -3,27 +3,30 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Commission;
+use App\Models\Contract;
+use App\Models\Payment;
 use App\Models\Property;
-use App\Models\Application;
-use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class AdminController extends Controller
 {
-    // Users Management
     public function getUsers(Request $request): JsonResponse
     {
         $query = User::query();
 
-        // Apply filters
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('first_name', 'like', "%{$request->search}%")
-                  ->orWhere('last_name', 'like', "%{$request->search}%")
-                  ->orWhere('email', 'like', "%{$request->search}%");
+                    ->orWhere('last_name', 'like', "%{$request->search}%")
+                    ->orWhere('email', 'like', "%{$request->search}%");
             });
         }
 
@@ -35,7 +38,7 @@ class AdminController extends Controller
             $query->where('is_active', $request->status === 'active');
         }
 
-        $users = $query->orderBy('created_at', 'desc')->paginate(10);
+        $users = $query->orderByDesc('created_at')->paginate(10);
 
         return response()->json([
             'data' => $users->items(),
@@ -44,26 +47,26 @@ class AdminController extends Controller
                 'last_page' => $users->lastPage(),
                 'per_page' => $users->perPage(),
                 'total' => $users->total(),
-            ]
+            ],
         ]);
     }
 
     public function getUserStats(): JsonResponse
     {
-        $stats = [
-            'total' => User::count(),
-            'active' => User::where('is_active', true)->count(),
-            'inactive' => User::where('is_active', false)->count(),
-            'suspended' => User::where('is_active', false)->where('user_type', '!=', 'admin')->count(),
-            'admins' => User::where('user_type', 'admin')->count(),
-            'agents' => User::where('user_type', 'agent')->count(),
-            'landlords' => User::where('user_type', 'landlord')->count(),
-            'tenants' => User::where('user_type', 'tenant')->count(),
-            'newThisMonth' => User::whereMonth('created_at', now()->month)->count(),
-            'activeThisMonth' => User::where('is_active', true)->whereMonth('updated_at', now()->month)->count(),
-        ];
-
-        return response()->json(['data' => $stats]);
+        return response()->json([
+            'data' => [
+                'total' => User::count(),
+                'active' => User::where('is_active', true)->count(),
+                'inactive' => User::where('is_active', false)->count(),
+                'suspended' => User::where('is_active', false)->where('user_type', '!=', 'admin')->count(),
+                'admins' => User::where('user_type', 'admin')->count(),
+                'agents' => User::where('user_type', 'agent')->count(),
+                'landlords' => User::where('user_type', 'landlord')->count(),
+                'tenants' => User::where('user_type', 'tenant')->count(),
+                'newThisMonth' => User::where('created_at', '>=', now()->startOfMonth())->count(),
+                'activeThisMonth' => User::where('is_active', true)->where('updated_at', '>=', now()->startOfMonth())->count(),
+            ],
+        ]);
     }
 
     public function createUser(Request $request): JsonResponse
@@ -82,7 +85,7 @@ class AdminController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -93,12 +96,12 @@ class AdminController extends Controller
             'phone' => $request->phone,
             'user_type' => $request->user_type,
             'password' => bcrypt($request->password),
-            'is_active' => $request->status === 'active' ?? true,
+            'is_active' => $request->has('status') ? $request->status === 'active' : true,
         ]);
 
         return response()->json([
             'message' => 'User created successfully',
-            'data' => $user
+            'data' => $user,
         ], 201);
     }
 
@@ -120,7 +123,7 @@ class AdminController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -144,25 +147,24 @@ class AdminController extends Controller
 
         return response()->json([
             'message' => 'User updated successfully',
-            'data' => $user
+            'data' => $user,
         ]);
     }
 
     public function deleteUser($userId): JsonResponse
     {
         $user = User::findOrFail($userId);
-        
-        // Prevent deletion of the last admin
+
         if ($user->user_type === 'admin' && User::where('user_type', 'admin')->count() <= 1) {
             return response()->json([
-                'message' => 'Cannot delete the last admin user'
+                'message' => 'Cannot delete the last admin user',
             ], 422);
         }
 
         $user->delete();
 
         return response()->json([
-            'message' => 'User deleted successfully'
+            'message' => 'User deleted successfully',
         ]);
     }
 
@@ -177,31 +179,30 @@ class AdminController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $user->update([
-            'is_active' => $request->status === 'active'
+            'is_active' => $request->status === 'active',
         ]);
 
         return response()->json([
             'message' => 'User status updated successfully',
-            'data' => $user
+            'data' => $user,
         ]);
     }
 
-    // Properties Management
     public function getProperties(Request $request): JsonResponse
     {
         $query = Property::with(['owner', 'agent']);
 
-        // Apply filters
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', "%{$request->search}%")
-                  ->orWhere('description', 'like', "%{$request->search}%")
-                  ->orWhere('location', 'like', "%{$request->search}%");
+                    ->orWhere('description', 'like', "%{$request->search}%")
+                    ->orWhere('location', 'like', "%{$request->search}%")
+                    ->orWhere('address', 'like', "%{$request->search}%");
             });
         }
 
@@ -209,8 +210,10 @@ class AdminController extends Controller
             $query->where('type', $request->type);
         }
 
-        if ($request->status) {
-            $query->where('status', $request->status);
+        if ($request->status === 'available') {
+            $query->where('available', true);
+        } elseif ($request->status === 'rented') {
+            $query->where('available', false);
         }
 
         if ($request->min_price) {
@@ -221,7 +224,7 @@ class AdminController extends Controller
             $query->where('price', '<=', $request->max_price);
         }
 
-        $properties = $query->orderBy('created_at', 'desc')->paginate(10);
+        $properties = $query->orderByDesc('created_at')->paginate(10);
 
         return response()->json([
             'data' => $properties->items(),
@@ -230,176 +233,352 @@ class AdminController extends Controller
                 'last_page' => $properties->lastPage(),
                 'per_page' => $properties->perPage(),
                 'total' => $properties->total(),
-            ]
+            ],
         ]);
     }
 
     public function getPropertyStats(): JsonResponse
     {
-        $stats = [
-            'total_properties' => Property::count(),
-            'available_properties' => Property::where('status', 'available')->count(),
-            'rented_properties' => Property::where('status', 'rented')->count(),
-            'maintenance_properties' => Property::where('status', 'maintenance')->count(),
-            'total_value' => Property::sum('price'),
-            'avg_price' => Property::avg('price'),
-            'featured_properties' => Property::where('featured', true)->count(),
-            'new_this_month' => Property::where('created_at', '>=', now()->startOfMonth())->count(),
-        ];
+        $rentedCount = $this->hasTables(['contracts'])
+            ? Contract::where('status', 'active')->distinct('property_id')->count('property_id')
+            : Property::where('available', false)->count();
 
-        return response()->json(['data' => $stats]);
+        return response()->json([
+            'data' => [
+                'total_properties' => Property::count(),
+                'available_properties' => Property::where('available', true)->count(),
+                'rented_properties' => $rentedCount,
+                'maintenance_properties' => 0,
+                'total_value' => (float) Property::sum('price'),
+                'avg_price' => (float) Property::avg('price'),
+                'featured_properties' => Property::where('featured', true)->count(),
+                'new_this_month' => Property::where('created_at', '>=', now()->startOfMonth())->count(),
+            ],
+        ]);
     }
 
-    // Transactions Management
     public function getTransactions(Request $request): JsonResponse
     {
-        // Mock transaction data for now
-        $transactions = [
-            [
-                'id' => 1,
-                'type' => 'rent_payment',
-                'amount' => 800000,
-                'currency' => 'TZS',
-                'status' => 'completed',
-                'description' => 'Monthly rent payment for Modern 3-Bedroom Villa in Masaki',
-                'reference' => 'TXN-2024-001',
-                'payment_method' => 'mobile_money',
-                'user' => [
-                    'id' => 1,
-                    'name' => 'John Doe',
-                    'email' => 'john.doe@example.com',
-                    'type' => 'tenant'
-                ],
-                'created_at' => '2024-03-20T10:30:00Z',
-                'updated_at' => '2024-03-20T10:30:00Z',
-            ],
-            [
-                'id' => 2,
-                'type' => 'commission',
-                'amount' => 125000,
-                'currency' => 'TZS',
-                'status' => 'completed',
-                'description' => 'Commission payment for property rental',
-                'reference' => 'TXN-2024-002',
-                'payment_method' => 'bank_transfer',
-                'user' => [
-                    'id' => 2,
-                    'name' => 'Michael Johnson',
-                    'email' => 'michael.johnson@oweru.com',
-                    'type' => 'agent'
-                ],
-                'created_at' => '2024-03-19T14:20:00Z',
-                'updated_at' => '2024-03-19T14:20:00Z',
-            ]
-        ];
+        if (! $this->hasTables(['payments'])) {
+            return response()->json(['data' => []]);
+        }
 
-        return response()->json(['data' => $transactions]);
+        $payments = Payment::with(['user', 'property', 'agent'])
+            ->latest()
+            ->get()
+            ->map(fn (Payment $payment) => $this->transformPaymentTransaction($payment));
+
+        $commissions = $this->hasTables(['commissions'])
+            ? Commission::with(['agent', 'property', 'payment'])
+                ->latest()
+                ->get()
+                ->map(fn (Commission $commission) => $this->transformCommissionTransaction($commission))
+            : collect();
+
+        $transactions = $payments
+            ->concat($commissions)
+            ->sortByDesc('createdAt')
+            ->values();
+
+        $filtered = $transactions->filter(function (array $transaction) use ($request) {
+            if ($request->search) {
+                $search = mb_strtolower($request->search);
+                $haystack = mb_strtolower(implode(' ', [
+                    $transaction['description'] ?? '',
+                    $transaction['reference'] ?? '',
+                    $transaction['user']['name'] ?? '',
+                    $transaction['user']['email'] ?? '',
+                    $transaction['property']['title'] ?? '',
+                ]));
+
+                if (! str_contains($haystack, $search)) {
+                    return false;
+                }
+            }
+
+            if ($request->type && $request->type !== $transaction['type']) {
+                return false;
+            }
+
+            if ($request->status && $request->status !== $transaction['status']) {
+                return false;
+            }
+
+            return true;
+        })->values();
+
+        return response()->json(['data' => $filtered]);
     }
 
     public function getTransactionStats(): JsonResponse
     {
-        $stats = [
-            'total_transactions' => 5,
-            'total_revenue' => 2625000,
-            'total_fees' => 26250,
-            'net_revenue' => 2598750,
-            'pending_transactions' => 1,
-            'completed_transactions' => 3,
-            'failed_transactions' => 1,
-            'refunded_transactions' => 1,
-            'avg_transaction_amount' => 525000,
-            'revenue_this_month' => 2625000,
-            'revenue_growth' => 15.5,
-            'transaction_growth' => 12.3,
-        ];
+        if (! $this->hasTables(['payments'])) {
+            return response()->json(['data' => [
+                'total_transactions' => 0,
+                'total_revenue' => 0,
+                'total_fees' => 0,
+                'net_revenue' => 0,
+                'pending_transactions' => 0,
+                'completed_transactions' => 0,
+                'failed_transactions' => 0,
+                'refunded_transactions' => 0,
+                'avg_transaction_amount' => 0,
+                'revenue_this_month' => 0,
+                'revenue_growth' => 0,
+                'transaction_growth' => 0,
+            ]]);
+        }
 
-        return response()->json(['data' => $stats]);
+        $completedAmount = (float) Payment::where('status', 'completed')->sum('amount');
+        $fees = (float) Payment::sum(DB::raw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.fees')), 0)"));
+        $thisMonthRevenue = (float) Payment::where('status', 'completed')
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum('amount');
+        $lastMonthRevenue = (float) Payment::where('status', 'completed')
+            ->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])
+            ->sum('amount');
+        $thisMonthTransactions = Payment::where('created_at', '>=', now()->startOfMonth())->count();
+        $lastMonthTransactions = Payment::whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])->count();
+
+        return response()->json(['data' => [
+            'total_transactions' => Payment::count(),
+            'total_revenue' => $completedAmount,
+            'total_fees' => $fees,
+            'net_revenue' => $completedAmount - $fees,
+            'pending_transactions' => Payment::where('status', 'pending')->count(),
+            'completed_transactions' => Payment::where('status', 'completed')->count(),
+            'failed_transactions' => Payment::where('status', 'failed')->count(),
+            'refunded_transactions' => Payment::where('status', 'refunded')->count(),
+            'avg_transaction_amount' => (float) Payment::avg('amount'),
+            'revenue_this_month' => $thisMonthRevenue,
+            'revenue_growth' => $this->calculateGrowth($lastMonthRevenue, $thisMonthRevenue),
+            'transaction_growth' => $this->calculateGrowth($lastMonthTransactions, $thisMonthTransactions),
+        ]]);
     }
 
-    // Commission Control
     public function getCommissionRules(Request $request): JsonResponse
     {
-        // Mock commission rules data
-        $rules = [
-            [
-                'id' => 1,
-                'name' => 'Standard Rental Commission',
-                'description' => '5% commission on all rental properties',
-                'type' => 'percentage',
-                'value' => 5,
-                'min_amount' => 100000,
-                'applies_to' => 'rent',
-                'user_type' => 'agent',
-                'is_active' => true,
-                'created_at' => '2024-01-01T00:00:00Z',
-                'updated_at' => '2024-01-01T00:00:00Z',
-            ]
-        ];
+        $avg = $this->hasTables(['commissions'])
+            ? round((float) Commission::whereNotNull('percentage')->avg('percentage'), 2)
+            : 5.0;
 
-        return response()->json(['data' => $rules]);
+        return response()->json(['data' => [[
+            'id' => 1,
+            'name' => 'Standard Rental Commission',
+            'description' => 'Default commission policy inferred from recorded agent commissions.',
+            'type' => 'percentage',
+            'value' => $avg > 0 ? $avg : 5,
+            'min_amount' => null,
+            'max_amount' => null,
+            'applies_to' => 'rent',
+            'user_type' => 'agent',
+            'is_active' => true,
+            'created_at' => now()->toISOString(),
+            'updated_at' => now()->toISOString(),
+        ]]]);
     }
 
     public function getCommissionPayments(Request $request): JsonResponse
     {
-        // Mock commission payments data
-        $payments = [
-            [
-                'id' => 1,
-                'agent' => [
-                    'id' => 1,
-                    'name' => 'Michael Johnson',
-                    'email' => 'michael.johnson@oweru.com',
-                    'code' => 'DAL001'
-                ],
-                'property' => [
-                    'id' => 1,
-                    'title' => 'Modern 3-Bedroom Villa in Masaki',
-                    'address' => 'Masaki, Dar es Salaam',
-                    'price' => 2500000
-                ],
-                'type' => 'rent',
-                'amount' => 125000,
-                'percentage' => 5,
-                'status' => 'paid',
-                'due_date' => '2024-03-15T00:00:00Z',
-                'paid_date' => '2024-03-15T14:30:00Z',
-                'reference' => 'COM-2024-001',
-                'created_at' => '2024-03-01T00:00:00Z',
-                'updated_at' => '2024-03-15T14:30:00Z',
-            ]
-        ];
+        if (! $this->hasTables(['commissions'])) {
+            return response()->json(['data' => []]);
+        }
+
+        $payments = Commission::with(['agent', 'property', 'payment'])
+            ->latest()
+            ->get()
+            ->map(function (Commission $commission) {
+                return [
+                    'id' => $commission->id,
+                    'agent' => [
+                        'id' => $commission->agent?->id,
+                        'name' => $commission->agent?->fullName() ?? 'Unknown Agent',
+                        'email' => $commission->agent?->email,
+                        'code' => 'AGT-' . str_pad((string) ($commission->agent_id ?? 0), 3, '0', STR_PAD_LEFT),
+                    ],
+                    'property' => [
+                        'id' => $commission->property?->id,
+                        'title' => $commission->property?->title ?? 'Unknown Property',
+                        'address' => $commission->property?->address ?? $commission->property?->location,
+                        'price' => (float) ($commission->property?->price ?? 0),
+                    ],
+                    'type' => 'rent',
+                    'amount' => (float) $commission->amount,
+                    'percentage' => (float) ($commission->percentage ?? 0),
+                    'status' => $commission->status,
+                    'due_date' => optional($commission->payment?->due_date ?? $commission->created_at)?->toISOString(),
+                    'paid_date' => optional($commission->paid_at)?->toISOString(),
+                    'reference' => 'COM-' . str_pad((string) $commission->id, 5, '0', STR_PAD_LEFT),
+                    'created_at' => optional($commission->created_at)?->toISOString(),
+                    'updated_at' => optional($commission->updated_at)?->toISOString(),
+                ];
+            });
 
         return response()->json(['data' => $payments]);
     }
 
     public function getCommissionStats(): JsonResponse
     {
-        $stats = [
-            'total_commissions' => 3,
-            'pending_commissions' => 1,
-            'approved_commissions' => 1,
-            'paid_commissions' => 1,
-            'total_amount' => 210000,
-            'avg_commission_rate' => 4.33,
-            'top_earner' => [
-                'name' => 'Michael Johnson',
-                'total_earned' => 125000,
-                'transactions' => 1
-            ],
-            'this_month' => [
-                'total' => 210000,
-                'paid' => 125000,
-                'pending' => 40000
-            ]
-        ];
+        if (! $this->hasTables(['commissions'])) {
+            return response()->json(['data' => [
+                'totalCommissions' => 0,
+                'pendingCommissions' => 0,
+                'approvedCommissions' => 0,
+                'paidCommissions' => 0,
+                'totalAmount' => 0,
+                'avgCommissionRate' => 0,
+                'topEarner' => ['name' => 'N/A', 'totalEarned' => 0, 'transactions' => 0],
+                'thisMonth' => ['total' => 0, 'paid' => 0, 'pending' => 0],
+            ]]);
+        }
 
-        return response()->json(['data' => $stats]);
+        $topEarner = Commission::select('agent_id', DB::raw('SUM(amount) as total_earned'), DB::raw('COUNT(*) as transactions'))
+            ->with('agent')
+            ->groupBy('agent_id')
+            ->orderByDesc('total_earned')
+            ->first();
+
+        return response()->json(['data' => [
+            'totalCommissions' => Commission::count(),
+            'pendingCommissions' => Commission::where('status', 'pending')->count(),
+            'approvedCommissions' => Commission::where('status', 'approved')->count(),
+            'paidCommissions' => Commission::where('status', 'paid')->count(),
+            'totalAmount' => (float) Commission::sum('amount'),
+            'avgCommissionRate' => round((float) Commission::avg('percentage'), 2),
+            'topEarner' => [
+                'name' => $topEarner?->agent?->fullName() ?? 'N/A',
+                'totalEarned' => (float) ($topEarner?->total_earned ?? 0),
+                'transactions' => (int) ($topEarner?->transactions ?? 0),
+            ],
+            'thisMonth' => [
+                'total' => (float) Commission::where('created_at', '>=', now()->startOfMonth())->sum('amount'),
+                'paid' => (float) Commission::where('status', 'paid')->where('created_at', '>=', now()->startOfMonth())->sum('amount'),
+                'pending' => (float) Commission::where('status', 'pending')->where('created_at', '>=', now()->startOfMonth())->sum('amount'),
+            ],
+        ]]);
     }
 
-    // System Settings
+    public function getContracts(Request $request): JsonResponse
+    {
+        if (! $this->hasTables(['contracts', 'tenants'])) {
+            return response()->json(['data' => []]);
+        }
+
+        $contracts = Contract::with(['tenant.user', 'property.owner', 'property.agent'])
+            ->latest()
+            ->get()
+            ->map(function (Contract $contract) {
+                $tenantUser = $contract->tenant?->user;
+                $owner = $contract->property?->owner;
+                $agent = $contract->property?->agent;
+
+                return [
+                    'id' => $contract->id,
+                    'reference' => 'CON-' . str_pad((string) $contract->id, 5, '0', STR_PAD_LEFT),
+                    'type' => 'rental',
+                    'status' => $contract->status,
+                    'title' => ($contract->property?->title ?? 'Property') . ' Rental Agreement',
+                    'description' => $contract->terms ?: 'Rental contract recorded in the platform.',
+                    'parties' => [
+                        'landlord' => $owner ? [
+                            'id' => $owner->id,
+                            'name' => $owner->fullName(),
+                            'email' => $owner->email,
+                            'phone' => $owner->phone,
+                        ] : null,
+                        'tenant' => $tenantUser ? [
+                            'id' => $tenantUser->id,
+                            'name' => $tenantUser->fullName(),
+                            'email' => $tenantUser->email,
+                            'phone' => $tenantUser->phone,
+                        ] : null,
+                        'agent' => $agent ? [
+                            'id' => $agent->id,
+                            'name' => $agent->fullName(),
+                            'email' => $agent->email,
+                            'phone' => $agent->phone,
+                            'commissionRate' => (float) (Commission::where('property_id', $contract->property_id)->avg('percentage') ?? 0),
+                        ] : null,
+                    ],
+                    'property' => [
+                        'id' => $contract->property?->id,
+                        'title' => $contract->property?->title ?? 'Unknown Property',
+                        'address' => $contract->property?->address ?? $contract->property?->location,
+                        'type' => $contract->property?->type,
+                        'area' => (float) ($contract->property?->area ?? 0),
+                        'bedrooms' => (int) ($contract->property?->bedrooms ?? 0),
+                        'bathrooms' => (int) ($contract->property?->bathrooms ?? 0),
+                    ],
+                    'terms' => [
+                        'startDate' => optional($contract->start_date)?->toISOString(),
+                        'endDate' => optional($contract->end_date)?->toISOString(),
+                        'rentAmount' => (float) $contract->rent_amount,
+                        'depositAmount' => (float) $contract->rent_amount,
+                        'paymentFrequency' => 'monthly',
+                        'currency' => 'TZS',
+                        'lateFee' => 0,
+                        'earlyTerminationFee' => 0,
+                    ],
+                    'documents' => [
+                        'contractFile' => null,
+                        'signedBy' => array_values(array_filter([
+                            $owner?->fullName(),
+                            $tenantUser?->fullName(),
+                            $agent?->fullName(),
+                        ])),
+                        'uploadedAt' => optional($contract->created_at)?->toISOString(),
+                        'fileSize' => 0,
+                    ],
+                    'metadata' => [
+                        'createdAt' => optional($contract->created_at)?->toISOString(),
+                        'updatedAt' => optional($contract->updated_at)?->toISOString(),
+                        'createdBy' => 'System',
+                        'lastModifiedBy' => 'System',
+                        'version' => 1,
+                        'renewalCount' => 0,
+                    ],
+                ];
+            });
+
+        return response()->json(['data' => $contracts]);
+    }
+
+    public function getContractStats(): JsonResponse
+    {
+        if (! $this->hasTables(['contracts'])) {
+            return response()->json(['data' => [
+                'totalContracts' => 0,
+                'activeContracts' => 0,
+                'expiredContracts' => 0,
+                'pendingContracts' => 0,
+                'totalValue' => 0,
+                'avgContractValue' => 0,
+                'contractsThisMonth' => 0,
+                'expiringThisMonth' => 0,
+                'renewalRate' => 0,
+                'terminationRate' => 0,
+            ]]);
+        }
+
+        $total = Contract::count();
+
+        return response()->json(['data' => [
+            'totalContracts' => $total,
+            'activeContracts' => Contract::where('status', 'active')->count(),
+            'expiredContracts' => Contract::where('status', 'expired')->count(),
+            'pendingContracts' => Contract::where('status', 'pending')->count(),
+            'totalValue' => (float) Contract::sum('rent_amount'),
+            'avgContractValue' => (float) Contract::avg('rent_amount'),
+            'contractsThisMonth' => Contract::where('created_at', '>=', now()->startOfMonth())->count(),
+            'expiringThisMonth' => Contract::whereBetween('end_date', [now()->startOfMonth(), now()->endOfMonth()])->count(),
+            'renewalRate' => $total > 0 ? round((Contract::where('status', 'active')->count() / $total) * 100, 1) : 0,
+            'terminationRate' => $total > 0 ? round((Contract::where('status', 'terminated')->count() / $total) * 100, 1) : 0,
+        ]]);
+    }
+
     public function getSettings(): JsonResponse
     {
-        $settings = [
+        return response()->json(['data' => [
             'site_name' => 'Oweru Rental',
             'site_description' => 'Professional property rental management system',
             'contact_email' => 'admin@oweru.com',
@@ -421,9 +600,7 @@ class AdminController extends Controller
             'password_require_special_chars' => true,
             'password_require_numbers' => true,
             'password_require_uppercase' => true,
-        ];
-
-        return response()->json(['data' => $settings]);
+        ]]);
     }
 
     public function updateSettings(Request $request): JsonResponse
@@ -455,120 +632,388 @@ class AdminController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        // For now, just return success
-        // TODO: Actually update settings in database
-
-        return response()->json([
-            'message' => 'Settings updated successfully'
-        ]);
+        return response()->json(['message' => 'Settings updated successfully']);
     }
 
-    // Verification Management
     public function getVerificationRequests(Request $request): JsonResponse
     {
-        // Mock verification requests data
-        $requests = [
-            [
-                'id' => 1,
-                'user' => [
-                    'id' => 1,
-                    'name' => 'John Doe',
-                    'email' => 'john.doe@example.com',
-                    'phone' => '+255 712 345 678',
-                    'type' => 'tenant'
-                ],
-                'type' => 'identity',
-                'status' => 'pending',
-                'priority' => 'medium',
-                'documents' => [
-                    [
-                        'type' => 'national_id',
-                        'url' => '/docs/id.jpg',
-                        'file_name' => 'national_id.jpg',
-                        'file_size' => 1048576,
-                        'uploaded_at' => '2024-03-20T10:30:00Z'
-                    ]
-                ],
-                'metadata' => [
-                    'submitted_at' => '2024-03-20T10:30:00Z',
-                    'verification_method' => 'document_upload',
-                    'ip_address' => '192.168.1.100'
-                ],
-                'created_at' => '2024-03-20T10:30:00Z',
-                'updated_at' => '2024-03-20T10:30:00Z',
-            ]
-        ];
+        $requests = User::query()
+            ->when($request->search, function ($query) use ($request) {
+                $query->where(function ($inner) use ($request) {
+                    $inner->where('first_name', 'like', "%{$request->search}%")
+                        ->orWhere('last_name', 'like', "%{$request->search}%")
+                        ->orWhere('email', 'like', "%{$request->search}%");
+                });
+            })
+            ->latest()
+            ->get()
+            ->map(function (User $user) {
+                $status = $user->email_verified_at ? 'approved' : 'pending';
+
+                return [
+                    'id' => $user->id,
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->fullName(),
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'type' => $user->user_type,
+                    ],
+                    'type' => 'identity',
+                    'status' => $status,
+                    'priority' => ! $user->is_active ? 'high' : ($status === 'pending' ? 'medium' : 'low'),
+                    'documents' => [],
+                    'metadata' => [
+                        'submitted_at' => optional($user->created_at)?->toISOString(),
+                        'verification_method' => $user->email_verified_at ? 'email_confirmed' : 'profile_review',
+                        'reviewed_at' => optional($user->email_verified_at)?->toISOString(),
+                        'reviewed_by' => $user->email_verified_at ? 'System' : null,
+                    ],
+                    'created_at' => optional($user->created_at)?->toISOString(),
+                    'updated_at' => optional($user->updated_at)?->toISOString(),
+                ];
+            })
+            ->filter(function (array $item) use ($request) {
+                if ($request->status && $request->status !== 'all' && $item['status'] !== $request->status) {
+                    return false;
+                }
+
+                if ($request->type && $request->type !== 'all' && $item['type'] !== $request->type) {
+                    return false;
+                }
+
+                return true;
+            })
+            ->values();
 
         return response()->json(['data' => $requests]);
     }
 
     public function getVerificationStats(): JsonResponse
     {
-        $stats = [
-            'total_requests' => 4,
-            'pending_requests' => 1,
-            'approved_requests' => 1,
-            'rejected_requests' => 1,
-            'in_review_requests' => 1,
-            'verification_rate' => 75.0,
-            'avg_processing_time' => 2.5,
-            'requests_this_month' => 4,
-            'top_verification_type' => 'identity',
-            'urgent_requests' => 0,
-        ];
+        $total = User::count();
+        $approved = User::whereNotNull('email_verified_at')->count();
+        $pending = User::whereNull('email_verified_at')->count();
 
-        return response()->json(['data' => $stats]);
+        return response()->json(['data' => [
+            'totalRequests' => $total,
+            'pendingRequests' => $pending,
+            'approvedRequests' => $approved,
+            'rejectedRequests' => 0,
+            'inReviewRequests' => 0,
+            'verificationRate' => $total > 0 ? round(($approved / $total) * 100, 1) : 0,
+            'avgProcessingTime' => 0,
+            'requestsThisMonth' => User::where('created_at', '>=', now()->startOfMonth())->count(),
+            'topVerificationType' => 'identity',
+            'urgentRequests' => User::whereNull('email_verified_at')->where('created_at', '<=', now()->subDays(7))->count(),
+        ]]);
     }
 
-    // Alerts Management
     public function getAlerts(Request $request): JsonResponse
     {
-        // Mock alerts data
-        $alerts = [
-            [
-                'id' => 1,
-                'title' => 'Database Connection Timeout',
-                'description' => 'Database connection timed out after 30 seconds of inactivity.',
-                'type' => 'system',
-                'severity' => 'critical',
-                'status' => 'active',
-                'source' => 'Database Monitor',
-                'category' => 'Database',
-                'metadata' => [
-                    'triggered_at' => '2024-03-20T10:30:00Z',
-                    'details' => 'Connection pool exhausted.',
-                    'action_required' => true,
-                    'auto_resolve' => false,
-                    'escalation_level' => 1
-                ],
-                'created_at' => '2024-03-20T10:30:00Z',
-                'updated_at' => '2024-03-20T10:30:00Z',
-            ]
-        ];
+        $alerts = $this->buildAlerts()
+            ->filter(function (array $alert) use ($request) {
+                if ($request->search) {
+                    $search = mb_strtolower($request->search);
+                    $haystack = mb_strtolower(($alert['title'] ?? '') . ' ' . ($alert['description'] ?? '') . ' ' . ($alert['category'] ?? ''));
+                    if (! str_contains($haystack, $search)) {
+                        return false;
+                    }
+                }
+
+                if ($request->type && $request->type !== 'all' && $alert['type'] !== $request->type) {
+                    return false;
+                }
+
+                if ($request->severity && $request->severity !== 'all' && $alert['severity'] !== $request->severity) {
+                    return false;
+                }
+
+                if ($request->status && $request->status !== 'all' && $alert['status'] !== $request->status) {
+                    return false;
+                }
+
+                return true;
+            })
+            ->values();
 
         return response()->json(['data' => $alerts]);
     }
 
     public function getAlertStats(): JsonResponse
     {
-        $stats = [
-            'total_alerts' => 5,
-            'active_alerts' => 3,
-            'resolved_alerts' => 1,
-            'critical_alerts' => 1,
-            'urgent_alerts' => 1,
-            'alerts_this_hour' => 1,
-            'alerts_today' => 3,
-            'alerts_this_week' => 5,
-            'avg_resolution_time' => 2.5,
-            'top_alert_type' => 'system',
-            'top_severity' => 'critical',
-        ];
+        $alerts = $this->buildAlerts();
 
-        return response()->json(['data' => $stats]);
+        return response()->json(['data' => [
+            'totalAlerts' => $alerts->count(),
+            'activeAlerts' => $alerts->where('status', 'active')->count(),
+            'resolvedAlerts' => $alerts->where('status', 'resolved')->count(),
+            'criticalAlerts' => $alerts->where('severity', 'critical')->count(),
+            'urgentAlerts' => $alerts->where('severity', 'urgent')->count(),
+            'alertsThisHour' => $alerts->filter(fn (array $alert) => Carbon::parse($alert['created_at'])->gte(now()->subHour()))->count(),
+            'alertsToday' => $alerts->filter(fn (array $alert) => Carbon::parse($alert['created_at'])->isToday())->count(),
+            'alertsThisWeek' => $alerts->filter(fn (array $alert) => Carbon::parse($alert['created_at'])->gte(now()->startOfWeek()))->count(),
+            'avgResolutionTime' => 0,
+            'topAlertType' => $alerts->countBy('type')->sortDesc()->keys()->first() ?? 'system',
+            'topSeverity' => $alerts->countBy('severity')->sortDesc()->keys()->first() ?? 'low',
+        ]]);
+    }
+
+    private function hasTables(array $tables): bool
+    {
+        foreach ($tables as $table) {
+            if (! Schema::hasTable($table)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function calculateGrowth(float|int $previous, float|int $current): float
+    {
+        if ((float) $previous === 0.0) {
+            return (float) $current > 0 ? 100.0 : 0.0;
+        }
+
+        return round((((float) $current - (float) $previous) / (float) $previous) * 100, 1);
+    }
+
+    private function transformPaymentTransaction(Payment $payment): array
+    {
+        $metadata = is_array($payment->metadata) ? $payment->metadata : [];
+
+        return [
+            'id' => $payment->id,
+            'type' => $payment->type === 'rent' ? 'rent_payment' : $payment->type,
+            'amount' => (float) $payment->amount,
+            'currency' => 'TZS',
+            'status' => $payment->status,
+            'description' => $payment->description ?: ucfirst($payment->type) . ' payment',
+            'reference' => $payment->reference ?: 'PAY-' . str_pad((string) $payment->id, 5, '0', STR_PAD_LEFT),
+            'paymentMethod' => $metadata['payment_method'] ?? 'bank_transfer',
+            'user' => [
+                'id' => $payment->user?->id,
+                'name' => $payment->user?->fullName() ?? 'Unknown User',
+                'email' => $payment->user?->email,
+                'type' => $payment->user?->user_type ?? 'tenant',
+            ],
+            'property' => $payment->property ? [
+                'id' => $payment->property->id,
+                'title' => $payment->property->title,
+                'address' => $payment->property->address ?? $payment->property->location,
+            ] : null,
+            'agent' => $payment->agent ? [
+                'id' => $payment->agent->id,
+                'name' => $payment->agent->fullName(),
+                'email' => $payment->agent->email,
+                'commissionRate' => 0,
+            ] : null,
+            'metadata' => [
+                'invoiceNumber' => $metadata['invoice_number'] ?? null,
+                'receiptNumber' => $metadata['receipt_number'] ?? null,
+                'transactionId' => $metadata['transaction_id'] ?? null,
+                'gateway' => $metadata['gateway'] ?? null,
+                'fees' => isset($metadata['fees']) ? (float) $metadata['fees'] : 0,
+                'netAmount' => isset($metadata['net_amount']) ? (float) $metadata['net_amount'] : (float) $payment->amount,
+            ],
+            'createdAt' => optional($payment->created_at)?->toISOString(),
+            'updatedAt' => optional($payment->updated_at)?->toISOString(),
+            'completedAt' => optional($payment->paid_at)?->toISOString(),
+        ];
+    }
+
+    private function transformCommissionTransaction(Commission $commission): array
+    {
+        return [
+            'id' => 100000 + $commission->id,
+            'type' => 'commission',
+            'amount' => (float) $commission->amount,
+            'currency' => 'TZS',
+            'status' => $commission->status === 'paid' ? 'completed' : $commission->status,
+            'description' => 'Agent commission payout',
+            'reference' => 'COM-' . str_pad((string) $commission->id, 5, '0', STR_PAD_LEFT),
+            'paymentMethod' => 'bank_transfer',
+            'user' => [
+                'id' => $commission->agent?->id,
+                'name' => $commission->agent?->fullName() ?? 'Unknown Agent',
+                'email' => $commission->agent?->email,
+                'type' => 'agent',
+            ],
+            'property' => $commission->property ? [
+                'id' => $commission->property->id,
+                'title' => $commission->property->title,
+                'address' => $commission->property->address ?? $commission->property->location,
+            ] : null,
+            'agent' => $commission->agent ? [
+                'id' => $commission->agent->id,
+                'name' => $commission->agent->fullName(),
+                'email' => $commission->agent->email,
+                'commissionRate' => (float) ($commission->percentage ?? 0),
+            ] : null,
+            'metadata' => [
+                'invoiceNumber' => null,
+                'receiptNumber' => null,
+                'transactionId' => null,
+                'gateway' => 'internal',
+                'fees' => 0,
+                'netAmount' => (float) $commission->amount,
+            ],
+            'createdAt' => optional($commission->created_at)?->toISOString(),
+            'updatedAt' => optional($commission->updated_at)?->toISOString(),
+            'completedAt' => optional($commission->paid_at)?->toISOString(),
+        ];
+    }
+
+    private function buildAlerts(): Collection
+    {
+        $alerts = collect();
+        $pendingVerifications = User::whereNull('email_verified_at')->count();
+
+        if ($pendingVerifications > 0) {
+            $alerts->push($this->makeAlert(
+                1,
+                'Pending account verifications',
+                "{$pendingVerifications} user accounts are still awaiting verification.",
+                'security',
+                $pendingVerifications > 5 ? 'high' : 'medium',
+                'active',
+                'Account Verification',
+                'User Verification',
+                now(),
+                true,
+                $pendingVerifications,
+                max(5, $pendingVerifications),
+                'accounts'
+            ));
+        }
+
+        if ($this->hasTables(['payments'])) {
+            $overduePayments = Payment::where('status', 'pending')->whereDate('due_date', '<', today())->count();
+            if ($overduePayments > 0) {
+                $alerts->push($this->makeAlert(
+                    2,
+                    'Overdue rent payments',
+                    "{$overduePayments} scheduled payments are past their due date.",
+                    'financial',
+                    $overduePayments > 3 ? 'critical' : 'high',
+                    'active',
+                    'Payments Monitor',
+                    'Payments',
+                    now()->subMinutes(20),
+                    true,
+                    $overduePayments,
+                    max(1, $overduePayments),
+                    'payments'
+                ));
+            }
+        }
+
+        if ($this->hasTables(['contracts'])) {
+            $expiringContracts = Contract::whereBetween('end_date', [today(), today()->addDays(30)])->count();
+            if ($expiringContracts > 0) {
+                $alerts->push($this->makeAlert(
+                    3,
+                    'Contracts nearing expiry',
+                    "{$expiringContracts} contracts will expire within the next 30 days.",
+                    'maintenance',
+                    'medium',
+                    'active',
+                    'Contracts Monitor',
+                    'Contracts',
+                    now()->subHour(),
+                    false,
+                    $expiringContracts,
+                    max(5, $expiringContracts),
+                    'contracts'
+                ));
+            }
+        }
+
+        $inactiveUsers = User::where('is_active', false)->count();
+        if ($inactiveUsers > 0) {
+            $alerts->push($this->makeAlert(
+                4,
+                'Inactive user accounts detected',
+                "{$inactiveUsers} accounts are currently inactive and may need review.",
+                'user_activity',
+                'low',
+                'active',
+                'User Lifecycle',
+                'Users',
+                now()->subHours(2),
+                false,
+                $inactiveUsers,
+                max(10, $inactiveUsers),
+                'accounts'
+            ));
+        }
+
+        if ($alerts->isEmpty()) {
+            $alerts->push($this->makeAlert(
+                99,
+                'System operating normally',
+                'No urgent issues detected across users, payments, or contracts.',
+                'system',
+                'low',
+                'resolved',
+                'Platform Health',
+                'System',
+                now(),
+                false,
+                0,
+                1,
+                'checks'
+            ));
+        }
+
+        return $alerts->sortByDesc('created_at')->values();
+    }
+
+    private function makeAlert(
+        int $id,
+        string $title,
+        string $description,
+        string $type,
+        string $severity,
+        string $status,
+        string $source,
+        string $category,
+        Carbon $createdAt,
+        bool $actionRequired,
+        int|float $metricValue,
+        int|float $metricThreshold,
+        string $unit
+    ): array {
+        return [
+            'id' => $id,
+            'title' => $title,
+            'description' => $description,
+            'type' => $type,
+            'severity' => $severity,
+            'status' => $status,
+            'source' => $source,
+            'category' => $category,
+            'metadata' => [
+                'triggeredAt' => $createdAt->toISOString(),
+                'details' => $description,
+                'actionRequired' => $actionRequired,
+                'autoResolve' => false,
+                'escalationLevel' => in_array($severity, ['critical', 'urgent'], true) ? 2 : 1,
+                'metrics' => [
+                    'value' => $metricValue,
+                    'threshold' => $metricThreshold,
+                    'unit' => $unit,
+                ],
+            ],
+            'recipients' => [],
+            'actions' => [],
+            'created_at' => $createdAt->toISOString(),
+            'updated_at' => $createdAt->toISOString(),
+        ];
     }
 }

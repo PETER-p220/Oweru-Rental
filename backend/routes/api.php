@@ -133,6 +133,10 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Analytics
         Route::get('/agent/analytics', [AgentController::class, 'getAnalytics']);
+
+        // Messages
+        Route::get('/agent/messages', [AgentController::class, 'getMessages']);
+        Route::post('/agent/messages', [AgentController::class, 'sendMessage']);
     });
     
     // Owner specific routes (expanded)
@@ -195,7 +199,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Transactions Management
         Route::get('/admin/transactions', [AdminController::class, 'getTransactions']);
         Route::get('/admin/transactions/stats', [AdminController::class, 'getTransactionStats']);
-        
+
+        // Contracts Management
+        Route::get('/admin/contracts', [AdminController::class, 'getContracts']);
+        Route::get('/admin/contracts/stats', [AdminController::class, 'getContractStats']);
+
         // Commission Control
         Route::get('/admin/commission/rules', [AdminController::class, 'getCommissionRules']);
         Route::get('/admin/commission/payments', [AdminController::class, 'getCommissionPayments']);

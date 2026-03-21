@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   buttonStyle,
   descriptionStyle,
@@ -56,6 +57,7 @@ interface TenantOption {
 }
 
 const MessagesPage = () => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [tenants, setTenants] = useState<TenantOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +102,11 @@ const MessagesPage = () => {
   const unreadCount = useMemo(
     () => messages.filter((message) => !message.read_at).length,
     [messages],
+  );
+
+  const selectedTenant = useMemo(
+    () => tenants.find((tenant) => String(tenant.user?.id) === form.recipient_id) ?? null,
+    [form.recipient_id, tenants],
   );
 
   const handleSend = async (event: React.FormEvent) => {
@@ -158,6 +165,7 @@ const MessagesPage = () => {
               <table style={tableStyle}>
                 <thead>
                   <tr>
+                    <th style={thStyle}>Type</th>
                     <th style={thStyle}>From</th>
                     <th style={thStyle}>To</th>
                     <th style={thStyle}>Property</th>
@@ -168,6 +176,7 @@ const MessagesPage = () => {
                 <tbody>
                   {messages.map((message) => (
                     <tr key={message.id}>
+                      <td style={tdStyle}>{message.sender?.id === user?.id ? 'Sent' : 'Received'}</td>
                       <td style={tdStyle}>
                         <div>{message.sender?.first_name} {message.sender?.last_name}</div>
                         <div style={{ color: '#9f9587', marginTop: '4px' }}>{message.sender?.email || 'No email'}</div>
@@ -193,6 +202,11 @@ const MessagesPage = () => {
         <form onSubmit={handleSend} style={{ display: 'grid', gap: '12px', alignContent: 'start' }}>
           {success && <div style={{ color: '#70c490' }}>{success}</div>}
           <div style={{ fontSize: '18px' }}>Compose message</div>
+          <div style={{ color: '#9f9587', fontSize: '14px', lineHeight: 1.5 }}>
+            {selectedTenant
+              ? `Sending to ${(selectedTenant.user?.first_name || '').trim()} ${(selectedTenant.user?.last_name || '').trim()}${selectedTenant.property?.title ? ` about ${selectedTenant.property.title}` : ''}.`
+              : 'Select a tenant to see exactly who will receive this message.'}
+          </div>
           <select
             style={selectStyle}
             value={form.recipient_id}

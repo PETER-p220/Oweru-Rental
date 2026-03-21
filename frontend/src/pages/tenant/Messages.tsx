@@ -4,6 +4,7 @@ import { buttonStyle, descriptionStyle, formatDate, headingStyle, inputStyle, pa
 
 const Messages = () => {
   const [messages, setMessages] = useState<any[]>([]);
+  const [recipient, setRecipient] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -13,7 +14,9 @@ const Messages = () => {
     try {
       setLoading(true);
       const res = await Api.getTenantMessages();
-      setMessages(Array.isArray(res.data) ? res.data : []);
+      const payload = res.data || {};
+      setMessages(Array.isArray(payload.messages) ? payload.messages : []);
+      setRecipient(payload.recipient || null);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to load messages.');
     } finally { setLoading(false); }
@@ -52,9 +55,10 @@ const Messages = () => {
           {error && <div style={{ color: '#e07070', marginBottom: '16px' }}>{error}</div>}
           {loading ? <div style={{ color: '#9f9587' }}>Loading messages...</div> : messages.length === 0 ? <div style={{ color: '#9f9587' }}>No messages found.</div> : (
             <div style={tableWrapStyle}>
-              <table style={tableStyle}><thead><tr><th style={thStyle}>From</th><th style={thStyle}>To</th><th style={thStyle}>Subject</th><th style={thStyle}>Date</th></tr></thead>
+              <table style={tableStyle}><thead><tr><th style={thStyle}>Type</th><th style={thStyle}>From</th><th style={thStyle}>To</th><th style={thStyle}>Subject</th><th style={thStyle}>Date</th></tr></thead>
               <tbody>{messages.map((item) => (
                 <tr key={item.id}>
+                  <td style={tdStyle}>{item.direction === 'sent' ? 'Sent' : 'Received'}</td>
                   <td style={tdStyle}>{item.sender?.first_name} {item.sender?.last_name}</td>
                   <td style={tdStyle}>{item.recipient?.first_name} {item.recipient?.last_name}</td>
                   <td style={tdStyle}><div>{item.subject || 'No subject'}</div><div style={{ color: '#9f9587', marginTop: '4px' }}>{item.body}</div></td>
@@ -67,9 +71,14 @@ const Messages = () => {
         <form onSubmit={send} style={{ display: 'grid', gap: '12px', alignContent: 'start' }}>
           {success && <div style={{ color: '#70c490' }}>{success}</div>}
           <div style={{ fontSize: '18px' }}>Compose message</div>
+          <div style={{ color: '#9f9587', fontSize: '14px', lineHeight: 1.5 }}>
+            {recipient
+              ? `Sending to ${recipient.name}${recipient.property_title ? ` about ${recipient.property_title}` : ''}.`
+              : 'This message will be sent to your assigned landlord when your tenancy record is available.'}
+          </div>
           <input style={inputStyle} placeholder="Subject" value={form.subject} onChange={(e) => setForm((c) => ({ ...c, subject: e.target.value }))} />
           <textarea style={textareaStyle} placeholder="Write your message" value={form.body} onChange={(e) => setForm((c) => ({ ...c, body: e.target.value }))} required />
-          <button type="submit" style={buttonStyle('primary')}>Send message</button>
+          <button type="submit" style={buttonStyle('primary')} disabled={!recipient}>Send message</button>
         </form>
       </section>
     </div>

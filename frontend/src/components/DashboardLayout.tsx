@@ -167,38 +167,63 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
   const sections = sectionMap[userType] ?? sectionMap.tenant;
 
-  const roleQuickLinks: Record<UserRole, { primary: string; primaryLabel: string; secondary: string; secondaryLabel: string; settings?: string }> = {
+  const roleQuickLinks: Record<UserRole, {
+    primary: string;
+    primaryLabel: string;
+    primaryIcon: any;
+    secondary: string;
+    secondaryLabel: string;
+    secondaryIcon: any;
+    settings?: string;
+    settingsLabel?: string;
+  }> = {
     tenant: {
       primary: getFullPath('messages'),
       primaryLabel: 'Messages',
+      primaryIcon: MessageSquare,
       secondary: getFullPath('notifications'),
       secondaryLabel: 'Notifications',
+      secondaryIcon: Bell,
       settings: getFullPath('settings'),
+      settingsLabel: 'Account Settings',
     },
     landlord: {
       primary: getFullPath('tenants'),
       primaryLabel: 'Tenants',
+      primaryIcon: Users,
       secondary: getFullPath('my-properties'),
       secondaryLabel: 'Properties',
+      secondaryIcon: Building,
       settings: getFullPath('settings'),
+      settingsLabel: 'Account Settings',
     },
     agent: {
       primary: getFullPath('leads'),
       primaryLabel: 'Leads',
+      primaryIcon: Eye,
       secondary: getFullPath('tracking'),
       secondaryLabel: 'Tracking',
+      secondaryIcon: Link2,
+      settings: getFullPath('settings'),
+      settingsLabel: 'Account Settings',
     },
     admin: {
       primary: getFullPath('verification'),
       primaryLabel: 'Verification',
+      primaryIcon: ShieldCheck,
       secondary: getFullPath('alerts'),
       secondaryLabel: 'Alerts',
+      secondaryIcon: AlertCircle,
       settings: getFullPath('settings'),
+      settingsLabel: 'System Settings',
     },
   };
 
   const quickLinks = roleQuickLinks[userType] ?? roleQuickLinks.tenant;
   const settingsPath = quickLinks.settings ?? dashboardRoot;
+  const PrimaryQuickIcon = quickLinks.primaryIcon;
+  const SecondaryQuickIcon = quickLinks.secondaryIcon;
+  const settingsLabel = quickLinks.settingsLabel ?? 'Account Settings';
 
   return (
     <div style={{
@@ -631,7 +656,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         <div className="dl-sidebar-footer">
           <Link to={settingsPath} className="dl-sidebar-footer-btn" onClick={() => setSidebarOpen(false)}>
             <Settings size={13} style={{ color: 'var(--muted)' }} />
-            Account Settings
+            {settingsLabel}
           </Link>
           <button className="dl-sidebar-footer-btn danger" onClick={handleLogout}>
             <LogOut size={13} />
@@ -674,10 +699,10 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
             <div className="dl-topbar-divider" />
 
             <Link to={quickLinks.primary} className="dl-topbar-btn" title={quickLinks.primaryLabel}>
-              <MessageSquare size={14} />
+              <PrimaryQuickIcon size={14} />
             </Link>
             <Link to={quickLinks.secondary} className="dl-topbar-btn" title={quickLinks.secondaryLabel}>
-              <Bell size={14} />
+              <SecondaryQuickIcon size={14} />
             </Link>
 
             <div className="dl-topbar-divider" />

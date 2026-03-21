@@ -62,6 +62,9 @@ import ShareAndTrack from './pages/agent/ShareAndTrack';
 import PayoutHistory from './pages/agent/PayoutHistory';
 import LeadsAndVisitors from './pages/agent/LeadsAndVisitors';
 import MyCommissions from './pages/agent/MyCommissions';
+import AgentApplicationsPage from './pages/agent/ApplicationsPage';
+import AgentAnalyticsPage from './pages/agent/AnalyticsPage';
+import AgentMessagesPage from './pages/agent/MessagesPage';
 
 // ─────────────────────────────────────────────
 // Public routes  (Header + Footer)
@@ -142,6 +145,11 @@ const AgentRoutes = () => (
         <Route path="my-listings" element={<MyListings />} />
         <Route path="listings/add" element={<AddListing />} />
         <Route path="linked-owners" element={<LinkedOwners />} />
+        <Route path="applications" element={<AgentApplicationsPage />} />
+        <Route path="analytics" element={<AgentAnalyticsPage />} />
+        <Route path="messages" element={<AgentMessagesPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="qr-codes" element={<QRCodes />} />
         <Route path="qr-codes/:id" element={<QRCodes />} />
         <Route path="tracking" element={<ShareAndTrack />} />
         <Route path="payouts" element={<PayoutHistory />} />
