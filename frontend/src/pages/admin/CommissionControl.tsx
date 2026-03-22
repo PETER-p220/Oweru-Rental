@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  DollarSign, Plus, Edit, Trash2, Eye, Calendar,
+  DollarSign, Eye, Calendar,
   CheckCircle, User, FileText, Percent, Target,
   Award, Trophy, Calculator, X,
 } from 'lucide-react';
@@ -153,6 +153,22 @@ const statusColor = (s: string) =>
 const typeColor = (t: string) =>
   ({ rent: tk.green, sale: tk.blue, referral: tk.purple }[t] ?? tk.muted);
 
+const normalizeCommissionPayment = (payment: any): CommissionPayment => ({
+  id: payment.id,
+  agent: payment.agent,
+  property: payment.property,
+  type: payment.type,
+  amount: Number(payment.amount || 0),
+  percentage: Number(payment.percentage || 0),
+  status: payment.status,
+  dueDate: payment.dueDate || payment.due_date,
+  paidDate: payment.paidDate || payment.paid_date,
+  reference: payment.reference,
+  notes: payment.notes,
+  createdAt: payment.createdAt || payment.created_at,
+  updatedAt: payment.updatedAt || payment.updated_at,
+});
+
 /* ══════════════════════════════════════════════════════════
    COMPONENT
 ══════════════════════════════════════════════════════════ */
@@ -182,7 +198,7 @@ const CommissionControl = () => {
         setRules(rulesRes.data);
       }
       if (paymentsRes.data) {
-        setPayments(paymentsRes.data);
+        setPayments(paymentsRes.data.map(normalizeCommissionPayment));
       }
       if (statsRes.data) {
         setStats(statsRes.data);
@@ -194,19 +210,29 @@ const CommissionControl = () => {
     }
   };
 
-  const handleApprovePayment = (id: number) => {
-    setPayments((prev) => prev.map((p) => p.id === id ? { ...p, status: 'approved' as const } : p));
+  const refreshCommissionStats = async () => {
+    const statsRes = await Api.getCommissionStats();
+    setStats(statsRes.data);
   };
 
-  const handleMarkAsPaid = (id: number) => {
-    setPayments((prev) =>
-      prev.map((p) => p.id === id ? { ...p, status: 'paid' as const, paidDate: new Date().toISOString() } : p)
-    );
+  const handleApprovePayment = async (id: number) => {
+    try {
+      const response = await Api.updateCommissionPaymentStatus(id, 'approved');
+      setPayments((prev) => prev.map((p) => p.id === id ? normalizeCommissionPayment(response.data) : p));
+      await refreshCommissionStats();
+    } catch (e) {
+      console.error('Failed to approve commission payment:', e);
+    }
   };
 
-  const handleDeleteRule = (id: number) => {
-    if (!confirm('Delete this commission rule?')) return;
-    setRules((prev) => prev.filter((r) => r.id !== id));
+  const handleMarkAsPaid = async (id: number) => {
+    try {
+      const response = await Api.updateCommissionPaymentStatus(id, 'paid');
+      setPayments((prev) => prev.map((p) => p.id === id ? normalizeCommissionPayment(response.data) : p));
+      await refreshCommissionStats();
+    } catch (e) {
+      console.error('Failed to mark commission as paid:', e);
+    }
   };
 
   /* ── Open payment detail modal ── */
@@ -312,9 +338,9 @@ const CommissionControl = () => {
         <div style={{ ...card, padding: '22px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: tk.cream, margin: 0 }}>Commission Rules</h3>
-            <button style={solidBtn} className="cc-btn">
-              <Plus size={14} /> Create Rule
-            </button>
+            <div style={{ ...body, fontSize: 12, color: tk.muted }}>
+              Default rule shown from live commission data
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -365,12 +391,12 @@ const CommissionControl = () => {
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button style={ghostBtn(tk.gold)} className="cc-btn">
-                      <Edit size={13} /> Edit
-                    </button>
-                    <button style={ghostBtn(tk.red)} className="cc-btn" onClick={() => handleDeleteRule(rule.id)}>
-                      <Trash2 size={13} /> Delete
-                    </button>
+                    <span style={{ ...pill(rule.isActive ? tk.green : tk.muted), fontSize: 11 }}>
+                      System policy
+                    </span>
+                    <span style={{ ...body, fontSize: 12, color: tk.muted }}>
+                      This default rule is derived from live commission records and is read-only here.
+                    </span>
                   </div>
                 </div>
               </div>

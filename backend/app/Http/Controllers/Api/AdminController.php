@@ -356,6 +356,59 @@ class AdminController extends Controller
         ]]);
     }
 
+    public function updateTransactionStatus(Request $request, $transactionId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|string|in:pending,processing,completed,failed,cancelled,refunded,approved,paid',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if ((int) $transactionId >= 100000) {
+            $commissionId = (int) $transactionId - 100000;
+            $commission = Commission::findOrFail($commissionId);
+            $status = $this->normalizeCommissionStatus($request->status);
+
+            $commission->status = $status;
+            $commission->paid_at = $status === 'paid' ? now() : null;
+            $commission->save();
+
+            return response()->json([
+                'message' => 'Commission transaction updated successfully',
+                'data' => $this->transformCommissionTransaction($commission->fresh(['agent', 'property', 'payment'])),
+            ]);
+        }
+
+        $payment = Payment::findOrFail($transactionId);
+        $payment->status = $this->normalizePaymentStatus($request->status);
+        $payment->paid_at = $payment->status === 'completed' ? now() : null;
+        $payment->save();
+
+        return response()->json([
+            'message' => 'Transaction updated successfully',
+            'data' => $this->transformPaymentTransaction($payment->fresh(['user', 'property', 'agent'])),
+        ]);
+    }
+
+    public function deleteTransaction($transactionId): JsonResponse
+    {
+        if ((int) $transactionId >= 100000) {
+            $commissionId = (int) $transactionId - 100000;
+            Commission::findOrFail($commissionId)->delete();
+
+            return response()->json(['message' => 'Commission transaction deleted successfully']);
+        }
+
+        Payment::findOrFail($transactionId)->delete();
+
+        return response()->json(['message' => 'Transaction deleted successfully']);
+    }
+
     public function getCommissionRules(Request $request): JsonResponse
     {
         $avg = $this->hasTables(['commissions'])
@@ -456,6 +509,53 @@ class AdminController extends Controller
                 'pending' => (float) Commission::where('status', 'pending')->where('created_at', '>=', now()->startOfMonth())->sum('amount'),
             ],
         ]]);
+    }
+
+    public function updateCommissionPaymentStatus(Request $request, $commissionId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:pending,approved,paid,cancelled',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $commission = Commission::findOrFail($commissionId);
+        $commission->status = $request->status;
+        $commission->paid_at = $request->status === 'paid' ? now() : null;
+        $commission->save();
+
+        return response()->json([
+            'message' => 'Commission payment updated successfully',
+            'data' => [
+                'id' => $commission->id,
+                'agent' => [
+                    'id' => $commission->agent?->id,
+                    'name' => $commission->agent?->fullName() ?? 'Unknown Agent',
+                    'email' => $commission->agent?->email,
+                    'code' => 'AGT-' . str_pad((string) ($commission->agent_id ?? 0), 3, '0', STR_PAD_LEFT),
+                ],
+                'property' => [
+                    'id' => $commission->property?->id,
+                    'title' => $commission->property?->title ?? 'Unknown Property',
+                    'address' => $commission->property?->address ?? $commission->property?->location,
+                    'price' => (float) ($commission->property?->price ?? 0),
+                ],
+                'type' => 'rent',
+                'amount' => (float) $commission->amount,
+                'percentage' => (float) ($commission->percentage ?? 0),
+                'status' => $commission->status,
+                'due_date' => optional($commission->payment?->due_date ?? $commission->created_at)?->toISOString(),
+                'paid_date' => optional($commission->paid_at)?->toISOString(),
+                'reference' => 'COM-' . str_pad((string) $commission->id, 5, '0', STR_PAD_LEFT),
+                'created_at' => optional($commission->created_at)?->toISOString(),
+                'updated_at' => optional($commission->updated_at)?->toISOString(),
+            ],
+        ]);
     }
 
     public function getContracts(Request $request): JsonResponse
@@ -781,6 +881,26 @@ class AdminController extends Controller
         }
 
         return round((((float) $current - (float) $previous) / (float) $previous) * 100, 1);
+    }
+
+    private function normalizePaymentStatus(string $status): string
+    {
+        return match ($status) {
+            'processing' => 'pending',
+            'paid' => 'completed',
+            'approved' => 'completed',
+            default => $status,
+        };
+    }
+
+    private function normalizeCommissionStatus(string $status): string
+    {
+        return match ($status) {
+            'completed' => 'paid',
+            'processing' => 'approved',
+            'refunded' => 'cancelled',
+            default => $status,
+        };
     }
 
     private function transformPaymentTransaction(Payment $payment): array

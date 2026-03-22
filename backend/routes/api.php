@@ -199,6 +199,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Transactions Management
         Route::get('/admin/transactions', [AdminController::class, 'getTransactions']);
         Route::get('/admin/transactions/stats', [AdminController::class, 'getTransactionStats']);
+        Route::patch('/admin/transactions/{transaction}/status', [AdminController::class, 'updateTransactionStatus']);
+        Route::delete('/admin/transactions/{transaction}', [AdminController::class, 'deleteTransaction']);
 
         // Contracts Management
         Route::get('/admin/contracts', [AdminController::class, 'getContracts']);
@@ -208,6 +210,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/commission/rules', [AdminController::class, 'getCommissionRules']);
         Route::get('/admin/commission/payments', [AdminController::class, 'getCommissionPayments']);
         Route::get('/admin/commission/stats', [AdminController::class, 'getCommissionStats']);
+        Route::patch('/admin/commission/payments/{commission}/status', [AdminController::class, 'updateCommissionPaymentStatus']);
         
         // System Settings
         Route::get('/admin/settings', [AdminController::class, 'getSettings']);

@@ -234,6 +234,19 @@ class Api {
     return this.request<any>('admin/transactions/stats');
   }
 
+  static async updateAdminTransactionStatus(transactionId: number, status: string) {
+    return this.request<any>(`admin/transactions/${transactionId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  static async deleteAdminTransaction(transactionId: number) {
+    return this.request<any>(`admin/transactions/${transactionId}`, {
+      method: 'DELETE',
+    });
+  }
+
   static async getAdminContracts() {
     return this.request<any[]>('admin/contracts');
   }
@@ -247,6 +260,12 @@ class Api {
   static async getCommissionRules()    { return this.request<any[]>('admin/commission/rules'); }
   static async getCommissionPayments() { return this.request<any[]>('admin/commission/payments'); }
   static async getCommissionStats()    { return this.request<any>('admin/commission/stats'); }
+  static async updateCommissionPaymentStatus(id: number, status: string) {
+    return this.request<any>(`admin/commission/payments/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
 
   // ── Admin – Settings ────────────────────────────────────────────────────────
 

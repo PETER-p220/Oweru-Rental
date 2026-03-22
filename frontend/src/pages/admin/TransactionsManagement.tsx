@@ -195,14 +195,29 @@ const TransactionsManagement = () => {
     }
   };
 
-  const handleDeleteTransaction = (id: number) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
-    setShowDeleteModal(false);
-    setSelectedTransaction(null);
+  const handleDeleteTransaction = async (id: number) => {
+    try {
+      await Api.deleteAdminTransaction(id);
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      const statsRes = await Api.getAdminTransactionStats();
+      setStats(statsRes.data);
+    } catch (e) {
+      console.error('Failed to delete transaction:', e);
+    } finally {
+      setShowDeleteModal(false);
+      setSelectedTransaction(null);
+    }
   };
 
-  const handleStatusChange = (id: number, newStatus: Transaction['status']) => {
-    setTransactions((prev) => prev.map((t) => t.id === id ? { ...t, status: newStatus } : t));
+  const handleStatusChange = async (id: number, newStatus: Transaction['status']) => {
+    try {
+      const response = await Api.updateAdminTransactionStatus(id, newStatus);
+      setTransactions((prev) => prev.map((t) => t.id === id ? response.data : t));
+      const statsRes = await Api.getAdminTransactionStats();
+      setStats(statsRes.data);
+    } catch (e) {
+      console.error('Failed to update transaction:', e);
+    }
   };
 
   /* ── Open modals — named functions avoid the semicolon-in-JSX bug ── */
