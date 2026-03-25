@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Api from '../../services/api';
 import { descriptionStyle, formatCurrency, formatDate, getStatusColor, headingStyle, inputStyle, pageStyle, panelStyle, sectionTitleStyle, statusPillStyle, tableStyle, tableWrapStyle, tdStyle, thStyle } from './tenantPageStyles';
 
@@ -15,6 +16,29 @@ const ApplicationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const propertyId = searchParams.get('property');
+
+  // Handle property application
+  useEffect(() => {
+    if (propertyId) {
+      handleApplyForProperty(propertyId);
+    }
+  }, [propertyId]);
+
+  const handleApplyForProperty = async (propertyId: string) => {
+    try {
+      await Api.createApplication({
+        property_id: parseInt(propertyId),
+        message: 'I am interested in this property'
+      });
+      // Show success message or redirect
+      alert('Application submitted successfully!');
+    } catch (err: any) {
+      console.error('Failed to submit application:', err);
+      alert('Failed to submit application. Please try again.');
+    }
+  };
 
   useEffect(() => {
     (async () => {

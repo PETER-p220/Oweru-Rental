@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, MapPin, Bed, Bath, Square, Heart, Share2, QrCode,
   SlidersHorizontal, X, ChevronDown,
@@ -25,6 +25,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 const Properties = () => {
+  const navigate = useNavigate();
   const [searchTerm,   setSearchTerm]   = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [priceRange,   setPriceRange]   = useState('');
@@ -155,6 +156,9 @@ const Properties = () => {
                 title={isSaved ? 'Unsave' : 'Save'}
               >
                 <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
+              </button>
+              <button className="prop-action-btn apply-btn" title="Apply for this Property" onClick={e => { e.preventDefault(); navigate(`/dashboard/tenant/applications?property=${property.id}`); }}>
+                Apply Now
               </button>
               <button className="prop-action-btn" title="Share"
                 onClick={e => { e.preventDefault(); navigator.clipboard.writeText(`${window.location.origin}/property/${property.id}`); }}
@@ -305,6 +309,8 @@ const Properties = () => {
         .prop-action-btn { width: 28px; height: 28px; background: rgba(10,10,10,0.8); border: 1px solid rgba(201,168,76,0.2); color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; backdrop-filter: blur(8px); }
         .prop-action-btn:hover { color: var(--gold); border-color: rgba(201,168,76,0.5); }
         .prop-action-btn.saved { color: #ef4444; border-color: #ef4444; }
+        .prop-action-btn.apply-btn { background: rgba(112,196,144,0.9); border-color: rgba(112,196,144,0.4); color: #fff; font-weight: 500; }
+        .prop-action-btn.apply-btn:hover { background: rgba(112,196,144,1); border-color: rgba(112,196,144,0.6); transform: translateY(-1px); }
         .prop-body { padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 0; flex: 1; }
         .prop-location { display: flex; align-items: center; gap: 5px; font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
         .prop-title { font-size: 17px; font-weight: 400; color: var(--cream); letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
