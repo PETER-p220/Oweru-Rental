@@ -43,7 +43,8 @@ import LandlordAnalyticsPage from './pages/landlord/AnalyticsPage';
 import LandlordMessagesPage from './pages/landlord/MessagesPage';
 
 // Admin pages
-import AdminDashboard from './pages/admin/AdminDashboard';
+// Temporarily disabled admin pages with encoding issues
+// import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import PropertiesManagement from './pages/admin/PropertiesManagement';
 import TransactionsManagement from './pages/admin/TransactionsManagement';
@@ -54,6 +55,14 @@ import CommissionControl from './pages/admin/CommissionControl';
 // import VerificationManagement from './pages/admin/VerificationManagement';
 // import AlertsManagement from './pages/admin/AlertsManagement';
 import SystemSettings from './pages/admin/SystemSettings';
+
+// Simple placeholder for AdminDashboard
+const AdminDashboard = () => (
+  <div style={{ padding: '20px' }}>
+    <h1>Admin Dashboard</h1>
+    <p>Admin dashboard temporarily disabled due to encoding issues</p>
+  </div>
+);
 
 // Agent pages
 import MyListings from './pages/agent/MyListings';
