@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building, Plus, Camera, MapPin, Home, Save, ArrowLeft, FileText } from 'lucide-react';
+import { Building, Plus, Camera, MapPin, Home, Save, ArrowLeft, FileText, X } from 'lucide-react';
 import Api from '../services/api';
 
 interface PropertyData {
@@ -38,7 +38,8 @@ const AddListing: React.FC = () => {
     images: []
   });
 
-  const [imageUrls, setImageUrls] = useState<string[]>(['', '', '', '', '', '']);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -69,14 +70,33 @@ const AddListing: React.FC = () => {
     }));
   };
 
-  const handleImageUrlChange = (index: number, value: string) => {
-    const newUrls = [...imageUrls];
-    newUrls[index] = value;
-    setImageUrls(newUrls);
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => file.type.startsWith('image/'));
     
-    // Update formData with non-empty URLs
-    const validUrls = newUrls.filter(url => url.trim() !== '');
-    setFormData(prev => ({ ...prev, images: validUrls }));
+    if (validFiles.length + uploadedImages.length > 6) {
+      setError('You can upload up to 6 images maximum');
+      return;
+    }
+    
+    setUploadedImages(prev => [...prev, ...validFiles]);
+    
+    // Create previews
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreviews(prev => [...prev, e.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    const newUploadedImages = uploadedImages.filter((_, i) => i !== index);
+    const newImagePreviews = imagePreviews.filter((_, i) => i !== index);
+    
+    setUploadedImages(newUploadedImages);
+    setImagePreviews(newImagePreviews);
   };
 
   const validateForm = () => {
@@ -103,15 +123,36 @@ const AddListing: React.FC = () => {
     setError('');
 
     try {
-      const response = await Api.createProperty(formData);
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      
+      // Add all form fields
+      Object.keys(formData).forEach(key => {
+        if (key !== 'images') {
+          formDataToSend.append(key, String(formData[key as keyof PropertyData]));
+        }
+      });
+      
+      // Add uploaded images
+      uploadedImages.forEach((file, index) => {
+        formDataToSend.append(`images[${index}]`, file);
+      });
+
+      // Determine API endpoint based on user type
+      let response;
+      if (user?.userType === 'agent') {
+        response = await Api.agentCreateProperty(formDataToSend);
+      } else {
+        response = await Api.createProperty(formDataToSend);
+      }
       
       if (response.data) {
         setSuccess(true);
         setTimeout(() => {
           if (user?.userType === 'agent') {
-            navigate('/my-listings');
+            navigate('/dashboard/agent/my-listings');
           } else {
-            navigate('/my-properties');
+            navigate('/dashboard/landlord/my-properties');
           }
         }, 2000);
       } else {
@@ -122,15 +163,6 @@ const AddListing: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-TZ', {
-      style: 'currency',
-      currency: 'TZS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
   };
 
   if (success) {
@@ -664,31 +696,131 @@ const AddListing: React.FC = () => {
               Property Images
             </h2>
             <div className="al-form-group">
-              <label className="al-label">Image URLs (up to 6 images)</label>
-              <div className="al-image-upload">
-                {imageUrls.map((url, index) => (
-                  <div key={index} className="al-image-input-group">
-                    <input
-                      type="url"
-                      value={url}
-                      onChange={(e) => handleImageUrlChange(index, e.target.value)}
-                      className="al-image-input"
-                      placeholder={`Image ${index + 1} URL`}
-                    />
-                    <div className="al-image-preview">
-                      {url ? (
-                        <img src={url} alt={`Property ${index + 1}`} onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }} />
-                      ) : (
-                        <div className="al-image-preview-placeholder">
-                          <Camera size={20} />
-                        </div>
-                      )}
-                    </div>
+              <label className="al-label">Upload Images (up to 6 images)</label>
+              
+              {/* File Upload Area */}
+              <div style={{
+                border: '2px dashed var(--border)',
+                borderRadius: '12px',
+                padding: '32px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                marginBottom: '20px',
+                background: 'var(--dark)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--gold)';
+                e.currentTarget.style.background = 'rgba(201,168,76,0.02)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border)';
+                e.currentTarget.style.background = 'var(--dark)';
+              }}>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ display: 'none' }}
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload" style={{ cursor: 'pointer', display: 'block' }}>
+                  <Camera size={48} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
+                  <div style={{ color: 'var(--text-primary)', fontSize: '16px', marginBottom: '8px' }}>
+                    Click to upload images
                   </div>
-                ))}
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                    PNG, JPG, GIF up to 10MB each • Maximum 6 images
+                  </div>
+                </label>
               </div>
+
+              {/* Image Previews */}
+              {imagePreviews.length > 0 && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gap: '16px',
+                  marginBottom: '20px'
+                }}>
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} style={{
+                      position: 'relative',
+                      aspectRatio: '1',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      background: 'var(--dark)',
+                      border: '1px solid var(--border)'
+                    }}>
+                      <img
+                        src={preview}
+                        alt={`Property ${index + 1}`}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          right: '8px',
+                          background: 'rgba(0,0,0,0.7)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '28px',
+                          height: '28px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          color: '#fff',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(224,112,112,0.9)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(0,0,0,0.7)';
+                        }}
+                      >
+                        <X size={14} />
+                      </button>
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '0',
+                        left: '0',
+                        right: '0',
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                        color: '#fff',
+                        padding: '8px',
+                        fontSize: '12px',
+                        textAlign: 'center'
+                      }}>
+                        {uploadedImages[index]?.name || `Image ${index + 1}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {uploadedImages.length === 0 && (
+                <div style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '14px',
+                  textAlign: 'center',
+                  padding: '20px',
+                  background: 'var(--dark)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px'
+                }}>
+                  No images uploaded yet. Add at least one image to showcase your property.
+                </div>
+              )}
             </div>
           </div>
 

@@ -462,9 +462,47 @@ class Api {
   static async getOwnerMessages()         { return this.request<any[]>('owner/messages'); }
 
   static async createOwnerProperty(data: any) {
+    // Handle FormData for file uploads
+    if (data instanceof FormData) {
+      return this.request<any>('owner/properties', { 
+        method: 'POST', 
+        body: data,
+        headers: {} // Let browser set Content-Type for FormData
+      });
+    }
     return this.request<any>('owner/properties', { 
       method: 'POST', 
-      body: data
+      body: JSON.stringify(data)
+    });
+  }
+
+  static async agentCreateProperty(data: any) {
+    // Handle FormData for file uploads
+    if (data instanceof FormData) {
+      return this.request<any>('agent/properties', { 
+        method: 'POST', 
+        body: data,
+        headers: {} // Let browser set Content-Type for FormData
+      });
+    }
+    return this.request<any>('agent/properties', { 
+      method: 'POST', 
+      body: JSON.stringify(data)
+    });
+  }
+
+  static async createProperty(data: any) {
+    // Handle FormData for file uploads
+    if (data instanceof FormData) {
+      return this.request<any>('properties', { 
+        method: 'POST', 
+        body: data,
+        headers: {} // Let browser set Content-Type for FormData
+      });
+    }
+    return this.request<any>('properties', { 
+      method: 'POST', 
+      body: JSON.stringify(data)
     });
   }
 

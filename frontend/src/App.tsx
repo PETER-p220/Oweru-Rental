@@ -11,9 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import TenantDashboard from './pages/TenantDashboard';
 import LandlordDashboard from './pages/LandlordDashboard';
-import AgentDashboard from './pages/AgentDashboard';
 import SettingsPage from './pages/Settings';
-import AddListing from './pages/AddListing';
 import DashboardLayout from './components/DashboardLayout';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -65,7 +63,9 @@ const AdminDashboard = () => (
 );
 
 // Agent pages
+import AgentDashboard from './pages/agent/AgentDashboard';
 import MyListings from './pages/agent/MyListings';
+import AddListing from './pages/agent/AddListing';
 import LinkedOwners from './pages/agent/LinkedOwners';
 import QRCodes from './pages/agent/QRCodes';
 import ShareAndTrack from './pages/agent/ShareAndTrack';
