@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building, Plus, Camera, MapPin, Home, Save, ArrowLeft, FileText, X } from 'lucide-react';
-import Api from '../services/api';
+import Api from '../../services/api';
 
 interface PropertyData {
   title: string;
