@@ -48,10 +48,11 @@ import UserManagement from './pages/admin/UserManagement';
 import PropertiesManagement from './pages/admin/PropertiesManagement';
 import TransactionsManagement from './pages/admin/TransactionsManagement';
 import CommissionControl from './pages/admin/CommissionControl';
-import PaymentsManagement from './pages/admin/PaymentsManagement';
-import ContractsManagement from './pages/admin/ContractsManagement';
-import VerificationManagement from './pages/admin/VerificationManagement';
-import AlertsManagement from './pages/admin/AlertsManagement';
+// Temporarily disabled admin pages with encoding issues
+// import PaymentsManagement from './pages/admin/PaymentsManagement';
+// import ContractsManagement from './pages/admin/ContractsManagement';
+// import VerificationManagement from './pages/admin/VerificationManagement';
+// import AlertsManagement from './pages/admin/AlertsManagement';
 import SystemSettings from './pages/admin/SystemSettings';
 
 // Agent pages
@@ -171,10 +172,11 @@ const AdminRoutes = () => (
         <Route path="properties" element={<PropertiesManagement />} />
         <Route path="transactions" element={<TransactionsManagement />} />
         <Route path="commission" element={<CommissionControl />} />
-        <Route path="payments" element={<PaymentsManagement />} />
-        <Route path="contracts" element={<ContractsManagement />} />
-        <Route path="verification" element={<VerificationManagement />} />
-        <Route path="alerts" element={<AlertsManagement />} />
+        {/* Temporarily disabled admin routes with encoding issues */}
+        {/* <Route path="payments" element={<PaymentsManagement />} /> */}
+        {/* <Route path="contracts" element={<ContractsManagement />} /> */}
+        {/* <Route path="verification" element={<VerificationManagement />} /> */}
+        {/* <Route path="alerts" element={<AlertsManagement />} /> */}
         <Route path="settings" element={<SystemSettings />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
