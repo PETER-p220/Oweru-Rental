@@ -103,15 +103,13 @@ const TenantRoutes = () => (
     <DashboardLayout title="Dashboard">
       <Routes>
         <Route path="" element={<TenantDashboard />} />
+        <Route path="properties" element={<Properties />} />
         <Route path="applications" element={<TenantApplicationsPage />} />
         <Route path="analytics" element={<TenantAnalyticsPage />} />
         <Route path="saved-properties" element={<SavedProperties />} />
-        <Route path="my-properties" element={<SavedProperties />} />
-        <Route path="properties/add" element={<AddListing />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="contract" element={<Contract />} />
         <Route path="payments" element={<Payments />} />
-        <Route path="rent-payments" element={<Payments />} />
         <Route path="payment-history" element={<PaymentHistory />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="messages" element={<Messages />} />
@@ -130,7 +128,6 @@ const LandlordRoutes = () => (
         <Route path="my-properties" element={<MyProperties />} />
         <Route path="add-property" element={<AddProperty />} />
         <Route path="applications" element={<ApplicationsPage />} />
-        <Route path="properties/:id/edit" element={<EditPropertySimple />} />
         <Route path="tenants" element={<MyTenants />} />
         <Route path="contracts" element={<ContractsPage />} />
         <Route path="rent-collection" element={<RentCollectionPage />} />

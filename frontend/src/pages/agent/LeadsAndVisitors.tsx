@@ -33,7 +33,7 @@ const LeadsAndVisitors = () => {
       <section style={panelStyle}>
         <div style={sectionTitleStyle}>Agent Workspace</div>
         <h1 style={headingStyle}>Leads & Visitors</h1>
-        <p style={descriptionStyle}>Lead data from the Laravel agent pipeline. Visitor summaries can be added later if you expose them on the backend.</p>
+        <p style={descriptionStyle}>Track your latest lead conversions here. Expanded visitor summaries are currently in development.</p>
         <div style={{ ...statGridStyle, marginTop: '22px' }}>
           <div style={statCardStyle('#38bdf8')}><div style={statLabelStyle}>Total Leads</div><div style={statValueStyle}>{stats?.total_leads || 0}</div></div>
           <div style={statCardStyle('#22c55e')}><div style={statLabelStyle}>New Today</div><div style={statValueStyle}>{stats?.new_leads || 0}</div></div>

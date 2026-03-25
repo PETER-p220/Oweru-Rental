@@ -37,7 +37,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
     tenant: [
       { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
-      { name: 'Browse Properties',  icon: Search,        href: '/properties',         color: '#60a5fa' },
+      { name: 'Browse Properties',  icon: Search,        href: '/dashboard/tenant/properties',         color: '#60a5fa' },
       { name: 'My Applications',    icon: FileText,      href: 'applications',        color: '#a78bfa' },
       { name: 'Saved Properties',   icon: Star,          href: 'saved-properties',    color: '#f59e0b' },
       { name: 'My Contract',        icon: BookOpen,      href: 'contract',            color: '#34d399' },
