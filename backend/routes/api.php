@@ -54,6 +54,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:agent')->group(function () {
         Route::get('/commissions', [DashboardController::class, 'commissions']);
         Route::get('/leads', [DashboardController::class, 'leads']);
+        Route::post('/properties', [PropertyController::class, 'store']);
+        Route::get('/my-listings', [PropertyController::class, 'myProperties']);
+        Route::put('/properties/{property}', [PropertyController::class, 'update']);
+        Route::delete('/properties/{property}', [PropertyController::class, 'destroy']);
+        Route::get('/properties/{property}/analytics', [PropertyController::class, 'analytics']);
     });
     
     // Tenant specific routes
