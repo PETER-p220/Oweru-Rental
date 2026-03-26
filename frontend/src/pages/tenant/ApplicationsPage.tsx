@@ -22,38 +22,69 @@ const ApplicationsPage = () => {
   // Handle property application
   useEffect(() => {
     if (propertyId) {
+      console.log('Property ID detected:', propertyId);
       handleApplyForProperty(propertyId);
     }
   }, [propertyId]);
 
   const handleApplyForProperty = async (propertyId: string) => {
     try {
-      await Api.createApplication({
+      if (!propertyId || isNaN(parseInt(propertyId))) {
+        throw new Error('Invalid property ID');
+      }
+
+      const applicationData = {
         property_id: parseInt(propertyId),
-        message: 'I am interested in this property'
-      });
-      // Show success message or redirect
+        message: 'I am interested in this property and would like to schedule a viewing.'
+      };
+
+      console.log('Submitting application:', applicationData);
+      const response = await Api.createApplication(applicationData);
+      console.log('Application response:', response);
+      
+      // Show success message
       alert('Application submitted successfully!');
+      
+      // Remove property parameter from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Refresh applications list
+      const res = await Api.getTenantApplications();
+      setApplications(Array.isArray(res.data) ? res.data : []);
+      
     } catch (err: any) {
       console.error('Failed to submit application:', err);
-      alert('Failed to submit application. Please try again.');
+      const errorMessage = err?.response?.data?.message || err?.message || 'Failed to submit application. Please try again.';
+      alert(errorMessage);
     }
   };
 
   useEffect(() => {
     (async () => {
       try {
+        console.log('Loading tenant applications...');
         const res = await Api.getTenantApplications();
+        console.log('Applications response:', res);
         setApplications(Array.isArray(res.data) ? res.data : []);
       } catch (err: any) {
+        console.error('Error loading applications:', err);
         setError(err?.response?.data?.message || 'Unable to load applications.');
-      } finally { setLoading(false); }
+      } finally { 
+        setLoading(false); 
+      }
     })();
   }, []);
 
   const filtered = useMemo(() => applications.filter((item) => {
-    const hay = `${item.property?.title || ''} ${item.property?.location || ''} ${item.message || ''}`.toLowerCase();
-    return hay.includes(search.toLowerCase());
+    try {
+      const hay = `${item.property?.title || ''} ${item.property?.location || ''} ${item.message || ''}`.toLowerCase();
+      const needle = search.toLowerCase();
+      return hay.includes(needle);
+    } catch (err) {
+      console.error('Error filtering applications:', err);
+      return false;
+    }
   }), [applications, search]);
 
   return (

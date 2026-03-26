@@ -157,7 +157,18 @@ const Properties = () => {
               >
                 <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
               </button>
-              <button className="prop-action-btn apply-btn" title="Apply for this Property" onClick={e => { e.preventDefault(); navigate(`/dashboard/tenant/applications?property=${property.id}`); }}>
+              <button className="prop-action-btn apply-btn" title="Apply for this Property" onClick={e => { e.preventDefault(); 
+  try {
+    if (!property.id) {
+      alert('Property ID not found');
+      return;
+    }
+    navigate(`/dashboard/tenant/applications?property=${property.id}`);
+  } catch (error) {
+    console.error('Navigation error:', error);
+    alert('Unable to navigate to application page');
+  }
+}}>
                 Apply Now
               </button>
               <button className="prop-action-btn" title="Share"

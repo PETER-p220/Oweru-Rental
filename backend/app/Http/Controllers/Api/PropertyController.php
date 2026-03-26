@@ -203,7 +203,9 @@ class PropertyController extends Controller
             $amenities = json_decode($amenities, true);
         }
 
-        $property = Property::create([
+        // Set owner_id or agent_id based on user role
+        $user = Auth::user();
+        $propertyData = [
             'title' => $finalData['title'],
             'description' => $finalData['description'],
             'price' => $finalData['price'],
@@ -216,10 +218,19 @@ class PropertyController extends Controller
             'images' => $imagePaths,
             'amenities' => $amenities ?? [],
             'featured' => filter_var($finalData['featured'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'available' => filter_var($finalData['available'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'latitude' => $finalData['latitude'],
             'longitude' => $finalData['longitude'],
-            'owner_id' => Auth::id(),
-        ]);
+        ];
+
+        // Set owner_id for landlords, agent_id for agents
+        if ($user->userType === 'agent') {
+            $propertyData['agent_id'] = $user->id;
+        } else {
+            $propertyData['owner_id'] = $user->id;
+        }
+
+        $property = Property::create($propertyData);
 
         return response()->json([
             'message' => 'Property created successfully',
@@ -276,9 +287,17 @@ class PropertyController extends Controller
     public function myProperties(Request $request): JsonResponse
     {
         $user = Auth::user();
-        $properties = Property::where('owner_id', $user->id)
-            ->with(['applications'])
-            ->paginate(12);
+        
+        // Get properties based on user role
+        if ($user->userType === 'agent') {
+            $properties = Property::where('agent_id', $user->id)
+                ->with(['applications'])
+                ->paginate(12);
+        } else {
+            $properties = Property::where('owner_id', $user->id)
+                ->with(['applications'])
+                ->paginate(12);
+        }
 
         return response()->json([
             'data' => $properties->items(),
