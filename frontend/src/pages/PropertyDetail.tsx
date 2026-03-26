@@ -4,7 +4,7 @@ import {
   MapPin, Bed, Bath, Square, Phone, Mail,
   Shield, CheckCircle, Heart, Share2, QrCode,
   Download, ArrowLeft, X, Wifi, Zap,
-  Building, Star,
+  Building, Star, ChevronRight,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { Property } from '../types';
@@ -143,11 +143,15 @@ const PropertyDetail = () => {
     }
   };
 
-  const generateQR = () => {
-    const url = `${window.location.origin}/property/${id || '1'}`;
-    const qr = QRCode.toDataURL(url, { width: 200, margin: 2 });
-    setQrCodeUrl(qr);
-    setShowQrModal(true);
+  const generateQR = async () => {
+    try {
+      const url = `${window.location.origin}/property/${id || '1'}`;
+      const qr = await QRCode.toDataURL(url, { width: 200, margin: 2 });
+      setQrCodeUrl(qr);
+      setShowQrModal(true);
+    } catch (error) {
+      console.error('Failed to generate QR code:', error);
+    }
   };
 
   const features = [

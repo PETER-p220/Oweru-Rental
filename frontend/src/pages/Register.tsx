@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Phone, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import Api, { TOKEN_KEY } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -253,8 +254,7 @@ const Register = () => {
         <div className="rg-panel">
 
           <Link to="/" className="rg-logo">
-            <span className="rg-logo-text">OWERU</span>
-            <span className="rg-logo-dot">.</span>
+            <img src={LOGO} alt="OWERU" style={{ height: '32px', width: 'auto' }} />
           </Link>
 
           {/* Step progress */}

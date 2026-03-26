@@ -23,12 +23,11 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const { pathname } = useLocation();
   const { user } = useAuth();
 
-  const userType: UserRole = user?.userType ||
+  const userType: UserRole = (user?.userType ||
                            user?.user_type ||
                            user?.role ||
                            user?.userRole ||
-                           user?.user_role ||
-                           'tenant';
+                           'tenant') as UserRole;
 
   console.log('DashboardLayout - User object:', user);
   console.log('DashboardLayout - User object keys:', user ? Object.keys(user) : 'No user');

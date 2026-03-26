@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 import Api, { TOKEN_KEY } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
 const Login = () => {
   const [formData, setFormData]         = useState({ email: '', password: '', userType: 'tenant' });
@@ -456,8 +457,7 @@ const Login = () => {
         <div className="lg-panel">
 
           <Link to="/" className="lg-logo">
-            <span className="lg-logo-text">OWERU</span>
-            <span className="lg-logo-dot">.</span>
+            <img src={LOGO} alt="OWERU" style={{ height: '32px', width: 'auto' }} />
           </Link>
 
           <h1 className="lg-title">Welcome<br /><em>Back</em></h1>
