@@ -24,13 +24,23 @@ const Home = () => {
   const loadProperties = async () => {
     try {
       setLoading(true);
+      console.log('Loading properties from API...');
       const response = await Api.getProperties();
-      setProperties(response.data || []);
+      console.log('API Response:', response);
+      
+      // Backend returns { data: [...], pagination: {...} }
+      const propertiesData = response.data?.data ?? response.data ?? [];
+      console.log('Properties data:', propertiesData);
+      
+      setProperties(propertiesData);
       
       // Set featured properties (first 6)
-      setFeaturedProperties((response.data || []).slice(0, 6));
+      const featured = propertiesData.slice(0, 6);
+      console.log('Featured properties:', featured);
+      setFeaturedProperties(featured);
     } catch (error) {
       console.error('Failed to load properties:', error);
+      setFeaturedProperties([]);
     } finally {
       setLoading(false);
     }
