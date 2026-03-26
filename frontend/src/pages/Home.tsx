@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Search, Home as HomeIcon, Users, Shield, TrendingUp, ArrowRight, MapPin, Star, ChevronRight, Bed, Bath, Square, DollarSign } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Api from '../services/api';
+import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
 const Home = () => {
   const [properties, setProperties] = useState<any[]>([]);
@@ -1225,7 +1226,9 @@ const Home = () => {
       {/* Footer bar */}
       <footer style={{ borderTop: '1px solid var(--border)' }}>
         <div className="footer-bar">
-          <div className="footer-logo">OWERU<span>.</span></div>
+          <div className="footer-logo">
+            <img src={LOGO} alt="OWERU" style={{ height: '20px', width: 'auto' }} />
+          </div>
           <ul className="footer-links">
             {['Properties', 'Landlords', 'Agents', 'About', 'Contact'].map((l) => (
               <li key={l}><Link to={`/${l.toLowerCase()}`}>{l}</Link></li>

@@ -1,5 +1,6 @@
 import { Phone, Mail, MapPin, Globe, Facebook, Twitter, Instagram, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
 const Footer = () => {
   return (
@@ -321,8 +322,7 @@ const Footer = () => {
       <div className="footer-top-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <div className="footer-brand">
-            <span className="footer-logo-text">OWERU</span>
-            <span className="footer-logo-dot">.</span>
+            <img src={LOGO} alt="OWERU" style={{ height: '24px', width: 'auto' }} />
           </div>
           <span className="footer-tagline">Tanzania Property Rentals</span>
         </div>

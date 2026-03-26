@@ -8,6 +8,7 @@ import {
   Receipt, UserCheck, MessageSquare, AlertCircle, PieChart,
   RefreshCw, Clock, BookOpen, Landmark, Eye,
 } from 'lucide-react';
+import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -595,8 +596,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         <div className="dl-logo-bar">
           <div>
             <Link to="/" className="dl-logo">
-              <span className="dl-logo-text">OWERU</span>
-              <span className="dl-logo-dot">.</span>
+              <img src={LOGO} alt="OWERU" style={{ height: '24px', width: 'auto' }} />
             </Link>
             <div className="dl-tagline">Real Estate Management</div>
           </div>

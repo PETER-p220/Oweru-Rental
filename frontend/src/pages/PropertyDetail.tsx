@@ -197,7 +197,7 @@ const PropertyDetail = () => {
 
   const trackingUrl = property
     ? `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`
-    : '';
+    : 'https://oweru.co';
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-TZ', {
@@ -279,15 +279,15 @@ const PropertyDetail = () => {
                 <div style={{ ...card, marginBottom: 20 }}>
                   <div style={{ position: 'relative', height: 420, overflow: 'hidden' }}>
                     <img
-                      src={property.images && property.images.length > 0 ? property.images[selectedImg] : '/api/placeholder/900/600'}
-                      alt={property.title}
+                      src={property?.images && property.images.length > 0 ? property.images[selectedImg] : '/api/placeholder/900/600'}
+                      alt={property?.title || 'Property'}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity .3s' }}
                     />
                     {/* Dark gradient */}
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,8,.7) 0%, transparent 55%)' }} />
 
                     {/* Featured badge */}
-                    {property.featured && (
+                    {property?.featured && (
                       <div style={{
                         position: 'absolute', top: 16, left: 16,
                         ...body, fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
@@ -315,18 +315,18 @@ const PropertyDetail = () => {
                     {/* Price overlay */}
                     <div style={{ position: 'absolute', bottom: 16, left: 16 }}>
                       <div style={{ ...serif, fontSize: 26, fontWeight: 600, color: t.gold, lineHeight: 1.1 }}>
-                        {formatPrice(property.price)}{' '}
+                        {formatPrice(property?.price || 0)}{' '}
                         <span style={{ fontSize: 14, fontWeight: 400, color: t.muted }}>TZS/mo</span>
                       </div>
                       <div style={{ ...body, fontSize: 12, color: 'rgba(232,228,220,.7)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <MapPin size={11} />{property.location || property.address}
+                        <MapPin size={11} />{property?.location || property?.address || 'Location not specified'}
                       </div>
                     </div>
                   </div>
 
                   {/* Thumbnails */}
                   <div style={{ display: 'flex', gap: 8, padding: '12px 14px', background: t.dark3 }}>
-                    {property.images.map((img: string, i: number) => (
+                    {property?.images?.map((img: string, i: number) => (
                       <img
                         key={i}
                         src={img}
@@ -345,11 +345,11 @@ const PropertyDetail = () => {
                   {/* Title + pills */}
                   <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: `1px solid ${t.border}` }}>
                     <h1 style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream, margin: '0 0 10px', letterSpacing: '-0.02em', lineHeight: 1.25 }}>
-                      {property.title}
+                      {property?.title || 'Property Title'}
                     </h1>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={pill(t.blue)}>{property.type}</span>
-                      {property.furnished && <span style={pill(t.gold)}>Furnished</span>}
+                      <span style={pill(t.blue)}>{property?.type || 'Property'}</span>
+                      {property?.furnished && <span style={pill(t.gold)}>Furnished</span>}
                     </div>
                   </div>
 
@@ -409,10 +409,10 @@ const PropertyDetail = () => {
                     Property Details
                   </div>
                   {[
-                    { k: 'Type',      v: property.type,      mono: false },
-                    { k: 'Status',    v: property.status,    mono: false, highlight: t.green },
-                    { k: 'Furnished', v: property.furnished ? 'Yes' : 'No', mono: false },
-                    { k: 'Listed',    v: new Date(property.createdAt).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }), mono: true },
+                    { k: 'Type',      v: property?.type || 'N/A',      mono: false },
+                    { k: 'Status',    v: property?.status || 'Available',    mono: false, highlight: t.green },
+                    { k: 'Furnished', v: property?.furnished ? 'Yes' : 'No', mono: false },
+                    { k: 'Listed',    v: property?.createdAt ? new Date(property.createdAt).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A', mono: true },
                   ].map(({ k, v, mono, highlight }) => (
                     <div key={k} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -445,12 +445,12 @@ const PropertyDetail = () => {
                       flexShrink: 0,
                     }}>
                       <span style={{ ...serif, fontSize: 16, color: t.gold }}>
-                        {property.owner.name.charAt(0)}
+                        {property?.owner?.name?.charAt(0) || 'O'}
                       </span>
                     </div>
                     <div>
-                      <div style={{ ...body, fontSize: 14, fontWeight: 500, color: t.cream }}>{property.owner.name}</div>
-                      {property.owner.verified && (
+                      <div style={{ ...body, fontSize: 14, fontWeight: 500, color: t.cream }}>{property?.owner?.name || 'Owner Name'}</div>
+                      {property?.owner?.verified && (
                         <span style={pill(t.green)}>
                           <CheckCircle size={9} /> Verified
                         </span>
@@ -459,17 +459,17 @@ const PropertyDetail = () => {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                    <a href={`tel:${property.owner.phone}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
-                      <Phone size={12} style={{ flexShrink: 0 }} /> {property.owner.phone}
+                    <a href={`tel:${property?.owner?.phone || '#'}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
+                      <Phone size={12} style={{ flexShrink: 0 }} /> {property?.owner?.phone || 'Phone not available'}
                     </a>
-                    <a href={`mailto:${property.owner.email}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
-                      <Mail size={12} style={{ flexShrink: 0 }} /> {property.owner.email}
+                    <a href={`mailto:${property?.owner?.email || '#'}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
+                      <Mail size={12} style={{ flexShrink: 0 }} /> {property?.owner?.email || 'Email not available'}
                     </a>
                   </div>
                 </div>
 
                 {/* ── Dalali / Agent ── */}
-                {property.dalali && (
+                {property?.dalali && (
                   <div style={{ ...card, padding: '20px 22px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14 }}>
                       <Building size={14} style={{ color: t.blue }} />
@@ -485,12 +485,12 @@ const PropertyDetail = () => {
                         flexShrink: 0,
                       }}>
                         <span style={{ ...serif, fontSize: 16, color: t.blue }}>
-                          {property.dalali.name.charAt(0)}
+                          {property?.dalali?.name?.charAt(0) || 'D'}
                         </span>
                       </div>
                       <div>
-                        <div style={{ ...body, fontSize: 14, fontWeight: 500, color: t.cream }}>{property.dalali.name}</div>
-                        {property.dalali.verified && (
+                        <div style={{ ...body, fontSize: 14, fontWeight: 500, color: t.cream }}>{property?.dalali?.name || 'Agent Name'}</div>
+                        {property?.dalali?.verified && (
                           <span style={pill(t.blue)}>
                             <CheckCircle size={9} /> Verified Agent
                           </span>
@@ -499,11 +499,11 @@ const PropertyDetail = () => {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 12 }}>
-                      <a href={`tel:${property.dalali.phone}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
-                        <Phone size={12} style={{ flexShrink: 0 }} /> {property.dalali.phone}
+                      <a href={`tel:${property?.dalali?.phone || '#'}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
+                        <Phone size={12} style={{ flexShrink: 0 }} /> {property?.dalali?.phone || 'Phone not available'}
                       </a>
-                      <a href={`mailto:${property.dalali.email}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
-                        <Mail size={12} style={{ flexShrink: 0 }} /> {property.dalali.email}
+                      <a href={`mailto:${property?.dalali?.email || '#'}`} className="pd-contact-link" style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 12, color: t.muted, textDecoration: 'none' }}>
+                        <Mail size={12} style={{ flexShrink: 0 }} /> {property?.dalali?.email || 'Email not available'}
                       </a>
                     </div>
 
@@ -513,8 +513,8 @@ const PropertyDetail = () => {
                       border: '1px solid rgba(56,189,248,0.10)',
                       borderRadius: 6, padding: '8px 12px',
                     }}>
-                      Agent Code: <strong style={{ color: t.blue, fontFamily: 'monospace' }}>{property.dalali.code}</strong>
-                      &nbsp;·&nbsp; Commission: <strong style={{ color: t.gold }}>{property.dalali.commission}%</strong>
+                      Agent Code: <strong style={{ color: t.blue, fontFamily: 'monospace' }}>{property?.dalali?.code || 'N/A'}</strong>
+                      &nbsp;·&nbsp; Commission: <strong style={{ color: t.gold }}>{property?.dalali?.commission || 0}%</strong>
                     </div>
                   </div>
                 )}

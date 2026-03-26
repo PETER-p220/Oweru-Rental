@@ -1,6 +1,8 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Phone, Mail, MapPin, Menu, X, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Search, Menu, X, User, LogOut, Home, Building, FileText, MessageSquare, Bell, Settings, ChevronDown, Heart, Star, Users, BarChart3, DollarSign, Package, Calendar, Phone, Mail, MapPin, Eye, Edit, Trash2, Plus, Filter, TrendingUp } from 'lucide-react';
+import Api from '../services/api';
+import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import ThemeToggle from './ThemeToggle';
 
 const Header = () => {
@@ -472,8 +474,7 @@ const Header = () => {
 
           {/* Logo */}
           <Link to="/" className="hdr-logo">
-            <span className="hdr-logo-text">OWERU</span>
-            <span className="hdr-logo-dot">.</span>
+            <img src={LOGO} alt="OWERU" style={{ height: '32px', width: 'auto' }} />
           </Link>
 
           {/* Desktop links */}
@@ -521,8 +522,7 @@ const Header = () => {
       <div className={`hdr-mobile${isMenuOpen ? ' open' : ''}`}>
         <div className="mobile-header">
           <Link to="/" className="hdr-logo" style={{ textDecoration: 'none' }}>
-            <span className="hdr-logo-text">OWERU</span>
-            <span className="hdr-logo-dot">.</span>
+            <img src={LOGO} alt="OWERU" style={{ height: '32px', width: 'auto' }} />
           </Link>
           <button className="mobile-close" onClick={() => setIsMenuOpen(false)}>
             <X size={16} />
