@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Search, Home as HomeIcon, Users, Shield, TrendingUp, ArrowRight, MapPin, Star, ChevronRight, Bed, Bath, Square, DollarSign } from 'lucide-react';
+import { Search, Home as HomeIcon, Users, Shield, TrendingUp, ArrowRight, MapPin, Star, ChevronRight, Bed, Bath, Square, DollarSign, Building } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Api from '../services/api';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
@@ -959,13 +959,26 @@ const Home = () => {
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  {property.images && property.images.length > 0 && (
+                  {(property.images && property.images.length > 0) ? (
                     <div style={{ 
                       height: '200px', 
-                      background: `url(${property.images[0]}) center/cover`,
+                      backgroundImage: `url(${property.images[0]})`,
                       backgroundSize: 'cover',
-                      backgroundPosition: 'center'
+                      backgroundPosition: 'center',
+                      backgroundColor: '#1a1a1a'
                     }} />
+                  ) : (
+                    <div style={{ 
+                      height: '200px', 
+                      background: 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#666',
+                      fontSize: '14px'
+                    }}>
+                      <Building size={32} />
+                    </div>
                   )}
                   <div style={{ padding: '20px' }}>
                     <div style={{ 

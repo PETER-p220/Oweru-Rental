@@ -163,6 +163,17 @@ const Properties = () => {
       alert('Property ID not found');
       return;
     }
+    
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // Store the property they want to apply for
+      sessionStorage.setItem('pendingApplication', property.id.toString());
+      // Redirect to login with a return URL
+      navigate(`/login?redirect=/dashboard/tenant/applications?property=${property.id}`);
+      return;
+    }
+    
     navigate(`/dashboard/tenant/applications?property=${property.id}`);
   } catch (error) {
     console.error('Navigation error:', error);
