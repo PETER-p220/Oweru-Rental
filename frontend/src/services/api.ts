@@ -361,6 +361,13 @@ class Api {
     });
   }
 
+  static async notifyAgent(notificationData: any) {
+    return this.request<any>('notifications/agent', {
+      method: 'POST',
+      body: JSON.stringify(notificationData),
+    });
+  }
+
   static async makePayment(paymentId: number, data: { paymentMethodId: string }) {
     return this.request(`tenant/payments/${paymentId}/pay`, {
       method: 'POST',

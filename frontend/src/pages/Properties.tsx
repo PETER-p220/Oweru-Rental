@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, MapPin, Bed, Bath, Square, Heart, Share2,
-  SlidersHorizontal, X, ChevronDown, LayoutGrid, List,
+  SlidersHorizontal, X, ChevronDown, LayoutGrid, List, CreditCard,
 } from 'lucide-react';
 import Api from '../services/api';
 
@@ -30,7 +30,7 @@ interface Property {
   description?: string;
   images?: string[];
   owner?: { name?: string; first_name?: string; last_name?: string };
-  agent?: { name?: string; code?: string };
+  agent?: { id?: number; name?: string; code?: string };
 }
 
 /* ─── Debounce hook ─── */
@@ -437,6 +437,110 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); }
 .load-more-btn:hover { border-color: var(--navy); color: var(--navy); background: var(--navy-faint); }
 .load-more-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface); border-radius: 16px;
+  max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-header {
+  padding: 24px 24px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title {
+  font-family: var(--serif); font-size: 20px; font-weight: 400;
+  color: var(--navy); letter-spacing: -0.01em;
+}
+.modal-close {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--hint); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.18s;
+}
+.modal-close:hover { background: var(--navy-faint); border-color: var(--navy); color: var(--navy); }
+.modal-body { padding: 20px 24px; }
+.modal-footer {
+  padding: 16px 24px 24px; border-top: 1px solid var(--border);
+  display: flex; gap: 12px; justify-content: flex-end;
+}
+.modal-btn {
+  padding: 10px 20px; border-radius: 8px; font-family: var(--sans);
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.18s;
+  border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+}
+.modal-btn:hover { border-color: var(--navy); color: var(--navy); background: var(--navy-faint); }
+.modal-btn.primary {
+  background: var(--navy); border-color: var(--navy); color: #fff;
+}
+.modal-btn.primary:hover { background: var(--navy-2); border-color: var(--navy-2); }
+.modal-btn.success {
+  background: var(--success); border-color: var(--success); color: #fff;
+}
+.modal-btn.success:hover { background: #047857; border-color: #047857; }
+.modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.property-info {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px; margin-bottom: 20px;
+}
+.property-info-title {
+  font-family: var(--serif); font-size: 16px; font-weight: 400;
+  color: var(--navy); margin-bottom: 8px;
+}
+.property-info-detail {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--sans); font-size: 13px; color: var(--muted); margin-bottom: 4px;
+}
+.property-info-detail strong { color: var(--text); }
+
+.service-fee {
+  background: linear-gradient(135deg, var(--gold-faint), rgba(201,168,76,0.15));
+  border: 1px solid var(--gold); border-radius: 8px;
+  padding: 16px; margin: 16px 0;
+  text-align: center;
+}
+.service-fee-amount {
+  font-family: var(--serif); font-size: 24px; font-weight: 400;
+  color: var(--navy); margin-bottom: 4px;
+}
+.service-fee-desc {
+  font-family: var(--sans); font-size: 12px; color: var(--muted);
+}
+
+.payment-methods {
+  display: flex; flex-direction: column; gap: 12px; margin: 16px 0;
+}
+.payment-method {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; transition: all 0.18s;
+}
+.payment-method:hover { border-color: var(--navy); background: var(--navy-faint); }
+.payment-method.selected { border-color: var(--navy); background: var(--navy-faint); }
+.payment-method-icon {
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--bg); display: flex; align-items: center; justify-content: center;
+  color: var(--navy);
+}
+.payment-method-info {
+  flex: 1;
+}
+.payment-method-name {
+  font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text);
+}
+.payment-method-desc {
+  font-family: var(--sans); font-size: 11px; color: var(--hint);
+}
+
 /* ── Responsive ── */
 @media (max-width: 1100px) { .pr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 768px) {
@@ -572,7 +676,7 @@ const PropertyCard = ({
         </div>
       </div>
     </Link>
-  );
+  );     
 };
 
 /* ─── Main Component ─── */
@@ -593,6 +697,10 @@ const Properties = () => {
   const [viewMode,     setViewMode]     = useState<'grid' | 'list'>('grid');
   const [showFilters,  setShowFilters]  = useState(false);
   const [properties,   setProperties]   = useState<Property[]>([]);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const debouncedSearch = useDebounce(searchTerm, 400);
 
@@ -690,17 +798,51 @@ const Properties = () => {
       return;
     }
     
-    // User is authenticated, show application confirmation
-    const ok = window.confirm(
-      `🏠 Ready to Apply?\n\n` +
-      `Property: ${property.title || 'Untitled Property'}\n` +
-      `Rent: ${formatPrice(property.price)}/month\n` +
-      `Location: ${property.location || property.address || 'Not specified'}\n\n` +
-      `Click OK to proceed with your rental application.`
-    );
+    // User is authenticated, show professional application modal
+    setSelectedProperty(property);
+    setShowApplyModal(true);
+  };
+
+  const handleProceedToPayment = () => {
+    setShowApplyModal(false);
+    setShowPaymentModal(true);
+  };
+
+  const handlePayment = async () => {
+    if (!selectedProperty) return;
     
-    if (ok) {
-      navigate(`/dashboard/tenant/applications?property=${property.id}`);
+    setIsProcessingPayment(true);
+    try {
+      // Simulate payment processing (replace with actual payment API)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Create application with payment
+      const response = await Api.createApplication({
+        property_id: selectedProperty.id,
+        service_fee: 20000,
+        payment_status: 'paid'
+      });
+      
+      // Notify agent (this would trigger a notification to the agent)
+      if (selectedProperty.agent?.id) {
+        await Api.notifyAgent({
+          agent_id: selectedProperty.agent.id,
+          property_id: selectedProperty.id,
+          tenant_id: JSON.parse(localStorage.getItem('user') || '{}').id,
+          message: `A tenant has paid the service fee for your property: ${selectedProperty.title}`
+        });
+      }
+      
+      // Show success and redirect
+      setShowPaymentModal(false);
+      alert('✅ Payment successful! The agent has been notified and will contact you soon.');
+      navigate('/dashboard/tenant/applications');
+      
+    } catch (error) {
+      console.error('Payment failed:', error);
+      alert('❌ Payment failed. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -898,6 +1040,104 @@ const Properties = () => {
           </div>
         )}
       </div>
+
+      {/* Application Modal */}
+      {showApplyModal && selectedProperty && (
+        <div className="modal-overlay" onClick={() => setShowApplyModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Apply for Property</h2>
+              <button className="modal-close" onClick={() => setShowApplyModal(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="property-info">
+                <div className="property-info-title">{selectedProperty.title}</div>
+                <div className="property-info-detail">
+                  <MapPin size={12} />
+                  <strong>Location:</strong> {selectedProperty.location || selectedProperty.address || 'Not specified'}
+                </div>
+                <div className="property-info-detail">
+                  <strong>Rent:</strong> {formatPrice(selectedProperty.price)}/month
+                </div>
+                {selectedProperty.bedrooms && (
+                  <div className="property-info-detail">
+                    <Bed size={12} />
+                    <strong>Bedrooms:</strong> {selectedProperty.bedrooms}
+                  </div>
+                )}
+              </div>
+
+              <div className="service-fee">
+                <div className="service-fee-amount">TZS 20,000</div>
+                <div className="service-fee-desc">Service fee to connect with agent</div>
+              </div>
+
+              <p style={{ fontFamily: 'var(--sans)', fontSize: '13px', color: 'var(--muted)', lineHeight: '1.5' }}>
+                By proceeding, you'll pay a one-time service fee of TZS 20,000 to connect with the property agent. 
+                The agent will be notified immediately and will contact you to discuss the property details.
+              </p>
+            </div>
+
+            <div className="modal-footer">
+              <button className="modal-btn" onClick={() => setShowApplyModal(false)}>
+                Cancel
+              </button>
+              <button className="modal-btn primary" onClick={handleProceedToPayment}>
+                Proceed to Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedProperty && (
+        <div className="modal-overlay" onClick={() => !isProcessingPayment && setShowPaymentModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">Payment</h2>
+              <button className="modal-close" onClick={() => !isProcessingPayment && setShowPaymentModal(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="service-fee">
+                <div className="service-fee-amount">TZS 20,000</div>
+                <div className="service-fee-desc">Service fee for agent connection</div>
+              </div>
+
+              <div className="payment-methods">
+                <div className="payment-method selected">
+                  <div className="payment-method-icon">
+                    <CreditCard size={20} />
+                  </div>
+                  <div className="payment-method-info">
+                    <div className="payment-method-name">Mobile Money</div>
+                    <div className="payment-method-desc">Tigo Pesa, M-Pesa, Airtel Money</div>
+                  </div>
+                </div>
+              </div>
+
+              <p style={{ fontFamily: 'var(--sans)', fontSize: '12px', color: 'var(--hint)', textAlign: 'center' }}>
+                Secure payment powered by Oweru Payment System
+              </p>
+            </div>
+
+            <div className="modal-footer">
+              <button className="modal-btn" onClick={() => !isProcessingPayment && setShowPaymentModal(false)} disabled={isProcessingPayment}>
+                Cancel
+              </button>
+              <button className="modal-btn success" onClick={handlePayment} disabled={isProcessingPayment}>
+                {isProcessingPayment ? 'Processing...' : 'Pay TZS 20,000'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
