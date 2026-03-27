@@ -147,7 +147,8 @@ const EditProperty = () => {
     } catch (error: any) {
       console.error('Error updating property:', error);
       if (error.response?.data?.errors) {
-        setErrors(Object.values(error.response.data.errors).flat());
+        const errorValues = Object.values(error.response.data.errors) as string[];
+        setErrors(errorValues.flat());
       } else {
         setErrors(['Failed to update property. Please try again.']);
       }

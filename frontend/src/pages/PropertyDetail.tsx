@@ -126,6 +126,8 @@ const PropertyDetail = () => {
         setProperty(res.data);
       } catch (err) {
         console.error('PropertyDetail - Failed to load property:', err);
+      } finally {
+        setLoading(false);
       }
     })();
   }, [id]);
@@ -176,6 +178,10 @@ const PropertyDetail = () => {
 
   const generateQRCode = async () => {
     try {
+      if (!property) {
+        console.error('PropertyDetail: Property is null, cannot generate QR code');
+        return;
+      }
       const trackingUrl = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`;
       const dataUrl = await QRCode.toDataURL(trackingUrl, {
         color: { dark: '#c9a84c', light: '#0e0e0e' },
@@ -197,6 +203,10 @@ const PropertyDetail = () => {
   };
 
   const shareProperty = async () => {
+    if (!property) {
+      console.error('PropertyDetail: Property is null, cannot share');
+      return;
+    }
     const url = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`;
     if (navigator.share) {
       try {
@@ -210,6 +220,11 @@ const PropertyDetail = () => {
   };
 
   const trackingUrl = property
+    ? `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`
+    : 'https://oweru.co';
+
+  // Add null check to prevent errors
+  const safeTrackingUrl = property
     ? `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`
     : 'https://oweru.co';
 

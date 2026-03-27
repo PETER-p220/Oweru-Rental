@@ -24,23 +24,24 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-const Properties = () => {
+const Properties = () => { 
   const navigate = useNavigate();
   const [searchTerm,   setSearchTerm]   = useState('');
   const [selectedType, setSelectedType] = useState('');
-  const [priceRange,   setPriceRange]   = useState('');
-  const [showFilters,  setShowFilters]  = useState(false);
-  const [savedIds,     setSavedIds]     = useState<Set<number>>(new Set());
-  const [viewMode,     setViewMode]     = useState<'grid' | 'list'>('grid');
-  const [bedrooms,     setBedrooms]     = useState('');
-  const [furnished,    setFurnished]    = useState('');
-
-  const [properties,   setProperties]  = useState<any[]>([]);
-  const [pagination,   setPagination]  = useState<Pagination | null>(null);
+  const [priceRange, setPriceRange] = useState<string>('0-1000000+');
+  const [bedrooms,    setBedrooms]    = useState<number | undefined>(undefined);
+  const [furnished,   setFurnished]   = useState<boolean | undefined>(undefined);
   const [page,         setPage]        = useState(1);
   const [loading,      setLoading]     = useState(true);
   const [loadingMore,  setLoadingMore] = useState(false);
   const [error,        setError]       = useState('');
+  const [savedIds, setSavedIds] = useState(new Set<number>());
+  const [applications, setApplications] = useState<any[]>([]);
+  const [showApplicationStatus, setShowApplicationStatus] = useState(false);
+  const [pagination,   setPagination]  = useState<Pagination | null>(null);
+  const [viewMode,     setViewMode]     = useState<'grid' | 'list'>('grid');
+  const [showFilters,  setShowFilters]  = useState(false);
+  const [properties, setProperties] = useState<any[]>([]);
 
   // Debounce search so we don't fire on every keystroke
   const debouncedSearch = useDebounce(searchTerm, 400);
@@ -48,24 +49,53 @@ const Properties = () => {
   // Reset to page 1 whenever any filter changes
   useEffect(() => { setPage(1); }, [debouncedSearch, selectedType, priceRange, bedrooms, furnished]);
 
+  // Load tenant's applications for status tracking
   useEffect(() => {
-    loadProperties(page);
-  }, [page, debouncedSearch, selectedType, priceRange, bedrooms, furnished]);
+    const loadApplications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await Api.getTenantApplications();
+          console.log('Tenant applications:', response.data);
+          setApplications(response.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to load applications:', error);
+      }
+    };
+    
+    loadApplications();
+  }, []);
+
+  // Check for pending application from login redirect
+  useEffect(() => {
+    const pendingPropertyId = sessionStorage.getItem('pendingApplication');
+    if (pendingPropertyId) {
+      // Clear the pending application
+      sessionStorage.removeItem('pendingApplication');
+      // Show application status for this property
+      setShowApplicationStatus(true);
+      // Auto-navigate to applications page after a delay
+      setTimeout(() => {
+        navigate(`/dashboard/tenant/applications?property=${pendingPropertyId}`);
+      }, 2000);
+    }
+  }, []);
 
   /* ── Build query params matching backend expectations ── */
   const buildParams = (pageNum: number) => {
-    const params: Record<string, any> = { page: pageNum };
+    const params: Record<string, string> = { page: pageNum.toString() };
 
     if (debouncedSearch) params.search = debouncedSearch;
     if (selectedType)    params.type   = selectedType;
 
-    // Backend uses min_price / max_price (snake_case)
-    if (priceRange === '0-500')    { params.min_price = 0;       params.max_price = 500000;  }
-    if (priceRange === '500-1000') { params.min_price = 500000;  params.max_price = 1000000; }
-    if (priceRange === '1000+')    { params.min_price = 1000000; }
+    // Handle string-based price range
+    if (priceRange === '0-500')    { params.min_price = '0';       params.max_price = '500000'; }
+    if (priceRange === '500-1000') { params.min_price = '500000';  params.max_price = '1000000'; }
+    if (priceRange === '1000+')    { params.min_price = '1000000'; }
 
-    if (bedrooms)  params.bedrooms  = parseInt(bedrooms);
-    if (furnished) params.furnished = furnished === 'furnished' ? true : false;
+    if (bedrooms) params.bedrooms  = bedrooms.toString();
+    if (furnished) params.furnished = furnished ? 'true' : 'false';
 
     return params;
   };
@@ -111,7 +141,7 @@ const Properties = () => {
 
   const clearFilters = () => {
     setSearchTerm(''); setSelectedType(''); setPriceRange('');
-    setBedrooms(''); setFurnished('');
+    setBedrooms(undefined); setFurnished(undefined);
   };
 
   const activeFilterCount = [selectedType, priceRange, bedrooms, furnished].filter(Boolean).length;
@@ -147,17 +177,64 @@ const Properties = () => {
             <div className="prop-img-overlay" />
 
             {property.featured && <div className="prop-badge-featured">Featured</div>}
+            
+            {/* Quick actions overlay */}
+            <div className="prop-quick-actions">
+              <button 
+                className="prop-quick-view-btn"
+                onClick={e => { e.preventDefault(); e.stopPropagation(); }}
+                title="Quick View"
+              >
+                <Search size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="prop-content">
+            <div className="prop-header">
+              <div className="prop-title">{property.title || 'Untitled Property'}</div>
+              <div className="prop-location">
+                <MapPin size={12} />
+                {property.location || property.address || 'Location not specified'}
+              </div>
+            </div>
+
+            {/* Property Details */}
+            <div className="prop-details">
+              <div className="prop-detail-item">
+                <Bed size={14} />
+                <span>{property.bedrooms || 'N/A'} Beds</span>
+              </div>
+              <div className="prop-detail-item">
+                <Bath size={14} />
+                <span>{property.bathrooms || 'N/A'} Baths</span>
+              </div>
+              <div className="prop-detail-item">
+                <Square size={14} />
+                <span>{property.size || 'N/A'} sq ft</span>
+              </div>
+            </div>
+
+            {/* Type Badge */}
             <div className="prop-type-badge">{typeLabel[property.type] ?? property.type}</div>
 
-            <div className="prop-actions">
-              <button
-                className={`prop-action-btn${isSaved ? ' saved' : ''}`}
-                onClick={e => toggleSave(property.id, e)}
-                title={isSaved ? 'Unsave' : 'Save'}
-              >
-                <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
-              </button>
-              <button className="prop-action-btn apply-btn" title="Apply for this Property" onClick={e => { e.preventDefault(); 
+            {/* Price and Actions */}
+            <div className="prop-footer">
+              <div className="prop-price">
+                {formatPrice(property.price || 0)}
+                <span className="prop-price-period">/month</span>
+              </div>
+
+              <div className="prop-actions">
+                <button
+                  className={`prop-action-btn${isSaved ? ' saved' : ''}`}
+                  onClick={e => toggleSave(property.id, e)}
+                  title={isSaved ? 'Unsave' : 'Save'}
+                >
+                  <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
+                </button>
+                <button className="prop-action-btn apply-btn" title="Apply for this Property" onClick={e => { e.preventDefault(); 
   try {
     if (!property.id) {
       alert('Property ID not found');
@@ -174,7 +251,17 @@ const Properties = () => {
       return;
     }
     
-    navigate(`/dashboard/tenant/applications?property=${property.id}`);
+    // Enhanced tenant experience - show confirmation
+    const confirmApply = window.confirm(
+      `Are you ready to apply for "${property.title || 'this property'}?\n\n` +
+      `Rent: ${formatPrice(property.price || 0)}/month\n` +
+      `Location: ${property.location || property.address || 'Not specified'}\n\n` +
+      `Click OK to proceed with your rental application.`
+    );
+    
+    if (confirmApply) {
+      navigate(`/dashboard/tenant/applications?property=${property.id}`);
+    }
   } catch (error) {
     console.error('Navigation error:', error);
     alert('Unable to navigate to application page');
@@ -374,6 +461,11 @@ const Properties = () => {
             <div className="pr-eyebrow">Browse Listings</div>
             <h1 className="pr-title">
               Available<br /><em>Properties</em>
+              {applications.length > 0 && (
+                <span style={{ fontSize: '12px', color: 'var(--gold)', marginLeft: '10px' }}>
+                  {applications.length} Application{applications.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </h1>
           </div>
           <div className="pr-count">
@@ -446,7 +538,7 @@ const Properties = () => {
           <div className="pr-adv-inner">
             <span className="pr-adv-label">Refine</span>
 
-            <select className="pr-select" style={{ minWidth: 110 }} value={bedrooms} onChange={e => setBedrooms(e.target.value)}>
+            <select className="pr-select" style={{ minWidth: 110 }} value={bedrooms?.toString() || ''} onChange={e => setBedrooms(e.target.value ? parseInt(e.target.value) : undefined)}>
               <option value="">Bedrooms</option>
               <option value="1">1+</option>
               <option value="2">2+</option>
@@ -454,7 +546,7 @@ const Properties = () => {
               <option value="4">4+</option>
             </select>
 
-            <select className="pr-select" style={{ minWidth: 130 }} value={furnished} onChange={e => setFurnished(e.target.value)}>
+            <select className="pr-select" style={{ minWidth: 130 }} value={furnished ? 'furnished' : 'unfurnished'} onChange={e => setFurnished(e.target.value as 'furnished' | 'unfurnished' | undefined)}>
               <option value="">Furnishing</option>
               <option value="furnished">Furnished</option>
               <option value="unfurnished">Unfurnished</option>
