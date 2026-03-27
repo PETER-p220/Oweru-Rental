@@ -619,11 +619,9 @@ const Properties = () => {
         } else {
           throw new Error(paymentResponse.message || 'Payment initiation failed');
         }
-      } catch (selcomError) {
-        console.warn('Selcom API not available, using fallback:', selcomError);
-        // Fallback: simulate successful payment for demo
-        paymentSuccessful = true;
-        alert('Payment processed successfully (Demo Mode)');
+      } catch (selcomError: any) {
+        console.error('❌ Selcom payment error:', selcomError);
+        throw new Error(selcomError?.message || 'Payment failed. Please check your phone number and try again.');
       }
       
       if (paymentSuccessful) {

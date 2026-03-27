@@ -149,53 +149,57 @@ class SelcomService {
     try {
       const orderId = this.generateOrderId();
       
+      // Real Selcom API endpoint for mobile money
       const requestBody = {
         amount: paymentData.amount,
         currency: 'TZS',
         vendor_id: this.vendorId,
         order_id: orderId,
         phone_number: paymentData.phone_number,
-        provider: paymentData.provider,
-        webhook_url: `${window.location.origin}/api/payment/webhook`
+        provider: paymentData.provider.toUpperCase(),
+        customer_email: `${paymentData.tenant_id}@oweru.com`, // Fallback email
+        customer_name: `Tenant ${paymentData.tenant_id}`,
+        webhook_url: `${window.location.origin}/api/payment/webhook`,
+        redirect_url: `${window.location.origin}/payment/success`
       };
 
-      const signature = this.generateSignature(requestBody);
+      console.log('🚀 Initiating Selcom Payment:', requestBody);
 
       const response = await fetch(`${this.baseUrl}/payments/mobilemoney`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': this.apiKey,
-          'X-API-Signature': signature,
+          'Authorization': `Bearer ${this.apiKey}`,
           'X-Vendor-ID': this.vendorId,
         },
         body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
+      console.log('📱 Selcom Response:', result);
 
-      if (response.ok && result.success) {
+      if (response.ok && (result.success || result.status === 'success')) {
         return {
           success: true,
           data: {
-            transaction_id: result.data?.transaction_id,
-            order_id: result.data?.order_id,
-            status: result.data?.status
+            transaction_id: result.data?.transaction_id || result.transaction_id || orderId,
+            order_id: result.data?.order_id || orderId,
+            status: result.data?.status || result.status || 'pending'
           }
         };
       } else {
         return {
           success: false,
           error: result.error || 'MOBILE_MONEY_FAILED',
-          message: result.message || 'Failed to initiate mobile money payment'
+          message: result.message || result.error_description || 'Failed to initiate mobile money payment'
         };
       }
     } catch (error) {
-      console.error('Selcom mobile money error:', error);
+      console.error('❌ Selcom mobile money error:', error);
       return {
         success: false,
         error: 'MOBILE_MONEY_ERROR',
-        message: 'Network error occurred while initiating mobile money payment'
+        message: `Payment error: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }

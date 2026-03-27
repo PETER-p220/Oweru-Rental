@@ -493,13 +493,13 @@ class Api {
   static async agentCreateProperty(data: any) {
     // Handle FormData for file uploads
     if (data instanceof FormData) {
-      return this.request<any>('agent/properties', { 
+      return this.request<any>('agent/listings', { 
         method: 'POST', 
         body: data,
         headers: {} // Let browser set Content-Type for FormData
       });
     }
-    return this.request<any>('agent/properties', { 
+    return this.request<any>('agent/listings', { 
       method: 'POST', 
       body: JSON.stringify(data)
     });
