@@ -368,6 +368,13 @@ class Api {
     });
   }
 
+  static async processPayment(paymentData: any) {
+    return this.request<any>('payments/process', {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+  }
+
   static async makePayment(paymentId: number, data: { paymentMethodId: string }) {
     return this.request(`tenant/payments/${paymentId}/pay`, {
       method: 'POST',

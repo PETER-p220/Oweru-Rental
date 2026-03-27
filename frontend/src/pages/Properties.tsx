@@ -813,8 +813,23 @@ const Properties = () => {
     
     setIsProcessingPayment(true);
     try {
-      // Simulate payment processing (replace with actual payment API)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 📍 REAL PAYMENT PROCESSING (replace the simulation)
+      const paymentData = {
+        amount: 20000,
+        currency: 'TZS',
+        payment_method: 'mobile_money', // or 'tigo_pesa', 'mpesa', 'airtel_money'
+        property_id: selectedProperty.id,
+        tenant_id: JSON.parse(localStorage.getItem('user') || '{}').id,
+        phone_number: 'tenant_phone_number', // Get from user profile/form
+      };
+
+      // Call actual payment API
+      const paymentResponse = await Api.processPayment(paymentData);
+      
+      // Verify payment was successful
+      if (!paymentResponse.data.success) {
+        throw new Error(paymentResponse.data.message || 'Payment failed');
+      }
       
       // Create application with payment
       const response = await Api.createApplication({
