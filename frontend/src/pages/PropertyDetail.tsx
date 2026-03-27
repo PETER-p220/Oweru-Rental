@@ -112,12 +112,22 @@ const PropertyDetail = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [property, setProperty] = useState<any>(null);
+  const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadProperty();
-    checkIfSaved();
+    (async () => {
+      try {
+        console.log('PropertyDetail - Loading property for ID:', id);
+        const res = await Api.getProperty(Number(id));
+        console.log('PropertyDetail - API Response:', res);
+        console.log('PropertyDetail - Property data:', res.data);
+        setProperty(res.data);
+      } catch (err) {
+        console.error('PropertyDetail - Failed to load property:', err);
+      }
+    })();
   }, [id]);
 
   const loadProperty = async () => {

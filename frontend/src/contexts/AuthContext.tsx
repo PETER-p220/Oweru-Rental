@@ -32,6 +32,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   console.log('AuthContext - AuthProvider initialized');
+  console.log('AuthContext - Current localStorage user:', localStorage.getItem('user'));
+  console.log('AuthContext - Current localStorage token:', localStorage.getItem('token'));
 
   useEffect(() => {
     console.log('AuthContext - useEffect running');
