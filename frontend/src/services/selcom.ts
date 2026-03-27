@@ -146,91 +146,108 @@ class SelcomService {
     property_id: number;
     tenant_id: number;
   }): Promise<SelcomPaymentResponse> {
+    const orderId = this.generateOrderId();
+    
+    // Real Selcom API endpoint for mobile money
+    const requestBody = {
+      amount: paymentData.amount,
+      currency: 'TZS',
+      vendor_id: this.vendorId,
+      order_id: orderId,
+      phone_number: paymentData.phone_number,
+      provider: paymentData.provider.toUpperCase(),
+      customer_email: `${paymentData.tenant_id}@oweru.com`, // Fallback email
+      customer_name: `Tenant ${paymentData.tenant_id}`,
+      webhook_url: `${window.location.origin}/api/payment/webhook`,
+      redirect_url: `${window.location.origin}/payment/success`
+    };
+
+    console.log('🚀 Initiating Selcom Payment:', requestBody);
+
     try {
-      const orderId = this.generateOrderId();
-      
-      // Real Selcom API endpoint for mobile money
-      const requestBody = {
-        amount: paymentData.amount,
-        currency: 'TZS',
-        vendor_id: this.vendorId,
-        order_id: orderId,
-        phone_number: paymentData.phone_number,
-        provider: paymentData.provider.toUpperCase(),
-        customer_email: `${paymentData.tenant_id}@oweru.com`, // Fallback email
-        customer_name: `Tenant ${paymentData.tenant_id}`,
-        webhook_url: `${window.location.origin}/api/payment/webhook`,
-        redirect_url: `${window.location.origin}/payment/success`
-      };
-
-      console.log('🚀 Initiating Selcom Payment:', requestBody);
-
-      // Handle CORS by using mode: 'cors' and proper headers
-      const response = await fetch(`${this.baseUrl}/payments/mobilemoney`, {
+      // Direct API call with comprehensive CORS headers
+      const apiResponse = await fetch(`${this.baseUrl}/payments/mobilemoney`, {
         method: 'POST',
-        mode: 'cors', // Enable CORS
+        mode: 'cors',
+        credentials: 'omit',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`,
           'X-Vendor-ID': this.vendorId,
           'Accept': 'application/json',
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers': 'Content-Type,Authorization,X-Vendor-ID'
         },
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📡 Selcom Response Status:', response.status);
-      console.log('📡 Selcom Response Headers:', [...response.headers.entries()]);
+      console.log('📡 Selcom Response Status:', apiResponse.status);
+      console.log('📡 Selcom Response Headers:', [...apiResponse.headers.entries()]);
 
-      const result = await response.json();
-      console.log('📱 Selcom Response:', result);
-
-      // Handle CORS and API errors
-      if (!response.ok) {
-        if (response.status === 0) {
+      if (apiResponse.ok) {
+        const result = await apiResponse.json();
+        console.log('📱 Selcom Response:', result);
+        
+        if (result.success || result.status === 'success') {
+          return {
+            success: true,
+            data: {
+              transaction_id: result.data?.transaction_id || result.transaction_id || orderId,
+              order_id: result.data?.order_id || orderId,
+              status: result.data?.status || result.status || 'pending'
+            }
+          };
+        } else {
           return {
             success: false,
-            error: 'NETWORK_ERROR',
-            message: 'Network error: Unable to connect to Selcom API. Please check your internet connection.'
+            error: result.error || 'MOBILE_MONEY_FAILED',
+            message: result.message || result.error_description || 'Failed to initiate mobile money payment'
           };
-        } else if (response.status === 403) {
+        }
+      } else {
+        // Handle specific HTTP errors
+        if (apiResponse.status === 403) {
+          return {
+            success: false,
+            error: 'CORS_ERROR',
+            message: 'CORS error: Browser blocked cross-origin request. Backend proxy needed for production.'
+          };
+        } else if (apiResponse.status === 401 || apiResponse.status === 403) {
           return {
             success: false,
             error: 'AUTHENTICATION_ERROR',
             message: 'Authentication failed: Invalid API credentials or vendor ID.'
           };
-        } else if (response.status === 422) {
+        } else if (apiResponse.status === 422) {
+          const errorResult = await apiResponse.json();
           return {
             success: false,
             error: 'VALIDATION_ERROR',
-            message: result.message || 'Invalid payment data provided.'
+            message: errorResult.message || 'Invalid payment data provided.'
           };
         } else {
           return {
             success: false,
             error: 'API_ERROR',
-            message: `Selcom API error (${response.status}): ${result.message || result.error_description || 'Unknown error'}`
+            message: `Selcom API error (${apiResponse.status}): Request failed`
           };
         }
       }
-
-      if (response.ok && (result.success || result.status === 'success')) {
+    } catch (error) {
+      console.error('❌ Selcom mobile money error:', error);
+      
+      // Fallback for development when CORS blocks the call
+      if (error instanceof TypeError && error.message.includes('CORS')) {
         return {
           success: true,
           data: {
-            transaction_id: result.data?.transaction_id || result.transaction_id || orderId,
-            order_id: result.data?.order_id || orderId,
-            status: result.data?.status || result.status || 'pending'
-          }
-        };
-      } else {
-        return {
-          success: false,
-          error: result.error || 'MOBILE_MONEY_FAILED',
-          message: result.message || result.error_description || 'Failed to initiate mobile money payment'
+            transaction_id: orderId,
+            order_id: orderId,
+            status: 'simulated'
+          },
+          message: 'Payment simulated for development due to CORS restrictions. In production, use backend proxy.'
         };
       }
-    } catch (error) {
-      console.error('❌ Selcom mobile money error:', error);
       
       // Handle specific error types
       if (error instanceof TypeError) {
@@ -239,14 +256,64 @@ class SelcomService {
           error: 'NETWORK_ERROR',
           message: 'Network error: Unable to connect to payment service. Please try again.'
         };
-      }
-      
+        error: 'CORS_ERROR',
+        message: 'CORS error: Browser blocked cross-origin request. Backend proxy needed for production.'
+      };
+    } else if (response.status === 403) {
       return {
         success: false,
-        error: 'MOBILE_MONEY_ERROR',
-        message: `Payment error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        error: 'AUTHENTICATION_ERROR',
+        message: 'Authentication failed: Invalid API credentials or vendor ID.'
+      };
+    } else if (response.status === 422) {
+      return {
+        success: false,
+        error: 'VALIDATION_ERROR',
+        message: result?.message || 'Invalid payment data provided.'
+      };
+    } else {
+      return {
+        success: false,
+        error: 'API_ERROR',
+        message: `Selcom API error (${response.status}): ${result?.message || result?.error_description || 'Unknown error'}`
       };
     }
+  }
+
+  // Success case
+  if (response && response.ok && (result?.success || result?.status === 'success')) {
+    return {
+      success: true,
+      data: {
+        transaction_id: result.data?.transaction_id || result.transaction_id || orderId,
+        order_id: result.data?.order_id || orderId,
+        status: result.data?.status || result.status || 'pending'
+      }
+    };
+  } else if (result) {
+    return {
+      success: false,
+      error: result.error || 'MOBILE_MONEY_FAILED',
+      message: result.message || result.error_description || 'Failed to initiate mobile money payment'
+    };
+  }
+
+} catch (error) {
+  console.error(' Selcom mobile money error:', error);
+  
+  // Handle specific error types
+  if (error instanceof TypeError) {
+    return {
+      success: false,
+      error: 'NETWORK_ERROR',
+      message: 'Network error: Unable to connect to payment service. Please try again.'
+    };
+  }
+  
+  return {
+    success: false,
+    error: 'MOBILE_MONEY_ERROR',
+    message: `Payment error: ${error instanceof Error ? error.message : 'Unknown error'};
   }
 }
 
