@@ -256,64 +256,14 @@ class SelcomService {
           error: 'NETWORK_ERROR',
           message: 'Network error: Unable to connect to payment service. Please try again.'
         };
-        error: 'CORS_ERROR',
-        message: 'CORS error: Browser blocked cross-origin request. Backend proxy needed for production.'
-      };
-    } else if (response.status === 403) {
-      return {
-        success: false,
-        error: 'AUTHENTICATION_ERROR',
-        message: 'Authentication failed: Invalid API credentials or vendor ID.'
-      };
-    } else if (response.status === 422) {
-      return {
-        success: false,
-        error: 'VALIDATION_ERROR',
-        message: result?.message || 'Invalid payment data provided.'
-      };
-    } else {
-      return {
-        success: false,
-        error: 'API_ERROR',
-        message: `Selcom API error (${response.status}): ${result?.message || result?.error_description || 'Unknown error'}`
-      };
-    }
-  }
-
-  // Success case
-  if (response && response.ok && (result?.success || result?.status === 'success')) {
-    return {
-      success: true,
-      data: {
-        transaction_id: result.data?.transaction_id || result.transaction_id || orderId,
-        order_id: result.data?.order_id || orderId,
-        status: result.data?.status || result.status || 'pending'
       }
-    };
-  } else if (result) {
-    return {
-      success: false,
-      error: result.error || 'MOBILE_MONEY_FAILED',
-      message: result.message || result.error_description || 'Failed to initiate mobile money payment'
-    };
-  }
-
-} catch (error) {
-  console.error(' Selcom mobile money error:', error);
-  
-  // Handle specific error types
-  if (error instanceof TypeError) {
-    return {
-      success: false,
-      error: 'NETWORK_ERROR',
-      message: 'Network error: Unable to connect to payment service. Please try again.'
-    };
-  }
-  
-  return {
-    success: false,
-    error: 'MOBILE_MONEY_ERROR',
-    message: `Payment error: ${error instanceof Error ? error.message : 'Unknown error'};
+      
+      return {
+        success: false,
+        error: 'MOBILE_MONEY_ERROR',
+        message: `Payment error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      }
+    }
   }
 }
 
