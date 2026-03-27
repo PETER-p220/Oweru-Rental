@@ -165,18 +165,53 @@ class SelcomService {
 
       console.log('🚀 Initiating Selcom Payment:', requestBody);
 
+      // Handle CORS by using mode: 'cors' and proper headers
       const response = await fetch(`${this.baseUrl}/payments/mobilemoney`, {
         method: 'POST',
+        mode: 'cors', // Enable CORS
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`,
           'X-Vendor-ID': this.vendorId,
+          'Accept': 'application/json',
         },
         body: JSON.stringify(requestBody),
       });
 
+      console.log('📡 Selcom Response Status:', response.status);
+      console.log('📡 Selcom Response Headers:', [...response.headers.entries()]);
+
       const result = await response.json();
       console.log('📱 Selcom Response:', result);
+
+      // Handle CORS and API errors
+      if (!response.ok) {
+        if (response.status === 0) {
+          return {
+            success: false,
+            error: 'NETWORK_ERROR',
+            message: 'Network error: Unable to connect to Selcom API. Please check your internet connection.'
+          };
+        } else if (response.status === 403) {
+          return {
+            success: false,
+            error: 'AUTHENTICATION_ERROR',
+            message: 'Authentication failed: Invalid API credentials or vendor ID.'
+          };
+        } else if (response.status === 422) {
+          return {
+            success: false,
+            error: 'VALIDATION_ERROR',
+            message: result.message || 'Invalid payment data provided.'
+          };
+        } else {
+          return {
+            success: false,
+            error: 'API_ERROR',
+            message: `Selcom API error (${response.status}): ${result.message || result.error_description || 'Unknown error'}`
+          };
+        }
+      }
 
       if (response.ok && (result.success || result.status === 'success')) {
         return {
@@ -196,6 +231,16 @@ class SelcomService {
       }
     } catch (error) {
       console.error('❌ Selcom mobile money error:', error);
+      
+      // Handle specific error types
+      if (error instanceof TypeError) {
+        return {
+          success: false,
+          error: 'NETWORK_ERROR',
+          message: 'Network error: Unable to connect to payment service. Please try again.'
+        };
+      }
+      
       return {
         success: false,
         error: 'MOBILE_MONEY_ERROR',
