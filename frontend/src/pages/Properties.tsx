@@ -671,17 +671,37 @@ const Properties = () => {
     e.preventDefault(); e.stopPropagation();
     const token = localStorage.getItem('token');
     if (!token) {
-      sessionStorage.setItem('pendingApplication', property.id.toString());
-      navigate(`/login?redirect=/dashboard/tenant/applications?property=${property.id}`);
+      // Show authentication required message
+      const action = window.confirm(
+        `🔐 Authentication Required\n\n` +
+        `To apply for "${property.title || 'this property'}", you need to:\n` +
+        `• Log in to your existing account, OR\n` +
+        `• Create a new account\n\n` +
+        `Click OK to go to login/signup page\n` +
+        `Click Cancel to browse more properties`
+      );
+      
+      if (action) {
+        // Store the property they want to apply for
+        sessionStorage.setItem('pendingApplication', property.id.toString());
+        // Redirect to login with a return URL
+        navigate(`/login?redirect=/dashboard/tenant/applications?property=${property.id}`);
+      }
       return;
     }
+    
+    // User is authenticated, show application confirmation
     const ok = window.confirm(
-      `Apply for "${property.title || 'this property'}"?\n\n` +
+      `🏠 Ready to Apply?\n\n` +
+      `Property: ${property.title || 'Untitled Property'}\n` +
       `Rent: ${formatPrice(property.price)}/month\n` +
       `Location: ${property.location || property.address || 'Not specified'}\n\n` +
-      `Click OK to continue.`
+      `Click OK to proceed with your rental application.`
     );
-    if (ok) navigate(`/dashboard/tenant/applications?property=${property.id}`);
+    
+    if (ok) {
+      navigate(`/dashboard/tenant/applications?property=${property.id}`);
+    }
   };
 
   const clearFilters = () => {
