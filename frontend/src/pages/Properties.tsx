@@ -895,8 +895,27 @@ const Properties = () => {
         id: p.id,
         title: p.title,
         images: p.images,
-        hasImages: (p.images?.length ?? 0) > 0
+        hasImages: (p.images?.length ?? 0) > 0,
+        owner: p.owner,
+        agent: p.agent
       })));
+      
+      // Check if we have any agent properties
+      const agentProperties = items.filter(p => p.agent);
+      const landlordProperties = items.filter(p => p.owner && !p.agent);
+      console.log('👥 Agent properties:', agentProperties.length);
+      console.log('🏠 Landlord properties:', landlordProperties.length);
+      
+      // Debug agent properties specifically
+      agentProperties.forEach((agentProp, index) => {
+        console.log(`👤 Agent Property ${index + 1}:`, {
+          id: agentProp.id,
+          title: agentProp.title,
+          hasImages: (agentProp.images?.length ?? 0) > 0,
+          images: agentProp.images,
+          agent: agentProp.agent
+        });
+      });
       
       const pag: Pagination | null = res.data?.pagination ?? null;
       setProperties(prev => pageNum === 1 ? items : [...prev, ...items]);
