@@ -47,7 +47,16 @@ const AddListing: React.FC = () => {
     const userData = localStorage.getItem('user');
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        
+        // Update owner_id when user is loaded
+        if (parsedUser?.id) {
+          setFormData(prev => ({
+            ...prev,
+            owner_id: parsedUser.id
+          }));
+        }
       } catch (e) {
         console.error('Error parsing user data:', e);
       }
@@ -74,7 +83,19 @@ const AddListing: React.FC = () => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(file => file.type.startsWith('image/'));
+    const validFiles = files.filter(file => {
+      // Check file type
+      if (!file.type.startsWith('image/')) return false;
+      
+      // Check file size (2MB = 2048KB)
+      const maxSizeInBytes = 2 * 1024 * 1024; // 2MB
+      if (file.size > maxSizeInBytes) {
+        setError(`File ${file.name} is too large. Maximum size is 2MB.`);
+        return false;
+      }
+      
+      return true;
+    });
     
     if (validFiles.length + uploadedImages.length > 6) {
       setError('You can upload up to 6 images maximum');
@@ -143,6 +164,13 @@ const AddListing: React.FC = () => {
       // Determine API endpoint based on user type
       let response;
       if (user?.userType === 'agent') {
+        // Debug: Log what we're sending
+        console.log('🏠 Creating agent listing with data:', {
+          ...Object.fromEntries(formDataToSend.entries()),
+          owner_id: user?.id,
+          user_id: user?.id
+        });
+        
         response = await Api.agentCreateProperty(formDataToSend);
       } else {
         response = await Api.createProperty(formDataToSend);
