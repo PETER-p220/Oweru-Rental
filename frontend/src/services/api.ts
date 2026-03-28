@@ -318,6 +318,16 @@ class Api {
     return this.request<any>(`public/properties${params ? `?${params}` : ''}`);
   }
 
+  static async getAllProperties(filters?: {
+    search?: string; type?: string;
+    minPrice?: number; maxPrice?: number; location?: string;
+    bedrooms?: number; furnished?: boolean;
+    page?: number;
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any>(`properties/all${params ? `?${params}` : ''}`);
+  }
+
   static async getProperty(id: number) {
     return this.request<Property>(`public/properties/${id}`);
   }

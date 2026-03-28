@@ -37,8 +37,20 @@ const formatPrice = (p: number) =>
   new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(p);
 const typeLabel: Record<string, string> = { apartment: 'Apartment', house: 'House', studio: 'Studio', villa: 'Villa', commercial: 'Commercial' };
 const getImage = (p: Property) => {
-  if (p.images?.length) { const i = p.images[0]; return i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`; }
-  return '/api/placeholder/600/400';
+  // Debug: Log image data
+  console.log('🖼️ Property images:', p.images);
+  
+  if (p.images?.length) { 
+    const i = p.images[0]; 
+    const imageUrl = i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`;
+    console.log('🖼️ Image URL:', imageUrl);
+    return imageUrl;
+  }
+  
+  // Use a proper placeholder service
+  const placeholderUrl = `https://picsum.photos/seed/${p.id}/600/400.jpg`;
+  console.log('🖼️ Using placeholder:', placeholderUrl);
+  return placeholderUrl;
 };
 
 /* ─── CSS ─── */
@@ -854,8 +866,27 @@ const Properties = () => {
     try {
       pageNum === 1 ? setLoading(true) : setLoadingMore(true);
       setError('');
-      const res = await Api.getProperties(buildParams(pageNum));
+      
+      let res;
+      try {
+        // Try to get all properties including agent listings
+        res = await Api.getAllProperties(buildParams(pageNum));
+      } catch (e) {
+        // Fallback to original endpoint
+        console.log('🔄 Falling back to public properties endpoint');
+        res = await Api.getProperties(buildParams(pageNum));
+      }
+      
       const items: Property[] = res.data?.data ?? res.data ?? [];
+      
+      // Debug: Log property data to see what images are coming through
+      console.log('🏠 Properties loaded:', items.map(p => ({
+        id: p.id,
+        title: p.title,
+        images: p.images,
+        hasImages: (p.images?.length ?? 0) > 0
+      })));
+      
       const pag: Pagination | null = res.data?.pagination ?? null;
       setProperties(prev => pageNum === 1 ? items : [...prev, ...items]);
       setPagination(pag);
