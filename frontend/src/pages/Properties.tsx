@@ -37,22 +37,35 @@ const formatPrice = (p: number) =>
   new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(p);
 const typeLabel: Record<string, string> = { apartment: 'Apartment', house: 'House', studio: 'Studio', villa: 'Villa', commercial: 'Commercial' };
 const getImage = (p: Property) => {
-  // Debug: Log image data
+  // Debug: Log image data and property details
   console.log('🖼️ Property images:', p.images);
   console.log('🖼️ Property ID:', p.id);
   console.log('🖼️ Property title:', p.title);
+  console.log('🖼️ Property owner:', p.owner);
+  console.log('🖼️ Property agent:', p.agent);
+  console.log('🖼️ Full property data:', p);
   
   if (p.images?.length) { 
     const i = p.images[0]; 
     const imageUrl = i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`;
     console.log('🖼️ Image URL:', imageUrl);
+    
+    // Test if the URL is accessible
+    fetch(imageUrl, { method: 'HEAD' })
+      .then(response => {
+        console.log('🖼️ Image accessibility:', response.status, response.statusText);
+      })
+      .catch(error => {
+        console.log('🖼️ Image fetch error:', error);
+      });
+    
     return imageUrl;
   }
   
-  // Use a clear "No Image" placeholder instead of fake property photos
-  const noImageUrl = `https://via.placeholder.com/600x400/e5e7eb/6b7280?text=No+Image+Available+${p.id}`;
-  console.log('🖼️ No images - using clear placeholder:', noImageUrl);
-  return noImageUrl;
+  // Use a local SVG placeholder instead of external service
+  const svgPlaceholder = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='24' fill='%236b7280'%3ENo Image Available ${p.id}%3C/text%3E%3C/svg%3E`;
+  console.log('🖼️ No images - using SVG placeholder');
+  return svgPlaceholder;
 };
 
 /* ─── CSS ─── */
