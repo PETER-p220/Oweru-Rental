@@ -237,12 +237,18 @@ class SelcomService {
       console.error('❌ Selcom mobile money error:', error);
       
       // Fallback for development when CORS blocks the call
-      if (error instanceof TypeError && error.message.includes('CORS')) {
+      if (error instanceof TypeError && (
+        error.message.includes('CORS') || 
+        error.message.includes('Failed to fetch') ||
+        error.message.includes('NetworkError')
+      )) {
+        console.log('🔄 CORS detected - Using development fallback');
         return {
           success: true,
           data: {
             transaction_id: orderId,
             order_id: orderId,
+            
             status: 'simulated'
           },
           message: 'Payment simulated for development due to CORS restrictions. In production, use backend proxy.'

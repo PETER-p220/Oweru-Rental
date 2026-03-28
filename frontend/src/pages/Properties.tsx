@@ -628,6 +628,7 @@ const Properties = () => {
         // Create application with payment
         await Api.createApplication({
           property_id: selProp.id,
+          owner_id: selProp.agent?.id, // Add the owner_id field
           service_fee: 20000,
           payment_status: 'paid',
           payment_method: paymentMethod,
