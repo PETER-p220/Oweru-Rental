@@ -75,7 +75,20 @@ class AgentController extends Controller
             ], 422);
         }
 
+        // Handle image uploads - FIX: Add this section
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('properties', 'public');
+                $imagePaths[] = $path;
+            }
+        }
+
         $user = Auth::user();
+        
+        // Generate unique tracking code (dalali)
+        $trackingCode = $this->generateUniqueTrackingCode();
+        
         $property = Property::create([
             'title' => $request->title,
             'description' => $request->description,
@@ -89,15 +102,28 @@ class AgentController extends Controller
             'owner_id' => $request->owner_id,
             'agent_id' => $user->id,
             'available' => true,
-            'images' => [],
+            'images' => $imagePaths, // FIX: Use actual uploaded images instead of empty array
             'amenities' => $request->amenities ?? [],
             'featured' => false,
+            'dalali' => $trackingCode, // Add tracking code
         ]);
 
         return response()->json([
             'message' => 'Property listed successfully',
             'data' => $property->load('owner'),
         ], 201);
+    }
+
+    /**
+     * Generate a unique tracking code (dalali)
+     */
+    private function generateUniqueTrackingCode(): string
+    {
+        do {
+            $code = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8));
+        } while (Property::where('dalali', $code)->exists());
+        
+        return $code;
     }
 
     public function updateListing(Request $request, Property $property): JsonResponse

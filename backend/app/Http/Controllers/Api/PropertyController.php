@@ -230,12 +230,28 @@ class PropertyController extends Controller
             $propertyData['owner_id'] = $user->id;
         }
 
+        // Generate unique tracking code (dalali) for all properties
+        $trackingCode = $this->generateUniqueTrackingCode();
+        $propertyData['dalali'] = $trackingCode;
+
         $property = Property::create($propertyData);
 
         return response()->json([
             'message' => 'Property created successfully',
             'data' => $property
         ], 201);
+    }
+
+    /**
+     * Generate a unique tracking code (dalali)
+     */
+    private function generateUniqueTrackingCode(): string
+    {
+        do {
+            $code = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8));
+        } while (Property::where('dalali', $code)->exists());
+        
+        return $code;
     }
 
     public function update(Request $request, Property $property): JsonResponse
