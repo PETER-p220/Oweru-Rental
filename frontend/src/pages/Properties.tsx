@@ -39,6 +39,8 @@ const typeLabel: Record<string, string> = { apartment: 'Apartment', house: 'Hous
 const getImage = (p: Property) => {
   // Debug: Log image data
   console.log('🖼️ Property images:', p.images);
+  console.log('🖼️ Property ID:', p.id);
+  console.log('🖼️ Property title:', p.title);
   
   if (p.images?.length) { 
     const i = p.images[0]; 
@@ -47,10 +49,10 @@ const getImage = (p: Property) => {
     return imageUrl;
   }
   
-  // Use a proper placeholder service
-  const placeholderUrl = `https://picsum.photos/seed/${p.id}/600/400.jpg`;
-  console.log('🖼️ Using placeholder:', placeholderUrl);
-  return placeholderUrl;
+  // If no images, show a "No Image" placeholder instead of random images
+  const noImageUrl = `https://via.placeholder.com/600x400/f3f4f6/6b7280?text=No+Image+Available`;
+  console.log('🖼️ No images - using no-image placeholder:', noImageUrl);
+  return noImageUrl;
 };
 
 /* ─── CSS ─── */
@@ -867,28 +869,60 @@ const Properties = () => {
       pageNum === 1 ? setLoading(true) : setLoadingMore(true);
       setError('');
       
-      let res;
+      let allItems: Property[] = [];
+      
       try {
         // Try to get all properties including agent listings
-        res = await Api.getAllProperties(buildParams(pageNum));
+        console.log('🔍 Trying getAllProperties endpoint...');
+        const res = await Api.getAllProperties(buildParams(pageNum));
+        const items = res.data?.data ?? res.data ?? [];
+        allItems = allItems.concat(items);
+        console.log('✅ getAllProperties returned:', items.length, 'items');
       } catch (e) {
-        // Fallback to original endpoint
-        console.log('🔄 Falling back to public properties endpoint');
-        res = await Api.getProperties(buildParams(pageNum));
+        console.log('❌ getAllProperties failed:', e);
       }
       
-      const items: Property[] = res.data?.data ?? res.data ?? [];
+      try {
+        // Also try agent listings specifically
+        console.log('🔍 Trying getAgentListings endpoint...');
+        const agentRes = await Api.getAgentListings(buildParams(pageNum));
+        const agentItems = agentRes.data?.data ?? agentRes.data ?? [];
+        
+        // Add agent items that aren't already in the list
+        const existingIds = new Set(allItems.map(p => p.id));
+        const newAgentItems = agentItems.filter((p: Property) => !existingIds.has(p.id));
+        allItems = allItems.concat(newAgentItems);
+        console.log('✅ getAgentListings returned:', agentItems.length, 'items, added:', newAgentItems.length, 'new ones');
+      } catch (e) {
+        console.log('❌ getAgentListings failed:', e);
+      }
+      
+      try {
+        // Fallback to original endpoint
+        console.log('🔍 Trying original getProperties endpoint...');
+        const publicRes = await Api.getProperties(buildParams(pageNum));
+        const publicItems = publicRes.data?.data ?? publicRes.data ?? [];
+        
+        // Add public items that aren't already in the list
+        const existingIds = new Set(allItems.map(p => p.id));
+        const newPublicItems = publicItems.filter((p: Property) => !existingIds.has(p.id));
+        allItems = allItems.concat(newPublicItems);
+        console.log('✅ getProperties returned:', publicItems.length, 'items, added:', newPublicItems.length, 'new ones');
+      } catch (e) {
+        console.log('❌ getProperties failed:', e);
+      }
       
       // Debug: Log property data to see what images are coming through
-      console.log('🏠 Properties loaded:', items.map(p => ({
+      console.log('🏠 Total properties loaded:', allItems.length);
+      console.log('🏠 Properties with images:', allItems.map(p => ({
         id: p.id,
         title: p.title,
         images: p.images,
         hasImages: (p.images?.length ?? 0) > 0
       })));
       
-      const pag: Pagination | null = res.data?.pagination ?? null;
-      setProperties(prev => pageNum === 1 ? items : [...prev, ...items]);
+      const pag: Pagination | null = allItems.length > 0 ? { current_page: pageNum, last_page: pageNum + 1, per_page: allItems.length, total: allItems.length } : null;
+      setProperties(prev => pageNum === 1 ? allItems : [...prev, ...allItems]);
       setPagination(pag);
     } catch {
       setError('Failed to load properties. Please try again.');
