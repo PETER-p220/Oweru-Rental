@@ -42,6 +42,7 @@ export interface Property {
   description: string;
   price: number;
   location: string;
+  address: string;
   type: string;
   bedrooms: number;
   bathrooms: number;
@@ -49,6 +50,8 @@ export interface Property {
   images: string[];
   owner: { id: number; firstName: string; lastName: string };
   agent?: { id: number; firstName: string; lastName: string; commission: number };
+  dalali?: string;
+  tracking_code?: string;
   featured: boolean;
   available: boolean;
   createdAt: string;

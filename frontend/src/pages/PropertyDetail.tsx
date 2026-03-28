@@ -134,6 +134,16 @@ const PropertyDetail = () => {
         const res = await Api.getProperty(Number(id));
         console.log('PropertyDetail - API Response:', res);
         console.log('PropertyDetail - Property data:', res.data);
+        
+        // Debug: Check for tracking code and images
+        if (res.data) {
+          console.log('🔗 Tracking Code (dalali):', res.data.dalali);
+          console.log('🔗 Tracking Code (alternative):', res.data.tracking_code);
+          console.log('🖼️ Property Images:', res.data.images);
+          console.log('🖼️ Property Owner:', res.data.owner);
+          console.log('🖼️ Property Agent:', res.data.agent);
+        }
+        
         setProperty(res.data);
       } catch (err) {
         console.error('PropertyDetail - Failed to load property:', err);
@@ -218,7 +228,13 @@ const PropertyDetail = () => {
       console.error('PropertyDetail: Property is null, cannot share');
       return;
     }
-    const url = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`;
+    // Use the new tracking code (dalali) if available
+    const trackingCode = property.dalali || property.tracking_code || 'DIRECT';
+    const url = `https://oweru.co/p/${property.id}?ref=${trackingCode}_OWERU`;
+    
+    console.log('🔗 Sharing property with URL:', url);
+    console.log('🔗 Tracking code:', trackingCode);
+    
     if (navigator.share) {
       try {
         await navigator.share({ title: property.title, text: property.address, url });
@@ -390,6 +406,11 @@ const PropertyDetail = () => {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <span style={pill(t.blue)}>{property?.type || 'Property'}</span>
                       {property?.furnished && <span style={pill(t.gold)}>Furnished</span>}
+                      {property?.dalali && (
+                        <span style={{ ...pill(t.green), fontFamily: 'monospace', fontWeight: 600 }}>
+                          Tracking: {property.dalali}
+                        </span>
+                      )}
                     </div>
                   </div>
 

@@ -18,6 +18,8 @@ interface Property {
   images?: string[];
   owner?: { name?: string; first_name?: string; last_name?: string };
   agent?: { id?: number; name?: string; code?: string };
+  dalali?: string; // Added tracking code
+  tracking_code?: string; // Added alternative tracking code
 }
 
 /* ─── Toast Types ─── */

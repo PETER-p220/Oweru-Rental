@@ -11,7 +11,8 @@ export interface Property {
   furnished: boolean;
   images: string[];
   owner: Owner;
-  dalali?: Dalali;
+  dalali?: string; // Changed from Dalali object to string
+  tracking_code?: string; // Added alternative field
   status: 'available' | 'rented' | 'pending';
   featured: boolean;
   createdAt: Date;
