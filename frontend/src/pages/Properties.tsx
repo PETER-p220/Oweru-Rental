@@ -49,10 +49,10 @@ const getImage = (p: Property) => {
     return imageUrl;
   }
   
-  // Use a property-themed placeholder with the property ID
-  const placeholderUrl = `https://picsum.photos/seed/property-${p.id}/600/400.jpg`;
-  console.log('🖼️ No images - using placeholder:', placeholderUrl);
-  return placeholderUrl;
+  // Use a clear "No Image" placeholder instead of fake property photos
+  const noImageUrl = `https://via.placeholder.com/600x400/e5e7eb/6b7280?text=No+Image+Available+${p.id}`;
+  console.log('🖼️ No images - using clear placeholder:', noImageUrl);
+  return noImageUrl;
 };
 
 /* ─── CSS ─── */
