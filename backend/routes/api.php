@@ -124,6 +124,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/agent/tracking', [AgentController::class, 'getTrackingLinks']);
         Route::get('/agent/qr-codes/{property}', [AgentController::class, 'generateQRCode']);
         
+        // Notifications
+        Route::get('/notifications/agent', [AgentController::class, 'getAgentNotifications']);
+        Route::post('/notifications/agent', [AgentController::class, 'notifyAgent']);
+        
         // Leads and Visitors
         Route::get('/agent/leads', [AgentController::class, 'getLeads']);
         Route::get('/agent/lead-stats', [AgentController::class, 'getLeadStats']);

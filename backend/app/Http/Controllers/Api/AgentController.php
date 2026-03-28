@@ -77,21 +77,21 @@ class AgentController extends Controller
         }
 
         // Debug: Log incoming request data
-        Log::info('📸 Agent createListing request data:', $request->all());
-        Log::info('📸 Files in request:', $request->hasFile('images') ? 'Yes' : 'No');
+        \Log::info('📸 Agent createListing request data', ['request_data' => $request->all()]);
+        \Log::info('📸 Files in request', ['has_files' => $request->hasFile('images') ? 'Yes' : 'No']);
         
         // Handle image uploads - FIX: Add this section
         $imagePaths = [];
         if ($request->hasFile('images')) {
-            Log::info('📸 Processing image uploads...');
+            \Log::info('📸 Processing image uploads...');
             foreach ($request->file('images') as $image) {
-                Log::info('📸 Processing image:', $image->getClientOriginalName());
+                \Log::info('📸 Processing image', ['filename' => $image->getClientOriginalName()]);
                 $path = $image->store('properties', 'public');
-                Log::info('📸 Image stored at:', $path);
+                \Log::info('📸 Image stored at', ['path' => $path]);
                 $imagePaths[] = $path;
             }
         } else {
-            Log::warning('⚠️ No images found in request');
+            \Log::warning('⚠️ No images found in request');
         }
 
         $user = Auth::user();
@@ -99,7 +99,7 @@ class AgentController extends Controller
         // Generate unique tracking code (dalali)
         $trackingCode = $this->generateUniqueTrackingCode();
         
-        Log::info('🔗 Generated tracking code:', $trackingCode);
+        \Log::info('🔗 Generated tracking code', ['code' => $trackingCode]);
         
         $property = Property::create([
             'title' => $request->title,
@@ -120,7 +120,7 @@ class AgentController extends Controller
             'dalali' => $trackingCode, // Add tracking code
         ]);
 
-        Log::info('✅ Property created with images:', $imagePaths);
+        \Log::info('✅ Property created with images', ['image_paths' => $imagePaths]);
 
         return response()->json([
             'message' => 'Property listed successfully',
