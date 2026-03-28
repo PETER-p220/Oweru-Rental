@@ -106,6 +106,17 @@ const solidBtn: React.CSSProperties = {
 ═════════════════════════════════════════════════════════════ */
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
+  
+  // Helper function for image URLs (similar to Properties.tsx)
+  const getPropertyImageUrl = (property: any, imageIndex: number = 0) => {
+    if (property?.images?.length > 0) {
+      const image = property.images[imageIndex];
+      return image.startsWith('http') ? image : `${import.meta.env.VITE_API_URL?.replace('/api', '')}/storage/${image}`;
+    }
+    
+    // Use SVG placeholder instead of non-existent API endpoint
+    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Crect width='900' height='600' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='28' fill='%236b7280'%3ENo Image Available%3C/text%3E%3C/svg%3E`;
+  };
   const [selectedImg, setSelectedImg] = useState(0);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
@@ -308,7 +319,7 @@ const PropertyDetail = () => {
                 <div style={{ ...card, marginBottom: 20 }}>
                   <div style={{ position: 'relative', height: 420, overflow: 'hidden' }}>
                     <img
-                      src={property?.images && property.images.length > 0 ? property.images[selectedImg] : '/api/placeholder/900/600'}
+                      src={getPropertyImageUrl(property, selectedImg)}
                       alt={property?.title || 'Property'}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity .3s' }}
                     />
