@@ -8,6 +8,20 @@ interface DashboardData {
   saved_properties?: number;
   total_applications?: number;
   messages?: number;
+  contracts?: number;
+}
+
+interface ContractItem {
+  id: number;
+  property_id: number;
+  property_title?: string;
+  owner_id: number;
+  tenant_id: number;
+  start_date: string;
+  end_date: string;
+  rent_amount: number;
+  status: string;
+  payment_status: string;
 }
 
 interface PropertyItem {
@@ -24,6 +38,7 @@ interface PropertyItem {
 const TenantDashboard = () => {
   const [stats, setStats] = useState<DashboardData>({});
   const [properties, setProperties] = useState<PropertyItem[]>([]);
+  const [contracts, setContracts] = useState<ContractItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -31,12 +46,14 @@ const TenantDashboard = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const [dashboardRes, propertiesRes] = await Promise.all([
+        const [dashboardRes, propertiesRes, contractsRes] = await Promise.all([
           Api.getTenantDashboard(),
           Api.getProperties({ page: 1 }),
+          Api.getMyContract().catch(() => ({ data: [] })), // Handle if no contracts yet
         ]);
         setStats(dashboardRes.data || {});
         setProperties(Array.isArray(propertiesRes.data?.data) ? propertiesRes.data.data.slice(0, 4) : []);
+        setContracts(Array.isArray(contractsRes.data) ? contractsRes.data : []);
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Failed to load tenant dashboard.');
       } finally {
@@ -59,6 +76,7 @@ const TenantDashboard = () => {
     ['Listings', stats.total_properties ?? 0],
     ['Saved', stats.saved_properties ?? 0],
     ['Applications', stats.total_applications ?? 0],
+    ['Contracts', stats.contracts ?? contracts.length],
     ['Unread Messages', stats.messages ?? 0],
   ];
 
@@ -81,6 +99,15 @@ const TenantDashboard = () => {
         .td-title { font-size:18px; margin-bottom:6px; }
         .td-meta { color:#9f9587; font-size:14px; line-height:1.6; }
         .td-price { font-size:22px; color:#c9a84c; white-space:nowrap; }
+        .td-contract { background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%); border: 1px solid rgba(201,168,76,0.14); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .td-contract-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .td-contract-title { font-size: 16px; font-weight: 600; color: #e8e4dc; }
+        .td-contract-status { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .td-contract-status.pending { background: rgba(201,168,76,0.2); color: #c9a84c; }
+        .td-contract-status.active { background: rgba(76,201,76,0.2); color: #4cc94c; }
+        .td-contract-status.signed { background: rgba(76,168,201,0.2); color: #4ca8c9; }
+        .td-contract-meta { font-size: 13px; color: #9f9587; line-height: 1.4; }
+        .td-contract-rent { font-size: 18px; color: #c9a84c; font-weight: 600; margin-top: 4px; }
         @media (max-width: 820px) { .td-item { grid-template-columns:1fr; } }
       `}</style>
       <div className="td-wrap">
@@ -99,6 +126,7 @@ const TenantDashboard = () => {
           <Link className="td-action primary" to="/properties">Browse Properties</Link>
           <Link className="td-action" to="/dashboard/tenant/saved-properties">Saved Properties</Link>
           <Link className="td-action" to="/dashboard/tenant/applications">My Applications</Link>
+          <Link className="td-action" to="/dashboard/tenant/contracts">My Contracts</Link>
           <Link className="td-action" to="/dashboard/tenant/messages">Messages</Link>
         </div>
 
@@ -118,6 +146,29 @@ const TenantDashboard = () => {
             </div>
           ))}
         </div>
+
+        {contracts.length > 0 && (
+          <>
+            <div className="td-eyebrow">My Contracts</div>
+            <div style={{ display: 'grid', gap: '12px', marginBottom: '32px' }}>
+              {contracts.slice(0, 3).map((contract) => (
+                <div key={contract.id} className="td-contract">
+                  <div className="td-contract-header">
+                    <div className="td-contract-title">{contract.property_title || `Property #${contract.property_id}`}</div>
+                    <div className={`td-contract-status ${contract.status}`}>
+                      {contract.status.replace('_', ' ')}
+                    </div>
+                  </div>
+                  <div className="td-contract-meta">
+                    Contract: {new Date(contract.start_date).toLocaleDateString()} - {new Date(contract.end_date).toLocaleDateString()}<br />
+                    Status: {contract.payment_status.replace('_', ' ')}
+                  </div>
+                  <div className="td-contract-rent">{formatCurrency(contract.rent_amount)}/month</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </>
   );

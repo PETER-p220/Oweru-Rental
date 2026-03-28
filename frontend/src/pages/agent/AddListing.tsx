@@ -15,6 +15,7 @@ interface PropertyData {
   featured: boolean;
   available: boolean;
   images: string[];
+  owner_id: number; // Add owner_id to interface
 }
 
 const AddListing: React.FC = () => {
@@ -35,7 +36,8 @@ const AddListing: React.FC = () => {
     type: 'apartment',
     featured: false,
     available: true,
-    images: []
+    images: [],
+    owner_id: user?.id || 0 // Add owner_id field
   });
 
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
@@ -56,7 +58,7 @@ const AddListing: React.FC = () => {
     { value: 'apartment', label: 'Apartment' },
     { value: 'house', label: 'House' },
     { value: 'villa', label: 'Villa' },
-    { value: 'condo', label: 'Condo' },
+    { value: 'condominium', label: 'Condo' }, // Changed from 'condo'
     { value: 'studio', label: 'Studio' },
     { value: 'penthouse', label: 'Penthouse' }
   ];

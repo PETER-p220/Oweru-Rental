@@ -328,6 +328,9 @@ class Api {
   static async getSavedProperties()      { return this.request<Property[]>('tenant/saved-properties'); }
   static async getTenantApplications()   { return this.request<any[]>('tenant/applications'); }
   static async getMyContract()           { return this.request<any>('tenant/contract'); }
+  static async createContract(data: any)  { return this.request<any>('tenant/contracts', { method: 'POST', body: JSON.stringify(data) }); }
+  static async updateContract(id: number, data: any) { return this.request<any>(`tenant/contracts/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  static async signContract(id: number) { return this.request<any>(`tenant/contracts/${id}/sign`, { method: 'POST' }); }
   static async getMyPayments()           { return this.request<any>('tenant/payments'); }
   static async getPaymentMethods()       { return this.request<any>('tenant/payment-methods'); }
   static async getPaymentStats()         { return this.request<any>('tenant/payment-stats'); }
@@ -366,6 +369,10 @@ class Api {
       method: 'POST',
       body: JSON.stringify(notificationData),
     });
+  }
+
+  static async getAgentNotifications() {
+    return this.request<any>('notifications/agent');
   }
 
   static async processPayment(paymentData: any) {
@@ -545,6 +552,18 @@ class Api {
 
   static async createOwnerContract(data: any) {
     return this.request<any>('owner/contracts', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  static async updateOwnerContract(id: number, data: any) {
+    return this.request<any>(`owner/contracts/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
+  static async signOwnerContract(id: number) {
+    return this.request<any>(`owner/contracts/${id}/sign`, { method: 'POST' });
+  }
+
+  static async createRentSchedule(contractId: number, data: any) {
+    return this.request<any>(`owner/contracts/${contractId}/rent-schedule`, { method: 'POST', body: JSON.stringify(data) });
   }
 
   static async downloadOwnerReceipt(paymentId: number) {

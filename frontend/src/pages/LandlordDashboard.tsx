@@ -10,6 +10,20 @@ interface DashboardStats {
   monthly_revenue?: number;
   total_revenue?: number;
   occupancy_rate?: number;
+  pending_contracts?: number;
+}
+
+interface ContractItem {
+  id: number;
+  property_id: number;
+  property_title?: string;
+  tenant_id: number;
+  tenant_name?: string;
+  start_date: string;
+  end_date: string;
+  rent_amount: number;
+  status: string;
+  payment_status: string;
 }
 
 interface PropertyItem {
@@ -27,6 +41,7 @@ interface PropertyItem {
 const LandlordDashboard = () => {
   const [stats, setStats] = useState<DashboardStats>({});
   const [properties, setProperties] = useState<PropertyItem[]>([]);
+  const [contracts, setContracts] = useState<ContractItem[]>([]);
   const [applicationCount, setApplicationCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,15 +52,17 @@ const LandlordDashboard = () => {
         setLoading(true);
         setError('');
 
-        const [statsResponse, propertiesResponse, applicationsResponse] = await Promise.all([
+        const [statsResponse, propertiesResponse, applicationsResponse, contractsResponse] = await Promise.all([
           Api.getOwnerDashboard(),
           Api.getOwnerProperties(),
           Api.getOwnerApplications(),
+          Api.getOwnerContracts().catch(() => ({ data: [] })), // Handle if no contracts yet
         ]);
 
         setStats(statsResponse.data || {});
         setProperties(Array.isArray(propertiesResponse.data) ? propertiesResponse.data.slice(0, 5) : []);
         setApplicationCount(Array.isArray(applicationsResponse.data) ? applicationsResponse.data.length : 0);
+        setContracts(Array.isArray(contractsResponse.data) ? contractsResponse.data : []);
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Failed to load dashboard data.');
       } finally {
@@ -61,12 +78,14 @@ const LandlordDashboard = () => {
     { icon: FileText, label: 'Applications', value: applicationCount, helper: 'Current submissions' },
     { icon: Users, label: 'Active Tenants', value: stats.active_tenants ?? 0, helper: 'Active contracts' },
     { icon: DollarSign, label: 'Monthly Revenue', value: formatCurrency(stats.monthly_revenue), helper: `${Number(stats.occupancy_rate ?? 0).toFixed(1)}% occupancy` },
-  ], [applicationCount, stats]);
+    { icon: FileText, label: 'Pending Contracts', value: stats.pending_contracts ?? contracts.filter(c => c.status === 'pending_signature').length, helper: 'Awaiting signature' },
+  ], [applicationCount, stats, contracts]);
 
   const quickActions = [
     { label: 'Add Property', icon: Plus, to: 'add-property', primary: true },
     { label: 'My Properties', icon: Building, to: 'my-properties', primary: false },
     { label: 'Applications', icon: FileText, to: 'applications', primary: false },
+    { label: 'Contracts', icon: FileText, to: 'contracts', primary: false },
     { label: 'Analytics', icon: BarChart3, to: 'analytics', primary: false },
   ];
 
