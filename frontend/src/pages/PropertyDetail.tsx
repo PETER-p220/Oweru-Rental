@@ -203,7 +203,7 @@ const PropertyDetail = () => {
         console.error('PropertyDetail: Property is null, cannot generate QR code');
         return;
       }
-      const trackingUrl = `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`;
+      const trackingUrl = `https://oweru.co/p/${property.id}?ref=${property.dalali || 'DIRECT_OWERU'}`;
       const dataUrl = await QRCode.toDataURL(trackingUrl, {
         color: { dark: '#c9a84c', light: '#0e0e0e' },
         width: 260,
@@ -228,7 +228,7 @@ const PropertyDetail = () => {
       console.error('PropertyDetail: Property is null, cannot share');
       return;
     }
-    // Use the new tracking code (dalali) if available
+    // Use the tracking code (dalali) if available
     const trackingCode = property.dalali || property.tracking_code || 'DIRECT';
     const url = `https://oweru.co/p/${property.id}?ref=${trackingCode}_OWERU`;
     

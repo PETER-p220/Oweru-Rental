@@ -38,8 +38,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     console.log('AuthContext - useEffect running');
     const raw = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
     console.log('AuthContext - Loading user from localStorage:', raw);
-    if (raw) {
+    console.log('AuthContext - Current token:', token);
+    
+    if (raw && token) {
       try {
         const parsedUser = JSON.parse(raw);
         console.log('AuthContext - Parsed user:', parsedUser);
@@ -49,9 +52,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.error('Error parsing user:', e);
         setUser(null);
         setIsAuthenticated(false);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
       }
     } else {
-      console.log('AuthContext - No user found in localStorage');
+      console.log('AuthContext - No user or token found in localStorage');
       setUser(null);
       setIsAuthenticated(false);
     }
@@ -69,6 +74,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
 
   const value = {
