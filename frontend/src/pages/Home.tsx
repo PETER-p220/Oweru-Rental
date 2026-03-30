@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react';
 import Api from '../services/api';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
+const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
+
+const getImage = (property: any): string => {
+  if (property.images?.length) {
+    const i = property.images[0];
+    return i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`;
+  }
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='24' fill='%236b7280'%3ENo Image%3C/text%3E%3C/svg%3E`;
+};
+
 const Home = () => {
   const [properties, setProperties] = useState<any[]>([]);
   const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
@@ -969,27 +979,13 @@ const Home = () => {
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  {(property.images && property.images.length > 0) ? (
-                    <div style={{ 
-                      height: '200px', 
-                      backgroundImage: `url(${property.images[0]})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      backgroundColor: '#1a1a1a'
-                    }} />
-                  ) : (
-                    <div style={{ 
-                      height: '200px', 
-                      background: 'linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#666',
-                      fontSize: '14px'
-                    }}>
-                      <Building size={32} />
-                    </div>
-                  )}
+                  <div style={{ 
+                    height: '200px', 
+                    backgroundImage: `url(${getImage(property)})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundColor: '#1a1a1a'
+                  }} />
                   <div style={{ padding: '20px' }}>
                     <div style={{ 
                       fontSize: '18px', 

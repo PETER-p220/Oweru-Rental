@@ -21,53 +21,57 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   isAuthenticated: boolean;
   setIsAuthenticated: (isAuthenticated: boolean) => void;
-  login: (userData: User) => void;
+  isLoading: boolean;
+  login: (userData: User, token: string) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  console.log('AuthContext - AuthProvider initialized');
-  console.log('AuthContext - Current localStorage user:', localStorage.getItem('user'));
-  console.log('AuthContext - Current localStorage token:', localStorage.getItem('token'));
-
-  useEffect(() => {
-    console.log('AuthContext - useEffect running');
+// Helper to safely read from localStorage
+const getStoredUser = (): User | null => {
+  try {
     const raw = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    console.log('AuthContext - Loading user from localStorage:', raw);
-    console.log('AuthContext - Current token:', token);
-    
     if (raw && token) {
-      try {
-        const parsedUser = JSON.parse(raw);
-        console.log('AuthContext - Parsed user:', parsedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (e) {
-        console.error('Error parsing user:', e);
-        setUser(null);
-        setIsAuthenticated(false);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-      }
-    } else {
-      console.log('AuthContext - No user or token found in localStorage');
-      setUser(null);
-      setIsAuthenticated(false);
+      return JSON.parse(raw) as User;
     }
+  } catch {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+  }
+  return null;
+};
+
+const hasValidSession = (): boolean => {
+  return !!(localStorage.getItem('user') && localStorage.getItem('token'));
+};
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Lazy initializers read localStorage synchronously on first render.
+  // This prevents the "isAuthenticated = false flash" that causes logout on refresh.
+  const [user, setUser] = useState<User | null>(getStoredUser);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(hasValidSession);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Optional: validate the stored token against your backend here.
+    // If the token is expired or invalid, call logout().
+    // Example:
+    // const token = localStorage.getItem('token');
+    // if (token) {
+    //   validateToken(token).catch(() => logout());
+    // }
+
+    // Mark auth as resolved so route guards know it's safe to act.
+    setIsLoading(false);
   }, []);
 
-  const login = (userData: User) => {
-    console.log('AuthContext - Login called with user:', userData);
+  const login = (userData: User, token: string) => {
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));
-    console.log('AuthContext - User saved to localStorage');
+    localStorage.setItem('token', token);
   };
 
   const logout = () => {
@@ -77,11 +81,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('token');
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     setUser,
     isAuthenticated,
     setIsAuthenticated,
+    isLoading,
     login,
     logout,
   };
