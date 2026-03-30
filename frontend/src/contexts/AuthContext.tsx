@@ -55,15 +55,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Optional: validate the stored token against your backend here.
-    // If the token is expired or invalid, call logout().
-    // Example:
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   validateToken(token).catch(() => logout());
-    // }
-
-    // Mark auth as resolved so route guards know it's safe to act.
+    console.log('AuthContext - useEffect running');
+    const raw = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    console.log('AuthContext - Loading user from localStorage:', raw);
+    console.log('AuthContext - Current token:', token);
+    
+    if (raw && token) {
+      try {
+        const parsedUser = JSON.parse(raw);
+        console.log('AuthContext - Parsed user:', parsedUser);
+        console.log('AuthContext - User type:', parsedUser.userType);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+        console.log('AuthContext - Authentication state set to true');
+      } catch (e) {
+        console.error('Error parsing user:', e);
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
+    } else {
+      console.log('AuthContext - No user or token found in localStorage');
+      console.log('AuthContext - User found:', !!raw);
+      console.log('AuthContext - Token found:', !!token);
+      setUser(null);
+      setIsAuthenticated(false);
+    }
     setIsLoading(false);
   }, []);
 

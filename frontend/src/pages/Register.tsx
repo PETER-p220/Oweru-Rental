@@ -75,7 +75,7 @@ const Register = () => {
       localStorage.setItem(TOKEN_KEY, token);
 
       // Hydrate AuthContext so DashboardLayout sees the user immediately
-      login(user);
+      login(user, token);
 
       // ── KEY FIX: navigate to role-specific dashboard ──
       // user.userType comes from AuthController->formatUser() as camelCase

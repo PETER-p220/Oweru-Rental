@@ -38,8 +38,8 @@ const Login = () => {
       // Persist token under the same key api.ts reads from
       localStorage.setItem(TOKEN_KEY, token);
 
-      // Push camelCase user into AuthContext
-      login(user);
+      // Push camelCase user and token into AuthContext
+      login(user, token);
 
       // Route to the correct role dashboard
       navigate(`/dashboard/${user.userType}`);
