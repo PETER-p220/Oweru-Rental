@@ -415,19 +415,7 @@ const PropertyDetail = () => {
                     </div>
                   </div>
 
-                  {/* Thumbnails */}
-                  <div style={{ display: 'flex', gap: 8, padding: '12px 14px', background: t.dark3 }}>
-                    {property?.images?.map((img: string, i: number) => (
-                      <img
-                        key={i}
-                        src={img}
-                        alt={`View ${i + 1}`}
-                        className={`pd-thumb${selectedImg === i ? ' active' : ''}`}
-                        onClick={() => setSelectedImg(i)}
-                        style={{ width: 72, height: 52, objectFit: 'cover', borderRadius: 5 }}
-                      />
-                    ))}
-                  </div>
+                 
                 </div>
 
                 {/* ── Property info card ── */}
