@@ -12,12 +12,12 @@ interface Property {
   id: number;
   title: string;
   description: string;
-  price: number;
+  price: number | null | undefined;
   address: string;
   city: string;
-  area: number;
-  bedrooms: number;
-  bathrooms: number;
+  area: number | null | undefined;
+  bedrooms: number | null | undefined;
+  bathrooms: number | null | undefined;
   type: 'apartment' | 'house' | 'villa' | 'commercial' | 'studio';
   status: 'available' | 'rented' | 'maintenance' | 'unavailable';
   featured: boolean;
@@ -27,23 +27,23 @@ interface Property {
   agent?: { id: number; name: string; email: string; phone: string; code: string; verified: boolean; commission: number };
   createdAt: string;
   updatedAt: string;
-  views: number;
-  inquiries: number;
-  applications: number;
+  views: number | null | undefined;
+  inquiries: number | null | undefined;
+  applications: number | null | undefined;
 }
 
 interface PropertyStats {
-  totalProperties: number;
-  availableProperties: number;
-  rentedProperties: number;
-  maintenanceProperties: number;
-  totalValue: number;
-  avgPrice: number;
-  featuredProperties: number;
-  newThisMonth: number;
-  totalViews: number;
-  totalInquiries: number;
-  totalApplications: number;
+  totalProperties: number | null | undefined;
+  availableProperties: number | null | undefined;
+  rentedProperties: number | null | undefined;
+  maintenanceProperties: number | null | undefined;
+  totalValue: number | null | undefined;
+  avgPrice: number | null | undefined;
+  featuredProperties: number | null | undefined;
+  newThisMonth: number | null | undefined;
+  totalViews: number | null | undefined;
+  totalInquiries: number | null | undefined;
+  totalApplications: number | null | undefined;
 }
 
 /* ─── Shared style tokens ────────────────────────────────── */
@@ -121,10 +121,20 @@ const inputStyle: React.CSSProperties = {
 };
 
 /* ─── Helpers ────────────────────────────────────────────── */
-const fmt = (n: number) => {
-  const numAmount = typeof n === 'number' && !isNaN(n) ? n : 0;
-  if (!numAmount || numAmount === 0) return 'TZS 0';
-  return new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(numAmount);
+
+// FIX: safe currency formatter — guards against null/undefined/NaN
+const fmt = (n: number | null | undefined): string => {
+  const num = typeof n === 'number' && !isNaN(n) ? n : 0;
+  if (num === 0) return 'TZS 0';
+  return new Intl.NumberFormat('en-TZ', {
+    style: 'currency', currency: 'TZS', minimumFractionDigits: 0,
+  }).format(num);
+};
+
+// FIX: safe toLocaleString — never crashes on undefined/null/NaN
+const fmtNum = (n: number | null | undefined): string => {
+  if (n == null || isNaN(Number(n))) return '0';
+  return Number(n).toLocaleString();
 };
 
 const fmtDate = (d: string) => {
@@ -183,11 +193,10 @@ const PropertiesManagement = () => {
       } else {
         setProperties([]);
       }
-      
+
       if (statsRes?.data) {
         setStats(statsRes.data);
       } else {
-        // Set default stats if API fails
         setStats({
           totalProperties: 0,
           availableProperties: 0,
@@ -204,7 +213,6 @@ const PropertiesManagement = () => {
       }
     } catch (e) {
       console.error('Failed to load properties:', e);
-      // Set empty state to prevent blank page
       setProperties([]);
       setStats(null);
     } finally {
@@ -226,7 +234,6 @@ const PropertiesManagement = () => {
     setProperties((prev) => prev.map((p) => p.id === id ? { ...p, status: newStatus } : p));
   };
 
-  /* ── Named handlers to avoid semicolon-in-JSX bug ── */
   const openDeleteModal = (property: Property) => {
     setSelectedProperty(property);
     setShowDeleteModal(true);
@@ -248,16 +255,16 @@ const PropertiesManagement = () => {
       return (
         matchSearch &&
         (statusFilter === 'all' || p.status === statusFilter) &&
-        (typeFilter  === 'all' || p.type   === typeFilter) &&
-        (cityFilter  === 'all' || p.city   === cityFilter) &&
-        p.price >= priceRange[0] && p.price <= priceRange[1]
+        (typeFilter   === 'all' || p.type   === typeFilter) &&
+        (cityFilter   === 'all' || p.city   === cityFilter) &&
+        (p.price ?? 0) >= priceRange[0] && (p.price ?? 0) <= priceRange[1]
       );
     })
     .sort((a, b) => {
       let cmp = 0;
-      if (sortBy === 'price')     cmp = a.price - b.price;
-      else if (sortBy === 'views')    cmp = a.views - b.views;
-      else if (sortBy === 'inquiries') cmp = a.inquiries - b.inquiries;
+      if (sortBy === 'price')      cmp = (a.price ?? 0) - (b.price ?? 0);
+      else if (sortBy === 'views') cmp = (a.views ?? 0) - (b.views ?? 0);
+      else if (sortBy === 'inquiries') cmp = (a.inquiries ?? 0) - (b.inquiries ?? 0);
       else cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       return sortOrder === 'asc' ? cmp : -cmp;
     });
@@ -285,19 +292,20 @@ const PropertiesManagement = () => {
   /* ── Property spec row (reused in grid + list) ── */
   const SpecRow = ({ p }: { p: Property }) => (
     <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-      {p.bedrooms > 0 && (
+      {(p.bedrooms ?? 0) > 0 && (
         <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: tk.muted }}>
           <Home size={12} style={{ color: tk.gold }} /> {p.bedrooms} bed{p.bedrooms !== 1 ? 's' : ''}
         </span>
       )}
       <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: tk.muted }}>
-        <Square size={12} style={{ color: tk.gold }} /> {p.area} m²
+        <Square size={12} style={{ color: tk.gold }} /> {p.area ?? '—'} m²
+      </span>
+      {/* FIX: was p.views.toLocaleString() — crashes if views is undefined */}
+      <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: tk.muted }}>
+        <Eye size={12} /> {fmtNum(p.views)} views
       </span>
       <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: tk.muted }}>
-        <Eye size={12} /> {p.views.toLocaleString()} views
-      </span>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: tk.muted }}>
-        <Users size={12} /> {p.inquiries} inquiries
+        <Users size={12} /> {p.inquiries ?? 0} inquiries
       </span>
     </div>
   );
@@ -305,8 +313,6 @@ const PropertiesManagement = () => {
   /* ── Action buttons (reused in grid + list) ── */
   const ActionRow = ({ p }: { p: Property }) => (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-      {/* ✅ FIX: was onClick={() => setShowDeleteModal(true); setSelectedProperty(property)}
-             Now uses openDetailModal / openDeleteModal named functions */}
       <button style={ghostBtn(tk.gold)}   className="pm-btn" onClick={() => openDetailModal(p)}>
         <Eye size={13} /> View
       </button>
@@ -349,17 +355,20 @@ const PropertiesManagement = () => {
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(155px,1fr))', gap: 14, marginBottom: 24 }}>
           {[
-            { label: 'Total',        value: stats.totalProperties,               color: tk.cream  },
-            { label: 'Available',    value: stats.availableProperties,           color: tk.green  },
-            { label: 'Rented',       value: stats.rentedProperties,              color: tk.blue   },
-            { label: 'Maintenance',  value: stats.maintenanceProperties,         color: tk.amber  },
-            { label: 'Total Value',  value: fmt(stats.totalValue),               color: tk.gold   },
-            { label: 'Avg. Price',   value: fmt(stats.avgPrice),                 color: tk.cream  },
-            { label: 'Featured',     value: stats.featuredProperties,            color: tk.purple },
-            { label: 'Total Views',  value: stats.totalViews.toLocaleString(),   color: tk.green  },
+            { label: 'Total',       value: stats.totalProperties ?? 0,              color: tk.cream  },
+            { label: 'Available',   value: stats.availableProperties ?? 0,          color: tk.green  },
+            { label: 'Rented',      value: stats.rentedProperties ?? 0,             color: tk.blue   },
+            { label: 'Maintenance', value: stats.maintenanceProperties ?? 0,        color: tk.amber  },
+            { label: 'Total Value', value: fmt(stats.totalValue),                   color: tk.gold   },
+            { label: 'Avg. Price',  value: fmt(stats.avgPrice),                     color: tk.cream  },
+            { label: 'Featured',    value: stats.featuredProperties ?? 0,           color: tk.purple },
+            // FIX: was stats.totalViews.toLocaleString() — crashes if totalViews is undefined
+            { label: 'Total Views', value: fmtNum(stats.totalViews),               color: tk.green  },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ ...card, padding: '14px 16px', textAlign: 'center' }}>
-              <div style={{ ...body, fontSize: 18, fontWeight: 700, color, marginBottom: 3, lineHeight: 1.2, wordBreak: 'break-word' }}>{value}</div>
+              <div style={{ ...body, fontSize: 18, fontWeight: 700, color, marginBottom: 3, lineHeight: 1.2, wordBreak: 'break-word' }}>
+                {value}
+              </div>
               <div style={{ ...labelStyle, marginBottom: 0 }}>{label}</div>
             </div>
           ))}
@@ -464,7 +473,7 @@ const PropertiesManagement = () => {
 
                 {/* Image */}
                 <div style={{ position: 'relative', height: 190, overflow: 'hidden' }}>
-                  <img src={p.images[0]} alt={p.title}
+                  <img src={p.images?.[0]} alt={p.title}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,8,.6) 0%, transparent 55%)' }} />
                   {p.featured && (
@@ -520,7 +529,7 @@ const PropertiesManagement = () => {
 
                 {/* Thumb */}
                 <div style={{ width: 110, height: 76, borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
-                  <img src={p.images[0]} alt={p.title}
+                  <img src={p.images?.[0]} alt={p.title}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 </div>
 
@@ -542,7 +551,7 @@ const PropertiesManagement = () => {
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
                     <span style={pill(statusColor(p.status))}>{p.status}</span>
                     <span style={pill(typeColor(p.type))}>{p.type}</span>
-                    {p.featured && <span style={pill(tk.gold)}>Featured</span>}
+                    {p.featured  && <span style={pill(tk.gold)}>Featured</span>}
                     {p.furnished && <span style={pill(tk.muted)}>Furnished</span>}
                   </div>
 
@@ -578,7 +587,7 @@ const PropertiesManagement = () => {
             </div>
 
             <div style={{ height: 180, borderRadius: 8, overflow: 'hidden', marginBottom: 18 }}>
-              <img src={selectedProperty.images[0]} alt={selectedProperty.title}
+              <img src={selectedProperty.images?.[0]} alt={selectedProperty.title}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
 
@@ -597,17 +606,20 @@ const PropertiesManagement = () => {
             </div>
 
             {[
-              { label: 'Price',         value: `${fmt(selectedProperty.price)} / month` },
-              { label: 'Address',       value: selectedProperty.address },
-              { label: 'Area',          value: `${selectedProperty.area} m²` },
-              { label: 'Bedrooms',      value: selectedProperty.bedrooms || 'N/A' },
-              { label: 'Bathrooms',     value: selectedProperty.bathrooms },
-              { label: 'Owner',         value: `${selectedProperty.owner.name} (${selectedProperty.owner.email})` },
-              selectedProperty.agent ? { label: 'Agent', value: `${selectedProperty.agent.name} · ${selectedProperty.agent.code} · ${selectedProperty.agent.commission}% commission` } : null,
-              { label: 'Views',         value: selectedProperty.views.toLocaleString() },
-              { label: 'Inquiries',     value: selectedProperty.inquiries },
-              { label: 'Applications',  value: selectedProperty.applications },
-              { label: 'Listed',        value: fmtDate(selectedProperty.createdAt) },
+              { label: 'Price',        value: `${fmt(selectedProperty.price)} / month` },
+              { label: 'Address',      value: selectedProperty.address },
+              { label: 'Area',         value: `${selectedProperty.area ?? '—'} m²` },
+              { label: 'Bedrooms',     value: selectedProperty.bedrooms ?? 'N/A' },
+              { label: 'Bathrooms',    value: selectedProperty.bathrooms ?? 'N/A' },
+              { label: 'Owner',        value: `${selectedProperty.owner.name} (${selectedProperty.owner.email})` },
+              selectedProperty.agent
+                ? { label: 'Agent', value: `${selectedProperty.agent.name} · ${selectedProperty.agent.code} · ${selectedProperty.agent.commission}% commission` }
+                : null,
+              // FIX: was selectedProperty.views.toLocaleString() — crashes if views is undefined
+              { label: 'Views',        value: fmtNum(selectedProperty.views) },
+              { label: 'Inquiries',    value: selectedProperty.inquiries ?? 0 },
+              { label: 'Applications', value: selectedProperty.applications ?? 0 },
+              { label: 'Listed',       value: fmtDate(selectedProperty.createdAt) },
             ].filter(Boolean).map(({ label, value }: any) => (
               <div key={label} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16,
