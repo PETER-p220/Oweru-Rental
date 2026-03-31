@@ -121,11 +121,20 @@ const inputStyle: React.CSSProperties = {
 };
 
 /* ─── Helpers ────────────────────────────────────────────── */
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(n);
+const fmt = (n: number) => {
+  const numAmount = typeof n === 'number' && !isNaN(n) ? n : 0;
+  if (!numAmount || numAmount === 0) return 'TZS 0';
+  return new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(numAmount);
+};
 
-const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
+const fmtDate = (d: string) => {
+  if (!d) return 'N/A';
+  try {
+    return new Date(d).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return 'N/A';
+  }
+};
 
 const statusColor = (s: string): string =>
   ({ available: tk.green, rented: tk.blue, maintenance: tk.amber, unavailable: tk.red }[s] ?? tk.muted);
@@ -165,18 +174,39 @@ const PropertiesManagement = () => {
           status: statusFilter,
           min_price: priceRange[0],
           max_price: priceRange[1],
-        }),
-        Api.getAdminPropertyStats(),
+        }).catch(() => ({ data: [] })),
+        Api.getAdminPropertyStats().catch(() => ({ data: null })),
       ]);
 
-      if (propertiesRes.data) {
+      if (propertiesRes?.data && Array.isArray(propertiesRes.data)) {
         setProperties(propertiesRes.data);
+      } else {
+        setProperties([]);
       }
-      if (statsRes.data) {
+      
+      if (statsRes?.data) {
         setStats(statsRes.data);
+      } else {
+        // Set default stats if API fails
+        setStats({
+          totalProperties: 0,
+          availableProperties: 0,
+          rentedProperties: 0,
+          maintenanceProperties: 0,
+          totalValue: 0,
+          avgPrice: 0,
+          featuredProperties: 0,
+          newThisMonth: 0,
+          totalViews: 0,
+          totalInquiries: 0,
+          totalApplications: 0,
+        });
       }
     } catch (e) {
       console.error('Failed to load properties:', e);
+      // Set empty state to prevent blank page
+      setProperties([]);
+      setStats(null);
     } finally {
       setLoading(false);
     }
