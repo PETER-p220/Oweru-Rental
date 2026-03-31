@@ -13,12 +13,11 @@ import SelcomService from '../services/selcom';
 interface Pagination { current_page: number; last_page: number; per_page: number; total: number; }
 interface Property {
   id: number; title: string; location?: string; address?: string;
-  price: number; bedrooms?: number; bathrooms?: number; size?: number; area?: number;
+  price: number | null | undefined; bedrooms?: number; bathrooms?: number; size?: number; area?: number;
   type?: string; featured?: boolean; furnished?: boolean; description?: string;
   images?: string[];
   owner?: { id?: number; name?: string; first_name?: string; last_name?: string };
   agent?: { id?: number; name?: string; code?: string };
-  // FIX: dalali is a plain string tracking code on the property — not an object
   dalali?: string;
 }
 
@@ -36,14 +35,21 @@ function useDebounce<T>(value: T, delay: number): T {
 /* ─── Helpers ─── */
 const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
 
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(p);
+// FIX: null-safe formatPrice — guards against undefined/null/NaN price values
+const formatPrice = (p: number | null | undefined): string => {
+  if (p == null || isNaN(Number(p))) return 'Price on request';
+  return new Intl.NumberFormat('en-TZ', {
+    style: 'currency',
+    currency: 'TZS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number(p));
+};
 
 const typeLabel: Record<string, string> = {
   apartment: 'Apartment', house: 'House', studio: 'Studio', villa: 'Villa', commercial: 'Commercial',
 };
 
-// FIX: Removed all debug console.log calls and the side-effect async fetch inside a sync function
 const getImage = (p: Property): string => {
   if (p.images?.length) {
     const i = p.images[0];
@@ -455,6 +461,7 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
         {property.featured && <div className="pc-badge-featured">Featured</div>}
         {property.type && <div className="pc-badge-type">{typeLabel[property.type] ?? property.type}</div>}
         <div className="pc-price-overlay">
+          {/* FIX: formatPrice now handles null/undefined safely */}
           <div className="pc-price-main">{formatPrice(property.price)}</div>
           <div className="pc-price-period">/month</div>
         </div>
@@ -550,6 +557,7 @@ const ApplyModal = ({ property, onClose, onProceed }: {
         {(property.location || property.address) && (
           <div className="prop-info-row"><MapPin size={12} /><strong>{property.location || property.address}</strong></div>
         )}
+        {/* FIX: formatPrice handles null/undefined safely here too */}
         <div className="prop-info-row"><CreditCard size={12} />Monthly rent: <strong>{formatPrice(property.price)}</strong></div>
         {property.bedrooms != null && <div className="prop-info-row"><Bed size={12} />Bedrooms: <strong>{property.bedrooms}</strong></div>}
         {property.furnished && <div className="prop-info-row"><CheckCircle2 size={12} style={{ color: 'var(--success)' }} /><strong style={{ color: 'var(--success)' }}>Furnished</strong></div>}
@@ -689,6 +697,9 @@ const Properties = () => {
   const { toasts, addToast, removeToast } = useToast();
   const { config: confirmConfig, confirm, handleConfirm, handleCancel } = useConfirm();
 
+  // confirm is declared but used optionally; keep it to avoid lint warnings
+  void confirm;
+
   const debouncedSearch = useDebounce(searchTerm, 400);
 
   useEffect(() => { setPage(1); }, [debouncedSearch, selectedType, priceRange, bedrooms, furnished]);
@@ -704,7 +715,6 @@ const Properties = () => {
     })();
   }, []);
 
-  // FIX: Added navigate to dependency array
   useEffect(() => {
     const p = sessionStorage.getItem('pendingApplication');
     if (p) {
@@ -749,7 +759,6 @@ const Properties = () => {
     e.preventDefault(); e.stopPropagation();
     try {
       if (savedIds.has(id)) {
-        // FIX: Use correct API method names that match the route definitions
         await Api.unsaveProperty(id);
         setSavedIds(p => { const s = new Set(p); s.delete(id); return s; });
         addToast({ type: 'info', title: 'Removed from saved', duration: 3000 });
@@ -793,8 +802,8 @@ const Properties = () => {
 
     setPaying(true);
     try {
-      const userStr = localStorage.getItem('user');
-      const user    = userStr ? JSON.parse(userStr) : null;
+      const userStr  = localStorage.getItem('user');
+      const user     = userStr ? JSON.parse(userStr) : null;
       const tenantId = user?.id;
 
       if (!tenantId) {
@@ -838,14 +847,13 @@ const Properties = () => {
       }
 
       if (paymentSuccessful) {
-        // FIX: owner_id should be the property owner's ID, not the agent's ID
         await Api.createApplication({
-          property_id:     selProp.id,
-          owner_id:        selProp.owner?.id,
-          service_fee:     20000,
-          payment_status:  'paid',
-          payment_method:  paymentMethod,
-          transaction_id:  transactionId,
+          property_id:    selProp.id,
+          owner_id:       selProp.owner?.id,
+          service_fee:    20000,
+          payment_status: 'paid',
+          payment_method: paymentMethod,
+          transaction_id: transactionId,
         });
 
         try {
@@ -864,7 +872,6 @@ const Properties = () => {
           console.warn('Contract creation failed:', contractError);
         }
 
-        // Notify agent if one is assigned to this property
         if (selProp.agent?.id) {
           try {
             await Api.notifyAgent({
@@ -898,6 +905,7 @@ const Properties = () => {
     setSearchTerm(''); setSelectedType(''); setPriceRange('');
     setBedrooms(undefined); setFurnished(undefined);
   };
+
   const activeFilterCount = [selectedType, priceRange, bedrooms, furnished].filter(v => v != null && v !== '').length;
   const hasMore = pagination ? pagination.current_page < pagination.last_page : false;
 
@@ -937,7 +945,13 @@ const Properties = () => {
         <div className="sb-inner">
           <div className="sb-search">
             <span className="sb-search-icon"><Search size={14} /></span>
-            <input className="sb-input" type="text" placeholder="Location or property name…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <input
+              className="sb-input"
+              type="text"
+              placeholder="Location or property name…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
             {searchTerm && <button className="sb-clear" onClick={() => setSearchTerm('')}><X size={13} /></button>}
           </div>
           <select className="sb-select" value={selectedType} onChange={e => setSelectedType(e.target.value)}>
@@ -967,13 +981,27 @@ const Properties = () => {
         <div className={`adv${showFilters ? ' open' : ''}`}>
           <div className="adv-inner">
             <span className="adv-label">Refine</span>
-            <select className="sb-select" style={{ minWidth: 110 }} value={bedrooms?.toString() ?? ''} onChange={e => setBedrooms(e.target.value ? parseInt(e.target.value) : undefined)}>
+            <select
+              className="sb-select"
+              style={{ minWidth: 110 }}
+              value={bedrooms?.toString() ?? ''}
+              onChange={e => setBedrooms(e.target.value ? parseInt(e.target.value) : undefined)}
+            >
               <option value="">Bedrooms</option>
-              <option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+</option>
+              <option value="1">1+</option>
+              <option value="2">2+</option>
+              <option value="3">3+</option>
+              <option value="4">4+</option>
             </select>
-            <select className="sb-select" style={{ minWidth: 130 }} value={furnished == null ? '' : furnished ? 'true' : 'false'} onChange={e => { const v = e.target.value; setFurnished(v === '' ? undefined : v === 'true'); }}>
+            <select
+              className="sb-select"
+              style={{ minWidth: 130 }}
+              value={furnished == null ? '' : furnished ? 'true' : 'false'}
+              onChange={e => { const v = e.target.value; setFurnished(v === '' ? undefined : v === 'true'); }}
+            >
               <option value="">Furnishing</option>
-              <option value="true">Furnished</option><option value="false">Unfurnished</option>
+              <option value="true">Furnished</option>
+              <option value="false">Unfurnished</option>
             </select>
             {(activeFilterCount > 0 || searchTerm) && (
               <button className="adv-clear" onClick={clearFilters}><X size={11} /> Clear all</button>
@@ -984,7 +1012,12 @@ const Properties = () => {
 
       {/* Listings */}
       <div className="pr-body">
-        {error && <div className="err-banner">{error}<button className="err-retry" onClick={() => loadProperties(1)}>Retry</button></div>}
+        {error && (
+          <div className="err-banner">
+            {error}
+            <button className="err-retry" onClick={() => loadProperties(1)}>Retry</button>
+          </div>
+        )}
         {loading ? (
           <div className={`pr-grid${viewMode === 'list' ? ' list' : ''}`}>
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
@@ -1004,8 +1037,14 @@ const Properties = () => {
             </div>
             {hasMore && (
               <div className="load-more">
-                <button className="load-more-btn" disabled={loadingMore} onClick={() => setPage(prev => prev + 1)}>
-                  {loadingMore ? 'Loading…' : `Load more · page ${(pagination?.current_page ?? 1) + 1} of ${pagination?.last_page}`}
+                <button
+                  className="load-more-btn"
+                  disabled={loadingMore}
+                  onClick={() => setPage(prev => prev + 1)}
+                >
+                  {loadingMore
+                    ? 'Loading…'
+                    : `Load more · page ${(pagination?.current_page ?? 1) + 1} of ${pagination?.last_page}`}
                 </button>
               </div>
             )}
@@ -1027,8 +1066,20 @@ const Properties = () => {
       {/* Modals */}
       {modal === 'auth'    && selProp && <AuthModal    property={selProp} onClose={closeModal} onLogin={handleAuthLogin} onSignup={handleAuthSignup} />}
       {modal === 'apply'   && selProp && <ApplyModal   property={selProp} onClose={closeModal} onProceed={() => setModal('payment')} />}
-      {modal === 'payment' && selProp && <PaymentModal processing={paying} onClose={closeModal} onPay={handlePay} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />}
-      {modal === 'success'            && <SuccessModal onClose={() => { closeModal(); navigate('/dashboard/tenant/applications'); }} />}
+      {modal === 'payment' && selProp && (
+        <PaymentModal
+          processing={paying}
+          onClose={closeModal}
+          onPay={handlePay}
+          phoneNumber={phoneNumber}
+          setPhoneNumber={setPhoneNumber}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
+        />
+      )}
+      {modal === 'success' && (
+        <SuccessModal onClose={() => { closeModal(); navigate('/dashboard/tenant/applications'); }} />
+      )}
     </div>
   );
 };
