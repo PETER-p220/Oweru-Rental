@@ -90,13 +90,14 @@ const AdminDashboard = () => {
           Api.getAdminTransactions().catch(() => ({ data: [] }))
         ]);
 
-        const users = usersResponse.data || [];
-        const properties = propertiesResponse.data || [];
-        const transactions = transactionsResponse.data || [];
+        const users = Array.isArray(usersResponse?.data) ? usersResponse.data : [];
+        const properties = Array.isArray(propertiesResponse?.data) ? propertiesResponse.data : [];
+        const transactions = Array.isArray(transactionsResponse?.data) ? transactionsResponse.data : [];
 
         // Calculate real stats
         const totalRevenue = transactions.reduce((sum: number, transaction: any) => {
-          return sum + (transaction.amount || 0);
+          const amount = typeof transaction.amount === 'number' && !isNaN(transaction.amount) ? transaction.amount : 0;
+          return sum + amount;
         }, 0);
 
         // For now, set pending applications to 0 since we don't have applications data
@@ -107,11 +108,11 @@ const AdminDashboard = () => {
         ).length;
 
         setStats({
-          totalUsers: users.length,
-          totalProperties: properties.length,
-          totalRevenue,
-          activeListings,
-          pendingApplications,
+          totalUsers: users.length || 0,
+          totalProperties: properties.length || 0,
+          totalRevenue: totalRevenue || 0,
+          activeListings: activeListings || 0,
+          pendingApplications: pendingApplications || 0,
           systemHealth: 'good'
         });
 
@@ -228,13 +229,14 @@ const AdminDashboard = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    if (!amount || amount === 0) return 'TZS 0';
+    const numAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+    if (!numAmount || numAmount === 0) return 'TZS 0';
     return new Intl.NumberFormat('en-TZ', {
       style: 'currency',
       currency: 'TZS',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(numAmount);
   };
 
   const getActivityIcon = (type: string) => {

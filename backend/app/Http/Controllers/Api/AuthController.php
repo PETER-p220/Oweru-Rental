@@ -19,7 +19,7 @@ class AuthController extends Controller
             'email'      => 'required|string|email|max:255|unique:users',
             'password'   => 'required|string|min:8|confirmed',
             'phone'      => 'required|string|max:20',
-            'user_type'  => 'required|in:tenant,landlord,agent',
+            'user_type'  => 'required|in:tenant,landlord,agent,bnb_owner',
         ]);
 
         if ($validator->fails()) {
@@ -54,7 +54,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email'     => 'required|email',
             'password'  => 'required',
-            'user_type' => 'required|in:tenant,landlord,agent,admin',
+            'user_type' => 'required|in:tenant,landlord,agent,bnb_owner,admin',
         ]);
 
         if ($validator->fails()) {
