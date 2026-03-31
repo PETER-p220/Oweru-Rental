@@ -53,6 +53,9 @@ import AlertsManagement from './pages/admin/AlertsManagement';
 // BNB Owner pages
 import BnbDashboard from './pages/bnb/BnbDashboard';
 import BnbProperties from './pages/bnb/BnbProperties';
+import BnbBookings from './pages/bnb/BnbBookings';
+import BnbReviews from './pages/bnb/BnbReviews';
+import BnbAnalytics from './pages/bnb/BnbAnalytics';
 import SystemSettings from './pages/admin/SystemSettings';
 
 // Agent pages
@@ -191,9 +194,9 @@ const BnbOwnerRoutes = () => (
         <Route path="" element={<BnbDashboard />} />
         <Route path="bnb-properties" element={<BnbProperties />} />
         <Route path="bnb-properties/add" element={<BnbProperties />} />
-        <Route path="bnb-bookings" element={<BnbDashboard />} />
-        <Route path="bnb-reviews" element={<BnbDashboard />} />
-        <Route path="bnb-analytics" element={<BnbDashboard />} />
+        <Route path="bnb-bookings" element={<BnbBookings />} />
+        <Route path="bnb-reviews" element={<BnbReviews />} />
+        <Route path="bnb-analytics" element={<BnbAnalytics />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

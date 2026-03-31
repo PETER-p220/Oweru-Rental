@@ -397,25 +397,28 @@ class Api {
     });
   }
 
-  static async getBnbBookings(propertyId?: number) {
-    const url = propertyId ? `bnb/bookings?property_id=${propertyId}` : 'bnb/bookings';
+  static async getBnbBookings(params?: { search?: string; status?: string; property_id?: number }) {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.property_id) queryParams.append('property_id', params.property_id.toString());
+    
+    const url = `bnb/bookings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return this.request<any[]>(url);
   }
 
-  static async updateBnbBookingStatus(bookingId: number, status: string) {
-    return this.request<any>(`bnb/bookings/${bookingId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+  static async getBnbReviews(params?: { search?: string; rating?: string; property_id?: number }) {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.rating) queryParams.append('rating', params.rating);
+    if (params?.property_id) queryParams.append('property_id', params.property_id.toString());
+    
+    const url = `bnb/reviews${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.request<any[]>(url);
   }
 
   static async getBnbAnalytics() {
     return this.request<any>('bnb/analytics');
-  }
-
-  static async getBnbReviews(propertyId?: number) {
-    const url = propertyId ? `bnb/reviews?property_id=${propertyId}` : 'bnb/reviews';
-    return this.request<any[]>(url);
   }
 
   static async respondToReview(reviewId: number, response: string) {
