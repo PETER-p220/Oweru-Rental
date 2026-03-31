@@ -82,10 +82,6 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Properties',         icon: Building,      href: 'properties',          color: '#f59e0b' },
       { name: 'Transactions',       icon: RefreshCw,     href: 'transactions',        color: '#6ee7b7' },
       { name: 'Commission',         icon: PieChart,      href: 'commission',          color: '#10b981' },
-      { name: 'Payments',           icon: CreditCard,    href: 'payments',            color: '#f472b6' },
-      { name: 'Contracts',          icon: BookOpen,      href: 'contracts',           color: '#a78bfa' },
-      { name: 'Verification',       icon: ShieldCheck,   href: 'verification',        color: '#34d399' },
-      { name: 'Alerts',             icon: AlertCircle,   href: 'alerts',              color: '#f87171' },
       { name: 'Settings',           icon: Settings,      href: 'settings',            color: '#fb923c' },
     ],
   };
@@ -159,9 +155,9 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { label: 'Insights',   items: ['Analytics','Messages'] },
     ],
     admin: [
-      { label: 'Platform',   items: ['Overview','Users','Properties','Verification'] },
-      { label: 'Operations', items: ['Transactions','Commission','Payments','Contracts'] },
-      { label: 'Monitoring', items: ['Alerts','Settings'] },
+      { label: 'Platform',   items: ['Overview','Users','Properties'] },
+      { label: 'Operations', items: ['Transactions','Commission'] },
+      { label: 'System',     items: ['Settings'] },
     ],
   };
 
@@ -208,12 +204,12 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       settingsLabel: 'Account Settings',
     },
     admin: {
-      primary: getFullPath('verification'),
-      primaryLabel: 'Verification',
-      primaryIcon: ShieldCheck,
-      secondary: getFullPath('alerts'),
-      secondaryLabel: 'Alerts',
-      secondaryIcon: AlertCircle,
+      primary: getFullPath('users'),
+      primaryLabel: 'User Management',
+      primaryIcon: Users,
+      secondary: getFullPath('transactions'),
+      secondaryLabel: 'Transactions',
+      secondaryIcon: RefreshCw,
       settings: getFullPath('settings'),
       settingsLabel: 'System Settings',
     },

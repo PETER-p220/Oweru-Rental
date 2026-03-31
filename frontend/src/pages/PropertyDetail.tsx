@@ -123,6 +123,7 @@ const PropertyDetail = () => {
   const [selectedImg, setSelectedImg] = useState(0);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [property, setProperty] = useState<any>(null);
@@ -286,8 +287,8 @@ const PropertyDetail = () => {
 
   const handleApply = () => {
     if (!isAuthenticated) {
-      // Redirect to login with return URL
-      navigate('/login', { state: { from: `/property/${id}` } });
+      // Show login modal instead of redirecting
+      setShowLoginModal(true);
       return;
     }
 
@@ -720,6 +721,77 @@ const PropertyDetail = () => {
                       className="pd-action-btn"
                     >
                       Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ══ LOGIN MODAL ══ — Login prompt for unauthenticated users */}
+            {showLoginModal && (
+              <div style={{
+                position: 'fixed', inset: 0,
+                background: 'rgba(0,0,0,0.8)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 9999, padding: 20,
+              }}>
+                <div style={{ ...card, padding: 32, maxWidth: 420, width: '100%', position: 'relative' }}>
+                  {/* Close */}
+                  <button
+                    onClick={() => setShowLoginModal(false)}
+                    style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: t.muted, cursor: 'pointer' }}
+                  >
+                    <X size={18} />
+                  </button>
+
+                  {/* Content */}
+                  <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                    <div style={{ 
+                      width: 60, height: 60, 
+                      margin: '0 auto 16px',
+                      background: `${t.gold}20`,
+                      borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      <Shield size={28} style={{ color: t.gold }} />
+                    </div>
+                    <h3 style={{ ...serif, fontSize: 22, fontWeight: 600, color: t.cream, margin: '0 0 12px' }}>
+                      Sign In Required
+                    </h3>
+                    <p style={{ ...body, fontSize: 14, color: t.muted, lineHeight: 1.5, margin: 0 }}>
+                      You need to sign in to complete your property application. 
+                      Don't have an account? You can register as a tenant in seconds!
+                    </p>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <button
+                      onClick={() => {
+                        setShowLoginModal(false);
+                        navigate('/login', { state: { from: `/property/${id}` } });
+                      }}
+                      style={solidBtn}
+                      className="pd-action-btn"
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowLoginModal(false);
+                        navigate('/register', { state: { from: `/property/${id}`, userType: 'tenant' } });
+                      }}
+                      style={ghostBtn(t.gold)}
+                      className="pd-action-btn"
+                    >
+                      Register as Tenant
+                    </button>
+                    <button
+                      onClick={() => setShowLoginModal(false)}
+                      style={{ ...ghostBtn(t.muted), flex: 1 }}
+                      className="pd-action-btn"
+                    >
+                      Maybe Later
                     </button>
                   </div>
                 </div>

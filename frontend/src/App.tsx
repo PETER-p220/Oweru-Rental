@@ -1,5 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -41,8 +40,7 @@ import LandlordAnalyticsPage from './pages/landlord/AnalyticsPage';
 import LandlordMessagesPage from './pages/landlord/MessagesPage';
 
 // Admin pages
-// Temporarily disabled admin pages with encoding issues
-// import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import PropertiesManagement from './pages/admin/PropertiesManagement';
 import TransactionsManagement from './pages/admin/TransactionsManagement';
@@ -53,14 +51,6 @@ import CommissionControl from './pages/admin/CommissionControl';
 // import VerificationManagement from './pages/admin/VerificationManagement';
 // import AlertsManagement from './pages/admin/AlertsManagement';
 import SystemSettings from './pages/admin/SystemSettings';
-
-// Simple placeholder for AdminDashboard
-const AdminDashboard = () => (
-  <div style={{ padding: '20px' }}>
-    <h1>Admin Dashboard</h1>
-    <p>Admin dashboard temporarily disabled due to encoding issues</p>
-  </div>
-);
 
 // Agent pages
 import AgentDashboard from './pages/agent/AgentDashboard';
