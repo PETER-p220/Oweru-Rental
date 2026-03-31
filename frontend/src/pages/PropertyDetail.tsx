@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   MapPin, Bed, Bath, Square, Phone, Mail,
   Shield, CheckCircle, Heart, Share2, QrCode,
@@ -9,6 +9,7 @@ import {
 import QRCode from 'qrcode';
 import type { Property } from '../types';
 import Api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 /* ─────────────────────────────────────────────────────────────
    SHARED STYLE TOKENS  (mirrors DashboardLayout / LeadsAndVisitors)
@@ -106,6 +107,8 @@ const solidBtn: React.CSSProperties = {
 ═════════════════════════════════════════════════════════════ */
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
   
   // Helper function for image URLs (similar to Properties.tsx)
   const getPropertyImageUrl = (property: any, imageIndex: number = 0) => {
@@ -279,6 +282,28 @@ const PropertyDetail = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleApply = () => {
+    if (!isAuthenticated) {
+      // Redirect to login with return URL
+      navigate('/login', { state: { from: `/property/${id}` } });
+      return;
+    }
+
+    if (!property) {
+      console.error('PropertyDetail: Property is null, cannot apply');
+      return;
+    }
+
+    // Check if user is tenant (only tenants can apply)
+    if (user?.userType !== 'tenant') {
+      alert('Only tenants can apply for properties. Please switch to a tenant account or register as a tenant.');
+      return;
+    }
+
+    // Navigate to application form or create application
+    navigate(`/tenant/apply/${property.id}`);
   };
 
   const trackingUrl = property
@@ -605,8 +630,13 @@ const PropertyDetail = () => {
 
                 {/* ── CTA buttons ── */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <button style={solidBtn} className="pd-action-btn">
-                    Apply Now
+                  <button 
+                    style={solidBtn} 
+                    className="pd-action-btn"
+                    onClick={handleApply}
+                    disabled={!property}
+                  >
+                    {isAuthenticated ? 'Apply Now' : 'Login to Apply'}
                   </button>
                   <button style={ghostBtn(t.gold)} className="pd-action-btn">
                     Schedule Viewing
