@@ -66,7 +66,7 @@ const ReceiptsPage = () => {
         <div style={sectionTitleStyle}>Landlord Workspace</div>
         <h1 style={headingStyle}>Payment Receipts</h1>
         <p style={descriptionStyle}>
-          Browse completed payment records from the Laravel owner receipts endpoint and trigger receipt downloads when the backend supports them.
+          Browse completed payment records from the owner receipts endpoint and trigger receipt downloads when the system supports them.
         </p>
       </section>
 

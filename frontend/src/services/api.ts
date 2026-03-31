@@ -237,6 +237,19 @@ class Api {
     return this.request<any>('admin/transactions/stats');
   }
 
+  // ── Admin – Payments ──────────────────────────────────────────────────────
+
+  static async getAdminPayments(filters?: {
+    search?: string; type?: string; status?: string;
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any[]>(`admin/payments${params ? `?${params}` : ''}`);
+  }
+
+  static async getAdminPaymentStats() {
+    return this.request<any>('admin/payments/stats');
+  }
+
   static async updateAdminTransactionStatus(transactionId: number, status: string) {
     return this.request<any>(`admin/transactions/${transactionId}/status`, {
       method: 'PATCH',
@@ -296,6 +309,13 @@ class Api {
     return this.request<any>('admin/verification/stats');
   }
 
+  static async updateVerificationStatus(requestId: number, status: string, reason?: string) {
+    return this.request<any>(`admin/verification/requests/${requestId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, reason }),
+    });
+  }
+
   // ── Admin – Alerts ──────────────────────────────────────────────────────────
 
   static async getAlerts(filters?: {
@@ -307,6 +327,13 @@ class Api {
 
   static async getAlertStats() {
     return this.request<any>('admin/alerts/stats');
+  }
+
+  static async updateAlertStatus(alertId: number, status: string, reason?: string) {
+    return this.request<any>(`admin/alerts/${alertId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, reason }),
+    });
   }
 
   // ── Properties (public) ─────────────────────────────────────────────────────

@@ -228,6 +228,7 @@ const AdminDashboard = () => {
   };
 
   const formatCurrency = (amount: number) => {
+    if (!amount || amount === 0) return 'TZS 0';
     return new Intl.NumberFormat('en-TZ', {
       style: 'currency',
       currency: 'TZS',
@@ -344,7 +345,7 @@ const AdminDashboard = () => {
           <div style={{ flex: 1 }}>
             <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Total Revenue</div>
             <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
-              {formatCurrency(stats.totalRevenue)}
+              {formatCurrency(stats.totalRevenue || 0)}
             </div>
             <div style={{ ...body, fontSize: 12, color: t.green, marginTop: 4 }}>
               <TrendingUp size={12} style={{ marginRight: 4 }} />
@@ -361,7 +362,7 @@ const AdminDashboard = () => {
           <div style={{ flex: 1 }}>
             <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Pending Applications</div>
             <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
-              {stats.pendingApplications}
+              {stats.pendingApplications || 0}
             </div>
             <div style={{ ...body, fontSize: 12, color: t.gold, marginTop: 4 }}>
               <AlertCircle size={12} style={{ marginRight: 4 }} />

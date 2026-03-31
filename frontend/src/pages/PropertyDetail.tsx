@@ -120,10 +120,11 @@ const PropertyDetail = () => {
     // Use SVG placeholder instead of non-existent API endpoint
     return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Crect width='900' height='600' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='28' fill='%236b7280'%3ENo Image Available%3C/text%3E%3C/svg%3E`;
   };
+
   const [selectedImg, setSelectedImg] = useState(0);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignInModal, setShowSignInModal] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [property, setProperty] = useState<any>(null);
@@ -287,8 +288,7 @@ const PropertyDetail = () => {
 
   const handleApply = () => {
     if (!isAuthenticated) {
-      // Show login modal instead of redirecting
-      setShowLoginModal(true);
+      setShowSignInModal(true);
       return;
     }
 
@@ -440,8 +440,6 @@ const PropertyDetail = () => {
                       </div>
                     </div>
                   </div>
-
-                 
                 </div>
 
                 {/* ── Property info card ── */}
@@ -631,13 +629,13 @@ const PropertyDetail = () => {
 
                 {/* ── CTA buttons ── */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <button 
-                    style={solidBtn} 
+                  <button
+                    style={solidBtn}
                     className="pd-action-btn"
                     onClick={handleApply}
                     disabled={!property}
                   >
-                    {isAuthenticated ? 'Apply Now' : 'Login to Apply'}
+                    {isAuthenticated ? 'Apply Now' : 'Apply Now'}
                   </button>
                   <button style={ghostBtn(t.gold)} className="pd-action-btn">
                     Schedule Viewing
@@ -653,6 +651,117 @@ const PropertyDetail = () => {
               </div>{/* /right sidebar */}
 
             </div>{/* /two-column grid */}
+
+            {/* ══ SIGN IN MODAL ══ */}
+            {showSignInModal && (
+              <div style={{
+                position: 'fixed', inset: 0,
+                background: 'rgba(0,0,0,0.85)',
+                backdropFilter: 'blur(12px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: 20, zIndex: 1000,
+              }}
+                onClick={(e) => { if (e.target === e.currentTarget) setShowSignInModal(false); }}
+              >
+                <div style={{
+                  ...card,
+                  padding: '36px 32px 28px',
+                  maxWidth: 380, width: '100%',
+                  position: 'relative',
+                  textAlign: 'center',
+                  overflow: 'visible',
+                }}>
+                  {/* Close button */}
+                  <button
+                    onClick={() => setShowSignInModal(false)}
+                    style={{
+                      position: 'absolute', top: 14, right: 14,
+                      background: 'none', border: 'none',
+                      color: t.muted, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: 4, borderRadius: 4,
+                      transition: 'color .2s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.color = t.cream)}
+                    onMouseLeave={e => (e.currentTarget.style.color = t.muted)}
+                  >
+                    <X size={18} />
+                  </button>
+
+                  {/* Shield icon */}
+                  <div style={{
+                    width: 60, height: 60, borderRadius: '50%',
+                    background: 'rgba(201,168,76,0.08)',
+                    border: `1px solid rgba(201,168,76,0.25)`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px',
+                    boxShadow: '0 0 30px rgba(201,168,76,0.1)',
+                  }}>
+                    <Shield size={26} style={{ color: t.gold }} />
+                  </div>
+
+                  {/* Heading */}
+                  <h3 style={{
+                    ...serif,
+                    fontSize: 24, fontWeight: 600,
+                    color: t.cream, margin: '0 0 10px',
+                    letterSpacing: '-0.01em',
+                  }}>
+                    Sign In Required
+                  </h3>
+
+                  {/* Description */}
+                  <p style={{
+                    ...body,
+                    fontSize: 13, color: t.muted,
+                    lineHeight: 1.75, margin: '0 0 26px',
+                  }}>
+                    You need to be signed in to apply for this property. Please log in or create a free account to proceed with your application.
+                  </p>
+
+                  {/* Divider */}
+                  <div style={{
+                    height: 1,
+                    background: t.border,
+                    margin: '0 0 22px',
+                  }} />
+
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <button
+                      onClick={() => navigate('/login', { state: { from: `/property/${id}` } })}
+                      style={solidBtn}
+                      className="pd-action-btn"
+                    >
+                      Sign In to My Account
+                    </button>
+                    <button
+                      onClick={() => navigate('/register', { state: { from: `/property/${id}` } })}
+                      style={ghostBtn(t.gold)}
+                      className="pd-action-btn"
+                    >
+                      Create a Free Account
+                    </button>
+                    <button
+                      onClick={() => setShowSignInModal(false)}
+                      style={{ ...ghostBtn(t.muted), marginTop: 2 }}
+                      className="pd-action-btn"
+                    >
+                      Maybe Later
+                    </button>
+                  </div>
+
+                  {/* Footer note */}
+                  <p style={{
+                    ...body,
+                    fontSize: 11, color: t.muted,
+                    marginTop: 16, lineHeight: 1.6,
+                  }}>
+                    After signing in, you'll be brought back to this property automatically.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* ══ QR MODAL ══ — rendered outside the grid so it overlays correctly */}
             {showQrModal && (
@@ -721,77 +830,6 @@ const PropertyDetail = () => {
                       className="pd-action-btn"
                     >
                       Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ══ LOGIN MODAL ══ — Login prompt for unauthenticated users */}
-            {showLoginModal && (
-              <div style={{
-                position: 'fixed', inset: 0,
-                background: 'rgba(0,0,0,0.8)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 9999, padding: 20,
-              }}>
-                <div style={{ ...card, padding: 32, maxWidth: 420, width: '100%', position: 'relative' }}>
-                  {/* Close */}
-                  <button
-                    onClick={() => setShowLoginModal(false)}
-                    style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: t.muted, cursor: 'pointer' }}
-                  >
-                    <X size={18} />
-                  </button>
-
-                  {/* Content */}
-                  <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                    <div style={{ 
-                      width: 60, height: 60, 
-                      margin: '0 auto 16px',
-                      background: `${t.gold}20`,
-                      borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}>
-                      <Shield size={28} style={{ color: t.gold }} />
-                    </div>
-                    <h3 style={{ ...serif, fontSize: 22, fontWeight: 600, color: t.cream, margin: '0 0 12px' }}>
-                      Sign In Required
-                    </h3>
-                    <p style={{ ...body, fontSize: 14, color: t.muted, lineHeight: 1.5, margin: 0 }}>
-                      You need to sign in to complete your property application. 
-                      Don't have an account? You can register as a tenant in seconds!
-                    </p>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <button
-                      onClick={() => {
-                        setShowLoginModal(false);
-                        navigate('/login', { state: { from: `/property/${id}` } });
-                      }}
-                      style={solidBtn}
-                      className="pd-action-btn"
-                    >
-                      Sign In
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowLoginModal(false);
-                        navigate('/register', { state: { from: `/property/${id}`, userType: 'tenant' } });
-                      }}
-                      style={ghostBtn(t.gold)}
-                      className="pd-action-btn"
-                    >
-                      Register as Tenant
-                    </button>
-                    <button
-                      onClick={() => setShowLoginModal(false)}
-                      style={{ ...ghostBtn(t.muted), flex: 1 }}
-                      className="pd-action-btn"
-                    >
-                      Maybe Later
                     </button>
                   </div>
                 </div>
