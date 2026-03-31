@@ -10,6 +10,7 @@ export interface Property {
   type: 'apartment' | 'house' | 'studio';
   furnished: boolean;
   images: string[];
+  amenities: string[];
   owner: Owner;
   dalali?: string; // Changed from Dalali object to string
   tracking_code?: string; // Added alternative field

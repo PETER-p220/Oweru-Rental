@@ -187,15 +187,50 @@ const PropertyDetail = () => {
     }
   };
 
-  const features = [
-    'Air Conditioning', '24/7 Security', 'Parking Space', 'Balcony',
-    'Kitchen Appliances', 'High-Speed Internet', 'Backup Generator', 'Water Storage',
-  ];
+  // Extract features from property data
+  const getFeatures = (property: Property | null): string[] => {
+    if (!property) return [];
+    
+    const features = [];
+    
+    // Basic features based on property type and attributes
+    if (property.bedrooms > 0) features.push(`${property.bedrooms} Bedroom${property.bedrooms > 1 ? 's' : ''}`);
+    if (property.bathrooms > 0) features.push(`${property.bathrooms} Bathroom${property.bathrooms > 1 ? 's' : ''}`);
+    if (property.area) features.push(`${property.area} sqm`);
+    if (property.type) features.push(property.type.charAt(0).toUpperCase() + property.type.slice(1));
+    if (property.furnished) features.push('Furnished');
+    
+    // Common features that might be stored in amenities
+    if (property.amenities && Array.isArray(property.amenities)) {
+      const commonFeatures = [
+        'Air Conditioning', 'Parking Space', 'Balcony', 'Kitchen Appliances', 
+        'High-Speed Internet', 'Backup Generator', 'Water Storage', '24/7 Security'
+      ];
+      
+      commonFeatures.forEach(feature => {
+        if (property.amenities.some(amenity => 
+          amenity.toLowerCase().includes(feature.toLowerCase()) ||
+          feature.toLowerCase().includes(amenity.toLowerCase())
+        )) {
+          features.push(feature);
+        }
+      });
+    }
+    
+    return features.length > 0 ? features : ['Standard Features'];
+  };
 
-  const amenities = [
-    'Gym Access', 'Swimming Pool', 'Children Playground', 'Community Center',
-    'Shopping Nearby', 'Public Transport Access',
-  ];
+  // Extract amenities from property data
+  const getAmenities = (property: Property | null): string[] => {
+    if (!property || !property.amenities || !Array.isArray(property.amenities)) {
+      return ['Basic Amenities'];
+    }
+    
+    return property.amenities.length > 0 ? property.amenities : ['Basic Amenities'];
+  };
+
+  const features = getFeatures(property);
+  const amenities = getAmenities(property);
 
   const generateQRCode = async () => {
     try {
