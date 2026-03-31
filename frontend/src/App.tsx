@@ -172,7 +172,8 @@ const AdminRoutes = () => (
         <Route path="" element={<AdminDashboard />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="properties" element={<PropertiesManagement />} />
-        <Route path="bnb-properties" element={<PropertiesManagement />} />
+        <Route path="bnb-properties" element={<BnbProperties />} />
+        <Route path="bnb-analytics" element={<BnbAnalytics />} />
         <Route path="transactions" element={<TransactionsManagement />} />
         <Route path="commission" element={<CommissionControl />} />
         <Route path="payments" element={<PaymentsManagement />} />

@@ -8,6 +8,8 @@ use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\User;
+use App\Models\BnbProperty;
+use App\Models\BnbBooking;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -15,6 +17,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
@@ -1134,6 +1137,200 @@ class AdminController extends Controller
             'actions' => [],
             'created_at' => $createdAt->toISOString(),
             'updated_at' => $createdAt->toISOString(),
-        ];
+        ]);
+    }
+
+    // ── Admin BNB Management Methods ─────────────────────────────────────────────────────
+
+    public function getAdminBnbProperties(Request $request): JsonResponse
+    {
+        $query = BnbProperty::with(['owner']);
+
+        // Apply filters
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%")
+                  ->orWhere('location', 'like', "%{$request->search}%");
+            });
+        }
+
+        if ($request->status && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->location) {
+            $query->where('location', 'like', "%{$request->location}%");
+        }
+
+        if ($request->min_price) {
+            $query->where('price', '>=', $request->min_price);
+        }
+
+        if ($request->max_price) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        if ($request->owner_id) {
+            $query->where('owner_id', $request->owner_id);
+        }
+
+        $properties = $query->orderByDesc('created_at')->paginate(20);
+
+        return response()->json([
+            'data' => $properties->items(),
+            'pagination' => [
+                'current_page' => $properties->currentPage(),
+                'last_page' => $properties->lastPage(),
+                'per_page' => $properties->perPage(),
+                'total' => $properties->total(),
+            ],
+        ]);
+    }
+
+    public function updateAdminBnbPropertyStatus(Request $request, BnbProperty $property): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => ['required', Rule::in(['active', 'inactive', 'suspended', 'pending'])],
+            'admin_notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $property->update([
+            'status' => $request->status,
+            'admin_notes' => $request->admin_notes,
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'BNB property status updated successfully',
+            'data' => $property->load('owner'),
+        ]);
+    }
+
+    public function getAdminBnbBookings(Request $request): JsonResponse
+    {
+        $query = BnbBooking::with(['property', 'property.owner', 'guest']);
+
+        // Apply filters
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('property', function ($subQuery) use ($request) {
+                        $subQuery->where('title', 'like', "%{$request->search}%");
+                    })
+                    ->orWhereHas('guest', function ($subQuery) use ($request) {
+                        $subQuery->where('first_name', 'like', "%{$request->search}%")
+                               ->orWhere('last_name', 'like', "%{$request->search}%")
+                               ->orWhere('email', 'like', "%{$request->search}%");
+                    });
+            });
+        }
+
+        if ($request->status && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->property_id) {
+            $query->where('property_id', $request->property_id);
+        }
+
+        if ($request->date_from) {
+            $query->where('check_in', '>=', $request->date_from);
+        }
+
+        if ($request->date_to) {
+            $query->where('check_out', '<=', $request->date_to);
+        }
+
+        $bookings = $query->orderByDesc('created_at')->paginate(20);
+
+        return response()->json([
+            'data' => $bookings->items(),
+            'pagination' => [
+                'current_page' => $bookings->currentPage(),
+                'last_page' => $bookings->lastPage(),
+                'per_page' => $bookings->perPage(),
+                'total' => $bookings->total(),
+            ],
+        ]);
+    }
+
+    public function getAdminBnbAnalytics(Request $request): JsonResponse
+    {
+        $dateRange = $request->get('date_range', '30d');
+        
+        // Calculate date range
+        $startDate = match($dateRange) {
+            '7d' => now()->subDays(7),
+            '30d' => now()->subDays(30),
+            '90d' => now()->subDays(90),
+            '1y' => now()->subYear(),
+            default => now()->subDays(30),
+        };
+
+        // Basic metrics
+        $totalProperties = BnbProperty::count();
+        $activeProperties = BnbProperty::where('status', 'active')->count();
+        $totalBookings = BnbBooking::where('created_at', '>=', $startDate)->count();
+        $completedBookings = BnbBooking::where('status', 'completed')
+                                     ->where('created_at', '>=', $startDate)
+                                     ->count();
+        $totalRevenue = BnbBooking::where('status', 'completed')
+                                  ->where('created_at', '>=', $startDate)
+                                  ->sum('total_amount');
+
+        // Monthly revenue trend
+        $monthlyRevenue = BnbBooking::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(total_amount) as revenue')
+            ->where('status', 'completed')
+            ->where('created_at', '>=', now()->subYear())
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('revenue', 'month')
+            ->toArray();
+
+        // Fill missing months with 0
+        $monthlyRevenueComplete = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->subMonths($i)->format('Y-m');
+            $monthlyRevenueComplete[] = $monthlyRevenue[$month] ?? 0;
+        }
+
+        // Top properties
+        $topProperties = BnbProperty::withCount(['bookings' => function ($query) use ($startDate) {
+                $query->where('created_at', '>=', $startDate);
+            }])
+            ->withSum(['bookings as revenue' => function ($query) use ($startDate) {
+                $query->where('status', 'completed')->where('created_at', '>=', $startDate);
+            }])
+            ->orderByDesc('bookings_count')
+            ->limit(10)
+            ->get()
+            ->map(function ($property) {
+                return [
+                    'id' => $property->id,
+                    'title' => $property->title,
+                    'bookings' => $property->bookings_count ?? 0,
+                    'revenue' => $property->revenue ?? 0,
+                    'rating' => 4.5, // Placeholder - would calculate from reviews
+                ];
+            });
+
+        return response()->json([
+            'totalRevenue' => $totalRevenue,
+            'totalBookings' => $totalBookings,
+            'completedBookings' => $completedBookings,
+            'totalProperties' => $totalProperties,
+            'activeProperties' => $activeProperties,
+            'occupancyRate' => $totalBookings > 0 ? round(($completedBookings / $totalBookings) * 100, 1) : 0,
+            'monthlyRevenue' => $monthlyRevenueComplete,
+            'topProperties' => $topProperties,
+            'dateRange' => $dateRange,
+        ]);
     }
 }

@@ -421,10 +421,36 @@ class Api {
     return this.request<any>('bnb/analytics');
   }
 
-  static async respondToReview(reviewId: number, response: string) {
-    return this.request<any>(`bnb/reviews/${reviewId}/respond`, {
-      method: 'POST',
-      body: JSON.stringify({ response }),
+  static async getAdminBnbAnalytics(dateRange?: string) {
+    const queryParams = dateRange ? `?date_range=${dateRange}` : '';
+    return this.request<any>(`admin/bnb/analytics${queryParams}`);
+  }
+
+  // ── Admin BNB Methods ─────────────────────────────────────────────────────
+
+  static async getAdminBnbProperties(filters?: {
+    search?: string; status?: string; location?: string;
+    min_price?: number; max_price?: number; owner_id?: number;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (filters?.search) queryParams.append('search', filters.search);
+    if (filters?.status) queryParams.append('status', filters.status);
+    if (filters?.location) queryParams.append('location', filters.location);
+    if (filters?.min_price) queryParams.append('min_price', filters.min_price.toString());
+    if (filters?.max_price) queryParams.append('max_price', filters.max_price.toString());
+    if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id.toString());
+    
+    const url = `admin/bnb/properties${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.request<any[]>(url);
+  }
+
+  static async updateAdminBnbPropertyStatus(propertyId: number, status: string, adminNotes?: string) {
+    return this.request<any>(`admin/bnb/properties/${propertyId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ 
+        status, 
+        admin_notes: adminNotes 
+      }),
     });
   }
 
@@ -454,33 +480,6 @@ class Api {
       method: 'POST',
       body: JSON.stringify(data),
     });
-  }
-
-  // ── Admin BNB Methods ─────────────────────────────────────────────────────
-
-  static async getAdminBnbProperties(filters?: {
-    search?: string; status?: string; owner_id?: number;
-  }) {
-    const params = new URLSearchParams(filters as any).toString();
-    return this.request<any[]>(`admin/bnb/properties${params ? `?${params}` : ''}`);
-  }
-
-  static async updateAdminBnbPropertyStatus(propertyId: number, status: string) {
-    return this.request<any>(`admin/bnb/properties/${propertyId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
-  }
-
-  static async getAdminBnbBookings(filters?: {
-    search?: string; status?: string; property_id?: number;
-  }) {
-    const params = new URLSearchParams(filters as any).toString();
-    return this.request<any[]>(`admin/bnb/bookings${params ? `?${params}` : ''}`);
-  }
-
-  static async getAdminBnbAnalytics() {
-    return this.request<any>('admin/bnb/analytics');
   }
 
   // ── Properties (public) ─────────────────────────────────────────────────────
