@@ -49,6 +49,10 @@ import PaymentsManagement from './pages/admin/PaymentsManagement';
 import ContractsManagement from './pages/admin/ContractsManagement';
 import VerificationManagement from './pages/admin/VerificationManagement';
 import AlertsManagement from './pages/admin/AlertsManagement';
+
+// BNB Owner pages
+import BnbDashboard from './pages/bnb/BnbDashboard';
+import BnbProperties from './pages/bnb/BnbProperties';
 import SystemSettings from './pages/admin/SystemSettings';
 
 // Agent pages
@@ -165,6 +169,7 @@ const AdminRoutes = () => (
         <Route path="" element={<AdminDashboard />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="properties" element={<PropertiesManagement />} />
+        <Route path="bnb-properties" element={<PropertiesManagement />} />
         <Route path="transactions" element={<TransactionsManagement />} />
         <Route path="commission" element={<CommissionControl />} />
         <Route path="payments" element={<PaymentsManagement />} />
@@ -172,6 +177,24 @@ const AdminRoutes = () => (
         <Route path="verification" element={<VerificationManagement />} />
         <Route path="alerts" element={<AlertsManagement />} />
         <Route path="settings" element={<SystemSettings />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </DashboardLayout>
+  </RouteGuard>
+);
+
+// BNB Owner routes
+const BnbOwnerRoutes = () => (
+  <RouteGuard requiredRole="bnb_owner">
+    <DashboardLayout title="Dashboard">
+      <Routes>
+        <Route path="" element={<BnbDashboard />} />
+        <Route path="bnb-properties" element={<BnbProperties />} />
+        <Route path="bnb-properties/add" element={<BnbProperties />} />
+        <Route path="bnb-bookings" element={<BnbDashboard />} />
+        <Route path="bnb-reviews" element={<BnbDashboard />} />
+        <Route path="bnb-analytics" element={<BnbDashboard />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </DashboardLayout>
@@ -195,6 +218,8 @@ const DashboardRedirect = () => {
       return <Navigate to="/dashboard/agent" replace />;
     case 'landlord':
       return <Navigate to="/dashboard/landlord" replace />;
+    case 'bnb_owner':
+      return <Navigate to="/dashboard/bnb_owner" replace />;
     default:
       return <Navigate to="/dashboard/tenant" replace />;
   }
@@ -216,6 +241,7 @@ function App() {
             <Route path="/dashboard/tenant/*" element={<TenantRoutes />} />
             <Route path="/dashboard/agent/*" element={<AgentRoutes />} />
             <Route path="/dashboard/landlord/*" element={<LandlordRoutes />} />
+            <Route path="/dashboard/bnb_owner/*" element={<BnbOwnerRoutes />} />
             
             {/* Test route outside RouteGuard */}
             <Route path="/test-edit" element={<EditPropertySimple />} />

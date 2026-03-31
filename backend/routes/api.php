@@ -10,6 +10,9 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\TenantController;
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\OwnerController;
+use App\Http\Controllers\Bnb\BnbPropertyController;
+use App\Http\Controllers\Bnb\BnbBookingController;
+use App\Http\Controllers\Bnb\BnbReviewController;
 
 // ── Public routes ─────────────────────────────────────────────────────────────
 Route::post('/register', [AuthController::class, 'register']);
@@ -226,5 +229,38 @@ Route::middleware('auth:sanctum')->group(function () {
         // Alerts
         Route::get('/admin/alerts',       [AdminController::class, 'getAlerts']);
         Route::get('/admin/alerts/stats', [AdminController::class, 'getAlertStats']);
+
+        // BNB Management
+        Route::get('/admin/bnb/properties',       [AdminController::class, 'getAdminBnbProperties']);
+        Route::patch('/admin/bnb/properties/{property}/status', [AdminController::class, 'updateAdminBnbPropertyStatus']);
+        Route::get('/admin/bnb/bookings',          [AdminController::class, 'getAdminBnbBookings']);
+        Route::get('/admin/bnb/analytics',         [AdminController::class, 'getAdminBnbAnalytics']);
     });
+
+    // ── BNB Owner routes ─────────────────────────────────────────────────────────────
+    Route::middleware(['auth:sanctum', 'role:bnb_owner'])->group(function () {
+        // Properties
+        Route::get('/bnb/properties',            [BnbPropertyController::class, 'index']);
+        Route::post('/bnb/properties',           [BnbPropertyController::class, 'store']);
+        Route::get('/bnb/properties/{property}', [BnbPropertyController::class, 'show']);
+        Route::put('/bnb/properties/{property}',  [BnbPropertyController::class, 'update']);
+        Route::delete('/bnb/properties/{property}', [BnbPropertyController::class, 'destroy']);
+        Route::get('/bnb/analytics',              [BnbPropertyController::class, 'analytics']);
+
+        // Bookings
+        Route::get('/bnb/bookings',              [BnbBookingController::class, 'index']);
+        Route::get('/bnb/bookings/{booking}',     [BnbBookingController::class, 'show']);
+        Route::patch('/bnb/bookings/{booking}/status', [BnbBookingController::class, 'updateStatus']);
+
+        // Reviews
+        Route::get('/bnb/reviews',               [BnbReviewController::class, 'index']);
+        Route::get('/bnb/reviews/{review}',        [BnbReviewController::class, 'show']);
+        Route::post('/bnb/reviews/{review}/respond', [BnbReviewController::class, 'respond']);
+    });
+
+    // ── Public BNB routes ─────────────────────────────────────────────────────────────
+    Route::get('/public/bnb/search',            [BnbPropertyController::class, 'search']);
+    Route::get('/public/bnb/properties/{property}', [BnbPropertyController::class, 'show']);
+    Route::post('/public/bnb/bookings',           [BnbBookingController::class, 'store']);
+    Route::post('/public/bnb/properties/{property}/reviews', [BnbReviewController::class, 'store']);
 });

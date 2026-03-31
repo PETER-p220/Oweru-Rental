@@ -113,6 +113,7 @@ const Register = () => {
     { value: 'tenant',   label: 'Tenant',   desc: 'Looking to rent' },
     { value: 'landlord', label: 'Landlord', desc: 'I own property' },
     { value: 'agent',    label: 'Agent',    desc: 'Real estate professional' },
+    { value: 'bnb_owner', label: 'BNB Owner', desc: 'I host BNB properties' },
   ];
 
   return (

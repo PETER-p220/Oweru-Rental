@@ -1,20 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-
-interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  userType: 'tenant' | 'landlord' | 'agent' | 'admin';
-  user_type?: string;
-  role?: string;
-  userRole?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { type User, TOKEN_KEY } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
@@ -32,19 +17,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const getStoredUser = (): User | null => {
   try {
     const raw = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem(TOKEN_KEY);
     if (raw && token) {
       return JSON.parse(raw) as User;
     }
   } catch {
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    localStorage.removeItem(TOKEN_KEY);
   }
   return null;
 };
 
 const hasValidSession = (): boolean => {
-  return !!(localStorage.getItem('user') && localStorage.getItem('token'));
+  return !!(localStorage.getItem('user') && localStorage.getItem(TOKEN_KEY));
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -57,7 +42,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     console.log('AuthContext - useEffect running');
     const raw = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem(TOKEN_KEY);
     console.log('AuthContext - Loading user from localStorage:', raw);
     console.log('AuthContext - Current token:', token);
     
@@ -74,7 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(null);
         setIsAuthenticated(false);
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        localStorage.removeItem(TOKEN_KEY);
       }
     } else {
       console.log('AuthContext - No user or token found in localStorage');
@@ -90,14 +75,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(userData);
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('token', token);
+    localStorage.setItem(TOKEN_KEY, token);
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    localStorage.removeItem(TOKEN_KEY);
   };
 
   const value: AuthContextType = {

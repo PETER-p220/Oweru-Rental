@@ -6,7 +6,8 @@ import {
   TrendingUp, DollarSign, Star, BarChart3, FileText, Plus, X,
   ChevronRight, QrCode, Link2, ShieldCheck, CreditCard, Wallet,
   Receipt, UserCheck, MessageSquare, AlertCircle, PieChart,
-  RefreshCw, Clock, BookOpen, Landmark, Eye,
+  RefreshCw, Clock, BookOpen, Landmark, Eye, Bed, Bath,
+  Calendar, MapPin, Hotel,
 } from 'lucide-react';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
@@ -15,7 +16,7 @@ interface DashboardLayoutProps {
   title?: string;
 }
 
-type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin';
+type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner';
 
 const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -80,12 +81,24 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
       { name: 'Users',              icon: Users,         href: 'users',               color: '#60a5fa' },
       { name: 'Properties',         icon: Building,      href: 'properties',          color: '#f59e0b' },
+      { name: 'BNB Properties',     icon: Hotel,         href: 'bnb-properties',      color: '#f472b6' },
       { name: 'Transactions',       icon: RefreshCw,     href: 'transactions',        color: '#6ee7b7' },
       { name: 'Commission',         icon: PieChart,      href: 'commission',          color: '#10b981' },
       { name: 'Payments',           icon: CreditCard,    href: 'payments',            color: '#f472b6' },
       { name: 'Contracts',          icon: BookOpen,      href: 'contracts',           color: '#a78bfa' },
       { name: 'Verification',       icon: ShieldCheck,   href: 'verification',        color: '#34d399' },
       { name: 'Alerts',             icon: AlertCircle,   href: 'alerts',              color: '#f87171' },
+      { name: 'Settings',           icon: Settings,      href: 'settings',            color: '#fb923c' },
+    ],
+
+    bnb_owner: [
+      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
+      { name: 'My BNB Properties',  icon: Hotel,         href: 'bnb-properties',       color: '#f472b6' },
+      { name: 'Add Property',       icon: Plus,          href: 'bnb-properties/add',   color: '#34d399' },
+      { name: 'Bookings',           icon: Calendar,      href: 'bnb-bookings',         color: '#60a5fa' },
+      { name: 'Reviews',            icon: Star,          href: 'bnb-reviews',          color: '#f59e0b' },
+      { name: 'Analytics',          icon: BarChart3,     href: 'bnb-analytics',        color: '#a78bfa' },
+      { name: 'Messages',           icon: MessageSquare, href: 'messages',            color: '#f87171' },
       { name: 'Settings',           icon: Settings,      href: 'settings',            color: '#fb923c' },
     ],
   };
@@ -95,6 +108,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     landlord: { label: 'Landlord', accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1507 0%,#1f1a0b 100%)', border: 'rgba(201,168,76,0.12)' },
     agent:    { label: 'Dalali',   accent: '#38bdf8', sidebarBg: 'linear-gradient(160deg,#05101a 0%,#0c1824 100%)', border: 'rgba(56,189,248,0.12)' },
     admin:    { label: 'Admin',    accent: '#f87171', sidebarBg: 'linear-gradient(160deg,#1a0505 0%,#1f0c0c 100%)', border: 'rgba(248,113,113,0.12)' },
+    bnb_owner: { label: 'BNB Owner', accent: '#f472b6', sidebarBg: 'linear-gradient(160deg,#2a0f1a 0%,#3f1425 100%)', border: 'rgba(244,114,182,0.12)' },
   };
 
   const cfg = roleConfig[userType] ?? roleConfig.tenant;
@@ -163,6 +177,12 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { label: 'Operations', items: ['Transactions','Commission','Payments','Contracts'] },
       { label: 'Monitoring', items: ['Alerts','Settings'] },
     ],
+    bnb_owner: [
+      { label: 'Properties', items: ['Overview','My BNB Properties','Add Property'] },
+      { label: 'Bookings',   items: ['Bookings','Reviews'] },
+      { label: 'Analytics',  items: ['Analytics','Messages'] },
+      { label: 'Settings',   items: ['Settings'] },
+    ],
   };
 
   const sections = sectionMap[userType] ?? sectionMap.tenant;
@@ -216,6 +236,16 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       secondaryIcon: AlertCircle,
       settings: getFullPath('settings'),
       settingsLabel: 'System Settings',
+    },
+    bnb_owner: {
+      primary: getFullPath('bnb-bookings'),
+      primaryLabel: 'Bookings',
+      primaryIcon: Calendar,
+      secondary: getFullPath('bnb-reviews'),
+      secondaryLabel: 'Reviews',
+      secondaryIcon: Star,
+      settings: getFullPath('settings'),
+      settingsLabel: 'Account Settings',
     },
   };
 

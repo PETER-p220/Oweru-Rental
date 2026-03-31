@@ -30,10 +30,13 @@ export interface User {
   lastName: string;
   email: string;
   phone: string;
-  userType: 'tenant' | 'landlord' | 'agent' | 'admin';
-  emailVerifiedAt?: string;
-  createdAt: string;
-  updatedAt: string;
+  userType: 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner';
+  user_type?: string;
+  role?: string;
+  userRole?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Property {
@@ -44,11 +47,44 @@ export interface Property {
   location: string;
   address: string;
   type: string;
+  property_type: 'rental' | 'bnb';
   bedrooms: number;
   bathrooms: number;
-  area: number;
+  amenities: string[];
   images: string[];
-  owner: { id: number; firstName: string; lastName: string };
+  owner_id: number;
+  status: 'available' | 'occupied' | 'maintenance';
+  created_at: string;
+  updated_at: string;
+  // BNB specific fields
+  bnb_details?: {
+    max_guests: number;
+    min_stay: number;
+    instant_book: boolean;
+    cancellation_policy: string;
+    house_rules: string[];
+    check_in_time: string;
+    check_out_time: string;
+    cleaning_fee: number;
+    service_fee: number;
+    security_deposit: number;
+    weekly_discount: number;
+    monthly_discount: number;
+    amenities_bnb: {
+      wifi: boolean;
+      kitchen: boolean;
+      parking: boolean;
+      pool: boolean;
+      gym: boolean;
+      ac: boolean;
+      heating: boolean;
+      workspace: boolean;
+      tv: boolean;
+      washer: boolean;
+    };
+    location_highlights: string[];
+    safety_items: string[];
+  };
   agent?: { id: number; firstName: string; lastName: string; commission: number };
   dalali?: string;
   tracking_code?: string;
@@ -56,6 +92,8 @@ export interface Property {
   available: boolean;
   createdAt: string;
   updatedAt: string;
+  // Relationships
+  owner?: { id: number; firstName: string; lastName: string; email: string; phone: string; userType: string };
 }
 
 export interface RegisterResponse {
@@ -334,6 +372,112 @@ class Api {
       method: 'PATCH',
       body: JSON.stringify({ status, reason }),
     });
+  }
+
+  // ── BNB Owner Methods ───────────────────────────────────────────────────────
+
+  static async getBnbProperties(filters?: {
+    search?: string; location?: string; max_guests?: number; min_price?: number; max_price?: number;
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any[]>(`bnb/properties${params ? `?${params}` : ''}`);
+  }
+
+  static async createBnbProperty(data: any) {
+    return this.request<any>('bnb/properties', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async updateBnbProperty(id: number, data: any) {
+    return this.request<any>(`bnb/properties/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async getBnbBookings(propertyId?: number) {
+    const url = propertyId ? `bnb/bookings?property_id=${propertyId}` : 'bnb/bookings';
+    return this.request<any[]>(url);
+  }
+
+  static async updateBnbBookingStatus(bookingId: number, status: string) {
+    return this.request<any>(`bnb/bookings/${bookingId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  static async getBnbAnalytics() {
+    return this.request<any>('bnb/analytics');
+  }
+
+  static async getBnbReviews(propertyId?: number) {
+    const url = propertyId ? `bnb/reviews?property_id=${propertyId}` : 'bnb/reviews';
+    return this.request<any[]>(url);
+  }
+
+  static async respondToReview(reviewId: number, response: string) {
+    return this.request<any>(`bnb/reviews/${reviewId}/respond`, {
+      method: 'POST',
+      body: JSON.stringify({ response }),
+    });
+  }
+
+  // ── Public BNB Methods ─────────────────────────────────────────────────────
+
+  static async searchBnbProperties(filters?: {
+    search?: string; location?: string; check_in?: string; check_out?: string; guests?: number;
+    min_price?: number; max_price?: number; property_type?: string; amenities?: string[];
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any[]>(`public/bnb/search${params ? `?${params}` : ''}`);
+  }
+
+  static async getBnbPropertyDetails(id: number) {
+    return this.request<any>(`public/bnb/properties/${id}`);
+  }
+
+  static async createBnbBooking(data: any) {
+    return this.request<any>('public/bnb/bookings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async submitBnbReview(propertyId: number, data: any) {
+    return this.request<any>(`public/bnb/properties/${propertyId}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ── Admin BNB Methods ─────────────────────────────────────────────────────
+
+  static async getAdminBnbProperties(filters?: {
+    search?: string; status?: string; owner_id?: number;
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any[]>(`admin/bnb/properties${params ? `?${params}` : ''}`);
+  }
+
+  static async updateAdminBnbPropertyStatus(propertyId: number, status: string) {
+    return this.request<any>(`admin/bnb/properties/${propertyId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  static async getAdminBnbBookings(filters?: {
+    search?: string; status?: string; property_id?: number;
+  }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any[]>(`admin/bnb/bookings${params ? `?${params}` : ''}`);
+  }
+
+  static async getAdminBnbAnalytics() {
+    return this.request<any>('admin/bnb/analytics');
   }
 
   // ── Properties (public) ─────────────────────────────────────────────────────

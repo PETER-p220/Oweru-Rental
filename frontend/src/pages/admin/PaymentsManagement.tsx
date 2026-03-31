@@ -61,7 +61,7 @@ const PaymentsManagement = () => {
     method: string;
     transaction_id: string;
     due_date: string;
-    paid_date: string;
+    paid_date: string | null;
     created_at: string;
     updated_at: string;
     tenant?: { 
@@ -87,7 +87,7 @@ const PaymentsManagement = () => {
     method: string;
     transaction_id: string;
     due_date: string;
-    paid_date: string;
+    paid_date: string | null;
     created_at: string;
     updated_at: string;
     tenant?: { 

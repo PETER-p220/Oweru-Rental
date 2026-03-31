@@ -111,4 +111,30 @@ class User extends Authenticatable
     {
         return $this->user_type === 'agent';
     }
+
+    public function isBnbOwner(): bool
+    {
+        return $this->user_type === 'bnb_owner';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->user_type === 'admin';
+    }
+
+    // BNB Owner relationships
+    public function bnbProperties(): HasMany
+    {
+        return $this->hasMany(BnbProperty::class, 'owner_id');
+    }
+
+    public function bnbBookings(): HasMany
+    {
+        return $this->hasMany(BnbBooking::class, 'guest_id');
+    }
+
+    public function bnbReviews(): HasMany
+    {
+        return $this->hasMany(BnbReview::class, 'guest_id');
+    }
 }
