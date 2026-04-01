@@ -792,7 +792,471 @@ const BnbProperties = () => {
           </div>
         </div>
       )}
+      
+      {/* Add Property Modal */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: t.dark2,
+            borderRadius: 16,
+            padding: 32,
+            maxWidth: 800,
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            width: '90%',
+            border: `1px solid ${t.border}`,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ ...serif, fontSize: 24, color: t.gold, margin: 0 }}>
+                Add New BNB Property
+              </h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                style={{ ...button, backgroundColor: 'transparent', color: t.muted, padding: 8 }}
+              >
+                <XCircle size={20} />
+              </button>
+            </div>
+
+            <AddPropertyForm 
+              onClose={() => setShowAddModal(false)}
+              onSuccess={() => {
+                setShowAddModal(false);
+                loadProperties();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
+  );
+};
+
+// Add Property Form Component
+const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    price: '',
+    location: '',
+    address: '',
+    type: 'apartment',
+    bedrooms: '1',
+    bathrooms: '1',
+    max_guests: '2',
+    min_stay: '1',
+    check_in_time: '15:00',
+    check_out_time: '11:00',
+    instant_book: false,
+    amenities: [] as string[],
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrors({});
+
+    try {
+      // Validate required fields
+      const newErrors: Record<string, string> = {};
+      if (!formData.title.trim()) newErrors.title = 'Title is required';
+      if (!formData.description.trim()) newErrors.description = 'Description is required';
+      if (!formData.price || parseFloat(formData.price) <= 0) newErrors.price = 'Valid price is required';
+      if (!formData.location.trim()) newErrors.location = 'Location is required';
+      if (!formData.address.trim()) newErrors.address = 'Address is required';
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+
+      // Prepare data for API
+      const propertyData = {
+        title: formData.title,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        location: formData.location,
+        address: formData.address,
+        type: formData.type,
+        bedrooms: parseInt(formData.bedrooms),
+        bathrooms: parseInt(formData.bathrooms),
+        max_guests: parseInt(formData.max_guests),
+        min_stay: parseInt(formData.min_stay),
+        check_in_time: formData.check_in_time,
+        check_out_time: formData.check_out_time,
+        instant_book: formData.instant_book,
+        amenities: formData.amenities,
+      };
+
+      await Api.createBnbProperty(propertyData);
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error creating property:', error);
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+      } else {
+        setErrors({ submit: 'Failed to create property. Please try again.' });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const amenityOptions = [
+    'WiFi', 'Kitchen', 'Parking', 'Air Conditioning', 'Heating', 'Washer', 'Dryer',
+    'TV', 'Workspace', 'Pool', 'Gym', 'Elevator', 'Pet Friendly', 'Smoking Allowed'
+  ];
+
+  return (
+    <form onSubmit={handleSubmit} style={{ ...body, color: t.cream }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 20 }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Property Title *
+          </label>
+          <input
+            type="text"
+            value={formData.title}
+            onChange={(e) => handleInputChange('title', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${errors.title ? t.red : t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+            placeholder="e.g., Luxury Beach Villa"
+          />
+          {errors.title && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.title}</div>}
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Price per Night (TZS) *
+          </label>
+          <input
+            type="number"
+            value={formData.price}
+            onChange={(e) => handleInputChange('price', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${errors.price ? t.red : t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+            placeholder="50000"
+          />
+          {errors.price && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.price}</div>}
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Location *
+          </label>
+          <input
+            type="text"
+            value={formData.location}
+            onChange={(e) => handleInputChange('location', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${errors.location ? t.red : t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+            placeholder="e.g., Dar es Salaam, Tanzania"
+          />
+          {errors.location && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.location}</div>}
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Property Type
+          </label>
+          <select
+            value={formData.type}
+            onChange={(e) => handleInputChange('type', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+          >
+            <option value="apartment">Apartment</option>
+            <option value="house">House</option>
+            <option value="villa">Villa</option>
+            <option value="studio">Studio</option>
+            <option value="condo">Condo</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+          Address *
+        </label>
+        <input
+          type="text"
+          value={formData.address}
+          onChange={(e) => handleInputChange('address', e.target.value)}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: t.dark3,
+            border: `1px solid ${errors.address ? t.red : t.border}`,
+            borderRadius: 8,
+            color: t.cream,
+            fontSize: 14,
+          }}
+          placeholder="Full property address"
+        />
+        {errors.address && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.address}</div>}
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+          Description *
+        </label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => handleInputChange('description', e.target.value)}
+          rows={4}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: t.dark3,
+            border: `1px solid ${errors.description ? t.red : t.border}`,
+            borderRadius: 8,
+            color: t.cream,
+            fontSize: 14,
+            resize: 'vertical',
+          }}
+          placeholder="Describe your property..."
+        />
+        {errors.description && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.description}</div>}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 20 }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Bedrooms
+          </label>
+          <input
+            type="number"
+            min="0"
+            value={formData.bedrooms}
+            onChange={(e) => handleInputChange('bedrooms', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Bathrooms
+          </label>
+          <input
+            type="number"
+            min="0"
+            value={formData.bathrooms}
+            onChange={(e) => handleInputChange('bathrooms', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Max Guests
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={formData.max_guests}
+            onChange={(e) => handleInputChange('max_guests', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Min Stay (nights)
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={formData.min_stay}
+            onChange={(e) => handleInputChange('min_stay', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 20 }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Check-in Time
+          </label>
+          <input
+            type="time"
+            value={formData.check_in_time}
+            onChange={(e) => handleInputChange('check_in_time', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+            Check-out Time
+          </label>
+          <input
+            type="time"
+            value={formData.check_out_time}
+            onChange={(e) => handleInputChange('check_out_time', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: t.dark3,
+              border: `1px solid ${t.border}`,
+              borderRadius: 8,
+              color: t.cream,
+              fontSize: 14,
+            }}
+          />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+          Amenities
+        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {amenityOptions.map((amenity) => (
+            <label key={amenity} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={formData.amenities.includes(amenity)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    handleInputChange('amenities', [...formData.amenities, amenity]);
+                  } else {
+                    handleInputChange('amenities', formData.amenities.filter(a => a !== amenity));
+                  }
+                }}
+                style={{ accentColor: t.gold }}
+              />
+              <span style={{ fontSize: 14 }}>{amenity}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+        <input
+          type="checkbox"
+          id="instant_book"
+          checked={formData.instant_book}
+          onChange={(e) => handleInputChange('instant_book', e.target.checked)}
+          style={{ accentColor: t.gold, marginRight: 8 }}
+        />
+        <label htmlFor="instant_book" style={{ fontSize: 14, cursor: 'pointer' }}>
+          Enable Instant Booking
+        </label>
+      </div>
+
+      {errors.submit && (
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: `1px solid ${t.red}`, borderRadius: 8, padding: 12, marginBottom: 20 }}>
+          <div style={{ color: t.red, fontSize: 14 }}>{errors.submit}</div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{ ...button, backgroundColor: 'transparent', border: `1px solid ${t.border}`, color: t.cream }}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{ ...button, backgroundColor: t.gold, color: t.dark, opacity: loading ? 0.7 : 1 }}
+        >
+          {loading ? 'Creating...' : 'Create Property'}
+        </button>
+      </div>
+    </form>
   );
 };
 
