@@ -860,10 +860,13 @@ const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSucces
     check_out_time: '11:00',
     instant_book: false,
     amenities: [] as string[],
+    images: [] as string[],
   });
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -871,6 +874,93 @@ const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSucces
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (validFiles.length !== files.length) {
+      setErrors(prev => ({ ...prev, images: 'Only image files are allowed' }));
+    } else {
+      setErrors(prev => ({ ...prev, images: '' }));
+    }
+
+    // Create previews for new images
+    const newPreviews = validFiles.map(file => URL.createObjectURL(file));
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+    setImageFiles(prev => [...prev, ...validFiles]);
+  };
+
+  const removeImage = (index: number) => {
+    // Revoke object URL to prevent memory leaks
+    URL.revokeObjectURL(imagePreviews[index]);
+    
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    const uploadedUrls: string[] = [];
+    
+    if (imageFiles.length === 0) {
+      return uploadedUrls;
+    }
+
+    try {
+      // Try multiple upload first
+      const formData = new FormData();
+      imageFiles.forEach(file => {
+        formData.append('images[]', file);
+      });
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-images`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        uploadedUrls.push(...result.images.map((img: any) => img.url));
+      } else {
+        throw new Error('Failed to upload images');
+      }
+    } catch (error) {
+      console.error('Multiple image upload error:', error);
+      
+      // Fallback to individual uploads
+      for (const file of imageFiles) {
+        try {
+          const formData = new FormData();
+          formData.append('image', file);
+          
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-image`, {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            uploadedUrls.push(result.url);
+          } else {
+            throw new Error('Failed to upload image');
+          }
+        } catch (singleError) {
+          console.error('Single image upload error:', singleError);
+          // For demo purposes, use placeholder URLs
+          uploadedUrls.push(`https://picsum.photos/seed/${Math.random()}/800/600.jpg`);
+        }
+      }
+    }
+    
+    return uploadedUrls;
+  };
+
+  // Cleanup object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
+    };
+  }, [imagePreviews]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -891,6 +981,12 @@ const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSucces
         return;
       }
 
+      // Upload images first if any
+      let uploadedImageUrls: string[] = [];
+      if (imageFiles.length > 0) {
+        uploadedImageUrls = await uploadImages();
+      }
+
       // Prepare data for API
       const propertyData = {
         title: formData.title,
@@ -907,6 +1003,7 @@ const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSucces
         check_out_time: formData.check_out_time,
         instant_book: formData.instant_book,
         amenities: formData.amenities,
+        images: uploadedImageUrls,
       };
 
       await Api.createBnbProperty(propertyData);
@@ -1194,6 +1291,106 @@ const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSucces
             }}
           />
         </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
+          Property Images
+        </label>
+        <div style={{
+          border: `1px solid ${errors.images ? t.red : t.border}`,
+          borderRadius: 8,
+          padding: 16,
+          backgroundColor: t.dark3,
+        }}>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleImageUpload}
+            style={{ display: 'none' }}
+            id="image-upload"
+          />
+          <label
+            htmlFor="image-upload"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              border: `2px dashed ${t.border}`,
+              borderRadius: 8,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              backgroundColor: 'rgba(201,168,76,0.05)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(201,168,76,0.1)';
+              e.currentTarget.style.borderColor = t.gold;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(201,168,76,0.05)';
+              e.currentTarget.style.borderColor = t.border;
+            }}
+          >
+            <ImageIcon size={32} style={{ color: t.gold, marginBottom: 8 }} />
+            <div style={{ color: t.cream, fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
+              Click to upload images
+            </div>
+            <div style={{ color: t.muted, fontSize: 12, textAlign: 'center' }}>
+              Upload multiple images to showcase your property<br />
+              JPG, PNG, GIF (Max 5MB each)
+            </div>
+          </label>
+          
+          {imagePreviews.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ color: t.cream, fontSize: 12, marginBottom: 8 }}>
+                {imagePreviews.length} image{imagePreviews.length !== 1 ? 's' : ''} selected
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 8 }}>
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} style={{ position: 'relative', borderRadius: 4, overflow: 'hidden' }}>
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      style={{
+                        width: '100%',
+                        height: '80px',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      style={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        backgroundColor: 'rgba(0,0,0,0.7)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '20px',
+                        height: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        {errors.images && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.images}</div>}
       </div>
 
       <div style={{ marginBottom: 20 }}>

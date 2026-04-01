@@ -263,4 +263,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/public/bnb/properties/{property}', [BnbPropertyController::class, 'show']);
     Route::post('/public/bnb/bookings',           [BnbBookingController::class, 'store']);
     Route::post('/public/bnb/properties/{property}/reviews', [BnbReviewController::class, 'store']);
+    
+    // ── Image Upload routes ───────────────────────────────────────────────────────
+    Route::post('/upload-image',                [ImageUploadController::class, 'upload']);
+    Route::post('/upload-images',               [ImageUploadController::class, 'uploadMultiple']);
+    Route::delete('/delete-image',               [ImageUploadController::class, 'delete']);
 });

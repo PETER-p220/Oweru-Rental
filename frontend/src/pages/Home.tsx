@@ -17,7 +17,10 @@ const getImage = (property: any): string => {
 const Home = () => {
   const [properties, setProperties] = useState<any[]>([]);
   const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
+  const [bnbProperties, setBnbProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [stats, setStats] = useState({
     totalProperties: 0,
     totalUsers: 0,
@@ -28,8 +31,42 @@ const Home = () => {
   // Load properties on component mount
   useEffect(() => {
     loadProperties();
+    loadBnbProperties();
     loadStats();
   }, []);
+
+  const loadBnbProperties = async () => {
+    try {
+      const response = await Api.searchBnbProperties();
+      console.log('BNB API Response:', response); // Debug log
+      
+      // Handle different response structures
+      let bnbData = [];
+      if (Array.isArray(response)) {
+        // Response is directly an array
+        console.log('Response is directly an array');
+        bnbData = response;
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        // Response is an object with data property
+        const responseObject = response as any;
+        if (Array.isArray(responseObject.data)) {
+          console.log('Response has data property that is an array');
+          bnbData = responseObject.data;
+        } else if (responseObject.data && typeof responseObject.data === 'object' && 'data' in responseObject.data) {
+          console.log('Response has nested data structure');
+          bnbData = responseObject.data.data;
+        }
+      } else {
+        console.log('Unexpected response structure:', response);
+      }
+      
+      console.log('Final BNB data:', bnbData);
+      setBnbProperties(bnbData.slice(0, 6)); // Show first 6 BNB properties
+    } catch (error) {
+      console.error('Failed to load BNB properties:', error);
+      setBnbProperties([]);
+    }
+  };
 
   const loadProperties = async () => {
     try {
@@ -1069,6 +1106,167 @@ const Home = () => {
         </div>
       </section>
 
+      {/* BNB Properties */}
+      <section style={{ background: 'var(--dark)' }}>
+        <div className="section">
+          <div className="section-header">
+            <div>
+              <div className="section-eyebrow">Vacation Rentals</div>
+              <h2 className="section-title">
+                Premium<br />
+                <em>BNB Properties</em>
+              </h2>
+            </div>
+            <p className="section-desc">
+              Discover our handpicked selection of short-term rentals and vacation properties. 
+              Perfect for getaways, business trips, or extended stays.
+            </p>
+          </div>
+
+          {bnbProperties.length > 0 ? (
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+              gap: '24px',
+              marginBottom: '40px'
+            }}>
+              {bnbProperties.map((property) => (
+                <div key={property.id} style={{
+                  background: 'var(--dark-2)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  border: '1px solid rgba(201,168,76,0.1)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}>
+                  <div style={{ position: 'relative' }}>
+                    <img 
+                      src={getImage(property)} 
+                      alt={property.title}
+                      style={{ 
+                        width: '100%', 
+                        height: '200px', 
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      background: 'rgba(0,0,0,0.7)',
+                      color: 'white',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500'
+                    }}>
+                      {property.type}
+                    </div>
+                  </div>
+                  
+                  <div style={{ padding: '20px' }}>
+                    <h3 style={{ 
+                      color: 'var(--cream)', 
+                      fontSize: '18px', 
+                      fontWeight: '600',
+                      marginBottom: '8px',
+                      lineHeight: '1.3'
+                    }}>
+                      {property.title}
+                    </h3>
+                    
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px',
+                      marginBottom: '12px',
+                      color: 'var(--muted)',
+                      fontSize: '14px'
+                    }}>
+                      <MapPin size={14} />
+                      {property.location}
+                    </div>
+
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '16px',
+                      marginBottom: '16px',
+                      fontSize: '13px',
+                      color: 'var(--muted)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Bed size={14} />
+                        {property.bedrooms} beds
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Bath size={14} />
+                        {property.bathrooms} baths
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Users size={14} />
+                        {property.max_guests} guests
+                      </div>
+                    </div>
+
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{ 
+                        fontSize: '20px', 
+                        fontWeight: '700', 
+                        color: 'var(--gold)' 
+                      }}>
+                        {formatPrice(property.price)}
+                        <span style={{ 
+                          fontSize: '14px', 
+                          color: 'var(--muted)', 
+                          fontWeight: '400',
+                          marginLeft: '4px'
+                        }}>
+                          /night
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedProperty(property);
+                          setShowBookingModal(true);
+                        }}
+                        style={{
+                          background: 'var(--gold)',
+                          color: 'var(--dark)',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        Book Now
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--muted)' }}>
+              <Building size={48} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
+              <h3 style={{ color: 'var(--cream)', fontSize: '18px', marginBottom: '8px' }}>
+                No BNB properties available
+              </h3>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
+                Check back later for vacation rentals or browse all properties.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Features */}
       <section style={{ background: 'var(--dark)' }}>
         <div className="section">
@@ -1242,6 +1440,67 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Booking Modal */}
+      {showBookingModal && selectedProperty && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            background: 'var(--dark-2)',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            border: '1px solid rgba(201,168,76,0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ margin: 0, color: 'var(--cream)', fontSize: '24px' }}>
+                  Book {selectedProperty.title}
+                </h2>
+                <p style={{ margin: '8px 0 0', color: 'var(--muted)', fontSize: '14px' }}>
+                  {selectedProperty.location} • {formatPrice(selectedProperty.price)}/night
+                </p>
+              </div>
+              <button
+                onClick={() => setShowBookingModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--muted)',
+                  cursor: 'pointer',
+                  fontSize: '28px',
+                  padding: 0,
+                  lineHeight: 1
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <BookingForm 
+              property={selectedProperty}
+              onClose={() => setShowBookingModal(false)}
+              onSuccess={() => {
+                setShowBookingModal(false);
+                alert('Booking request submitted successfully! The property owner will contact you soon.');
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Footer bar */}
       <footer style={{ borderTop: '1px solid var(--border)' }}>
         <div className="footer-bar">
@@ -1257,6 +1516,282 @@ const Home = () => {
         </div>
       </footer>
     </div>
+  );
+};
+
+// Booking Form Component
+const BookingForm = ({ property, onClose, onSuccess }: { 
+  property: any; 
+  onClose: () => void; 
+  onSuccess: () => void; 
+}) => {
+  const [formData, setFormData] = useState({
+    guest_name: '',
+    guest_email: '',
+    check_in: '',
+    check_out: '',
+    guest_count: '1',
+    special_requests: '',
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrors({});
+
+    try {
+      // Validate required fields
+      const newErrors: Record<string, string> = {};
+      if (!formData.guest_name.trim()) newErrors.guest_name = 'Guest name is required';
+      if (!formData.guest_email.trim()) newErrors.guest_email = 'Guest email is required';
+      if (!formData.check_in) newErrors.check_in = 'Check-in date is required';
+      if (!formData.check_out) newErrors.check_out = 'Check-out date is required';
+      if (!formData.guest_count || parseInt(formData.guest_count) < 1) {
+        newErrors.guest_count = 'Valid guest count is required';
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (formData.guest_email && !emailRegex.test(formData.guest_email)) {
+        newErrors.guest_email = 'Valid email is required';
+      }
+
+      // Validate dates
+      if (formData.check_in && formData.check_out) {
+        const checkInDate = new Date(formData.check_in);
+        const checkOutDate = new Date(formData.check_out);
+        if (checkOutDate <= checkInDate) {
+          newErrors.check_out = 'Check-out date must be after check-in date';
+        }
+      }
+
+      // Validate guest count against property capacity
+      if (formData.guest_count && parseInt(formData.guest_count) > property.max_guests) {
+        newErrors.guest_count = `Maximum ${property.max_guests} guests allowed`;
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+
+      // Prepare data for API
+      const bookingData = {
+        property_id: property.id,
+        guest_name: formData.guest_name,
+        guest_email: formData.guest_email,
+        check_in: formData.check_in,
+        check_out: formData.check_out,
+        guest_count: parseInt(formData.guest_count),
+        special_requests: formData.special_requests || null,
+      };
+
+      await Api.createBnbBooking(bookingData);
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error creating booking:', error);
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+      } else {
+        setErrors({ submit: 'Failed to create booking. Please try again.' });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ color: 'var(--cream)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '16px' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Your Name *
+          </label>
+          <input
+            type="text"
+            value={formData.guest_name}
+            onChange={(e) => handleInputChange('guest_name', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.guest_name ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+            placeholder="John Doe"
+          />
+          {errors.guest_name && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.guest_name}</div>}
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Your Email *
+          </label>
+          <input
+            type="email"
+            value={formData.guest_email}
+            onChange={(e) => handleInputChange('guest_email', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.guest_email ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+            placeholder="john@example.com"
+          />
+          {errors.guest_email && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.guest_email}</div>}
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Number of Guests *
+          </label>
+          <input
+            type="number"
+            min="1"
+            max={property.max_guests}
+            value={formData.guest_count}
+            onChange={(e) => handleInputChange('guest_count', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.guest_count ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+          />
+          {errors.guest_count && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.guest_count}</div>}
+          <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>
+            Max {property.max_guests} guests allowed
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Check-in Date *
+          </label>
+          <input
+            type="date"
+            value={formData.check_in}
+            onChange={(e) => handleInputChange('check_in', e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.check_in ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+          />
+          {errors.check_in && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.check_in}</div>}
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Check-out Date *
+          </label>
+          <input
+            type="date"
+            value={formData.check_out}
+            onChange={(e) => handleInputChange('check_out', e.target.value)}
+            min={formData.check_in || new Date().toISOString().split('T')[0]}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.check_out ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+          />
+          {errors.check_out && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.check_out}</div>}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+          Special Requests
+        </label>
+        <textarea
+          value={formData.special_requests}
+          onChange={(e) => handleInputChange('special_requests', e.target.value)}
+          rows={3}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: 'var(--dark)',
+            border: '1px solid rgba(201,168,76,0.2)',
+            borderRadius: '8px',
+            color: 'var(--cream)',
+            fontSize: '14px',
+            resize: 'vertical',
+          }}
+          placeholder="Any special requests or notes..."
+        />
+      </div>
+
+      {errors.submit && (
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
+          <div style={{ color: '#ef4444', fontSize: '14px' }}>{errors.submit}</div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            padding: '12px 20px',
+            backgroundColor: 'transparent',
+            border: '1px solid rgba(201,168,76,0.3)',
+            borderRadius: '8px',
+            color: 'var(--cream)',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            padding: '12px 20px',
+            backgroundColor: 'var(--gold)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'var(--dark)',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1,
+          }}
+        >
+          {loading ? 'Submitting...' : 'Submit Booking Request'}
+        </button>
+      </div>
+    </form>
   );
 };
 
