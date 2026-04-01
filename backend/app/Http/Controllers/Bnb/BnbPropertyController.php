@@ -146,10 +146,17 @@ class BnbPropertyController extends Controller
         // Handle image uploads
         if ($request->has('images')) {
             $images = [];
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('bnb-properties', 'public');
-                $images[] = Storage::url($path);
+            $uploadedImages = $request->file('images');
+            
+            if (is_array($uploadedImages)) {
+                foreach ($uploadedImages as $image) {
+                    if ($image && $image->isValid()) {
+                        $path = $image->store('bnb-properties', 'public');
+                        $images[] = Storage::url($path);
+                    }
+                }
             }
+            
             $property->images = $images;
         }
 
