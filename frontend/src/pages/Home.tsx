@@ -1592,11 +1592,10 @@ const BookingForm = ({ property, onClose, onSuccess }: {
       // Prepare data for API
       const bookingData = {
         property_id: property.id,
-        guest_name: formData.guest_name,
         guest_email: formData.guest_email,
         check_in: formData.check_in,
         check_out: formData.check_out,
-        guest_count: parseInt(formData.guest_count),
+        guests: parseInt(formData.guest_count),
         special_requests: formData.special_requests || null,
       };
 
