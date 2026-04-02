@@ -39,6 +39,11 @@ class ImageUploadController extends Controller
             // Get the public URL
             $url = Storage::url($path);
             
+            // Ensure full URL
+            if (!str_starts_with($url, 'http')) {
+                $url = config('app.url') . $url;
+            }
+            
             return response()->json([
                 'message' => 'Image uploaded successfully',
                 'url' => $url,
@@ -79,6 +84,11 @@ class ImageUploadController extends Controller
                 $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
                 $path = $image->storeAs('bnb-properties', $filename, 'public');
                 $url = Storage::url($path);
+                
+                // Ensure full URL
+                if (!str_starts_with($url, 'http')) {
+                    $url = config('app.url') . $url;
+                }
                 
                 $uploadedImages[] = [
                     'url' => $url,
