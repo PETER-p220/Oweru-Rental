@@ -143,21 +143,9 @@ class BnbPropertyController extends Controller
             'status' => 'available',
         ]);
 
-        // Handle image uploads
-        if ($request->has('images')) {
-            $images = [];
-            $uploadedImages = $request->file('images');
-            
-            if (is_array($uploadedImages)) {
-                foreach ($uploadedImages as $image) {
-                    if ($image && $image->isValid()) {
-                        $path = $image->store('bnb-properties', 'public');
-                        $images[] = Storage::url($path);
-                    }
-                }
-            }
-            
-            $property->images = $images;
+        // Handle image URLs (already uploaded via ImageUploadController)
+        if ($request->has('images') && is_array($request->images)) {
+            $property->images = $request->images;
         }
 
         $property->save();
@@ -299,5 +287,44 @@ class BnbPropertyController extends Controller
                 'averageRating' => round($averageRating, 2),
             ],
         ]);
+    }
+
+    /**
+     * Search BNB properties for public display
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $query = BnbProperty::with(['owner'])
+            ->where('status', 'available')
+            ->orderBy('created_at', 'desc');
+
+        // Apply filters if provided
+        if ($request->has('location')) {
+            $query->where('location', 'like', '%' . $request->location . '%');
+        }
+
+        if ($request->has('min_price')) {
+            $query->where('price', '>=', $request->min_price);
+        }
+
+        if ($request->has('max_price')) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->has('max_guests')) {
+            $query->where('max_guests', '>=', $request->max_guests);
+        }
+
+        $properties = $query->get();
+        
+        // Debug logging
+        \Log::info('BNB Search Query Count: ' . $properties->count());
+        \Log::info('BNB Search Results: ' . json_encode($properties));
+
+        return response()->json($properties);
     }
 }

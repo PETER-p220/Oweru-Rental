@@ -39,6 +39,8 @@ const Home = () => {
     try {
       const response = await Api.searchBnbProperties();
       console.log('BNB API Response:', response); // Debug log
+      console.log('Response type:', typeof response);
+      console.log('Is array?', Array.isArray(response));
       
       // Handle different response structures
       let bnbData = [];
@@ -49,6 +51,7 @@ const Home = () => {
       } else if (response && typeof response === 'object' && 'data' in response) {
         // Response is an object with data property
         const responseObject = response as any;
+        console.log('Response object with data property:', responseObject);
         if (Array.isArray(responseObject.data)) {
           console.log('Response has data property that is an array');
           bnbData = responseObject.data;
@@ -61,6 +64,7 @@ const Home = () => {
       }
       
       console.log('Final BNB data:', bnbData);
+      console.log('BNB data length:', bnbData.length);
       setBnbProperties(bnbData.slice(0, 6)); // Show first 6 BNB properties
     } catch (error) {
       console.error('Failed to load BNB properties:', error);
