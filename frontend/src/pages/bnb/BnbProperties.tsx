@@ -327,7 +327,10 @@ const BnbProperties = () => {
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              console.log('Add Property button clicked');
+              setShowAddModal(true);
+            }}
             style={{ ...button, backgroundColor: t.gold, color: t.dark }}
           >
             <Plus size={16} />
