@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\OwnerController;
 use App\Http\Controllers\Bnb\BnbPropertyController;
 use App\Http\Controllers\Bnb\BnbBookingController;
 use App\Http\Controllers\Bnb\BnbReviewController;
+use App\Http\Controllers\Api\ImageUploadController;
 
 // ── Public routes ─────────────────────────────────────────────────────────────
 Route::post('/register', [AuthController::class, 'register']);
