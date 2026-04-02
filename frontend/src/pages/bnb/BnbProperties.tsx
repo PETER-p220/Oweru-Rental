@@ -910,7 +910,7 @@ const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSucces
     }
 
     try {
-      // Try multiple upload first
+      // Try multiple upload first using authenticated API
       const formData = new FormData();
       imageFiles.forEach(file => {
         formData.append('images[]', file);
@@ -918,6 +918,10 @@ const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSucces
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-images`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/json',
+        },
         body: formData,
       });
 
@@ -938,6 +942,10 @@ const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSucces
           
           const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-image`, {
             method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Accept': 'application/json',
+            },
             body: formData,
           });
           
