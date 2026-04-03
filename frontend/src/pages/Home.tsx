@@ -43,6 +43,43 @@ const Home = () => {
     try {
       const res = await Api.getSavedProperties();
       const saved = new Set((Array.isArray(res.data) ? res.data : []).map((item: any) => item.property?.id || item.id));
+      const handleSaveProperty = async (propertyId: number) => {
+        try {
+          console.log('Attempting to save property:', propertyId);
+          console.log('Current saved properties:', Array.from(savedProperties));
+          
+          if (savedProperties.has(propertyId)) {
+            console.log('Unsaving property:', propertyId);
+            try {
+              await Api.unsaveProperty(propertyId);
+            } catch (authError) {
+              console.log('Auth error, trying public unsave:', authError);
+              await Api.publicUnsaveProperty(propertyId);
+            }
+            setSavedProperties(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(propertyId);
+              console.log('New saved properties after unsaving:', Array.from(newSet));
+              return newSet;
+            });
+          } else {
+            console.log('Saving property:', propertyId);
+            try {
+              await Api.saveProperty(propertyId);
+            } catch (authError) {
+              console.log('Auth error, trying public save:', authError);
+              await Api.publicSaveProperty(propertyId);
+            }
+            setSavedProperties(prev => {
+              const newSet = new Set(prev).add(propertyId);
+              console.log('New saved properties after saving:', Array.from(newSet));
+              return newSet;
+            });
+          }
+        } catch (error) {
+          console.error('Failed to save/unsave property:', error);
+        }
+      };
       setSavedProperties(saved);
     } catch (error) {
       console.error('Failed to load saved properties:', error);
@@ -51,16 +88,36 @@ const Home = () => {
 
   const handleSaveProperty = async (propertyId: number) => {
     try {
+      console.log('Attempting to save property:', propertyId);
+      console.log('Current saved properties:', Array.from(savedProperties));
+      
       if (savedProperties.has(propertyId)) {
-        await Api.unsaveProperty(propertyId);
+        console.log('Unsaving property:', propertyId);
+        try {
+          await Api.unsaveProperty(propertyId);
+        } catch (authError) {
+          console.log('Auth error, trying public unsave:', authError);
+          await Api.publicUnsaveProperty(propertyId);
+        }
         setSavedProperties(prev => {
           const newSet = new Set(prev);
           newSet.delete(propertyId);
+          console.log('New saved properties after unsaving:', Array.from(newSet));
           return newSet;
         });
       } else {
-        await Api.saveProperty(propertyId);
-        setSavedProperties(prev => new Set(prev).add(propertyId));
+        console.log('Saving property:', propertyId);
+        try {
+          await Api.saveProperty(propertyId);
+        } catch (authError) {
+          console.log('Auth error, trying public save:', authError);
+          await Api.publicSaveProperty(propertyId);
+        }
+        setSavedProperties(prev => {
+          const newSet = new Set(prev).add(propertyId);
+          console.log('New saved properties after saving:', Array.from(newSet));
+          return newSet;
+        });
       }
     } catch (error) {
       console.error('Failed to save/unsave property:', error);

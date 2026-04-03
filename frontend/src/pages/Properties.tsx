@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Search, MapPin, Bed, Bath, Square, Heart, Share2,
+  Search, MapPin, Bed, Bath, Square, Share2,
   SlidersHorizontal, X, ChevronDown, LayoutGrid, List,
   CreditCard, LogIn, UserPlus, ShieldCheck, CheckCircle2,
   ArrowRight, Loader2, AlertCircle, Info, CheckCheck, Sparkles,
+  Bookmark,
 } from 'lucide-react';
 import Api from '../services/api';
 import SelcomService from '../services/selcom';
@@ -35,7 +36,6 @@ function useDebounce<T>(value: T, delay: number): T {
 /* ─── Helpers ─── */
 const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
 
-// FIX: null-safe formatPrice — guards against undefined/null/NaN price values
 const formatPrice = (p: number | null | undefined): string => {
   if (p == null || isNaN(Number(p))) return 'Price on request';
   return new Intl.NumberFormat('en-TZ', {
@@ -133,7 +133,6 @@ const CSS = `
 .pc:hover .pc-img-actions{opacity:1;}
 .pc-img-btn{width:30px;height:30px;background:rgba(255,255,255,.92);border:none;border-radius:6px;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
 .pc-img-btn:hover{color:var(--navy);background:#fff;}
-.pc-img-btn.saved{color:var(--danger);}
 .pc-body{padding:16px 18px 18px;display:flex;flex-direction:column;flex:1;}
 .pc-location{display:flex;align-items:center;gap:4px;font-family:var(--sans);font-size:11px;letter-spacing:.06em;color:var(--hint);margin-bottom:6px;}
 .pc-title{font-family:var(--serif);font-size:17px;font-weight:400;color:var(--navy);letter-spacing:-.01em;line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
@@ -144,9 +143,36 @@ const CSS = `
 .pc-spec-div{width:1px;height:12px;background:var(--border);}
 .pc-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
 .pc-foot-actions{display:flex;align-items:center;gap:6px;}
+
+/* ── Save Button ── */
+.pc-save-btn{
+  height:30px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:var(--bg);
+  color:var(--muted);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  cursor:pointer;
+  transition:all .18s;
+  padding:0 10px;
+  font-family:var(--sans);
+  font-size:12px;
+  font-weight:500;
+  white-space:nowrap;
+}
+.pc-save-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
+.pc-save-btn.saved{
+  color:#fff;
+  border-color:var(--navy);
+  background:var(--navy);
+}
+.pc-save-btn.saved:hover{background:var(--navy-2);border-color:var(--navy-2);}
+
 .pc-foot-btn{height:30px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;padding:0 8px;}
 .pc-foot-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
-.pc-foot-btn.saved{color:var(--danger);border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.04);}
 .pc-foot-btn.apply{background:var(--navy);border-color:var(--navy);color:#fff;padding:0 14px;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.02em;}
 .pc-foot-btn.apply:hover{background:var(--navy-2);border-color:var(--navy-2);}
 .pc-tag{font-family:var(--sans);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-2);background:var(--navy-faint);border:1px solid var(--navy-soft);padding:3px 8px;border-radius:4px;}
@@ -461,14 +487,11 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
         {property.featured && <div className="pc-badge-featured">Featured</div>}
         {property.type && <div className="pc-badge-type">{typeLabel[property.type] ?? property.type}</div>}
         <div className="pc-price-overlay">
-          {/* FIX: formatPrice now handles null/undefined safely */}
           <div className="pc-price-main">{formatPrice(property.price)}</div>
           <div className="pc-price-period">/month</div>
         </div>
+        {/* Share button on hover — top right of image */}
         <div className="pc-img-actions">
-          <button className={`pc-img-btn${isSaved ? ' saved' : ''}`} onClick={onSave} title={isSaved ? 'Unsave' : 'Save'}>
-            <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} />
-          </button>
           <button className="pc-img-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/property/${property.id}`); }} title="Copy link">
             <Share2 size={14} />
           </button>
@@ -486,9 +509,16 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
         <div className="pc-footer">
           <div>{property.furnished && <span className="pc-tag">Furnished</span>}</div>
           <div className="pc-foot-actions">
-            <button className={`pc-foot-btn${isSaved ? ' saved' : ''}`} onClick={onSave}><Heart size={13} fill={isSaved ? 'currentColor' : 'none'} /></button>
-            <button className="pc-foot-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/property/${property.id}`); }}><Share2 size={13} /></button>
-            <button className="pc-foot-btn apply" onClick={onApply}>Apply Now</button>
+            {/* ── Save Button ── */}
+            <button
+              className={`pc-save-btn${isSaved ? ' saved' : ''}`}
+              onClick={onSave}
+              title={isSaved ? 'Unsave property' : 'Save property'}
+            >
+              <Bookmark size={12} fill={isSaved ? 'currentColor' : 'none'} />
+              {isSaved ? 'Saved' : 'Save'}
+            </button>
+            <button className="pc-foot-btn apply" onClick={onApply}>Visit site</button>
           </div>
         </div>
       </div>
@@ -557,7 +587,6 @@ const ApplyModal = ({ property, onClose, onProceed }: {
         {(property.location || property.address) && (
           <div className="prop-info-row"><MapPin size={12} /><strong>{property.location || property.address}</strong></div>
         )}
-        {/* FIX: formatPrice handles null/undefined safely here too */}
         <div className="prop-info-row"><CreditCard size={12} />Monthly rent: <strong>{formatPrice(property.price)}</strong></div>
         {property.bedrooms != null && <div className="prop-info-row"><Bed size={12} />Bedrooms: <strong>{property.bedrooms}</strong></div>}
         {property.furnished && <div className="prop-info-row"><CheckCircle2 size={12} style={{ color: 'var(--success)' }} /><strong style={{ color: 'var(--success)' }}>Furnished</strong></div>}
@@ -594,7 +623,6 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
         <div className="fee-amount">TZS 20,000</div>
         <div className="fee-label">Service fee for agent connection</div>
       </div>
-
       <label className="field-label">Mobile Money Provider</label>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {([
@@ -613,7 +641,6 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
           </button>
         ))}
       </div>
-
       <label className="field-label">Phone Number</label>
       <input
         className="pay-input"
@@ -623,7 +650,6 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
         onChange={e => setPhoneNumber(e.target.value)}
         disabled={processing}
       />
-
       <div className="pay-secure"><ShieldCheck size={14} />Powered by Selcom · 256-bit encrypted</div>
     </div>
     <div className="m-footer">
@@ -696,8 +722,6 @@ const Properties = () => {
 
   const { toasts, addToast, removeToast } = useToast();
   const { config: confirmConfig, confirm, handleConfirm, handleCancel } = useConfirm();
-
-  // confirm is declared but used optionally; keep it to avoid lint warnings
   void confirm;
 
   const debouncedSearch = useDebounce(searchTerm, 400);
@@ -789,111 +813,55 @@ const Properties = () => {
 
   const handlePay = async () => {
     if (!selProp) return;
-
     if (!phoneNumber || phoneNumber.length < 10) {
-      addToast({
-        type: 'warning',
-        title: 'Invalid phone number',
-        message: 'Please enter a valid mobile money number (at least 10 digits).',
-        duration: 5000,
-      });
+      addToast({ type: 'warning', title: 'Invalid phone number', message: 'Please enter a valid mobile money number (at least 10 digits).', duration: 5000 });
       return;
     }
-
     setPaying(true);
     try {
       const userStr  = localStorage.getItem('user');
       const user     = userStr ? JSON.parse(userStr) : null;
       const tenantId = user?.id;
-
       if (!tenantId) {
         addToast({ type: 'error', title: 'Not authenticated', message: 'Your session may have expired. Please log in again.' });
         setPaying(false);
         return;
       }
-
       const paymentData = {
-        amount:         20000,
-        property_id:    selProp.id,
-        tenant_id:      tenantId,
-        phone_number:   phoneNumber,
-        provider:       paymentMethod,
+        amount: 20000, property_id: selProp.id, tenant_id: tenantId,
+        phone_number: phoneNumber, provider: paymentMethod,
         customer_email: user?.email,
-        customer_name:  user?.first_name && user?.last_name
-          ? `${user.first_name} ${user.last_name}`
-          : user?.first_name || 'Customer',
+        customer_name: user?.first_name && user?.last_name
+          ? `${user.first_name} ${user.last_name}` : user?.first_name || 'Customer',
       };
-
       let paymentSuccessful = false;
       let transactionId: string | null = null;
-
       try {
         const paymentResponse = await SelcomService.initiateMobileMoneyPayment(paymentData);
-
         if (paymentResponse.success && paymentResponse.data?.transaction_id) {
           paymentSuccessful = true;
-          transactionId     = paymentResponse.data.transaction_id;
-          addToast({
-            type:    'success',
-            title:   'Payment initiated',
-            message: `Check your ${paymentMethod.toUpperCase()} prompt to complete the payment. Ref: ${transactionId}`,
-            duration: 8000,
-          });
+          transactionId = paymentResponse.data.transaction_id;
+          addToast({ type: 'success', title: 'Payment initiated', message: `Check your ${paymentMethod.toUpperCase()} prompt to complete the payment. Ref: ${transactionId}`, duration: 8000 });
         } else {
           throw new Error(paymentResponse.message || 'Payment initiation failed');
         }
       } catch (selcomError: any) {
         throw new Error(selcomError?.message || 'Payment failed. Please check your phone number and try again.');
       }
-
       if (paymentSuccessful) {
-        await Api.createApplication({
-          property_id:    selProp.id,
-          owner_id:       selProp.owner?.id,
-          service_fee:    20000,
-          payment_status: 'paid',
-          payment_method: paymentMethod,
-          transaction_id: transactionId,
-        });
-
+        await Api.createApplication({ property_id: selProp.id, owner_id: selProp.owner?.id, service_fee: 20000, payment_status: 'paid', payment_method: paymentMethod, transaction_id: transactionId });
         try {
-          await Api.createContract({
-            property_id:                selProp.id,
-            owner_id:                   selProp.owner?.id,
-            tenant_id:                  tenantId,
-            start_date:                 new Date().toISOString().split('T')[0],
-            end_date:                   new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            rent_amount:                selProp.price,
-            status:                     'pending_signature',
-            payment_status:             'service_fee_paid',
-            service_fee_transaction_id: transactionId,
-          });
-        } catch (contractError) {
-          console.warn('Contract creation failed:', contractError);
-        }
-
+          await Api.createContract({ property_id: selProp.id, owner_id: selProp.owner?.id, tenant_id: tenantId, start_date: new Date().toISOString().split('T')[0], end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], rent_amount: selProp.price, status: 'pending_signature', payment_status: 'service_fee_paid', service_fee_transaction_id: transactionId });
+        } catch (contractError) { console.warn('Contract creation failed:', contractError); }
         if (selProp.agent?.id) {
           try {
-            await Api.notifyAgent({
-              agent_id:    selProp.agent.id,
-              property_id: selProp.id,
-              tenant_id:   tenantId,
-              message:     `Tenant paid service fee via ${paymentMethod.toUpperCase()} for: ${selProp.title}`,
-            });
-          } catch (notifyError) {
-            console.warn('Agent notification failed:', notifyError);
-          }
+            await Api.notifyAgent({ agent_id: selProp.agent.id, property_id: selProp.id, tenant_id: tenantId, message: `Tenant paid service fee via ${paymentMethod.toUpperCase()} for: ${selProp.title}` });
+          } catch (notifyError) { console.warn('Agent notification failed:', notifyError); }
         }
-
         setModal('success');
       }
     } catch (err: any) {
-      addToast({
-        type:    'error',
-        title:   'Payment failed',
-        message: err?.message || 'Something went wrong. Please try again.',
-        duration: 7000,
-      });
+      addToast({ type: 'error', title: 'Payment failed', message: err?.message || 'Something went wrong. Please try again.', duration: 7000 });
     } finally {
       setPaying(false);
     }
@@ -912,12 +880,8 @@ const Properties = () => {
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#F8FAFC', minHeight: '100vh' }}>
       <style>{CSS}</style>
-
       <ToastPortal toasts={toasts} onRemove={removeToast} />
-
-      {confirmConfig && (
-        <ConfirmDialog config={confirmConfig} onConfirm={handleConfirm} onCancel={handleCancel} />
-      )}
+      {confirmConfig && <ConfirmDialog config={confirmConfig} onConfirm={handleConfirm} onCancel={handleCancel} />}
 
       {/* Header */}
       <div className="ph">
@@ -945,13 +909,7 @@ const Properties = () => {
         <div className="sb-inner">
           <div className="sb-search">
             <span className="sb-search-icon"><Search size={14} /></span>
-            <input
-              className="sb-input"
-              type="text"
-              placeholder="Location or property name…"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
+            <input className="sb-input" type="text" placeholder="Location or property name…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             {searchTerm && <button className="sb-clear" onClick={() => setSearchTerm('')}><X size={13} /></button>}
           </div>
           <select className="sb-select" value={selectedType} onChange={e => setSelectedType(e.target.value)}>
@@ -981,24 +939,14 @@ const Properties = () => {
         <div className={`adv${showFilters ? ' open' : ''}`}>
           <div className="adv-inner">
             <span className="adv-label">Refine</span>
-            <select
-              className="sb-select"
-              style={{ minWidth: 110 }}
-              value={bedrooms?.toString() ?? ''}
-              onChange={e => setBedrooms(e.target.value ? parseInt(e.target.value) : undefined)}
-            >
+            <select className="sb-select" style={{ minWidth: 110 }} value={bedrooms?.toString() ?? ''} onChange={e => setBedrooms(e.target.value ? parseInt(e.target.value) : undefined)}>
               <option value="">Bedrooms</option>
               <option value="1">1+</option>
               <option value="2">2+</option>
               <option value="3">3+</option>
               <option value="4">4+</option>
             </select>
-            <select
-              className="sb-select"
-              style={{ minWidth: 130 }}
-              value={furnished == null ? '' : furnished ? 'true' : 'false'}
-              onChange={e => { const v = e.target.value; setFurnished(v === '' ? undefined : v === 'true'); }}
-            >
+            <select className="sb-select" style={{ minWidth: 130 }} value={furnished == null ? '' : furnished ? 'true' : 'false'} onChange={e => { const v = e.target.value; setFurnished(v === '' ? undefined : v === 'true'); }}>
               <option value="">Furnishing</option>
               <option value="true">Furnished</option>
               <option value="false">Unfurnished</option>
@@ -1037,14 +985,8 @@ const Properties = () => {
             </div>
             {hasMore && (
               <div className="load-more">
-                <button
-                  className="load-more-btn"
-                  disabled={loadingMore}
-                  onClick={() => setPage(prev => prev + 1)}
-                >
-                  {loadingMore
-                    ? 'Loading…'
-                    : `Load more · page ${(pagination?.current_page ?? 1) + 1} of ${pagination?.last_page}`}
+                <button className="load-more-btn" disabled={loadingMore} onClick={() => setPage(prev => prev + 1)}>
+                  {loadingMore ? 'Loading…' : `Load more · page ${(pagination?.current_page ?? 1) + 1} of ${pagination?.last_page}`}
                 </button>
               </div>
             )}
@@ -1067,15 +1009,7 @@ const Properties = () => {
       {modal === 'auth'    && selProp && <AuthModal    property={selProp} onClose={closeModal} onLogin={handleAuthLogin} onSignup={handleAuthSignup} />}
       {modal === 'apply'   && selProp && <ApplyModal   property={selProp} onClose={closeModal} onProceed={() => setModal('payment')} />}
       {modal === 'payment' && selProp && (
-        <PaymentModal
-          processing={paying}
-          onClose={closeModal}
-          onPay={handlePay}
-          phoneNumber={phoneNumber}
-          setPhoneNumber={setPhoneNumber}
-          paymentMethod={paymentMethod}
-          setPaymentMethod={setPaymentMethod}
-        />
+        <PaymentModal processing={paying} onClose={closeModal} onPay={handlePay} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
       )}
       {modal === 'success' && (
         <SuccessModal onClose={() => { closeModal(); navigate('/dashboard/tenant/applications'); }} />
