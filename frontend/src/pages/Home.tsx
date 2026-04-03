@@ -1,5 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, Bed, Bath, Square, ArrowRight, ChevronRight, Heart, Users, Home as HomeIcon, Shield, TrendingUp, Building } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Home as HomeIcon, Users, Shield, TrendingUp, ArrowRight, MapPin, Star, ChevronRight, Bed, Bath, Square, DollarSign, Building } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Api from '../services/api';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
@@ -15,11 +15,10 @@ const getImage = (property: any): string => {
 };
 
 const Home = () => {
-  const navigate = useNavigate();
-  const [featuredProperties, setFeaturedProperties] = useState([]);
-  const [bnbProperties, setBnbProperties] = useState([]);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
+  const [bnbProperties, setBnbProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [bnbLoading, setBnbLoading] = useState(true);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [stats, setStats] = useState({
@@ -28,79 +27,70 @@ const Home = () => {
     activeListings: 0,
     avgResponseTime: '24 hr'
   });
-  const [savedProperties, setSavedProperties] = useState<Set<number>>(new Set());
 
+  // Load properties on component mount
   useEffect(() => {
     loadProperties();
     loadBnbProperties();
     loadStats();
-    loadSavedProperties();
   }, []);
-
-  const loadSavedProperties = async () => {
-    try {
-      const res = await Api.getSavedProperties();
-      const saved = new Set((Array.isArray(res.data) ? res.data : []).map((item: any) => item.property?.id || item.id));
-      setSavedProperties(saved as Set<number>);
-    } catch {
-      // silently fail — user may not be logged in
-    }
-  };
-
-  const handleSaveProperty = async (propertyId: number) => {
-    try {
-      if (savedProperties.has(propertyId)) {
-        try {
-          await Api.unsaveProperty(propertyId);
-        } catch {
-          await Api.publicUnsaveProperty(propertyId);
-        }
-        setSavedProperties(prev => {
-          const next = new Set(prev);
-          next.delete(propertyId);
-          return next;
-        });
-      } else {
-        try {
-          await Api.saveProperty(propertyId);
-        } catch {
-          await Api.publicSaveProperty(propertyId);
-        }
-        setSavedProperties(prev => new Set(prev).add(propertyId));
-      }
-    } catch {
-      // silently fail
-    }
-  };
 
   const loadBnbProperties = async () => {
     try {
-      setBnbLoading(true);
       const response = await Api.searchBnbProperties();
-
-      let bnbData: any[] = [];
+      console.log('BNB API Response:', response); // Debug log
+      console.log('Response type:', typeof response);
+      console.log('Is array?', Array.isArray(response));
+      
+      // Handle different response structures
+      let bnbData = [];
       if (Array.isArray(response)) {
+        // Response is directly an array
+        console.log('Response is directly an array');
         bnbData = response;
       } else if (response && typeof response === 'object' && 'data' in response) {
-        const r = response as any;
-        if (Array.isArray(r.data)) bnbData = r.data;
+        // Response is an object with data property
+        const responseObject = response as any;
+        console.log('Response object with data property:', responseObject);
+        if (Array.isArray(responseObject.data)) {
+          console.log('Response has data property that is an array');
+          bnbData = responseObject.data;
+        } else if (responseObject.data && typeof responseObject.data === 'object' && 'data' in responseObject.data) {
+          console.log('Response has nested data structure');
+          bnbData = responseObject.data.data;
+        }
+      } else {
+        console.log('Unexpected response structure:', response);
       }
-
-      setBnbProperties(bnbData);
-    } catch {
+      
+      console.log('Final BNB data:', bnbData);
+      console.log('BNB data length:', bnbData.length);
+      setBnbProperties(bnbData.slice(0, 6)); // Show first 6 BNB properties
+    } catch (error) {
+      console.error('Failed to load BNB properties:', error);
       setBnbProperties([]);
-    } finally {
-      setBnbLoading(false);
     }
   };
 
   const loadProperties = async () => {
     try {
       setLoading(true);
+      console.log('Loading properties from API...');
       const response = await Api.getProperties();
+      console.log('API Response:', response);
+      
+      // Backend returns { data: [...], pagination: {...} }
       const propertiesData = response.data?.data ?? response.data ?? [];
-      setFeaturedProperties(propertiesData.slice(0, 6));
-    } catch {
+      console.log('Properties data:', propertiesData);
+      
+      setProperties(propertiesData);
+      
+      // Set featured properties (first 6)
+      const featured = propertiesData.slice(0, 6);
+      console.log('Featured properties:', featured);
+      setFeaturedProperties(featured);
+    } catch (error) {
+      console.error('Failed to load properties:', error);
       setFeaturedProperties([]);
     } finally {
       setLoading(false);
@@ -108,22 +98,27 @@ const Home = () => {
   };
 
   const loadStats = async () => {
-    setStats({
-      totalProperties: 1247,
-      totalUsers: 3842,
-      activeListings: 892,
-      avgResponseTime: '24 hr'
-    });
+    try {
+      // You can create a stats endpoint or use mock data
+      setStats({
+        totalProperties: 1247,
+        totalUsers: 3842,
+        activeListings: 892,
+        avgResponseTime: '24 hr'
+      });
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    }
   };
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('en-TZ', {
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-TZ', {
       style: 'currency',
       currency: 'TZS',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(price);
-
+  };
   return (
     <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", background: '#0a0a0a', color: '#f5f0e8', minHeight: '100vh', overflowX: 'hidden' }}>
       <style>{`
@@ -144,6 +139,7 @@ const Home = () => {
 
         .sans { font-family: 'DM Sans', sans-serif; }
 
+        /* Hero */
         .hero {
           position: relative;
           min-height: 100vh;
@@ -212,7 +208,12 @@ const Home = () => {
           margin-bottom: 24px;
         }
 
-        .hero-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--gold); }
+        .hero-eyebrow::before {
+          content: '';
+          width: 24px;
+          height: 1px;
+          background: var(--gold);
+        }
 
         .hero-title {
           font-size: clamp(42px, 5vw, 72px);
@@ -223,7 +224,11 @@ const Home = () => {
           margin-bottom: 24px;
         }
 
-        .hero-title em { font-style: italic; color: var(--gold-light); font-weight: 300; }
+        .hero-title em {
+          font-style: italic;
+          color: var(--gold-light);
+          font-weight: 300;
+        }
 
         .hero-subtitle {
           font-family: 'DM Sans', sans-serif;
@@ -235,7 +240,12 @@ const Home = () => {
           max-width: 420px;
         }
 
-        .hero-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+        .hero-actions {
+          display: flex;
+          gap: 16px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
 
         .btn-primary {
           display: inline-flex;
@@ -255,7 +265,10 @@ const Home = () => {
           clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
         }
 
-        .btn-primary:hover { background: var(--gold-light); gap: 16px; }
+        .btn-primary:hover {
+          background: var(--gold-light);
+          gap: 16px;
+        }
 
         .btn-ghost {
           display: inline-flex;
@@ -273,8 +286,13 @@ const Home = () => {
           transition: all 0.25s ease;
         }
 
-        .btn-ghost:hover { color: var(--gold); border-color: var(--gold); gap: 12px; }
+        .btn-ghost:hover {
+          color: var(--gold);
+          border-color: var(--gold);
+          gap: 12px;
+        }
 
+        /* Search Panel */
         .search-panel {
           background: rgba(26,26,26,0.8);
           border: 1px solid var(--border);
@@ -323,7 +341,12 @@ const Home = () => {
         .search-input::placeholder { color: rgba(138,128,112,0.6); }
         .search-input:focus { border-color: rgba(201,168,76,0.4); }
 
-        .search-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .search-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
 
         .search-select {
           width: 100%;
@@ -363,7 +386,12 @@ const Home = () => {
 
         .search-btn:hover { background: var(--gold-light); }
 
-        .search-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+        .search-tags {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin-top: 16px;
+        }
 
         .search-tag {
           font-family: 'DM Sans', sans-serif;
@@ -378,6 +406,7 @@ const Home = () => {
 
         .search-tag:hover { color: var(--gold); border-color: rgba(201,168,76,0.4); }
 
+        /* Stats bar */
         .stats-bar {
           background: var(--dark-3);
           border-top: 1px solid var(--border);
@@ -393,7 +422,12 @@ const Home = () => {
           gap: 0;
         }
 
-        .stat-item { text-align: center; padding: 0 24px; border-right: 1px solid var(--border); }
+        .stat-item {
+          text-align: center;
+          padding: 0 24px;
+          border-right: 1px solid var(--border);
+        }
+
         .stat-item:last-child { border-right: none; }
 
         .stat-number {
@@ -414,7 +448,12 @@ const Home = () => {
           color: var(--muted);
         }
 
-        .section { max-width: 1200px; margin: 0 auto; padding: 100px 40px; }
+        /* Features */
+        .section {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 100px 40px;
+        }
 
         .section-header {
           display: grid;
@@ -437,7 +476,12 @@ const Home = () => {
           gap: 8px;
         }
 
-        .section-eyebrow::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .section-eyebrow::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: var(--border);
+        }
 
         .section-title {
           font-size: clamp(32px, 3.5vw, 48px);
@@ -489,8 +533,11 @@ const Home = () => {
         .feature-card:hover::after { transform: scaleX(1); }
 
         .feature-icon {
-          width: 48px; height: 48px;
-          display: flex; align-items: center; justify-content: center;
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           background: rgba(201,168,76,0.08);
           border: 1px solid rgba(201,168,76,0.15);
           margin-bottom: 24px;
@@ -499,21 +546,49 @@ const Home = () => {
 
         .feature-number {
           position: absolute;
-          top: 16px; right: 20px;
+          top: 16px;
+          right: 20px;
           font-size: 11px;
           font-family: 'DM Sans', sans-serif;
           color: rgba(201,168,76,0.2);
           letter-spacing: 0.1em;
         }
 
-        .feature-title { font-size: 20px; font-weight: 400; color: var(--cream); margin-bottom: 12px; letter-spacing: -0.01em; }
-        .feature-desc { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300; line-height: 1.65; color: var(--muted); }
+        .feature-title {
+          font-size: 20px;
+          font-weight: 400;
+          color: var(--cream);
+          margin-bottom: 12px;
+          letter-spacing: -0.01em;
+        }
 
-        .how-section { background: var(--dark-3); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .feature-desc {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 14px;
+          font-weight: 300;
+          line-height: 1.65;
+          color: var(--muted);
+        }
 
-        .how-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 80px; align-items: start; }
+        /* How it works */
+        .how-section {
+          background: var(--dark-3);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        }
 
-        .how-steps { display: flex; flex-direction: column; gap: 0; }
+        .how-grid {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 80px;
+          align-items: start;
+        }
+
+        .how-steps {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
 
         .how-step {
           display: grid;
@@ -526,19 +601,57 @@ const Home = () => {
 
         .how-step:last-child { border-bottom: none; }
 
-        .step-num { font-size: 11px; font-family: 'DM Sans', sans-serif; font-weight: 500; color: var(--gold); letter-spacing: 0.1em; padding-top: 4px; }
-        .step-title { font-size: 20px; font-weight: 400; color: var(--cream); margin-bottom: 8px; letter-spacing: -0.01em; }
-        .step-desc { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300; line-height: 1.65; color: var(--muted); }
+        .step-num {
+          font-size: 11px;
+          font-family: 'DM Sans', sans-serif;
+          font-weight: 500;
+          color: var(--gold);
+          letter-spacing: 0.1em;
+          padding-top: 4px;
+        }
 
-        .how-visual { position: sticky; top: 80px; background: rgba(201,168,76,0.04); border: 1px solid var(--border); padding: 48px; text-align: center; }
+        .step-title {
+          font-size: 20px;
+          font-weight: 400;
+          color: var(--cream);
+          margin-bottom: 8px;
+          letter-spacing: -0.01em;
+        }
 
-        .visual-badge { display: inline-flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 32px; }
+        .step-desc {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 14px;
+          font-weight: 300;
+          line-height: 1.65;
+          color: var(--muted);
+        }
+
+        /* Visual accent panel */
+        .how-visual {
+          position: sticky;
+          top: 80px;
+          background: rgba(201,168,76,0.04);
+          border: 1px solid var(--border);
+          padding: 48px;
+          text-align: center;
+        }
+
+        .visual-badge {
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 32px;
+        }
 
         .visual-ring {
-          width: 100px; height: 100px;
+          width: 100px;
+          height: 100px;
           border: 1px solid rgba(201,168,76,0.3);
           border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           position: relative;
         }
 
@@ -550,75 +663,208 @@ const Home = () => {
           border-radius: 50%;
         }
 
-        .visual-inner { font-size: 28px; font-weight: 300; color: var(--gold); letter-spacing: -0.03em; }
-        .visual-label { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+        .visual-inner {
+          font-size: 28px;
+          font-weight: 300;
+          color: var(--gold);
+          letter-spacing: -0.03em;
+        }
 
-        .visual-divider { width: 1px; height: 40px; background: linear-gradient(to bottom, var(--gold), transparent); margin: 0 auto 32px; }
+        .visual-label {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--muted);
+        }
 
-        .visual-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); }
-        .visual-stat { background: var(--dark-2); padding: 20px; }
-        .visual-stat-num { font-size: 22px; font-weight: 300; color: var(--gold-light); margin-bottom: 4px; }
-        .visual-stat-lbl { font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+        .visual-divider {
+          width: 1px;
+          height: 40px;
+          background: linear-gradient(to bottom, var(--gold), transparent);
+          margin: 0 auto 32px;
+        }
 
-        .cta-section { position: relative; overflow: hidden; border-top: 1px solid var(--border); }
+        .visual-stats {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1px;
+          background: var(--border);
+          border: 1px solid var(--border);
+        }
+
+        .visual-stat {
+          background: var(--dark-2);
+          padding: 20px;
+        }
+
+        .visual-stat-num {
+          font-size: 22px;
+          font-weight: 300;
+          color: var(--gold-light);
+          margin-bottom: 4px;
+        }
+
+        .visual-stat-lbl {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 11px;
+          color: var(--muted);
+          letter-spacing: 0.08em;
+        }
+
+        /* CTA */
+        .cta-section {
+          position: relative;
+          overflow: hidden;
+          border-top: 1px solid var(--border);
+        }
 
         .cta-bg {
-          position: absolute; inset: 0;
+          position: absolute;
+          inset: 0;
           background:
             radial-gradient(ellipse 60% 100% at 100% 50%, rgba(201,168,76,0.08) 0%, transparent 60%),
             radial-gradient(ellipse 40% 80% at 0% 50%, rgba(201,168,76,0.04) 0%, transparent 50%);
         }
 
         .cta-inner {
-          position: relative; z-index: 1;
-          max-width: 1200px; margin: 0 auto;
+          position: relative;
+          z-index: 1;
+          max-width: 1200px;
+          margin: 0 auto;
           padding: 120px 40px;
-          display: grid; grid-template-columns: 1.2fr 1fr;
-          gap: 80px; align-items: center;
+          display: grid;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 80px;
+          align-items: center;
         }
 
-        .cta-title { font-size: clamp(36px, 4vw, 56px); font-weight: 300; line-height: 1.05; letter-spacing: -0.02em; color: var(--cream); margin-bottom: 20px; }
+        .cta-title {
+          font-size: clamp(36px, 4vw, 56px);
+          font-weight: 300;
+          line-height: 1.05;
+          letter-spacing: -0.02em;
+          color: var(--cream);
+          margin-bottom: 20px;
+        }
+
         .cta-title em { font-style: italic; color: var(--gold-light); }
 
-        .cta-desc { font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 300; line-height: 1.7; color: var(--muted); margin-bottom: 40px; }
+        .cta-desc {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 15px;
+          font-weight: 300;
+          line-height: 1.7;
+          color: var(--muted);
+          margin-bottom: 40px;
+        }
 
-        .cta-right { display: flex; flex-direction: column; gap: 16px; }
+        .cta-right {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
 
         .cta-card {
           background: rgba(201,168,76,0.06);
           border: 1px solid rgba(201,168,76,0.15);
           padding: 24px;
-          display: flex; align-items: center; gap: 20px;
+          display: flex;
+          align-items: center;
+          gap: 20px;
           text-decoration: none;
           transition: all 0.3s;
         }
 
-        .cta-card:hover { background: rgba(201,168,76,0.1); border-color: rgba(201,168,76,0.35); transform: translateX(4px); }
+        .cta-card:hover {
+          background: rgba(201,168,76,0.1);
+          border-color: rgba(201,168,76,0.35);
+          transform: translateX(4px);
+        }
 
-        .cta-card-icon { width: 44px; height: 44px; background: rgba(201,168,76,0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--gold); }
+        .cta-card-icon {
+          width: 44px;
+          height: 44px;
+          background: rgba(201,168,76,0.12);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          color: var(--gold);
+        }
 
-        .cta-card-title { font-size: 17px; font-weight: 400; color: var(--cream); margin-bottom: 4px; letter-spacing: -0.01em; }
-        .cta-card-desc { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300; color: var(--muted); }
+        .cta-card-title {
+          font-size: 17px;
+          font-weight: 400;
+          color: var(--cream);
+          margin-bottom: 4px;
+          letter-spacing: -0.01em;
+        }
 
-        .cta-card-arrow { margin-left: auto; color: var(--gold); opacity: 0; transition: opacity 0.2s; flex-shrink: 0; }
+        .cta-card-desc {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+          font-weight: 300;
+          color: var(--muted);
+        }
+
+        .cta-card-arrow {
+          margin-left: auto;
+          color: var(--gold);
+          opacity: 0;
+          transition: opacity 0.2s;
+          flex-shrink: 0;
+        }
+
         .cta-card:hover .cta-card-arrow { opacity: 1; }
 
-        .footer-bar { border-top: 1px solid var(--border); padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }
-        .footer-logo { font-size: 20px; font-weight: 300; color: var(--cream); letter-spacing: 0.05em; }
+        /* Footer bar */
+        .footer-bar {
+          border-top: 1px solid var(--border);
+          padding: 24px 40px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .footer-logo {
+          font-size: 20px;
+          font-weight: 300;
+          color: var(--cream);
+          letter-spacing: 0.05em;
+        }
+
         .footer-logo span { color: var(--gold); }
-        .footer-links { display: flex; gap: 32px; list-style: none; }
-        .footer-links a { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+
+        .footer-links {
+          display: flex;
+          gap: 32px;
+          list-style: none;
+        }
+
+        .footer-links a {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12px;
+          font-weight: 400;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: var(--muted);
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+
         .footer-links a:hover { color: var(--gold); }
-        .footer-copy { font-family: 'DM Sans', sans-serif; font-size: 12px; color: rgba(138,128,112,0.5); }
 
-        /* BNB card hover */
-        .bnb-card { transition: border-color 0.3s, transform 0.3s; }
-        .bnb-card:hover { border-color: rgba(201,168,76,0.4) !important; transform: translateY(-4px); }
+        .footer-copy {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12px;
+          color: rgba(138,128,112,0.5);
+        }
 
-        /* Skeleton pulse */
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .skeleton { animation: pulse 1.5s ease-in-out infinite; background: rgba(201,168,76,0.06); border-radius: 8px; }
-
+        /* Responsive */
         @media (max-width: 900px) {
           .hero-content { grid-template-columns: 1fr; gap: 48px; padding: 100px 24px 60px; }
           .hero-number { display: none; }
@@ -640,7 +886,7 @@ const Home = () => {
         }
       `}</style>
 
-      {/* ── Hero ── */}
+      {/* Hero */}
       <section className="hero">
         <div className="hero-bg" />
         <div className="hero-grid" />
@@ -654,7 +900,7 @@ const Home = () => {
               Rental Property
             </h1>
             <p className="hero-subtitle">
-              Connect with trusted landlords and professional agents. Browse verified
+              Connect with trusted landlords and professional agents. Browse verified 
               properties and manage your rental seamlessly with Oweru.
             </p>
             <div className="hero-actions">
@@ -691,27 +937,29 @@ const Home = () => {
                 <option value="1000+">Above 1M TZS</option>
               </select>
             </div>
-            <button className="search-btn" onClick={() => navigate('/properties')}>
+            <button className="search-btn">
               <Search size={16} />
               Search Properties
             </button>
             <div className="search-tags">
-              {['Dar es Salaam', 'Arusha', 'Mwanza', 'Dodoma', 'Studio'].map(tag => (
-                <span key={tag} className="search-tag">{tag}</span>
-              ))}
+              <span className="search-tag">Dar es Salaam</span>
+              <span className="search-tag">Arusha</span>
+              <span className="search-tag">Mwanza</span>
+              <span className="search-tag">Dodoma</span>
+              <span className="search-tag">Studio</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Stats Bar ── */}
+      {/* Stats Bar */}
       <div className="stats-bar">
         <div className="stats-inner">
           {[
             { num: stats.totalProperties.toLocaleString(), lbl: 'Active Listings' },
-            { num: stats.totalUsers.toLocaleString(),      lbl: 'Registered Users' },
-            { num: stats.activeListings.toLocaleString(),  lbl: 'Available Now' },
-            { num: stats.avgResponseTime,                  lbl: 'Avg. Response' },
+            { num: stats.totalUsers.toLocaleString(), lbl: 'Registered Users' },
+            { num: stats.activeListings.toLocaleString(), lbl: 'Available Now' },
+            { num: stats.avgResponseTime, lbl: 'Avg. Response' },
           ].map((s) => (
             <div key={s.lbl} className="stat-item">
               <div className="stat-number">{s.num}</div>
@@ -721,7 +969,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* ── Featured Rental Properties ── */}
+      {/* Featured Properties */}
       <section style={{ background: 'var(--dark-2)' }}>
         <div className="section">
           <div className="section-header">
@@ -732,128 +980,137 @@ const Home = () => {
                 <em>Properties</em>
               </h2>
             </div>
-            <Link
-              to="/properties"
-              className="btn-primary"
-              style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)' }}
-            >
+            <Link to="/properties" className="btn-primary" style={{ background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold)' }}>
               View All
               <ArrowRight size={16} />
             </Link>
           </div>
 
           {loading ? (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '20px'
-            }}>
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: 320 }} />
-              ))}
+            <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--muted)' }}>
+              Loading featured properties...
             </div>
           ) : featuredProperties.length > 0 ? (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
               gap: '20px',
               marginBottom: '40px'
             }}>
-              {featuredProperties.map((property: any) => (
-                <div
-                  key={property.id}
-                  style={{
+              {featuredProperties.map((property) => (
+                <Link 
+                  key={property.id} 
+                  to={`/property/${property.id}`}
+                  style={{ 
+                    textDecoration: 'none', 
+                    color: 'inherit',
                     background: 'var(--dark)',
                     border: '1px solid var(--border)',
                     borderRadius: '8px',
                     overflow: 'hidden',
-                    display: 'block',
-                    transition: 'border-color 0.3s, transform 0.3s',
+                    transition: 'all 0.3s ease',
+                    display: 'block'
                   }}
-                  onMouseEnter={e => {
+                  onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = 'var(--gold)';
                     e.currentTarget.style.transform = 'translateY(-4px)';
                   }}
-                  onMouseLeave={e => {
+                  onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = 'var(--border)';
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  <Link to={`/property/${property.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
-                    <div style={{
-                      height: '200px',
-                      backgroundImage: `url(${getImage(property)})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      backgroundColor: '#1a1a1a'
-                    }} />
-                    <div style={{ padding: '20px' }}>
-                      <div style={{ fontSize: '18px', fontWeight: '400', color: 'var(--cream)', marginBottom: '8px', lineHeight: '1.3' }}>
-                        {property.title}
+                  <div style={{ 
+                    height: '200px', 
+                    backgroundImage: `url(${getImage(property)})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundColor: '#1a1a1a'
+                  }} />
+                  <div style={{ padding: '20px' }}>
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '400', 
+                      color: 'var(--cream)', 
+                      marginBottom: '8px',
+                      lineHeight: '1.3'
+                    }}>
+                      {property.title}
+                    </div>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '16px', 
+                      marginBottom: '12px',
+                      color: 'var(--muted)',
+                      fontSize: '14px',
+                      fontFamily: "'DM Sans', sans-serif"
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Bed size={14} />
+                        {property.bedrooms} bed
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px', color: 'var(--muted)', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Bed size={14} />{property.bedrooms} bed</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Bath size={14} />{property.bathrooms} bath</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Square size={14} />{property.area} sqm</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Bath size={14} />
+                        {property.bathrooms} bath
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--muted)', fontSize: '13px', fontFamily: "'DM Sans', sans-serif", marginBottom: '8px' }}>
-                        <MapPin size={14} />{property.location}
-                      </div>
-                      <div style={{ fontSize: '20px', fontWeight: '500', color: 'var(--gold)' }}>
-                        {formatPrice(property.price)}
-                        <span style={{ fontSize: '14px', color: 'var(--muted)', fontWeight: '300', marginLeft: '4px' }}>/month</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Square size={14} />
+                        {property.area} sqm
                       </div>
                     </div>
-                  </Link>
-                  <div style={{ padding: '0 20px 20px', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={() => handleSaveProperty(property.id)}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '6px',
-                        border: `1px solid ${savedProperties.has(property.id) ? 'var(--gold)' : 'var(--border)'}`,
-                        backgroundColor: savedProperties.has(property.id) ? 'var(--gold)' : 'transparent',
-                        color: savedProperties.has(property.id) ? 'var(--dark)' : 'var(--cream)',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
                         gap: '6px',
-                        transition: 'all 0.2s ease',
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
-                      onMouseEnter={e => {
-                        if (!savedProperties.has(property.id)) {
-                          e.currentTarget.style.backgroundColor = 'rgba(201,168,76,0.1)';
-                          e.currentTarget.style.borderColor = 'var(--gold)';
-                        }
-                      }}
-                      onMouseLeave={e => {
-                        if (!savedProperties.has(property.id)) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                          e.currentTarget.style.borderColor = 'var(--border)';
-                        }
-                      }}
-                    >
-                      <Heart size={14} fill={savedProperties.has(property.id) ? 'currentColor' : 'none'} />
-                      {savedProperties.has(property.id) ? 'Saved' : 'Save'}
-                    </button>
+                        color: 'var(--muted)',
+                        fontSize: '13px',
+                        fontFamily: "'DM Sans', sans-serif"
+                      }}>
+                        <MapPin size={14} />
+                        {property.location}
+                      </div>
+                    </div>
+                    <div style={{ 
+                      fontSize: '20px', 
+                      fontWeight: '500', 
+                      color: 'var(--gold)' 
+                    }}>
+                      {formatPrice(property.price)}
+                      <span style={{ 
+                        fontSize: '14px', 
+                        color: 'var(--muted)', 
+                        fontWeight: '300',
+                        marginLeft: '4px'
+                      }}>
+                        /month
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--muted)' }}>
               <HomeIcon size={48} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
-              <h3 style={{ color: 'var(--cream)', fontSize: '18px', marginBottom: '8px' }}>No featured properties available</h3>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>Check back later for new listings or browse all properties.</p>
+              <h3 style={{ color: 'var(--cream)', fontSize: '18px', marginBottom: '8px' }}>
+                No featured properties available
+              </h3>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
+                Check back later for new listings or browse all properties.
+              </p>
             </div>
           )}
         </div>
       </section>
 
-      {/* ── BNB / Vacation Rentals ── */}
+      {/* BNB Properties */}
       <section style={{ background: 'var(--dark)' }}>
         <div className="section">
           <div className="section-header">
@@ -865,134 +1122,133 @@ const Home = () => {
               </h2>
             </div>
             <p className="section-desc">
-              Discover our handpicked selection of short-term rentals and vacation properties.
+              Discover our handpicked selection of short-term rentals and vacation properties. 
               Perfect for getaways, business trips, or extended stays.
             </p>
           </div>
 
-          {bnbLoading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: 360 }} />
-              ))}
-            </div>
-          ) : bnbProperties.length > 0 ? (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          {bnbProperties.length > 0 ? (
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
               gap: '24px',
               marginBottom: '40px'
             }}>
-              {bnbProperties.map((property: any) => (
-                <div
-                  key={property.id}
-                  className="bnb-card"
-                  style={{
-                    background: 'var(--dark-2)',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    border: '1px solid rgba(201,168,76,0.1)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {/* Image */}
+              {bnbProperties.map((property) => (
+                <div key={property.id} style={{
+                  background: 'var(--dark-2)',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  border: '1px solid rgba(201,168,76,0.1)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}>
                   <div style={{ position: 'relative' }}>
-                    <img
-                      src={getImage(property)}
+                    <img 
+                      src={getImage(property)} 
                       alt={property.title}
-                      style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }}
-                      onError={e => {
-                        (e.target as HTMLImageElement).src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='20' fill='%238a8070'%3ENo Image%3C/text%3E%3C/svg%3E`;
+                      style={{ 
+                        width: '100%', 
+                        height: '200px', 
+                        objectFit: 'cover',
+                        display: 'block'
                       }}
                     />
-                    {/* Type badge */}
                     <div style={{
-                      position: 'absolute', top: '12px', right: '12px',
-                      background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
-                      color: 'var(--cream)', padding: '4px 10px',
-                      borderRadius: '6px', fontSize: '12px', fontFamily: "'DM Sans', sans-serif",
-                      fontWeight: '500', textTransform: 'capitalize',
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      background: 'rgba(0,0,0,0.7)',
+                      color: 'white',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '500'
                     }}>
-                      {property.type || property.property_type || 'BNB'}
+                      {property.type}
                     </div>
-                    {/* Rating badge */}
-                    {property.average_rating && (
-                      <div style={{
-                        position: 'absolute', top: '12px', left: '12px',
-                        background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
-                        color: 'var(--gold)', padding: '4px 10px',
-                        borderRadius: '6px', fontSize: '12px', fontFamily: "'DM Sans', sans-serif",
-                        fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px',
-                      }}>
-                        ★ {Number(property.average_rating).toFixed(1)}
-                      </div>
-                    )}
                   </div>
-
-                  {/* Body */}
+                  
                   <div style={{ padding: '20px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '400', color: 'var(--cream)', marginBottom: '8px', lineHeight: '1.3' }}>
+                    <h3 style={{ 
+                      color: 'var(--cream)', 
+                      fontSize: '18px', 
+                      fontWeight: '600',
+                      marginBottom: '8px',
+                      lineHeight: '1.3'
+                    }}>
                       {property.title}
                     </h3>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--muted)', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", marginBottom: '12px' }}>
-                      <MapPin size={14} />{property.location}
+                    
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px',
+                      marginBottom: '12px',
+                      color: 'var(--muted)',
+                      fontSize: '14px'
+                    }}>
+                      <MapPin size={14} />
+                      {property.location}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', fontSize: '13px', color: 'var(--muted)', fontFamily: "'DM Sans', sans-serif" }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Bed size={14} />{property.bedrooms ?? property.bnb_details?.bedrooms ?? '—'} beds</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Bath size={14} />{property.bathrooms ?? property.bnb_details?.bathrooms ?? '—'} baths</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Users size={14} />
-                        {property.max_guests ?? property.bnb_details?.max_guests ?? 2} guests
-                      </span>
-                    </div>
-
-                    {/* Amenity pills */}
-                    {property.bnb_details?.amenities_bnb && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
-                        {Object.entries(property.bnb_details.amenities_bnb)
-                          .filter(([, v]) => v)
-                          .slice(0, 4)
-                          .map(([k]) => (
-                            <span key={k} style={{
-                              fontSize: '11px', fontFamily: "'DM Sans', sans-serif",
-                              padding: '3px 8px', borderRadius: '4px',
-                              background: 'rgba(201,168,76,0.1)', color: 'var(--gold)',
-                              textTransform: 'capitalize',
-                            }}>{k}</span>
-                          ))}
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '16px',
+                      marginBottom: '16px',
+                      fontSize: '13px',
+                      color: 'var(--muted)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Bed size={14} />
+                        {property.bedrooms} beds
                       </div>
-                    )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Bath size={14} />
+                        {property.bathrooms} baths
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Users size={14} />
+                        {property.max_guests} guests
+                      </div>
+                    </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '20px', fontWeight: '500', color: 'var(--gold)' }}>
-                          {formatPrice(property.price)}
-                          <span style={{ fontSize: '14px', color: 'var(--muted)', fontWeight: '300', marginLeft: '4px' }}>/night</span>
-                        </div>
-                        {property.bnb_details?.min_stay && property.bnb_details.min_stay > 1 && (
-                          <div style={{ fontSize: '12px', color: 'var(--muted)', fontFamily: "'DM Sans', sans-serif", marginTop: '2px' }}>
-                            Min {property.bnb_details.min_stay} nights
-                          </div>
-                        )}
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{ 
+                        fontSize: '20px', 
+                        fontWeight: '700', 
+                        color: 'var(--gold)' 
+                      }}>
+                        {formatPrice(property.price)}
+                        <span style={{ 
+                          fontSize: '14px', 
+                          color: 'var(--muted)', 
+                          fontWeight: '400',
+                          marginLeft: '4px'
+                        }}>
+                          /night
+                        </span>
                       </div>
                       <button
-                        onClick={() => { setSelectedProperty(property); setShowBookingModal(true); }}
+                        onClick={() => {
+                          setSelectedProperty(property);
+                          setShowBookingModal(true);
+                        }}
                         style={{
                           background: 'var(--gold)',
                           color: 'var(--dark)',
                           border: 'none',
-                          padding: '10px 20px',
+                          padding: '8px 16px',
                           borderRadius: '8px',
                           fontSize: '13px',
                           fontWeight: '500',
                           cursor: 'pointer',
-                          fontFamily: "'DM Sans', sans-serif",
-                          transition: 'background 0.2s',
+                          transition: 'all 0.2s ease'
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--gold-light)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--gold)')}
                       >
                         Book Now
                       </button>
@@ -1004,33 +1260,56 @@ const Home = () => {
           ) : (
             <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--muted)' }}>
               <Building size={48} style={{ color: 'var(--gold)', marginBottom: '16px' }} />
-              <h3 style={{ color: 'var(--cream)', fontSize: '18px', marginBottom: '8px' }}>No BNB properties available</h3>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>Check back later for vacation rentals or browse all properties.</p>
+              <h3 style={{ color: 'var(--cream)', fontSize: '18px', marginBottom: '8px' }}>
+                No BNB properties available
+              </h3>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '14px' }}>
+                Check back later for vacation rentals or browse all properties.
+              </p>
             </div>
           )}
         </div>
       </section>
 
-      {/* ── Features ── */}
+      {/* Features */}
       <section style={{ background: 'var(--dark)' }}>
         <div className="section">
           <div className="section-header">
             <div>
               <div className="section-eyebrow">Why Oweru</div>
-              <h2 className="section-title">Built for the<br /><em>Modern Tenant</em></h2>
+              <h2 className="section-title">
+                Built for the<br />
+                <em>Modern Tenant</em>
+              </h2>
             </div>
             <p className="section-desc">
-              We make property rental simple, secure, and transparent for
+              We make property rental simple, secure, and transparent for 
               every party involved — tenants, landlords, and agents alike.
             </p>
           </div>
 
           <div className="features-grid">
             {[
-              { icon: <Search size={20} />, title: 'Smart Search', desc: 'Find properties that match your exact requirements with advanced filters for location, price, and amenities.' },
-              { icon: <Shield size={20} />, title: 'Verified Listings', desc: 'Every property is vetted by our team to ensure accuracy, prevent fraud, and protect your interests.' },
-              { icon: <Users size={20} />, title: 'Trusted Network', desc: 'Connect directly with verified landlords and professional real estate agents across Tanzania.' },
-              { icon: <TrendingUp size={20} />, title: 'Agent Dashboard', desc: 'Track leads, conversions, and earnings. Grow your agency with real-time analytics and insights.' },
+              {
+                icon: <Search size={20} />,
+                title: 'Smart Search',
+                desc: 'Find properties that match your exact requirements with advanced filters for location, price, and amenities.',
+              },
+              {
+                icon: <Shield size={20} />,
+                title: 'Verified Listings',
+                desc: 'Every property is vetted by our team to ensure accuracy, prevent fraud, and protect your interests.',
+              },
+              {
+                icon: <Users size={20} />,
+                title: 'Trusted Network',
+                desc: 'Connect directly with verified landlords and professional real estate agents across Tanzania.',
+              },
+              {
+                icon: <TrendingUp size={20} />,
+                title: 'Agent Dashboard',
+                desc: 'Track leads, conversions, and earnings. Grow your agency with real-time analytics and insights.',
+              },
             ].map((f, i) => (
               <div key={f.title} className="feature-card">
                 <div className="feature-number">0{i + 1}</div>
@@ -1043,19 +1322,33 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── How It Works ── */}
+      {/* How It Works */}
       <section className="how-section">
         <div className="section">
           <div className="how-grid">
             <div>
               <div className="section-eyebrow" style={{ marginBottom: 20 }}>Process</div>
-              <h2 className="section-title" style={{ marginBottom: 48 }}>How<br /><em>Oweru Works</em></h2>
+              <h2 className="section-title" style={{ marginBottom: 48 }}>
+                How<br /><em>Oweru Works</em>
+              </h2>
               <div className="how-steps">
                 {[
-                  { num: '01', title: 'Browse & Apply', desc: 'Search for properties that fit your needs and submit your rental application entirely online.' },
-                  { num: '02', title: 'Get Approved', desc: 'Landlords review your application and approve qualified tenants quickly through our platform.' },
-                  { num: '03', title: 'Pay & Move In', desc: "Securely pay your first month's rent and deposit through our trusted payment system." },
-                ].map(step => (
+                  {
+                    num: '01',
+                    title: 'Browse & Apply',
+                    desc: 'Search for properties that fit your needs and submit your rental application entirely online.',
+                  },
+                  {
+                    num: '02',
+                    title: 'Get Approved',
+                    desc: 'Landlords review your application and approve qualified tenants quickly through our platform.',
+                  },
+                  {
+                    num: '03',
+                    title: 'Pay & Move In',
+                    desc: 'Securely pay your first month\'s rent and deposit through our trusted payment system.',
+                  },
+                ].map((step) => (
                   <div key={step.num} className="how-step">
                     <div className="step-num">{step.num}</div>
                     <div>
@@ -1069,11 +1362,15 @@ const Home = () => {
 
             <div className="how-visual">
               <div className="visual-badge">
-                <div className="visual-ring"><div className="visual-inner">TZ</div></div>
+                <div className="visual-ring">
+                  <div className="visual-inner">TZ</div>
+                </div>
               </div>
               <div className="visual-divider" />
-              <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
-                Platform at a Glance
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
+                  Platform at a Glance
+                </div>
               </div>
               <div className="visual-stats">
                 {[
@@ -1081,7 +1378,7 @@ const Home = () => {
                   { num: '24 hr', lbl: 'Response Rate' },
                   { num: '100%', lbl: 'Secure Payments' },
                   { num: '5★',   lbl: 'Avg. Rating' },
-                ].map(v => (
+                ].map((v) => (
                   <div key={v.lbl} className="visual-stat">
                     <div className="visual-stat-num">{v.num}</div>
                     <div className="visual-stat-lbl">{v.lbl}</div>
@@ -1093,28 +1390,47 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* CTA */}
       <section className="cta-section">
         <div className="cta-bg" />
         <div className="cta-inner">
           <div>
             <div className="section-eyebrow" style={{ marginBottom: 20 }}>Get Started</div>
-            <h2 className="cta-title">Ready to Find<br />Your <em>Next Home?</em></h2>
+            <h2 className="cta-title">
+              Ready to Find<br />
+              Your <em>Next Home?</em>
+            </h2>
             <p className="cta-desc">
-              Join thousands of Tanzanians who have found their perfect rental
+              Join thousands of Tanzanians who have found their perfect rental 
               property through Oweru's trusted platform.
             </p>
             <Link to="/properties" className="btn-primary">
-              Browse All Properties <ArrowRight size={16} />
+              Browse All Properties
+              <ArrowRight size={16} />
             </Link>
           </div>
 
           <div className="cta-right">
             {[
-              { to: '/properties', icon: <HomeIcon size={18} />,   title: 'For Tenants',   desc: 'Browse thousands of verified rental listings' },
-              { to: '/landlord',   icon: <Shield size={18} />,     title: 'For Landlords', desc: 'List your property and find qualified tenants fast' },
-              { to: '/agents',     icon: <TrendingUp size={18} />, title: 'For Agents',    desc: 'Grow your business with our agent dashboard' },
-            ].map(card => (
+              {
+                to: '/properties',
+                icon: <HomeIcon size={18} />,
+                title: 'For Tenants',
+                desc: 'Browse thousands of verified rental listings',
+              },
+              {
+                to: '/landlord',
+                icon: <Shield size={18} />,
+                title: 'For Landlords',
+                desc: 'List your property and find qualified tenants fast',
+              },
+              {
+                to: '/agents',
+                icon: <TrendingUp size={18} />,
+                title: 'For Agents',
+                desc: 'Grow your business with our agent dashboard',
+              },
+            ].map((card) => (
               <Link key={card.title} to={card.to} className="cta-card">
                 <div className="cta-card-icon">{card.icon}</div>
                 <div>
@@ -1128,12 +1444,18 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── Booking Modal ── */}
+      {/* Booking Modal */}
       {showBookingModal && selectedProperty && (
         <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.85)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           zIndex: 1000,
         }}>
           <div style={{
@@ -1144,45 +1466,53 @@ const Home = () => {
             width: '90%',
             maxHeight: '90vh',
             overflowY: 'auto',
-            border: '1px solid rgba(201,168,76,0.2)',
+            border: '1px solid rgba(201,168,76,0.2)'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
               <div>
                 <h2 style={{ margin: 0, color: 'var(--cream)', fontSize: '24px' }}>
                   Book {selectedProperty.title}
                 </h2>
-                <p style={{ margin: '8px 0 0', color: 'var(--muted)', fontSize: '14px', fontFamily: "'DM Sans', sans-serif" }}>
-                  {selectedProperty.location} · {formatPrice(selectedProperty.price)}/night
+                <p style={{ margin: '8px 0 0', color: 'var(--muted)', fontSize: '14px' }}>
+                  {selectedProperty.location} • {formatPrice(selectedProperty.price)}/night
                 </p>
               </div>
               <button
                 onClick={() => setShowBookingModal(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '28px', lineHeight: 1 }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--muted)',
+                  cursor: 'pointer',
+                  fontSize: '28px',
+                  padding: 0,
+                  lineHeight: 1
+                }}
               >
                 ×
               </button>
             </div>
 
-            <BookingForm
+            <BookingForm 
               property={selectedProperty}
               onClose={() => setShowBookingModal(false)}
               onSuccess={() => {
                 setShowBookingModal(false);
-                alert('Booking request submitted! The property owner will contact you soon.');
+                alert('Booking request submitted successfully! The property owner will contact you soon.');
               }}
             />
           </div>
         </div>
       )}
 
-      {/* ── Footer ── */}
+      {/* Footer bar */}
       <footer style={{ borderTop: '1px solid var(--border)' }}>
         <div className="footer-bar">
           <div className="footer-logo">
             <img src={LOGO} alt="OWERU" style={{ height: '20px', width: 'auto' }} />
           </div>
           <ul className="footer-links">
-            {['Properties', 'Landlords', 'Agents', 'About', 'Contact'].map(l => (
+            {['Properties', 'Landlords', 'Agents', 'About', 'Contact'].map((l) => (
               <li key={l}><Link to={`/${l.toLowerCase()}`}>{l}</Link></li>
             ))}
           </ul>
@@ -1193,15 +1523,11 @@ const Home = () => {
   );
 };
 
-/* ── Booking Form ── */
-const BookingForm = ({
-  property,
-  onClose,
-  onSuccess,
-}: {
-  property: any;
-  onClose: () => void;
-  onSuccess: () => void;
+// Booking Form Component
+const BookingForm = ({ property, onClose, onSuccess }: { 
+  property: any; 
+  onClose: () => void; 
+  onSuccess: () => void; 
 }) => {
   const [formData, setFormData] = useState({
     guest_name: '',
@@ -1215,11 +1541,11 @@ const BookingForm = ({
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const maxGuests = property.max_guests ?? property.bnb_details?.max_guests ?? 10;
-
-  const set = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1227,102 +1553,209 @@ const BookingForm = ({
     setLoading(true);
     setErrors({});
 
-    const errs: Record<string, string> = {};
-    if (!formData.guest_name.trim()) errs.guest_name = 'Guest name is required';
-    if (!formData.guest_email.trim()) errs.guest_email = 'Guest email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guest_email)) errs.guest_email = 'Valid email is required';
-    if (!formData.check_in) errs.check_in = 'Check-in date is required';
-    if (!formData.check_out) errs.check_out = 'Check-out date is required';
-    if (formData.check_in && formData.check_out && new Date(formData.check_out) <= new Date(formData.check_in))
-      errs.check_out = 'Check-out must be after check-in';
-    if (!formData.guest_count || parseInt(formData.guest_count) < 1) errs.guest_count = 'Valid guest count is required';
-    if (parseInt(formData.guest_count) > maxGuests) errs.guest_count = `Maximum ${maxGuests} guests allowed`;
-
-    if (Object.keys(errs).length) { setErrors(errs); setLoading(false); return; }
-
     try {
-      await Api.createBnbBooking({
+      // Validate required fields
+      const newErrors: Record<string, string> = {};
+      if (!formData.guest_name.trim()) newErrors.guest_name = 'Guest name is required';
+      if (!formData.guest_email.trim()) newErrors.guest_email = 'Guest email is required';
+      if (!formData.check_in) newErrors.check_in = 'Check-in date is required';
+      if (!formData.check_out) newErrors.check_out = 'Check-out date is required';
+      if (!formData.guest_count || parseInt(formData.guest_count) < 1) {
+        newErrors.guest_count = 'Valid guest count is required';
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (formData.guest_email && !emailRegex.test(formData.guest_email)) {
+        newErrors.guest_email = 'Valid email is required';
+      }
+
+      // Validate dates
+      if (formData.check_in && formData.check_out) {
+        const checkInDate = new Date(formData.check_in);
+        const checkOutDate = new Date(formData.check_out);
+        if (checkOutDate <= checkInDate) {
+          newErrors.check_out = 'Check-out date must be after check-in date';
+        }
+      }
+
+      // Validate guest count against property capacity
+      if (formData.guest_count && parseInt(formData.guest_count) > property.max_guests) {
+        newErrors.guest_count = `Maximum ${property.max_guests} guests allowed`;
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
+      }
+
+      // Prepare data for API
+      const bookingData = {
         property_id: property.id,
         guest_email: formData.guest_email,
         check_in: formData.check_in,
         check_out: formData.check_out,
         guests: parseInt(formData.guest_count),
         special_requests: formData.special_requests || null,
-      });
+      };
+
+      await Api.createBnbBooking(bookingData);
       onSuccess();
     } catch (error: any) {
-      if (error.response?.data?.errors) setErrors(error.response.data.errors);
-      else setErrors({ submit: 'Failed to create booking. Please try again.' });
+      console.error('Error creating booking:', error);
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+      } else {
+        setErrors({ submit: 'Failed to create booking. Please try again.' });
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle = (field: string): React.CSSProperties => ({
-    width: '100%',
-    padding: '12px',
-    backgroundColor: 'var(--dark)',
-    border: `1px solid ${errors[field] ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
-    borderRadius: '8px',
-    color: 'var(--cream)',
-    fontSize: '14px',
-    fontFamily: "'DM Sans', sans-serif",
-    outline: 'none',
-  });
-
-  const labelStyle: React.CSSProperties = {
-    display: 'block', marginBottom: '8px',
-    fontSize: '14px', fontWeight: '500',
-    color: 'var(--cream)', fontFamily: "'DM Sans', sans-serif",
-  };
-
-  const errStyle: React.CSSProperties = { color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: "'DM Sans', sans-serif" };
-
   return (
-    <form onSubmit={handleSubmit}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+    <form onSubmit={handleSubmit} style={{ color: 'var(--cream)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '16px' }}>
         <div>
-          <label style={labelStyle}>Your Name *</label>
-          <input type="text" value={formData.guest_name} onChange={e => set('guest_name', e.target.value)} style={inputStyle('guest_name')} placeholder="John Doe" />
-          {errors.guest_name && <div style={errStyle}>{errors.guest_name}</div>}
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Your Name *
+          </label>
+          <input
+            type="text"
+            value={formData.guest_name}
+            onChange={(e) => handleInputChange('guest_name', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.guest_name ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+            placeholder="John Doe"
+          />
+          {errors.guest_name && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.guest_name}</div>}
         </div>
+
         <div>
-          <label style={labelStyle}>Your Email *</label>
-          <input type="email" value={formData.guest_email} onChange={e => set('guest_email', e.target.value)} style={inputStyle('guest_email')} placeholder="john@example.com" />
-          {errors.guest_email && <div style={errStyle}>{errors.guest_email}</div>}
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Your Email *
+          </label>
+          <input
+            type="email"
+            value={formData.guest_email}
+            onChange={(e) => handleInputChange('guest_email', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.guest_email ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+            placeholder="john@example.com"
+          />
+          {errors.guest_email && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.guest_email}</div>}
         </div>
+
         <div>
-          <label style={labelStyle}>Number of Guests *</label>
-          <input type="number" min="1" max={maxGuests} value={formData.guest_count} onChange={e => set('guest_count', e.target.value)} style={inputStyle('guest_count')} />
-          {errors.guest_count && <div style={errStyle}>{errors.guest_count}</div>}
-          <div style={{ ...errStyle, color: 'var(--muted)', marginTop: '4px' }}>Max {maxGuests} guests</div>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Number of Guests *
+          </label>
+          <input
+            type="number"
+            min="1"
+            max={property.max_guests}
+            value={formData.guest_count}
+            onChange={(e) => handleInputChange('guest_count', e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.guest_count ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+          />
+          {errors.guest_count && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.guest_count}</div>}
+          <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>
+            Max {property.max_guests} guests allowed
+          </div>
         </div>
+
         <div>
-          <label style={labelStyle}>Check-in Date *</label>
-          <input type="date" value={formData.check_in} onChange={e => set('check_in', e.target.value)} min={new Date().toISOString().split('T')[0]} style={inputStyle('check_in')} />
-          {errors.check_in && <div style={errStyle}>{errors.check_in}</div>}
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Check-in Date *
+          </label>
+          <input
+            type="date"
+            value={formData.check_in}
+            onChange={(e) => handleInputChange('check_in', e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.check_in ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+          />
+          {errors.check_in && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.check_in}</div>}
         </div>
-        <div style={{ gridColumn: '1 / -1' }}>
-          <label style={labelStyle}>Check-out Date *</label>
-          <input type="date" value={formData.check_out} onChange={e => set('check_out', e.target.value)} min={formData.check_in || new Date().toISOString().split('T')[0]} style={inputStyle('check_out')} />
-          {errors.check_out && <div style={errStyle}>{errors.check_out}</div>}
+
+        <div>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+            Check-out Date *
+          </label>
+          <input
+            type="date"
+            value={formData.check_out}
+            onChange={(e) => handleInputChange('check_out', e.target.value)}
+            min={formData.check_in || new Date().toISOString().split('T')[0]}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'var(--dark)',
+              border: `1px solid ${errors.check_out ? '#ef4444' : 'rgba(201,168,76,0.2)'}`,
+              borderRadius: '8px',
+              color: 'var(--cream)',
+              fontSize: '14px',
+            }}
+          />
+          {errors.check_out && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>{errors.check_out}</div>}
         </div>
       </div>
 
       <div style={{ marginBottom: '16px' }}>
-        <label style={labelStyle}>Special Requests</label>
+        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--cream)' }}>
+          Special Requests
+        </label>
         <textarea
           value={formData.special_requests}
-          onChange={e => set('special_requests', e.target.value)}
+          onChange={(e) => handleInputChange('special_requests', e.target.value)}
           rows={3}
-          style={{ ...inputStyle('special_requests'), resize: 'vertical' }}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: 'var(--dark)',
+            border: '1px solid rgba(201,168,76,0.2)',
+            borderRadius: '8px',
+            color: 'var(--cream)',
+            fontSize: '14px',
+            resize: 'vertical',
+          }}
           placeholder="Any special requests or notes..."
         />
       </div>
 
       {errors.submit && (
-        <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
-          <div style={errStyle}>{errors.submit}</div>
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
+          <div style={{ color: '#ef4444', fontSize: '14px' }}>{errors.submit}</div>
         </div>
       )}
 
@@ -1330,16 +1763,35 @@ const BookingForm = ({
         <button
           type="button"
           onClick={onClose}
-          style={{ padding: '12px 20px', background: 'transparent', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '8px', color: 'var(--cream)', fontSize: '14px', fontWeight: '500', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+          style={{
+            padding: '12px 20px',
+            backgroundColor: 'transparent',
+            border: '1px solid rgba(201,168,76,0.3)',
+            borderRadius: '8px',
+            color: 'var(--cream)',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+          }}
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={loading}
-          style={{ padding: '12px 20px', background: 'var(--gold)', border: 'none', borderRadius: '8px', color: 'var(--dark)', fontSize: '14px', fontWeight: '500', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, fontFamily: "'DM Sans', sans-serif" }}
+          style={{
+            padding: '12px 20px',
+            backgroundColor: 'var(--gold)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'var(--dark)',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1,
+          }}
         >
-          {loading ? 'Submitting…' : 'Submit Booking Request'}
+          {loading ? 'Submitting...' : 'Submit Booking Request'}
         </button>
       </div>
     </form>
