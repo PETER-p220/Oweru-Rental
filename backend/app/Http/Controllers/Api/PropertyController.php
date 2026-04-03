@@ -82,19 +82,19 @@ class PropertyController extends Controller
      */
     public function publicBnbIndex(Request $request): JsonResponse
     {
-        // Return mock data first to test if endpoint works
+        // Return mock data with working placeholder images
         $mockProperties = [
             [
                 'id' => 1,
                 'title' => 'Luxury Beachfront Villa',
-                'description' => 'Beautiful beachfront villa with stunning ocean views',
+                'description' => 'Beautiful beachfront villa with stunning ocean views and private beach access',
                 'price' => 250000,
                 'location' => 'Beachfront, Dar es Salaam',
                 'type' => 'villa',
                 'bedrooms' => 3,
                 'bathrooms' => 2,
                 'max_guests' => 6,
-                'images' => ['bnb1.jpg'],
+                'images' => ['https://picsum.photos/seed/villa1/800/600.jpg'],
                 'average_rating' => 4.8,
                 'status' => 'available',
                 'created_at' => now()->toISOString(),
@@ -103,14 +103,14 @@ class PropertyController extends Controller
             [
                 'id' => 2,
                 'title' => 'Cozy Mountain Cabin',
-                'description' => 'Perfect mountain getaway with fireplace',
+                'description' => 'Perfect mountain getaway with fireplace and stunning mountain views',
                 'price' => 120000,
                 'location' => 'Mountains, Arusha',
                 'type' => 'cabin',
                 'bedrooms' => 2,
                 'bathrooms' => 1,
                 'max_guests' => 4,
-                'images' => ['cabin1.jpg'],
+                'images' => ['https://picsum.photos/seed/cabin1/800/600.jpg'],
                 'average_rating' => 4.6,
                 'status' => 'available',
                 'created_at' => now()->toISOString(),
@@ -119,14 +119,14 @@ class PropertyController extends Controller
             [
                 'id' => 3,
                 'title' => 'Modern City Apartment',
-                'description' => 'Stylish apartment in the heart of the city',
+                'description' => 'Stylish apartment in the heart of the city with all modern amenities',
                 'price' => 180000,
                 'location' => 'City Center, Dar es Salaam',
                 'type' => 'apartment',
                 'bedrooms' => 1,
                 'bathrooms' => 1,
                 'max_guests' => 2,
-                'images' => ['apt1.jpg'],
+                'images' => ['https://picsum.photos/seed/apartment1/800/600.jpg'],
                 'average_rating' => 4.7,
                 'status' => 'available',
                 'created_at' => now()->toISOString(),
@@ -134,7 +134,7 @@ class PropertyController extends Controller
             ],
         ];
 
-        \Log::info('Public BNB Index: Returning mock data');
+        \Log::info('Public BNB Index: Returning mock data with placeholder images');
         return response()->json($mockProperties);
     }
 
