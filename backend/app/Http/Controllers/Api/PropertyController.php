@@ -86,7 +86,7 @@ class PropertyController extends Controller
         try {
             \Log::info('Public BNB Index: Starting query');
             
-            // First, check if table exists
+            // Check if table exists
             if (!\Schema::hasTable('bnb_properties')) {
                 \Log::error('BNB properties table does not exist');
                 throw new \Exception('BNB properties table not found');
@@ -94,14 +94,49 @@ class PropertyController extends Controller
             
             \Log::info('Public BNB Index: Table exists, performing query');
             
-            // Simple query first to identify the issue
-            $properties = BnbProperty::limit(8)->get();
+            // Query all BNB properties (remove status filter to see all)
+            $properties = BnbProperty::orderBy('created_at', 'desc')->limit(8)->get();
             
             \Log::info('Public BNB Index: Query completed, count: ' . $properties->count());
             
             // Transform properties to match frontend expectations
             $transformedProperties = $properties->map(function ($property) {
-                \Log::info('Processing property ID: ' . $property->id);
+                \Log::info('Processing property ID: ' . $property->id . ' - Images: ' . json_encode($property->images));
+                
+                // Handle images properly
+                $images = [];
+                if ($property->images) {
+                    // If images is a string (JSON), decode it
+                    if (is_string($property->images)) {
+                        $imageArray = json_decode($property->images, true);
+                        if (is_array($imageArray)) {
+                            $images = $imageArray;
+                        }
+                    } elseif (is_array($property->images)) {
+                        $images = $property->images;
+                    }
+                }
+                
+                // Build full URLs for images
+                $fullImageUrls = [];
+                foreach ($images as $image) {
+                    if (empty($image)) continue;
+                    
+                    if (str_starts_with($image, 'http')) {
+                        // Already a full URL
+                        $fullImageUrls[] = $image;
+                    } else {
+                        // Build storage URL
+                        $fullImageUrls[] = 'http://rental.oweru.com/storage/' . ltrim($image, '/');
+                    }
+                }
+                
+                // If no images, use placeholder
+                if (empty($fullImageUrls)) {
+                    $fullImageUrls = ["https://picsum.photos/seed/bnb{$property->id}/800/600.jpg"];
+                }
+                
+                \Log::info('Final image URLs for property ' . $property->id . ': ' . json_encode($fullImageUrls));
                 
                 return [
                     'id' => $property->id,
@@ -113,11 +148,15 @@ class PropertyController extends Controller
                     'bedrooms' => $property->bedrooms ?? 0,
                     'bathrooms' => $property->bathrooms ?? 0,
                     'max_guests' => $property->max_guests ?? 2,
-                    'images' => ["https://picsum.photos/seed/bnb{$property->id}/800/600.jpg"],
+                    'images' => $fullImageUrls,
                     'average_rating' => $property->average_rating ?? 4.5,
                     'status' => $property->status ?? 'available',
                     'created_at' => $property->created_at?->toISOString() ?? now()->toISOString(),
                     'updated_at' => $property->updated_at?->toISOString() ?? now()->toISOString(),
+                    'bnb_details' => [
+                        'max_guests' => $property->max_guests ?? 2,
+                        'amenities_bnb' => $property->amenities ? json_decode($property->amenities, true) : [],
+                    ],
                 ];
             })->toArray();
             
@@ -129,7 +168,7 @@ class PropertyController extends Controller
             \Log::error('Public BNB Index Error: ' . $e->getMessage());
             \Log::error('Public BNB Index Trace: ' . $e->getTraceAsString());
             
-            // Fallback to mock data if database query fails
+            // Fallback to mock data
             $mockProperties = [
                 [
                     'id' => 1,
@@ -147,25 +186,9 @@ class PropertyController extends Controller
                     'created_at' => now()->toISOString(),
                     'updated_at' => now()->toISOString(),
                 ],
-                [
-                    'id' => 2,
-                    'title' => 'Cozy Mountain Cabin',
-                    'description' => 'Perfect mountain getaway with fireplace and stunning mountain views',
-                    'price' => 120000,
-                    'location' => 'Mountains, Arusha',
-                    'type' => 'cabin',
-                    'bedrooms' => 2,
-                    'bathrooms' => 1,
-                    'max_guests' => 4,
-                    'images' => ['https://picsum.photos/seed/cabin1/800/600.jpg'],
-                    'average_rating' => 4.6,
-                    'status' => 'available',
-                    'created_at' => now()->toISOString(),
-                    'updated_at' => now()->toISOString(),
-                ],
             ];
             
-            \Log::info('Public BNB Index: Falling back to mock data due to error');
+            \Log::info('Public BNB Index: Falling back to mock data');
             return response()->json($mockProperties);
         }
     }
