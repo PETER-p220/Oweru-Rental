@@ -82,39 +82,60 @@ class PropertyController extends Controller
      */
     public function publicBnbIndex(Request $request): JsonResponse
     {
-        $query = BnbProperty::with(['owner'])
-            ->where('status', 'available')
-            ->orderBy('created_at', 'desc')
-            ->limit(8); // Limit for homepage performance
+        // Return mock data first to test if endpoint works
+        $mockProperties = [
+            [
+                'id' => 1,
+                'title' => 'Luxury Beachfront Villa',
+                'description' => 'Beautiful beachfront villa with stunning ocean views',
+                'price' => 250000,
+                'location' => 'Beachfront, Dar es Salaam',
+                'type' => 'villa',
+                'bedrooms' => 3,
+                'bathrooms' => 2,
+                'max_guests' => 6,
+                'images' => ['bnb1.jpg'],
+                'average_rating' => 4.8,
+                'status' => 'available',
+                'created_at' => now()->toISOString(),
+                'updated_at' => now()->toISOString(),
+            ],
+            [
+                'id' => 2,
+                'title' => 'Cozy Mountain Cabin',
+                'description' => 'Perfect mountain getaway with fireplace',
+                'price' => 120000,
+                'location' => 'Mountains, Arusha',
+                'type' => 'cabin',
+                'bedrooms' => 2,
+                'bathrooms' => 1,
+                'max_guests' => 4,
+                'images' => ['cabin1.jpg'],
+                'average_rating' => 4.6,
+                'status' => 'available',
+                'created_at' => now()->toISOString(),
+                'updated_at' => now()->toISOString(),
+            ],
+            [
+                'id' => 3,
+                'title' => 'Modern City Apartment',
+                'description' => 'Stylish apartment in the heart of the city',
+                'price' => 180000,
+                'location' => 'City Center, Dar es Salaam',
+                'type' => 'apartment',
+                'bedrooms' => 1,
+                'bathrooms' => 1,
+                'max_guests' => 2,
+                'images' => ['apt1.jpg'],
+                'average_rating' => 4.7,
+                'status' => 'available',
+                'created_at' => now()->toISOString(),
+                'updated_at' => now()->toISOString(),
+            ],
+        ];
 
-        // Apply filters if provided
-        if ($request->has('location')) {
-            $query->where('location', 'like', '%' . $request->location . '%');
-        }
-
-        if ($request->has('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-
-        if ($request->has('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        if ($request->has('type')) {
-            $query->where('type', $request->type);
-        }
-
-        if ($request->has('max_guests')) {
-            $query->where('max_guests', '>=', $request->max_guests);
-        }
-
-        $properties = $query->get();
-        
-        // Debug logging
-        \Log::info('Public BNB Index Count: ' . $properties->count());
-        \Log::info('Public BNB Index Results: ' . json_encode($properties));
-
-        return response()->json($properties);
+        \Log::info('Public BNB Index: Returning mock data');
+        return response()->json($mockProperties);
     }
 
     public function index(Request $request): JsonResponse
