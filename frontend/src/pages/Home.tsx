@@ -83,25 +83,64 @@ const Home = () => {
     try {
       console.log('🔍 Loading BNB properties...');
       setBnbLoading(true);
+
+      // Test both endpoints to see which one works
+      console.log('🧪 Testing new endpoint: /api/public/bnb');
+      const newUrl = `${API_BASE}/api/public/bnb`;
       
-      // Use public endpoint since homepage is accessible to everyone
-      const response = await Api.searchBnbProperties();
-      console.log('📦 BNB API Response:', response);
-      console.log('📊 Response type:', typeof response);
-      console.log('🔢 Is array?', Array.isArray(response));
-      
-      // Handle different response structures
-      let list = [];
-      if (Array.isArray(response)) {
-        list = response;
-      } else if (response && response.data) {
-        list = Array.isArray(response.data) ? response.data : [];
+      try {
+        const res = await fetch(newUrl, {
+          headers: { Accept: 'application/json' },
+        });
+
+        console.log('📡 New endpoint response:', res.status, res.statusText);
+
+        if (res.ok) {
+          const json = await res.json();
+          console.log('📦 New endpoint works! Response:', json);
+          
+          let list: any[] = [];
+          if (Array.isArray(json)) {
+            list = json;
+          } else if (json?.data && Array.isArray(json.data)) {
+            list = json.data;
+          }
+          
+          console.log('🏠 BNB properties loaded:', list.length);
+          setBnbProperties(list.slice(0, 6));
+          return;
+        }
+      } catch (error) {
+        console.log('❌ New endpoint failed:', error);
       }
+
+      // Fallback: try old endpoint (will likely fail with 401)
+      console.log('� Trying old endpoint: /api/public/bnb/search');
+      const oldUrl = `${API_BASE}/api/public/bnb/search`;
       
-      console.log('🏠 Final BNB list:', list);
-      console.log('📈 BNB count:', list.length);
+      const res = await fetch(oldUrl, {
+        headers: { Accept: 'application/json' },
+      });
+
+      console.log('� Old endpoint response:', res.status, res.statusText);
+
+      if (!res.ok) {
+        throw new Error(`Both endpoints failed: New(${res.status})`);
+      }
+
+      const json = await res.json();
+      console.log('📦 Old endpoint response:', json);
+
+      let list: any[] = [];
+      if (Array.isArray(json)) {
+        list = json;
+      } else if (json?.data && Array.isArray(json.data)) {
+        list = json.data;
+      }
+
+      console.log('🏠 BNB properties from old endpoint:', list.length);
+      setBnbProperties(list.slice(0, 6));
       
-      setBnbProperties(list);
     } catch (error) {
       console.error('❌ Failed to load BNB properties:', error);
       setBnbProperties([]);
