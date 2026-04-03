@@ -84,11 +84,20 @@ const Home = () => {
       console.log('🔍 Loading BNB properties...');
       setBnbLoading(true);
       
-      // Use the same API method that works in BNB owner page
-      const response = await Api.getBnbProperties();
+      // Use public endpoint since homepage is accessible to everyone
+      const response = await Api.searchBnbProperties();
       console.log('📦 BNB API Response:', response);
+      console.log('📊 Response type:', typeof response);
+      console.log('🔢 Is array?', Array.isArray(response));
       
-      const list = response.data || [];
+      // Handle different response structures
+      let list = [];
+      if (Array.isArray(response)) {
+        list = response;
+      } else if (response && response.data) {
+        list = Array.isArray(response.data) ? response.data : [];
+      }
+      
       console.log('🏠 Final BNB list:', list);
       console.log('📈 BNB count:', list.length);
       
