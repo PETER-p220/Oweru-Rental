@@ -1135,9 +1135,9 @@ class AdminController extends Controller
             ],
             'recipients' => [],
             'actions' => [],
-            'created_at' => $createdAt->toISOString(),
-            'updated_at' => $createdAt->toISOString(),
-        ]);
+            'created_at' => $createdAt->toIso8601String(),
+            'updated_at' => $createdAt->toIso8601String(),
+        ];
     }
 
     // ── Admin BNB Management Methods ─────────────────────────────────────────────────────
