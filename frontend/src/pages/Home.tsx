@@ -59,7 +59,7 @@ const Home = () => {
   const loadFeaturedProperties = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/public/properties`, {
+      const res = await fetch(`${API_BASE}/api/public/properties`, {
         headers: { Accept: 'application/json' },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -82,7 +82,7 @@ const Home = () => {
   const loadBnbProperties = async () => {
     try {
       setBnbLoading(true);
-      const res = await fetch(`${API_BASE}/public/bnb/search`, {
+      const res = await fetch(`${API_BASE}/api/public/bnb/search`, {
         headers: { Accept: 'application/json' },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -689,7 +689,7 @@ const BookingForm = ({ property, onClose, onSuccess }: {
 
     try {
       // Public endpoint — no auth required
-      const res = await fetch(`${API_BASE}/public/bnb/bookings`, {
+      const res = await fetch(`${API_BASE}/api/public/bnb/bookings`, {
         method: 'POST',
         headers: { Accept:'application/json', 'Content-Type':'application/json' },
         body: JSON.stringify({
