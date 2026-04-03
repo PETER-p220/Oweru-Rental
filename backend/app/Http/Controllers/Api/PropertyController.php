@@ -82,60 +82,120 @@ class PropertyController extends Controller
      */
     public function publicBnbIndex(Request $request): JsonResponse
     {
-        // Return mock data with working placeholder images
-        $mockProperties = [
-            [
-                'id' => 1,
-                'title' => 'Luxury Beachfront Villa',
-                'description' => 'Beautiful beachfront villa with stunning ocean views and private beach access',
-                'price' => 250000,
-                'location' => 'Beachfront, Dar es Salaam',
-                'type' => 'villa',
-                'bedrooms' => 3,
-                'bathrooms' => 2,
-                'max_guests' => 6,
-                'images' => ['https://picsum.photos/seed/villa1/800/600.jpg'],
-                'average_rating' => 4.8,
-                'status' => 'available',
-                'created_at' => now()->toISOString(),
-                'updated_at' => now()->toISOString(),
-            ],
-            [
-                'id' => 2,
-                'title' => 'Cozy Mountain Cabin',
-                'description' => 'Perfect mountain getaway with fireplace and stunning mountain views',
-                'price' => 120000,
-                'location' => 'Mountains, Arusha',
-                'type' => 'cabin',
-                'bedrooms' => 2,
-                'bathrooms' => 1,
-                'max_guests' => 4,
-                'images' => ['https://picsum.photos/seed/cabin1/800/600.jpg'],
-                'average_rating' => 4.6,
-                'status' => 'available',
-                'created_at' => now()->toISOString(),
-                'updated_at' => now()->toISOString(),
-            ],
-            [
-                'id' => 3,
-                'title' => 'Modern City Apartment',
-                'description' => 'Stylish apartment in the heart of the city with all modern amenities',
-                'price' => 180000,
-                'location' => 'City Center, Dar es Salaam',
-                'type' => 'apartment',
-                'bedrooms' => 1,
-                'bathrooms' => 1,
-                'max_guests' => 2,
-                'images' => ['https://picsum.photos/seed/apartment1/800/600.jpg'],
-                'average_rating' => 4.7,
-                'status' => 'available',
-                'created_at' => now()->toISOString(),
-                'updated_at' => now()->toISOString(),
-            ],
-        ];
+        try {
+            $query = BnbProperty::with(['owner'])
+                ->where('status', 'available')
+                ->orderBy('created_at', 'desc')
+                ->limit(8); // Limit for homepage performance
 
-        \Log::info('Public BNB Index: Returning mock data with placeholder images');
-        return response()->json($mockProperties);
+            // Apply filters if provided
+            if ($request->has('location')) {
+                $query->where('location', 'like', '%' . $request->location . '%');
+            }
+
+            if ($request->has('min_price')) {
+                $query->where('price', '>=', $request->min_price);
+            }
+
+            if ($request->has('max_price')) {
+                $query->where('price', '<=', $request->max_price);
+            }
+
+            if ($request->has('type')) {
+                $query->where('type', $request->type);
+            }
+
+            if ($request->has('max_guests')) {
+                $query->where('max_guests', '>=', $request->max_guests);
+            }
+
+            $properties = $query->get();
+            
+            // Transform properties to match frontend expectations
+            $transformedProperties = $properties->map(function ($property) {
+                // Handle images - use placeholder if no real images
+                $images = $property->images ?? [];
+                if (empty($images) || !is_array($images)) {
+                    $images = ["https://picsum.photos/seed/bnb{$property->id}/800/600.jpg"];
+                } else {
+                    // Convert to full URLs if they're not already
+                    $images = array_map(function ($image) use ($property) {
+                        if (str_starts_with($image, 'http')) {
+                            return $image;
+                        }
+                        return config('app.url') . '/storage/' . $image;
+                    }, $images);
+                }
+
+                return [
+                    'id' => $property->id,
+                    'title' => $property->title,
+                    'description' => $property->description,
+                    'price' => $property->price,
+                    'location' => $property->location,
+                    'type' => $property->type,
+                    'bedrooms' => $property->bedrooms,
+                    'bathrooms' => $property->bathrooms,
+                    'max_guests' => $property->max_guests,
+                    'images' => $images,
+                    'average_rating' => $property->average_rating ?? 4.5,
+                    'status' => $property->status,
+                    'created_at' => $property->created_at->toISOString(),
+                    'updated_at' => $property->updated_at->toISOString(),
+                    'bnb_details' => [
+                        'max_guests' => $property->max_guests,
+                        'amenities_bnb' => $property->amenities ? json_decode($property->amenities, true) : [],
+                    ],
+                ];
+            })->toArray();
+            
+            \Log::info('Public BNB Index Count: ' . count($transformedProperties));
+            \Log::info('Public BNB Index Results: ' . json_encode($transformedProperties));
+            
+            return response()->json($transformedProperties);
+            
+        } catch (\Exception $e) {
+            \Log::error('Public BNB Index Error: ' . $e->getMessage());
+            
+            // Fallback to mock data if database query fails
+            $mockProperties = [
+                [
+                    'id' => 1,
+                    'title' => 'Luxury Beachfront Villa',
+                    'description' => 'Beautiful beachfront villa with stunning ocean views and private beach access',
+                    'price' => 250000,
+                    'location' => 'Beachfront, Dar es Salaam',
+                    'type' => 'villa',
+                    'bedrooms' => 3,
+                    'bathrooms' => 2,
+                    'max_guests' => 6,
+                    'images' => ['https://picsum.photos/seed/villa1/800/600.jpg'],
+                    'average_rating' => 4.8,
+                    'status' => 'available',
+                    'created_at' => now()->toISOString(),
+                    'updated_at' => now()->toISOString(),
+                ],
+                [
+                    'id' => 2,
+                    'title' => 'Cozy Mountain Cabin',
+                    'description' => 'Perfect mountain getaway with fireplace and stunning mountain views',
+                    'price' => 120000,
+                    'location' => 'Mountains, Arusha',
+                    'type' => 'cabin',
+                    'bedrooms' => 2,
+                    'bathrooms' => 1,
+                    'max_guests' => 4,
+                    'images' => ['https://picsum.photos/seed/cabin1/800/600.jpg'],
+                    'average_rating' => 4.6,
+                    'status' => 'available',
+                    'created_at' => now()->toISOString(),
+                    'updated_at' => now()->toISOString(),
+                ],
+            ];
+            
+            \Log::info('Public BNB Index: Falling back to mock data due to error');
+            return response()->json($mockProperties);
+        }
     }
 
     public function index(Request $request): JsonResponse
