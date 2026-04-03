@@ -77,6 +77,46 @@ class PropertyController extends Controller
         return response()->json(['data' => $property]);
     }
 
+    /**
+     * Public BNB properties for homepage — no authentication required.
+     */
+    public function publicBnbIndex(Request $request): JsonResponse
+    {
+        $query = BnbProperty::with(['owner'])
+            ->where('status', 'available')
+            ->orderBy('created_at', 'desc')
+            ->limit(8); // Limit for homepage performance
+
+        // Apply filters if provided
+        if ($request->has('location')) {
+            $query->where('location', 'like', '%' . $request->location . '%');
+        }
+
+        if ($request->has('min_price')) {
+            $query->where('price', '>=', $request->min_price);
+        }
+
+        if ($request->has('max_price')) {
+            $query->where('price', '<=', $request->max_price);
+        }
+
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->has('max_guests')) {
+            $query->where('max_guests', '>=', $request->max_guests);
+        }
+
+        $properties = $query->get();
+        
+        // Debug logging
+        \Log::info('Public BNB Index Count: ' . $properties->count());
+        \Log::info('Public BNB Index Results: ' . json_encode($properties));
+
+        return response()->json($properties);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = Property::with(['owner', 'agent']);
