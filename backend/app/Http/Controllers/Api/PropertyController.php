@@ -86,110 +86,82 @@ class PropertyController extends Controller
         try {
             \Log::info('Public BNB Index: Starting query');
             
-            // Check if table exists
-            if (!\Schema::hasTable('bnb_properties')) {
-                \Log::error('BNB properties table does not exist');
-                throw new \Exception('BNB properties table not found');
-            }
-            
-            \Log::info('Public BNB Index: Table exists, performing query');
-            
-            // Query all BNB properties (remove status filter to see all)
-            $properties = BnbProperty::orderBy('created_at', 'desc')->limit(8)->get();
+            // Simple query to get all BNB properties
+            $properties = BnbProperty::limit(8)->get();
             
             \Log::info('Public BNB Index: Query completed, count: ' . $properties->count());
             
-            // Transform properties to match frontend expectations
+            // Transform properties
             $transformedProperties = $properties->map(function ($property) {
-                \Log::info('Processing property ID: ' . $property->id . ' - Images: ' . json_encode($property->images));
+                // Simple image handling
+                $images = ['https://picsum.photos/seed/bnb' . $property->id . '/800/600.jpg'];
                 
-                // Handle images properly
-                $images = [];
+                // Try to get real images if they exist
                 if ($property->images) {
-                    // If images is a string (JSON), decode it
+                    $propertyImages = [];
                     if (is_string($property->images)) {
-                        $imageArray = json_decode($property->images, true);
-                        if (is_array($imageArray)) {
-                            $images = $imageArray;
+                        $decoded = json_decode($property->images, true);
+                        if (is_array($decoded)) {
+                            $propertyImages = $decoded;
                         }
                     } elseif (is_array($property->images)) {
-                        $images = $property->images;
+                        $propertyImages = $property->images;
                     }
-                }
-                
-                // Build full URLs for images
-                $fullImageUrls = [];
-                foreach ($images as $image) {
-                    if (empty($image)) continue;
                     
-                    if (str_starts_with($image, 'http')) {
-                        // Already a full URL
-                        $fullImageUrls[] = $image;
-                    } else {
-                        // Build storage URL
-                        $fullImageUrls[] = 'http://rental.oweru.com/storage/' . ltrim($image, '/');
+                    if (!empty($propertyImages)) {
+                        $images = array_map(function($img) {
+                            if (str_starts_with($img, 'http')) {
+                                return $img;
+                            }
+                            return 'http://rental.oweru.com/storage/' . ltrim($img, '/');
+                        }, $propertyImages);
                     }
                 }
-                
-                // If no images, use placeholder
-                if (empty($fullImageUrls)) {
-                    $fullImageUrls = ["https://picsum.photos/seed/bnb{$property->id}/800/600.jpg"];
-                }
-                
-                \Log::info('Final image URLs for property ' . $property->id . ': ' . json_encode($fullImageUrls));
                 
                 return [
                     'id' => $property->id,
-                    'title' => $property->title ?? 'Untitled Property',
-                    'description' => $property->description ?? 'No description available',
-                    'price' => $property->price ?? 0,
-                    'location' => $property->location ?? 'Unknown location',
-                    'type' => $property->type ?? 'property',
-                    'bedrooms' => $property->bedrooms ?? 0,
-                    'bathrooms' => $property->bathrooms ?? 0,
-                    'max_guests' => $property->max_guests ?? 2,
-                    'images' => $fullImageUrls,
-                    'average_rating' => $property->average_rating ?? 4.5,
-                    'status' => $property->status ?? 'available',
+                    'title' => $property->title ?? 'Property ' . $property->id,
+                    'description' => $property->description ?? 'Beautiful property',
+                    'price' => $property->price ?? 100000,
+                    'location' => $property->location ?? 'Tanzania',
+                    'type' => $property->type ?? 'apartment',
+                    'bedrooms' => $property->bedrooms ?? 2,
+                    'bathrooms' => $property->bathrooms ?? 1,
+                    'max_guests' => $property->max_guests ?? 4,
+                    'images' => $images,
+                    'average_rating' => 4.5,
+                    'status' => 'available',
                     'created_at' => $property->created_at?->toISOString() ?? now()->toISOString(),
                     'updated_at' => $property->updated_at?->toISOString() ?? now()->toISOString(),
-                    'bnb_details' => [
-                        'max_guests' => $property->max_guests ?? 2,
-                        'amenities_bnb' => $property->amenities ? json_decode($property->amenities, true) : [],
-                    ],
                 ];
             })->toArray();
             
-            \Log::info('Public BNB Index: Transformation completed, count: ' . count($transformedProperties));
+            \Log::info('Public BNB Index: Returning ' . count($transformedProperties) . ' properties');
             
             return response()->json($transformedProperties);
             
         } catch (\Exception $e) {
             \Log::error('Public BNB Index Error: ' . $e->getMessage());
-            \Log::error('Public BNB Index Trace: ' . $e->getTraceAsString());
             
-            // Fallback to mock data
-            $mockProperties = [
+            // Return fallback data
+            return response()->json([
                 [
-                    'id' => 1,
-                    'title' => 'Luxury Beachfront Villa',
-                    'description' => 'Beautiful beachfront villa with stunning ocean views and private beach access',
-                    'price' => 250000,
-                    'location' => 'Beachfront, Dar es Salaam',
-                    'type' => 'villa',
-                    'bedrooms' => 3,
-                    'bathrooms' => 2,
-                    'max_guests' => 6,
-                    'images' => ['https://picsum.photos/seed/villa1/800/600.jpg'],
-                    'average_rating' => 4.8,
+                    'id' => 999,
+                    'title' => 'Sample Property',
+                    'description' => 'This is a sample property',
+                    'price' => 150000,
+                    'location' => 'Dar es Salaam',
+                    'type' => 'apartment',
+                    'bedrooms' => 2,
+                    'bathrooms' => 1,
+                    'max_guests' => 4,
+                    'images' => ['https://picsum.photos/seed/sample/800/600.jpg'],
+                    'average_rating' => 4.5,
                     'status' => 'available',
                     'created_at' => now()->toISOString(),
                     'updated_at' => now()->toISOString(),
-                ],
-            ];
-            
-            \Log::info('Public BNB Index: Falling back to mock data');
-            return response()->json($mockProperties);
+                ]
+            ]);
         }
     }
 
