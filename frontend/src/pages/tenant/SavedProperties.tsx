@@ -3,6 +3,25 @@ import Api from '../../services/api';
 import { buttonStyle, descriptionStyle, formatCurrency, headingStyle, inputStyle, pageStyle, panelStyle, sectionTitleStyle } from './tenantPageStyles';
 import { X, MapPin, Bed, Bath, Square, ChevronLeft, ChevronRight, Tag, Calendar } from 'lucide-react';
 
+const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
+
+const getImage = (property: any) => {
+  if (property?.images?.length) {
+    const i = property.images[0];
+    return i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`;
+  }
+  return `https://picsum.photos/seed/property${property?.id || 0}/400/300.jpg`;
+};
+
+const getImages = (property: any): string[] => {
+  if (property?.images?.length > 0) {
+    return property.images.map((img: string) => 
+      img.startsWith('http') ? img : `${VITE_STORAGE}/storage/${img}`
+    );
+  }
+  return [`https://picsum.photos/seed/property${property?.id || 0}/800/500.jpg`];
+};
+
 interface SavedPropertyItem {
   id: number;
   property?: any;
@@ -37,16 +56,6 @@ const SavedProperties = () => {
     setSelectedProperty(property);
     setActiveImageIndex(0);
     setShowDetailsModal(true);
-  };
-
-  const getImage = (property: any) => {
-    if (property?.images?.[0]) return property.images[0];
-    return `https://picsum.photos/seed/property${property?.id || 0}/400/300.jpg`;
-  };
-
-  const getImages = (property: any): string[] => {
-    if (property?.images?.length > 0) return property.images;
-    return [`https://picsum.photos/seed/property${property?.id || 0}/800/500.jpg`];
   };
 
   const handlePrevImage = () => {

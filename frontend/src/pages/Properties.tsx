@@ -578,7 +578,7 @@ const ApplyModal = ({ property, onClose, onProceed }: {
   <Overlay onClose={onClose}>
     <div className="m-head-navy">
       <button className="m-close" onClick={onClose}><X size={15} /></button>
-      <div className="m-head-title">Apply for Property</div>
+      <div className="m-head-title">Apply for Property site visit</div>
       <div className="m-head-sub">Review the details before proceeding</div>
     </div>
     <div className="m-body">
