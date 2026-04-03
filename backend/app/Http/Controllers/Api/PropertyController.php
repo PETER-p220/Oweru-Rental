@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use App\Models\BnbProperty;
 
 class PropertyController extends Controller
 {
@@ -83,79 +84,50 @@ class PropertyController extends Controller
     public function publicBnbIndex(Request $request): JsonResponse
     {
         try {
-            $query = BnbProperty::with(['owner'])
-                ->where('status', 'available')
-                ->orderBy('created_at', 'desc')
-                ->limit(8); // Limit for homepage performance
-
-            // Apply filters if provided
-            if ($request->has('location')) {
-                $query->where('location', 'like', '%' . $request->location . '%');
+            \Log::info('Public BNB Index: Starting query');
+            
+            // First, check if table exists
+            if (!\Schema::hasTable('bnb_properties')) {
+                \Log::error('BNB properties table does not exist');
+                throw new \Exception('BNB properties table not found');
             }
-
-            if ($request->has('min_price')) {
-                $query->where('price', '>=', $request->min_price);
-            }
-
-            if ($request->has('max_price')) {
-                $query->where('price', '<=', $request->max_price);
-            }
-
-            if ($request->has('type')) {
-                $query->where('type', $request->type);
-            }
-
-            if ($request->has('max_guests')) {
-                $query->where('max_guests', '>=', $request->max_guests);
-            }
-
-            $properties = $query->get();
+            
+            \Log::info('Public BNB Index: Table exists, performing query');
+            
+            // Simple query first to identify the issue
+            $properties = BnbProperty::limit(8)->get();
+            
+            \Log::info('Public BNB Index: Query completed, count: ' . $properties->count());
             
             // Transform properties to match frontend expectations
             $transformedProperties = $properties->map(function ($property) {
-                // Handle images - use placeholder if no real images
-                $images = $property->images ?? [];
-                if (empty($images) || !is_array($images)) {
-                    $images = ["https://picsum.photos/seed/bnb{$property->id}/800/600.jpg"];
-                } else {
-                    // Convert to full URLs if they're not already
-                    $images = array_map(function ($image) use ($property) {
-                        if (str_starts_with($image, 'http')) {
-                            return $image;
-                        }
-                        return config('app.url') . '/storage/' . $image;
-                    }, $images);
-                }
-
+                \Log::info('Processing property ID: ' . $property->id);
+                
                 return [
                     'id' => $property->id,
-                    'title' => $property->title,
-                    'description' => $property->description,
-                    'price' => $property->price,
-                    'location' => $property->location,
-                    'type' => $property->type,
-                    'bedrooms' => $property->bedrooms,
-                    'bathrooms' => $property->bathrooms,
-                    'max_guests' => $property->max_guests,
-                    'images' => $images,
+                    'title' => $property->title ?? 'Untitled Property',
+                    'description' => $property->description ?? 'No description available',
+                    'price' => $property->price ?? 0,
+                    'location' => $property->location ?? 'Unknown location',
+                    'type' => $property->type ?? 'property',
+                    'bedrooms' => $property->bedrooms ?? 0,
+                    'bathrooms' => $property->bathrooms ?? 0,
+                    'max_guests' => $property->max_guests ?? 2,
+                    'images' => ["https://picsum.photos/seed/bnb{$property->id}/800/600.jpg"],
                     'average_rating' => $property->average_rating ?? 4.5,
-                    'status' => $property->status,
-                    'created_at' => $property->created_at->toISOString(),
-                    'updated_at' => $property->updated_at->toISOString(),
-                    'bnb_details' => [
-                        'max_guests' => $property->max_guests,
-                        'amenities_bnb' => $property->amenities ? json_decode($property->amenities, true) : [],
-                    ],
+                    'status' => $property->status ?? 'available',
+                    'created_at' => $property->created_at?->toISOString() ?? now()->toISOString(),
+                    'updated_at' => $property->updated_at?->toISOString() ?? now()->toISOString(),
                 ];
             })->toArray();
             
-            \Log::info('Public BNB Index Count: ' . count($transformedProperties));
-            \Log::info('Public BNB Index Results: ' . json_encode($transformedProperties));
+            \Log::info('Public BNB Index: Transformation completed, count: ' . count($transformedProperties));
             
             return response()->json($transformedProperties);
             
         } catch (\Exception $e) {
             \Log::error('Public BNB Index Error: ' . $e->getMessage());
+            \Log::error('Public BNB Index Trace: ' . $e->getTraceAsString());
             
             // Fallback to mock data if database query fails
             $mockProperties = [
