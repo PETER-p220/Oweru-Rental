@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { Search, Home as HomeIcon, Users, Shield, TrendingUp, ArrowRight, MapPin, Star, ChevronRight, Bed, Bath, Square, DollarSign, Building } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, MapPin, Bed, Bath, Square, Phone, Mail, Calendar, Star, Heart, Users, Home as HomeIcon, Plus, X, Download, CheckCircle, AlertCircle, Clock, DollarSign, TrendingUp, BarChart3, Image as ImageIcon, Shield, ArrowRight, ChevronRight, Building } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Api from '../services/api';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
@@ -15,9 +15,10 @@ const getImage = (property: any): string => {
 };
 
 const Home = () => {
-  const [properties, setProperties] = useState<any[]>([]);
-  const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
-  const [bnbProperties, setBnbProperties] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const [properties, setProperties] = useState([]);
+  const [featuredProperties, setFeaturedProperties] = useState([]);
+  const [bnbProperties, setBnbProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
@@ -27,13 +28,44 @@ const Home = () => {
     activeListings: 0,
     avgResponseTime: '24 hr'
   });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [savedProperties, setSavedProperties] = useState<Set<number>>(new Set());
 
   // Load properties on component mount
   useEffect(() => {
     loadProperties();
     loadBnbProperties();
     loadStats();
+    loadSavedProperties();
   }, []);
+
+  const loadSavedProperties = async () => {
+    try {
+      const res = await Api.getSavedProperties();
+      const saved = new Set((Array.isArray(res.data) ? res.data : []).map((item: any) => item.property?.id || item.id));
+      setSavedProperties(saved);
+    } catch (error) {
+      console.error('Failed to load saved properties:', error);
+    }
+  };
+
+  const handleSaveProperty = async (propertyId: number) => {
+    try {
+      if (savedProperties.has(propertyId)) {
+        await Api.unsaveProperty(propertyId);
+        setSavedProperties(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(propertyId);
+          return newSet;
+        });
+      } else {
+        await Api.saveProperty(propertyId);
+        setSavedProperties(prev => new Set(prev).add(propertyId));
+      }
+    } catch (error) {
+      console.error('Failed to save/unsave property:', error);
+    }
+  };
 
   const loadBnbProperties = async () => {
     try {
@@ -997,10 +1029,9 @@ const Home = () => {
               gap: '20px',
               marginBottom: '40px'
             }}>
-              {featuredProperties.map((property) => (
-                <Link 
+              {featuredProperties.map((property: any) => (
+                <div 
                   key={property.id} 
-                  to={`/property/${property.id}`}
                   style={{ 
                     textDecoration: 'none', 
                     color: 'inherit',
@@ -1020,80 +1051,119 @@ const Home = () => {
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  <div style={{ 
-                    height: '200px', 
-                    backgroundImage: `url(${getImage(property)})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundColor: '#1a1a1a'
-                  }} />
-                  <div style={{ padding: '20px' }}>
+                  <Link 
+                    to={`/property/${property.id}`}
+                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                  >
                     <div style={{ 
-                      fontSize: '18px', 
-                      fontWeight: '400', 
-                      color: 'var(--cream)', 
-                      marginBottom: '8px',
-                      lineHeight: '1.3'
-                    }}>
-                      {property.title}
-                    </div>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '16px', 
-                      marginBottom: '12px',
-                      color: 'var(--muted)',
-                      fontSize: '14px',
-                      fontFamily: "'DM Sans', sans-serif"
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Bed size={14} />
-                        {property.bedrooms} bed
+                      height: '200px', 
+                      backgroundImage: `url(${getImage(property)})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundColor: '#1a1a1a'
+                    }} />
+                    <div style={{ padding: '20px' }}>
+                      <div style={{ 
+                        fontSize: '18px', 
+                        fontWeight: '400', 
+                        color: 'var(--cream)', 
+                        marginBottom: '8px',
+                        lineHeight: '1.3'
+                      }}>
+                        {property.title}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Bath size={14} />
-                        {property.bathrooms} bath
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Square size={14} />
-                        {property.area} sqm
-                      </div>
-                    </div>
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between',
-                      marginBottom: '8px'
-                    }}>
                       <div style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
-                        gap: '6px',
+                        gap: '16px', 
+                        marginBottom: '12px',
                         color: 'var(--muted)',
-                        fontSize: '13px',
+                        fontSize: '14px',
                         fontFamily: "'DM Sans', sans-serif"
                       }}>
-                        <MapPin size={14} />
-                        {property.location}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Bed size={14} />
+                          {property.bedrooms} bed
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Bath size={14} />
+                          {property.bathrooms} bath
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Square size={14} />
+                          {property.area} sqm
+                        </div>
+                      </div>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        marginBottom: '8px'
+                      }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '6px',
+                          color: 'var(--muted)',
+                          fontSize: '13px',
+                          fontFamily: "'DM Sans', sans-serif"
+                        }}>
+                          <MapPin size={14} />
+                          {property.location}
+                        </div>
+                      </div>
+                      <div style={{ 
+                        fontSize: '20px', 
+                        fontWeight: '500', 
+                        color: 'var(--gold)' 
+                      }}>
+                        {formatPrice(property.price)}
+                        <span style={{ 
+                          fontSize: '14px', 
+                          color: 'var(--muted)', 
+                          fontWeight: '300',
+                          marginLeft: '4px'
+                        }}>
+                          /month
+                        </span>
                       </div>
                     </div>
-                    <div style={{ 
-                      fontSize: '20px', 
-                      fontWeight: '500', 
-                      color: 'var(--gold)' 
-                    }}>
-                      {formatPrice(property.price)}
-                      <span style={{ 
-                        fontSize: '14px', 
-                        color: 'var(--muted)', 
-                        fontWeight: '300',
-                        marginLeft: '4px'
-                      }}>
-                        /month
-                      </span>
-                    </div>
+                  </Link>
+                  <div style={{ padding: '0 20px 20px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => handleSaveProperty(property.id)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: `1px solid ${savedProperties.has(property.id) ? 'var(--gold)' : 'var(--border)'}`,
+                        backgroundColor: savedProperties.has(property.id) ? 'var(--gold)' : 'transparent',
+                        color: savedProperties.has(property.id) ? 'var(--dark)' : 'var(--cream)',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!savedProperties.has(property.id)) {
+                          e.currentTarget.style.backgroundColor = 'rgba(201,168,76,0.1)';
+                          e.currentTarget.style.borderColor = 'var(--gold)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!savedProperties.has(property.id)) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.borderColor = 'var(--border)';
+                        }
+                      }}
+                    >
+                      <Heart size={14} fill={savedProperties.has(property.id) ? 'currentColor' : 'none'} />
+                      {savedProperties.has(property.id) ? 'Saved' : 'Save'}
+                    </button>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (
@@ -1134,7 +1204,7 @@ const Home = () => {
               gap: '24px',
               marginBottom: '40px'
             }}>
-              {bnbProperties.map((property) => (
+              {bnbProperties.map((property: any) => (
                 <div key={property.id} style={{
                   background: 'var(--dark-2)',
                   borderRadius: '16px',
