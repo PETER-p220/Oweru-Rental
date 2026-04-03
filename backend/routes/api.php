@@ -23,6 +23,7 @@ Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:sa
 // Public property routes (no authentication required)
 Route::get('/public/properties',           [PropertyController::class, 'publicIndex']);
 Route::get('/public/properties/{property}',[PropertyController::class, 'publicShow']);
+Route::get('/public/bnb',                 [PropertyController::class, 'publicBnbIndex']);
 
 // ── Protected routes ──────────────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
