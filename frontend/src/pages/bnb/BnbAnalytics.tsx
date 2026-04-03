@@ -11,7 +11,7 @@ interface AnalyticsData {
   monthlyRevenue: number[];
   bookingTrends: number[];
   topProperties: Array<{
-    id: number;
+    id: number;  
     title: string;
     bookings: number;
     revenue: number;
