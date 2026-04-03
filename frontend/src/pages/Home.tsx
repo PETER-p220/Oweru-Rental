@@ -81,16 +81,33 @@ const Home = () => {
    */
   const loadBnbProperties = async () => {
     try {
+      console.log('🔍 Loading BNB properties...');
       setBnbLoading(true);
-      const res = await fetch(`${API_BASE}/api/public/bnb/search`, {
+      const url = `${API_BASE}/api/public/bnb/search`;
+      console.log('🌐 Fetching from:', url);
+      const res = await fetch(url, {
         headers: { Accept: 'application/json' },
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      console.log('📡 Response status:', res.status, res.statusText);
+      
+      if (!res.ok) {
+        console.error('❌ Response not OK:', res.status, res.statusText);
+        throw new Error(`HTTP ${res.status}`);
+      }
+      
       const json = await res.json();
+      console.log('📦 BNB API Response:', json);
+      console.log('📊 Response type:', typeof json);
+      console.log('🔢 Is array?', Array.isArray(json));
+      
       // search() does: return response()->json($properties)  → plain array
       const list: any[] = Array.isArray(json) ? json : (json.data ?? []);
+      console.log('🏠 Final BNB list:', list);
+      console.log('📈 BNB count:', list.length);
+      
       setBnbProperties(list);
-    } catch {
+    } catch (error) {
+      console.error('❌ Failed to load BNB properties:', error);
       setBnbProperties([]);
     } finally {
       setBnbLoading(false);
