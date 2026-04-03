@@ -3,29 +3,19 @@ import Api from '../../services/api';
 import { buttonStyle, descriptionStyle, formatCurrency, headingStyle, inputStyle, pageStyle, panelStyle, sectionTitleStyle } from './tenantPageStyles';
 import { X, MapPin, Bed, Bath, Square, ChevronLeft, ChevronRight, Tag, Calendar } from 'lucide-react';
 
-const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
-
-const getImage = (property: any) => {
-  if (property?.images?.length) {
-    const i = property.images[0];
-    return i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`;
-  }
-  return `https://picsum.photos/seed/property${property?.id || 0}/400/300.jpg`;
-};
-
-const getImages = (property: any): string[] => {
-  if (property?.images?.length > 0) {
-    return property.images.map((img: string) => 
-      img.startsWith('http') ? img : `${VITE_STORAGE}/storage/${img}`
-    );
-  }
-  return [`https://picsum.photos/seed/property${property?.id || 0}/800/500.jpg`];
-};
-
 interface SavedPropertyItem {
   id: number;
   property?: any;
 }
+
+/* ─── Same base URL resolution as Properties.tsx ─── */
+const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
+
+const resolveImage = (src: string, propertyId: number | string): string => {
+  if (!src) return `https://picsum.photos/seed/property${propertyId}/400/300.jpg`;
+  if (src.startsWith('http') || src.startsWith('data:')) return src;
+  return `${VITE_STORAGE}/storage/${src}`;
+};
 
 const SavedProperties = () => {
   const [items, setItems] = useState<SavedPropertyItem[]>([]);
@@ -56,6 +46,24 @@ const SavedProperties = () => {
     setSelectedProperty(property);
     setActiveImageIndex(0);
     setShowDetailsModal(true);
+  };
+
+  /* ─── Resolve a single thumbnail/card image ─── */
+  const getImage = (property: any): string => {
+    const id = property?.id ?? 0;
+    if (property?.images?.length) {
+      return resolveImage(property.images[0], id);
+    }
+    return `https://picsum.photos/seed/property${id}/400/300.jpg`;
+  };
+
+  /* ─── Resolve full images array ─── */
+  const getImages = (property: any): string[] => {
+    const id = property?.id ?? 0;
+    if (property?.images?.length > 0) {
+      return property.images.map((img: string) => resolveImage(img, id));
+    }
+    return [`https://picsum.photos/seed/property${id}/800/500.jpg`];
   };
 
   const handlePrevImage = () => {
@@ -111,6 +119,10 @@ const SavedProperties = () => {
                     src={getImage(property)}
                     alt={property?.title}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        `https://picsum.photos/seed/property${property?.id ?? id}/400/300.jpg`;
+                    }}
                   />
                 </div>
                 <div>
@@ -182,6 +194,10 @@ const SavedProperties = () => {
                     objectFit: 'cover',
                     display: 'block',
                     transition: 'opacity 0.25s ease',
+                  }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      `https://picsum.photos/seed/property${selectedProperty?.id ?? 0}/800/500.jpg`;
                   }}
                 />
 
@@ -338,7 +354,15 @@ const SavedProperties = () => {
                         transition: 'opacity 0.2s, border-color 0.2s',
                       }}
                     >
-                      <img src={img} alt={`thumb-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img
+                        src={img}
+                        alt={`thumb-${i}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            `https://picsum.photos/seed/property${selectedProperty?.id ?? 0}thumb${i}/64/44.jpg`;
+                        }}
+                      />
                     </div>
                   ))}
                 </div>
