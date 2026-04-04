@@ -151,28 +151,24 @@ class SelcomService {
   }): Promise<SelcomPaymentResponse> {
     const orderId = this.generateOrderId();
     
-    // Route through our backend to avoid CORS issues
+    // Send to our backend - NO DIRECT SELCOM API CALLS
     const requestBody = {
       amount: paymentData.amount,
-      currency: 'TZS',
-      vendor_id: this.vendorId,
-      order_id: orderId,
       phone_number: paymentData.phone_number,
       provider: paymentData.provider.toUpperCase(),
       customer_email: paymentData.customer_email || `${paymentData.tenant_id}@oweru.com`,
       customer_name: paymentData.customer_name || `Tenant ${paymentData.tenant_id}`,
-      webhook_url: `${window.location.origin}/api/payment/webhook`,
-      redirect_url: `${window.location.origin}/payment/success`,
+      order_id: orderId,
       payment_type: paymentData.payment_type || 'site_visit',
       property_id: paymentData.property_id,
       tenant_id: paymentData.tenant_id
     };
 
-    console.log('🚀 Initiating Selcom Payment:', requestBody);
+    console.log('🚀 Sending payment to backend:', requestBody);
 
     try {
-      // Route through our backend API to avoid CORS
-      const apiResponse = await fetch('/api/payment/selcom/mobile-money', {
+      // ONLY call our backend API
+      const apiResponse = await fetch(`/api/payment/selcom/mobile-money?t=${Date.now()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,87 +178,26 @@ class SelcomService {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📡 Backend Response Status:', apiResponse.status);
+      const result = await apiResponse.json();
 
-      if (apiResponse.ok) {
-        const result = await apiResponse.json();
-        console.log('📱 Backend Response:', result);
-        
-        if (result.success || result.status === 'success') {
-          return {
-            success: true,
-            data: {
-              transaction_id: result.data?.transaction_id || result.transaction_id || orderId,
-              order_id: result.data?.order_id || orderId,
-              status: result.data?.status || result.status || 'pending'
-            }
-          };
-        } else {
-          return {
-            success: false,
-            error: result.error || 'MOBILE_MONEY_FAILED',
-            message: result.message || result.error_description || 'Failed to initiate mobile money payment'
-          };
-        }
-      } else {
-        // Handle specific HTTP errors
-        if (apiResponse.status === 403) {
-          return {
-            success: false,
-            error: 'CORS_ERROR',
-            message: 'CORS error: Browser blocked cross-origin request. Backend proxy needed for production.'
-          };
-        } else if (apiResponse.status === 401 || apiResponse.status === 403) {
-          return {
-            success: false,
-            error: 'AUTHENTICATION_ERROR',
-            message: 'Authentication failed: Invalid API credentials or vendor ID.'
-          };
-        } else if (apiResponse.status === 422) {
-          const errorResult = await apiResponse.json();
-          return {
-            success: false,
-            error: 'VALIDATION_ERROR',
-            message: errorResult.message || 'Invalid payment data provided.'
-          };
-        } else {
-          return {
-            success: false,
-            error: 'API_ERROR',
-            message: `Selcom API error (${apiResponse.status}): Request failed`
-          };
-        }
-      }
-    } catch (error) {
-      console.error('❌ Selcom mobile money error:', error);
-      
-      // Fallback for development when CORS blocks the call
-      if (error instanceof TypeError && (
-        error.message.includes('CORS') || 
-        error.message.includes('Failed to fetch') ||
-        error.message.includes('NetworkError')
-      )) {
-        console.log('🔄 CORS detected - Using development fallback');
+      if (apiResponse.ok && result.success) {
         return {
           success: true,
           data: {
-            transaction_id: orderId,
-            order_id: orderId,
-            
-            status: 'simulated'
-          },
-          message: 'Payment simulated for development due to CORS restrictions. In production, use backend proxy.'
+            transaction_id: result.data?.transaction_id || result.transaction_id || orderId,
+            order_id: result.data?.order_id || orderId,
+            status: result.data?.status || result.status || 'pending'
+          }
         };
-      }
-      
-      // Handle specific error types
-      if (error instanceof TypeError) {
+      } else {
         return {
           success: false,
-          error: 'NETWORK_ERROR',
-          message: 'Network error: Unable to connect to payment service. Please try again.'
+          error: result.error || 'MOBILE_MONEY_FAILED',
+          message: result.message || result.error_description || 'Failed to initiate mobile money payment'
         };
       }
+    } catch (error) {
+      console.error('❌ Backend payment error:', error);
       
       return {
         success: false,

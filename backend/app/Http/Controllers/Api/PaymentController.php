@@ -17,7 +17,7 @@ class PaymentController extends Controller
         try {
             $validated = $request->validate([
                 'amount' => 'required|numeric|min:1000',
-                'phone_number' => 'required|string|min:10',
+                'phone_number' => 'required|string|regex:/^(255|0)[67]\d{8}$/',
                 'provider' => 'required|in:TIGO,MPESA,AIRTEL',
                 'customer_email' => 'required|email',
                 'customer_name' => 'required|string',
@@ -25,6 +25,10 @@ class PaymentController extends Controller
                 'payment_type' => 'required|string',
                 'property_id' => 'required|integer',
                 'tenant_id' => 'required|integer'
+            ], [
+                'phone_number.regex' => 'Phone number must be in format 2557xxxxxx or 07xxxxxx (Tanzania numbers only)',
+                'amount.min' => 'Minimum amount is 100 TZS',
+                'provider.in' => 'Provider must be TIGO, MPESA, or AIRTEL'
             ]);
 
             // Selcom API credentials from environment
@@ -99,6 +103,19 @@ class PaymentController extends Controller
                     'message' => 'Payment initiation failed: ' . $response->body()
                 ], $response->status());
             }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Payment validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
 
         } catch (\Exception $e) {
             Log::error('Payment initiation error', [
