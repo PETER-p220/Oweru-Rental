@@ -3,12 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, MapPin, Bed, Bath, Square, Share2,
   SlidersHorizontal, X, ChevronDown, LayoutGrid, List,
-  CreditCard, LogIn, UserPlus, ShieldCheck, CheckCircle2,
+  LogIn, UserPlus, ShieldCheck, CheckCircle2,
   ArrowRight, Loader2, AlertCircle, Info, CheckCheck, Sparkles,
-  Bookmark,
+  Bookmark, CreditCard,
 } from 'lucide-react';
 import Api from '../services/api';
-import SelcomService from '../services/selcom';
+import SiteVisitRequest from '../components/SiteVisitRequest';
 
 /* ─── Types ─── */
 interface Pagination { current_page: number; last_page: number; per_page: number; total: number; }
@@ -145,30 +145,9 @@ const CSS = `
 .pc-foot-actions{display:flex;align-items:center;gap:6px;}
 
 /* ── Save Button ── */
-.pc-save-btn{
-  height:30px;
-  border-radius:6px;
-  border:1px solid var(--border);
-  background:var(--bg);
-  color:var(--muted);
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:5px;
-  cursor:pointer;
-  transition:all .18s;
-  padding:0 10px;
-  font-family:var(--sans);
-  font-size:12px;
-  font-weight:500;
-  white-space:nowrap;
-}
+.pc-save-btn{height:30px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all .18s;padding:0 10px;font-family:var(--sans);font-size:12px;font-weight:500;white-space:nowrap;}
 .pc-save-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
-.pc-save-btn.saved{
-  color:#fff;
-  border-color:var(--navy);
-  background:var(--navy);
-}
+.pc-save-btn.saved{color:#fff;border-color:var(--navy);background:var(--navy);}
 .pc-save-btn.saved:hover{background:var(--navy-2);border-color:var(--navy-2);}
 
 .pc-foot-btn{height:30px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;padding:0 8px;}
@@ -268,46 +247,6 @@ const CSS = `
 .auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;font-family:var(--sans);font-size:11px;color:var(--hint);}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
 
-/* ── Prop Info Card ── */
-.prop-info{background:linear-gradient(135deg,var(--bg) 0%,#EFF4FF 100%);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;position:relative;overflow:hidden;}
-.prop-info::after{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(30,58,95,.04);pointer-events:none;}
-.prop-info-name{font-family:var(--serif);font-size:17px;font-weight:400;color:var(--navy);margin-bottom:12px;line-height:1.3;}
-.prop-info-row{display:flex;align-items:center;gap:7px;font-family:var(--sans);font-size:12px;color:var(--muted);margin-bottom:6px;}
-.prop-info-row:last-child{margin-bottom:0;}
-.prop-info-row strong{color:var(--text);}
-
-/* ── Fee Block ── */
-.fee-block{background:linear-gradient(135deg,var(--navy) 0%,#0f2744 100%);border-radius:12px;padding:22px;margin:18px 0;text-align:center;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(30,58,95,.2);}
-.fee-block::before{content:'';position:absolute;top:-30px;right:-30px;width:110px;height:110px;border-radius:50%;background:rgba(201,168,76,.1);}
-.fee-block::after{content:'';position:absolute;bottom:-20px;left:-20px;width:70px;height:70px;border-radius:50%;background:rgba(201,168,76,.06);}
-.fee-amount{font-family:var(--serif);font-size:30px;font-weight:300;color:#fff;letter-spacing:-.02em;margin-bottom:5px;position:relative;z-index:1;}
-.fee-label{font-family:var(--sans);font-size:11px;color:rgba(255,255,255,.45);position:relative;z-index:1;}
-
-/* ── Payment ── */
-.pay-method{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid var(--navy);border-radius:10px;background:var(--navy-faint);margin-bottom:14px;}
-.pay-method-icon{width:42px;height:42px;border-radius:10px;background:var(--navy-faint);border:1px solid var(--navy-soft);display:flex;align-items:center;justify-content:center;color:var(--navy);}
-.pay-method-name{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text);}
-.pay-method-sub{font-family:var(--sans);font-size:11px;color:var(--hint);}
-.pay-badge{margin-left:auto;background:var(--navy);color:#fff;font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:4px;}
-.pay-secure{display:flex;align-items:center;gap:8px;background:rgba(5,150,105,.05);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:10px 13px;font-family:var(--sans);font-size:12px;color:var(--success);}
-.pay-input{width:100%;padding:12px 15px;border:1px solid var(--border);border-radius:9px;font-size:13px;font-family:var(--sans);background:#fff;outline:none;transition:border-color .18s,box-shadow .18s;color:var(--text);margin-bottom:16px;}
-.pay-input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.07);}
-.pay-input:disabled{background:var(--bg);color:var(--hint);}
-.pay-input::placeholder{color:var(--hint);}
-
-/* ── Success ── */
-.succ-hero{background:linear-gradient(135deg,#064e3b 0%,#065f46 100%);border-radius:20px 20px 0 0;padding:34px 28px 26px;text-align:center;position:relative;overflow:hidden;}
-.succ-hero::before{content:'';position:absolute;top:-30px;right:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.05);}
-.succ-hero::after{content:'';position:absolute;bottom:-20px;left:-20px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.04);}
-.succ-icon{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;color:#fff;margin:0 auto 18px;position:relative;z-index:1;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:succ-pop .5s .1s cubic-bezier(.16,1,.3,1) both;}
-@keyframes succ-pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
-.succ-title{font-family:var(--serif);font-size:23px;font-weight:300;color:#fff;margin-bottom:7px;position:relative;z-index:1;}
-.succ-sub{font-family:var(--sans);font-size:13px;color:rgba(255,255,255,.55);line-height:1.55;position:relative;z-index:1;max-width:300px;margin:0 auto;}
-.succ-steps-wrap{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:4px 16px;margin-bottom:2px;}
-.succ-step{display:flex;align-items:center;gap:12px;font-family:var(--sans);font-size:13px;color:var(--text);padding:11px 0;border-bottom:1px solid var(--border);}
-.succ-step:last-child{border-bottom:none;}
-.succ-step-icon{width:28px;height:28px;border-radius:8px;background:rgba(5,150,105,.1);color:var(--success);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-
 /* ── Confirm Dialog ── */
 .confirm-overlay{position:fixed;inset:0;z-index:9998;background:rgba(10,18,35,.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;animation:mFade .2s ease;}
 .confirm-box{background:#fff;border-radius:18px;max-width:380px;width:100%;box-shadow:0 30px 70px rgba(0,0,0,.22),0 0 0 1px rgba(0,0,0,.05);animation:mSlide .3s cubic-bezier(.16,1,.3,1);overflow:hidden;}
@@ -328,15 +267,6 @@ const CSS = `
 .confirm-btn.primary.warning:hover{background:#b45309;border-color:#b45309;}
 .confirm-btn.primary.info{background:var(--info);border-color:var(--info);}
 .confirm-btn.primary.info:hover{background:#0369a1;border-color:#0369a1;}
-
-/* ── Provider Tabs ── */
-.provider-btn{flex:1;padding:11px 8px;border-radius:10px;font-family:var(--sans);font-size:12px;font-weight:500;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .2s;text-align:center;}
-.provider-btn:hover{border-color:var(--hint);color:var(--text);}
-.provider-btn:disabled{opacity:.4;cursor:not-allowed;}
-.provider-btn[data-active='true'].tigo{border-color:#00D4AA;background:rgba(0,212,170,.08);color:#008a6f;}
-.provider-btn[data-active='true'].mpesa{border-color:#00C853;background:rgba(0,200,83,.08);color:#005c26;}
-.provider-btn[data-active='true'].airtel{border-color:#FF6B35;background:rgba(255,107,53,.08);color:#c94212;}
-.field-label{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--hint);margin-bottom:8px;display:block;}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -490,9 +420,16 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
           <div className="pc-price-main">{formatPrice(property.price)}</div>
           <div className="pc-price-period">/month</div>
         </div>
-        {/* Share button on hover — top right of image */}
         <div className="pc-img-actions">
-          <button className="pc-img-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/property/${property.id}`); }} title="Copy link">
+          <button
+            className="pc-img-btn"
+            onClick={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigator.clipboard.writeText(`${window.location.origin}/property/${property.id}`);
+            }}
+            title="Copy link"
+          >
             <Share2 size={14} />
           </button>
         </div>
@@ -509,7 +446,6 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
         <div className="pc-footer">
           <div>{property.furnished && <span className="pc-tag">Furnished</span>}</div>
           <div className="pc-foot-actions">
-            {/* ── Save Button ── */}
             <button
               className={`pc-save-btn${isSaved ? ' saved' : ''}`}
               onClick={onSave}
@@ -533,7 +469,7 @@ const Overlay = ({ onClose, children }: { onClose: () => void; children: React.R
   </div>
 );
 
-/* ─── 1. Auth Gate Modal ─── */
+/* ─── Auth Gate Modal ─── */
 const AuthModal = ({ property, onClose, onLogin, onSignup }: {
   property: Property; onClose: () => void; onLogin: () => void; onSignup: () => void;
 }) => (
@@ -541,12 +477,14 @@ const AuthModal = ({ property, onClose, onLogin, onSignup }: {
     <div className="auth-hero">
       <button className="m-close" onClick={onClose}><X size={15} /></button>
       <div className="auth-hero-icon"><ShieldCheck size={24} /></div>
-      <div className="auth-hero-title">Sign in to Apply</div>
-      <div className="auth-hero-desc">You need an account to submit a rental application and connect with agents.</div>
-      <div className="auth-prop-pill"><MapPin size={11} />Applying for <strong>{property.title}</strong></div>
+      <div className="auth-hero-title">Sign in to Continue</div>
+      <div className="auth-hero-desc">You need an account to request a site visit.</div>
+      <div className="auth-prop-pill"><MapPin size={11} />Visiting <strong>{property.title}</strong></div>
     </div>
     <div className="m-body" style={{ paddingTop: 22 }}>
-      <div style={{ fontFamily: 'var(--sans)', fontSize: 10, fontWeight: 600, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--hint)', marginBottom: 12 }}>Choose an option to continue</div>
+      <div style={{ fontFamily: 'var(--sans)', fontSize: 10, fontWeight: 600, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--hint)', marginBottom: 12 }}>
+        Choose an option to continue
+      </div>
       <div className="auth-opt" onClick={onLogin} role="button">
         <div className="auth-opt-icon login"><LogIn size={18} /></div>
         <div style={{ flex: 1 }}>
@@ -571,131 +509,8 @@ const AuthModal = ({ property, onClose, onLogin, onSignup }: {
   </Overlay>
 );
 
-/* ─── 2. Apply Confirm Modal ─── */
-const ApplyModal = ({ property, onClose, onProceed }: {
-  property: Property; onClose: () => void; onProceed: () => void;
-}) => (
-  <Overlay onClose={onClose}>
-    <div className="m-head-navy">
-      <button className="m-close" onClick={onClose}><X size={15} /></button>
-      <div className="m-head-title">Apply for Property site visit</div>
-      <div className="m-head-sub">Review the details before proceeding</div>
-    </div>
-    <div className="m-body">
-      <div className="prop-info">
-        <div className="prop-info-name">{property.title}</div>
-        {(property.location || property.address) && (
-          <div className="prop-info-row"><MapPin size={12} /><strong>{property.location || property.address}</strong></div>
-        )}
-        <div className="prop-info-row"><CreditCard size={12} />Monthly rent: <strong>{formatPrice(property.price)}</strong></div>
-        {property.bedrooms != null && <div className="prop-info-row"><Bed size={12} />Bedrooms: <strong>{property.bedrooms}</strong></div>}
-        {property.furnished && <div className="prop-info-row"><CheckCircle2 size={12} style={{ color: 'var(--success)' }} /><strong style={{ color: 'var(--success)' }}>Furnished</strong></div>}
-      </div>
-      <div className="fee-block">
-        <div className="fee-amount">TZS 20,000</div>
-        <div className="fee-label">One-time service fee · non-refundable</div>
-      </div>
-      <p style={{ fontFamily: 'var(--sans)', fontSize: 12, color: 'var(--muted)', lineHeight: 1.65 }}>
-        This fee connects you directly with the property agent. Once paid, the agent is notified immediately and will reach out within 24 hours to arrange a viewing.
-      </p>
-    </div>
-    <div className="m-footer">
-      <button className="m-btn" onClick={onClose}>Cancel</button>
-      <button className="m-btn m-btn-navy" onClick={onProceed}>Proceed to Payment <ArrowRight size={14} /></button>
-    </div>
-  </Overlay>
-);
-
-/* ─── 3. Payment Modal ─── */
-const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber, paymentMethod, setPaymentMethod }: {
-  processing: boolean; onClose: () => void; onPay: () => void;
-  phoneNumber: string; setPhoneNumber: (value: string) => void;
-  paymentMethod: 'tigo' | 'mpesa' | 'airtel'; setPaymentMethod: (value: 'tigo' | 'mpesa' | 'airtel') => void;
-}) => (
-  <Overlay onClose={() => !processing && onClose()}>
-    <div className="m-head-navy">
-      <button className="m-close" onClick={() => !processing && onClose()} style={{ opacity: processing ? .4 : 1, cursor: processing ? 'not-allowed' : 'pointer' }}><X size={15} /></button>
-      <div className="m-head-title">Complete Payment</div>
-      <div className="m-head-sub">Secure checkout · TZS 20,000</div>
-    </div>
-    <div className="m-body">
-      <div className="fee-block">
-        <div className="fee-amount">TZS 20,000</div>
-        <div className="fee-label">Service fee for agent connection</div>
-      </div>
-      <label className="field-label">Mobile Money Provider</label>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {([
-          { value: 'tigo',   label: 'Tigo Pesa' },
-          { value: 'mpesa',  label: 'M-Pesa' },
-          { value: 'airtel', label: 'Airtel Money' },
-        ] as { value: 'tigo' | 'mpesa' | 'airtel'; label: string }[]).map(p => (
-          <button
-            key={p.value}
-            className={`provider-btn ${p.value}`}
-            data-active={paymentMethod === p.value ? 'true' : 'false'}
-            onClick={() => setPaymentMethod(p.value)}
-            disabled={processing}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-      <label className="field-label">Phone Number</label>
-      <input
-        className="pay-input"
-        type="tel"
-        placeholder="e.g. 0712 345 678"
-        value={phoneNumber}
-        onChange={e => setPhoneNumber(e.target.value)}
-        disabled={processing}
-      />
-      <div className="pay-secure"><ShieldCheck size={14} />Powered by Selcom · 256-bit encrypted</div>
-    </div>
-    <div className="m-footer">
-      <button className="m-btn" onClick={() => !processing && onClose()} disabled={processing}>Cancel</button>
-      <button className="m-btn m-btn-success" onClick={onPay} disabled={processing || !phoneNumber || phoneNumber.length < 10}>
-        {processing
-          ? <><Loader2 size={14} style={{ animation: 'spin .8s linear infinite' }} />Processing…</>
-          : <>Pay TZS 20,000 <ArrowRight size={14} /></>
-        }
-      </button>
-    </div>
-  </Overlay>
-);
-
-/* ─── 4. Success Modal ─── */
-const SuccessModal = ({ onClose }: { onClose: () => void }) => (
-  <Overlay onClose={onClose}>
-    <div className="succ-hero">
-      <div className="succ-icon"><CheckCircle2 size={28} /></div>
-      <div className="succ-title">Application Submitted!</div>
-      <div className="succ-sub">Payment confirmed. The agent has been notified and will contact you shortly.</div>
-    </div>
-    <div className="m-body" style={{ paddingTop: 20 }}>
-      <div className="succ-steps-wrap">
-        {[
-          { label: 'Application fee received & confirmed',     icon: <CheckCheck size={14} /> },
-          { label: 'Agent notified instantly via SMS & email', icon: <Sparkles size={14} /> },
-          { label: 'Expect a call or message within 24 hours', icon: <CheckCircle2 size={14} /> },
-        ].map((s, i) => (
-          <div key={i} className="succ-step">
-            <div className="succ-step-icon">{s.icon}</div>
-            {s.label}
-          </div>
-        ))}
-      </div>
-    </div>
-    <div className="m-footer">
-      <button className="m-btn m-btn-navy" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>
-        View My Applications <ArrowRight size={14} />
-      </button>
-    </div>
-  </Overlay>
-);
-
-/* ─── Main ─── */
-type ModalStep = 'none' | 'auth' | 'apply' | 'payment' | 'success';
+/* ─── Main Component ─── */
+type ModalStep = 'none' | 'auth' | 'site-visit';
 
 const Properties = () => {
   const navigate = useNavigate();
@@ -716,9 +531,6 @@ const Properties = () => {
   const [properties,    setProperties]   = useState<Property[]>([]);
   const [modal,         setModal]        = useState<ModalStep>('none');
   const [selProp,       setSelProp]      = useState<Property | null>(null);
-  const [paying,        setPaying]       = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
-  const [phoneNumber,   setPhoneNumber]   = useState('');
 
   const { toasts, addToast, removeToast } = useToast();
   const { config: confirmConfig, confirm, handleConfirm, handleCancel } = useConfirm();
@@ -799,75 +611,24 @@ const Properties = () => {
   const handleApply = (property: Property, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     setSelProp(property);
-    setModal(localStorage.getItem('token') ? 'apply' : 'auth');
+    if (!localStorage.getItem('token')) {
+      setModal('auth');
+    } else {
+      setModal('site-visit');
+    }
   };
 
-  const handleAuthLogin  = () => {
+  const handleAuthLogin = () => {
     if (selProp) sessionStorage.setItem('pendingApplication', selProp.id.toString());
-    navigate(`/login?redirect=/dashboard/tenant/applications?property=${selProp?.id}`);
+    navigate(`/login?redirect=/properties`);
   };
+
   const handleAuthSignup = () => {
     if (selProp) sessionStorage.setItem('pendingApplication', selProp.id.toString());
-    navigate(`/register?redirect=/dashboard/tenant/applications?property=${selProp?.id}`);
+    navigate(`/register?redirect=/properties`);
   };
 
-  const handlePay = async () => {
-    if (!selProp) return;
-    if (!phoneNumber || phoneNumber.length < 10) {
-      addToast({ type: 'warning', title: 'Invalid phone number', message: 'Please enter a valid mobile money number (at least 10 digits).', duration: 5000 });
-      return;
-    }
-    setPaying(true);
-    try {
-      const userStr  = localStorage.getItem('user');
-      const user     = userStr ? JSON.parse(userStr) : null;
-      const tenantId = user?.id;
-      if (!tenantId) {
-        addToast({ type: 'error', title: 'Not authenticated', message: 'Your session may have expired. Please log in again.' });
-        setPaying(false);
-        return;
-      }
-      const paymentData = {
-        amount: 20000, property_id: selProp.id, tenant_id: tenantId,
-        phone_number: phoneNumber, provider: paymentMethod,
-        customer_email: user?.email,
-        customer_name: user?.first_name && user?.last_name
-          ? `${user.first_name} ${user.last_name}` : user?.first_name || 'Customer',
-      };
-      let paymentSuccessful = false;
-      let transactionId: string | null = null;
-      try {
-        const paymentResponse = await SelcomService.initiateMobileMoneyPayment(paymentData);
-        if (paymentResponse.success && paymentResponse.data?.transaction_id) {
-          paymentSuccessful = true;
-          transactionId = paymentResponse.data.transaction_id;
-          addToast({ type: 'success', title: 'Payment initiated', message: `Check your ${paymentMethod.toUpperCase()} prompt to complete the payment. Ref: ${transactionId}`, duration: 8000 });
-        } else {
-          throw new Error(paymentResponse.message || 'Payment initiation failed');
-        }
-      } catch (selcomError: any) {
-        throw new Error(selcomError?.message || 'Payment failed. Please check your phone number and try again.');
-      }
-      if (paymentSuccessful) {
-        await Api.createApplication({ property_id: selProp.id, owner_id: selProp.owner?.id, service_fee: 20000, payment_status: 'paid', payment_method: paymentMethod, transaction_id: transactionId });
-        try {
-          await Api.createContract({ property_id: selProp.id, owner_id: selProp.owner?.id, tenant_id: tenantId, start_date: new Date().toISOString().split('T')[0], end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], rent_amount: selProp.price, status: 'pending_signature', payment_status: 'service_fee_paid', service_fee_transaction_id: transactionId });
-        } catch (contractError) { console.warn('Contract creation failed:', contractError); }
-        if (selProp.agent?.id) {
-          try {
-            await Api.notifyAgent({ agent_id: selProp.agent.id, property_id: selProp.id, tenant_id: tenantId, message: `Tenant paid service fee via ${paymentMethod.toUpperCase()} for: ${selProp.title}` });
-          } catch (notifyError) { console.warn('Agent notification failed:', notifyError); }
-        }
-        setModal('success');
-      }
-    } catch (err: any) {
-      addToast({ type: 'error', title: 'Payment failed', message: err?.message || 'Something went wrong. Please try again.', duration: 7000 });
-    } finally {
-      setPaying(false);
-    }
-  };
-
-  const closeModal = () => { if (!paying) { setModal('none'); setSelProp(null); } };
+  const closeModal = () => { setModal('none'); setSelProp(null); };
 
   const clearFilters = () => {
     setSearchTerm(''); setSelectedType(''); setPriceRange('');
@@ -909,7 +670,13 @@ const Properties = () => {
         <div className="sb-inner">
           <div className="sb-search">
             <span className="sb-search-icon"><Search size={14} /></span>
-            <input className="sb-input" type="text" placeholder="Location or property name…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <input
+              className="sb-input"
+              type="text"
+              placeholder="Location or property name…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
             {searchTerm && <button className="sb-clear" onClick={() => setSearchTerm('')}><X size={13} /></button>}
           </div>
           <select className="sb-select" value={selectedType} onChange={e => setSelectedType(e.target.value)}>
@@ -926,7 +693,10 @@ const Properties = () => {
             <option value="500-1000">500K – 1M TZS</option>
             <option value="1000+">Above 1M TZS</option>
           </select>
-          <button className={`sb-filter-btn${showFilters ? ' active' : ''}`} onClick={() => setShowFilters(v => !v)}>
+          <button
+            className={`sb-filter-btn${showFilters ? ' active' : ''}`}
+            onClick={() => setShowFilters(v => !v)}
+          >
             <SlidersHorizontal size={13} /> Filters
             {activeFilterCount > 0 && <span className="sb-filter-count">{activeFilterCount}</span>}
             <ChevronDown size={11} style={{ transform: showFilters ? 'rotate(180deg)' : 'none', transition: 'transform .25s' }} />
@@ -939,14 +709,24 @@ const Properties = () => {
         <div className={`adv${showFilters ? ' open' : ''}`}>
           <div className="adv-inner">
             <span className="adv-label">Refine</span>
-            <select className="sb-select" style={{ minWidth: 110 }} value={bedrooms?.toString() ?? ''} onChange={e => setBedrooms(e.target.value ? parseInt(e.target.value) : undefined)}>
+            <select
+              className="sb-select"
+              style={{ minWidth: 110 }}
+              value={bedrooms?.toString() ?? ''}
+              onChange={e => setBedrooms(e.target.value ? parseInt(e.target.value) : undefined)}
+            >
               <option value="">Bedrooms</option>
               <option value="1">1+</option>
               <option value="2">2+</option>
               <option value="3">3+</option>
               <option value="4">4+</option>
             </select>
-            <select className="sb-select" style={{ minWidth: 130 }} value={furnished == null ? '' : furnished ? 'true' : 'false'} onChange={e => { const v = e.target.value; setFurnished(v === '' ? undefined : v === 'true'); }}>
+            <select
+              className="sb-select"
+              style={{ minWidth: 130 }}
+              value={furnished == null ? '' : furnished ? 'true' : 'false'}
+              onChange={e => { const v = e.target.value; setFurnished(v === '' ? undefined : v === 'true'); }}
+            >
               <option value="">Furnishing</option>
               <option value="true">Furnished</option>
               <option value="false">Unfurnished</option>
@@ -985,7 +765,11 @@ const Properties = () => {
             </div>
             {hasMore && (
               <div className="load-more">
-                <button className="load-more-btn" disabled={loadingMore} onClick={() => setPage(prev => prev + 1)}>
+                <button
+                  className="load-more-btn"
+                  disabled={loadingMore}
+                  onClick={() => setPage(prev => prev + 1)}
+                >
                   {loadingMore ? 'Loading…' : `Load more · page ${(pagination?.current_page ?? 1) + 1} of ${pagination?.last_page}`}
                 </button>
               </div>
@@ -1006,13 +790,28 @@ const Properties = () => {
       </div>
 
       {/* Modals */}
-      {modal === 'auth'    && selProp && <AuthModal    property={selProp} onClose={closeModal} onLogin={handleAuthLogin} onSignup={handleAuthSignup} />}
-      {modal === 'apply'   && selProp && <ApplyModal   property={selProp} onClose={closeModal} onProceed={() => setModal('payment')} />}
-      {modal === 'payment' && selProp && (
-        <PaymentModal processing={paying} onClose={closeModal} onPay={handlePay} phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
+      {modal === 'auth' && selProp && (
+        <AuthModal
+          property={selProp}
+          onClose={closeModal}
+          onLogin={handleAuthLogin}
+          onSignup={handleAuthSignup}
+        />
       )}
-      {modal === 'success' && (
-        <SuccessModal onClose={() => { closeModal(); navigate('/dashboard/tenant/applications'); }} />
+      {modal === 'site-visit' && selProp && (
+        <SiteVisitRequest
+          property={selProp}
+          onClose={closeModal}
+          onSuccess={() => {
+            addToast({
+              type: 'success',
+              title: 'Site visit requested!',
+              message: 'Your request has been submitted successfully.',
+              duration: 4000,
+            });
+            closeModal();
+          }}
+        />
       )}
     </div>
   );

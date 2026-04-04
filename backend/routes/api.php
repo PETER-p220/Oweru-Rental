@@ -263,6 +263,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/upload-image',                [ImageUploadController::class, 'upload']);
         Route::post('/upload-images',               [ImageUploadController::class, 'uploadMultiple']);
         Route::delete('/delete-image',               [ImageUploadController::class, 'delete']);
+
+        // ── Site Visit routes ─────────────────────────────────────────────────────────
+        Route::get('/site-visits',                  [SiteVisitController::class, 'getMyVisits']);
+        Route::post('/site-visits',                  [SiteVisitController::class, 'requestVisit']);
+        Route::patch('/site-visits/{visit}/confirm', [SiteVisitController::class, 'confirmVisit']);
+        Route::patch('/site-visits/{visit}/cancel',  [SiteVisitController::class, 'cancelVisit']);
+        Route::get('/site-visits/notifications',    [SiteVisitController::class, 'getNotifications']);
+        Route::patch('/notifications/{notification}/read', [SiteVisitController::class, 'markNotificationRead']);
     });
 
     // ── Public BNB routes ─────────────────────────────────────────────────────────────
@@ -270,4 +278,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/public/bnb/properties/{property}', [BnbPropertyController::class, 'show']);
     Route::post('/public/bnb/bookings',           [BnbBookingController::class, 'store']);
     Route::post('/public/bnb/properties/{property}/reviews', [BnbReviewController::class, 'store']);
+
+    // ── Payment webhook routes ───────────────────────────────────────────────────────
+    Route::post('/payment/webhook',              [PaymentWebhookController::class, 'handleSelcomWebhook']);
 });

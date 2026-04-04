@@ -548,6 +548,31 @@ class Api {
     return Promise.resolve({ success: true });
   }
 
+  // ── Site Visits ─────────────────────────────────────────────────────────────
+  static async requestSiteVisit(data: any) {
+    return this.request<any>('site-visits', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  static async getMyVisits() {
+    return this.request<any>('site-visits');
+  }
+
+  static async confirmVisit(visitId: number) {
+    return this.request<any>(`site-visits/${visitId}/confirm`, { method: 'PATCH' });
+  }
+
+  static async cancelVisit(visitId: number, reason: string) {
+    return this.request<any>(`site-visits/${visitId}/cancel`, { method: 'PATCH', body: JSON.stringify({ reason }) });
+  }
+
+  static async getVisitNotifications() {
+    return this.request<any>('site-visits/notifications');
+  }
+
+  static async markNotificationRead(notificationId: number) {
+    return this.request<any>(`notifications/${notificationId}/read`, { method: 'PATCH' });
+  }
+
   static async publicUnsaveProperty(propertyId: number) {
     // For demo purposes, just return success  
     return Promise.resolve({ success: true });
