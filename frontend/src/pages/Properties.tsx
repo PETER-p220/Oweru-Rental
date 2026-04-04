@@ -787,12 +787,16 @@ const Properties = () => {
         setSavedIds(p => { const s = new Set(p); s.delete(id); return s; });
         addToast({ type: 'info', title: 'Removed from saved', duration: 3000 });
       } else {
-        await Api.saveProperty(id);
+        const response = await Api.saveProperty(id);
         setSavedIds(p => new Set(p).add(id));
-        addToast({ type: 'success', title: 'Property saved', message: 'You can view saved properties in your dashboard.', duration: 3500 });
+        if (response.already_saved) {
+          addToast({ type: 'info', title: 'Already saved', message: 'This property is in your saved list.', duration: 3000 });
+        } else {
+          addToast({ type: 'success', title: 'Property saved', message: 'You can view saved properties in your dashboard.', duration: 3500 });
+        }
       }
-    } catch {
-      addToast({ type: 'error', title: 'Action failed', message: 'Could not update saved properties. Please try again.' });
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Action failed', message: err?.message || 'Could not update saved properties. Please try again.' });
     }
   };
 

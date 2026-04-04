@@ -145,10 +145,13 @@ class SelcomService {
     provider: 'tigo' | 'mpesa' | 'airtel';
     property_id: number;
     tenant_id: number;
+    customer_email?: string;
+    customer_name?: string;
+    payment_type?: string;
   }): Promise<SelcomPaymentResponse> {
     const orderId = this.generateOrderId();
     
-    // Real Selcom API endpoint for mobile money
+    // Route through our backend to avoid CORS issues
     const requestBody = {
       amount: paymentData.amount,
       currency: 'TZS',
@@ -156,37 +159,34 @@ class SelcomService {
       order_id: orderId,
       phone_number: paymentData.phone_number,
       provider: paymentData.provider.toUpperCase(),
-      customer_email: `${paymentData.tenant_id}@oweru.com`, // Fallback email
-      customer_name: `Tenant ${paymentData.tenant_id}`,
+      customer_email: paymentData.customer_email || `${paymentData.tenant_id}@oweru.com`,
+      customer_name: paymentData.customer_name || `Tenant ${paymentData.tenant_id}`,
       webhook_url: `${window.location.origin}/api/payment/webhook`,
-      redirect_url: `${window.location.origin}/payment/success`
+      redirect_url: `${window.location.origin}/payment/success`,
+      payment_type: paymentData.payment_type || 'site_visit',
+      property_id: paymentData.property_id,
+      tenant_id: paymentData.tenant_id
     };
 
     console.log('🚀 Initiating Selcom Payment:', requestBody);
 
     try {
-      // Direct API call with comprehensive CORS headers
-      const apiResponse = await fetch(`${this.baseUrl}/payments/mobilemoney`, {
+      // Route through our backend API to avoid CORS
+      const apiResponse = await fetch('/api/payment/selcom/mobile-money', {
         method: 'POST',
-        mode: 'cors',
-        credentials: 'omit',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'X-Vendor-ID': this.vendorId,
-          'Accept': 'application/json',
-          'Access-Control-Request-Method': 'POST',
-          'Access-Control-Request-Headers': 'Content-Type,Authorization,X-Vendor-ID'
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/json'
         },
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📡 Selcom Response Status:', apiResponse.status);
-      console.log('📡 Selcom Response Headers:', [...apiResponse.headers.entries()]);
+      console.log('📡 Backend Response Status:', apiResponse.status);
 
       if (apiResponse.ok) {
         const result = await apiResponse.json();
-        console.log('📱 Selcom Response:', result);
+        console.log('📱 Backend Response:', result);
         
         if (result.success || result.status === 'success') {
           return {

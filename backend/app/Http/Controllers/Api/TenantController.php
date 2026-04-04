@@ -64,7 +64,7 @@ class TenantController extends Controller
             ->first();
 
         if ($existing) {
-            return response()->json(['message' => 'Property already saved'], 422);
+            return response()->json(['message' => 'Property already saved', 'already_saved' => true]);
         }
 
         SavedProperty::create([

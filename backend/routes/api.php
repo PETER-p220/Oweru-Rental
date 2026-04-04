@@ -14,6 +14,7 @@ use App\Http\Controllers\Bnb\BnbPropertyController;
 use App\Http\Controllers\Bnb\BnbBookingController;
 use App\Http\Controllers\Bnb\BnbReviewController;
 use App\Http\Controllers\Api\ImageUploadController;
+use App\Http\Controllers\Api\PaymentController;
 
 // ── Public routes ─────────────────────────────────────────────────────────────
 Route::post('/register', [AuthController::class, 'register']);
@@ -264,13 +265,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/upload-images',               [ImageUploadController::class, 'uploadMultiple']);
         Route::delete('/delete-image',               [ImageUploadController::class, 'delete']);
 
+        // ── Payment routes ─────────────────────────────────────────────────────────────
+        Route::post('/payment/selcom/mobile-money', [PaymentController::class, 'initiateMobileMoney']);
+        Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook']);
+
         // ── Site Visit routes ─────────────────────────────────────────────────────────
-        Route::get('/site-visits',                  [SiteVisitController::class, 'getMyVisits']);
-        Route::post('/site-visits',                  [SiteVisitController::class, 'requestVisit']);
-        Route::patch('/site-visits/{visit}/confirm', [SiteVisitController::class, 'confirmVisit']);
-        Route::patch('/site-visits/{visit}/cancel',  [SiteVisitController::class, 'cancelVisit']);
-        Route::get('/site-visits/notifications',    [SiteVisitController::class, 'getNotifications']);
-        Route::patch('/notifications/{notification}/read', [SiteVisitController::class, 'markNotificationRead']);
+        // Route::get('/site-visits',                  [SiteVisitController::class, 'getMyVisits']);
+        // Route::post('/site-visits',                  [SiteVisitController::class, 'requestVisit']);
+        // Route::patch('/site-visits/{visit}/confirm', [SiteVisitController::class, 'confirmVisit']);
+        // Route::patch('/site-visits/{visit}/cancel',  [SiteVisitController::class, 'cancelVisit']);
+        // Route::get('/site-visits/notifications',    [SiteVisitController::class, 'getNotifications']);
+        // Route::patch('/notifications/{notification}/read', [SiteVisitController::class, 'markNotificationRead']);
     });
 
     // ── Public BNB routes ─────────────────────────────────────────────────────────────
@@ -280,5 +285,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/public/bnb/properties/{property}/reviews', [BnbReviewController::class, 'store']);
 
     // ── Payment webhook routes ───────────────────────────────────────────────────────
-    Route::post('/payment/webhook',              [PaymentWebhookController::class, 'handleSelcomWebhook']);
+    // Route::post('/payment/webhook',              [PaymentWebhookController::class, 'handleSelcomWebhook']);
 });
