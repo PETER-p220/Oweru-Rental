@@ -74,6 +74,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/tenant/applications',  [TenantController::class, 'getApplications']);
         Route::post('/tenant/applications', [TenantController::class, 'createApplication']);
 
+        // Payment routes (for tenants to make payments)
+        Route::post('/payment/selcom/mobile-money', [PaymentController::class, 'initiateMobileMoney']);
+        Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook']);
+
         // Contracts
         Route::get('/tenant/contract',                           [TenantController::class, 'getMyContract']);
         Route::get('/tenant/contracts/{contract}/download',      [TenantController::class, 'downloadContract']);
@@ -264,10 +268,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/upload-image',                [ImageUploadController::class, 'upload']);
         Route::post('/upload-images',               [ImageUploadController::class, 'uploadMultiple']);
         Route::delete('/delete-image',               [ImageUploadController::class, 'delete']);
-
-        // ── Payment routes ─────────────────────────────────────────────────────────────
-        Route::post('/payment/selcom/mobile-money', [PaymentController::class, 'initiateMobileMoney']);
-        Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook']);
 
         // ── Site Visit routes ─────────────────────────────────────────────────────────
         // Route::get('/site-visits',                  [SiteVisitController::class, 'getMyVisits']);

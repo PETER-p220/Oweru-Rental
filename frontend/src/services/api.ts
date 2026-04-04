@@ -10,6 +10,7 @@ export interface ApiResponse<T = any> {
   data: T;
   message?: string;
   status: number;
+  already_saved?: boolean; // For save property responses
 }
 
 export interface DashboardStats {

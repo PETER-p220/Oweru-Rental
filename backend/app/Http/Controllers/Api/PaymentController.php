@@ -17,8 +17,8 @@ class PaymentController extends Controller
         try {
             $validated = $request->validate([
                 'amount' => 'required|numeric|min:1000',
-                'phone_number' => 'required|string|regex:/^(255|0)[67]\d{8}$/',
-                'provider' => 'required|in:TIGO,MPESA,AIRTEL',
+                'phone_number' => 'required|string|min:10|max:13',
+                'provider' => 'required|in:TIGO,MPESA,AIRTEL,HALOTEL',
                 'customer_email' => 'required|email',
                 'customer_name' => 'required|string',
                 'order_id' => 'required|string',
@@ -28,7 +28,7 @@ class PaymentController extends Controller
             ], [
                 'phone_number.regex' => 'Phone number must be in format 2557xxxxxx or 07xxxxxx (Tanzania numbers only)',
                 'amount.min' => 'Minimum amount is 100 TZS',
-                'provider.in' => 'Provider must be TIGO, MPESA, or AIRTEL'
+                'provider.in' => 'Provider must be TIGO, MPESA, AIRTEL, or HALOTEL'
             ]);
 
             // Selcom API credentials from environment

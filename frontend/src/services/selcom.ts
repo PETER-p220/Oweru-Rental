@@ -142,7 +142,7 @@ class SelcomService {
   async initiateMobileMoneyPayment(paymentData: {
     amount: number;
     phone_number: string;
-    provider: 'tigo' | 'mpesa' | 'airtel';
+    provider: 'tigo' | 'mpesa' | 'airtel' | 'halotel';
     property_id: number;
     tenant_id: number;
     customer_email?: string;
