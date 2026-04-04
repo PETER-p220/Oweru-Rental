@@ -541,9 +541,9 @@ const AuthModal = ({ property, onClose, onLogin, onSignup }: {
     <div className="auth-hero">
       <button className="m-close" onClick={onClose}><X size={15} /></button>
       <div className="auth-hero-icon"><ShieldCheck size={24} /></div>
-      <div className="auth-hero-title">Sign in to Apply</div>
-      <div className="auth-hero-desc">You need an account to submit a rental application and connect with agents.</div>
-      <div className="auth-prop-pill"><MapPin size={11} />Applying for <strong>{property.title}</strong></div>
+      <div className="auth-hero-title">Sign in to Book Visit</div>
+      <div className="auth-hero-desc">You need an account to book a site visit and connect with agents.</div>
+      <div className="auth-prop-pill"><MapPin size={11} />Visiting <strong>{property.title}</strong></div>
     </div>
     <div className="m-body" style={{ paddingTop: 22 }}>
       <div style={{ fontFamily: 'var(--sans)', fontSize: 10, fontWeight: 600, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--hint)', marginBottom: 12 }}>Choose an option to continue</div>
@@ -578,7 +578,7 @@ const ApplyModal = ({ property, onClose, onProceed }: {
   <Overlay onClose={onClose}>
     <div className="m-head-navy">
       <button className="m-close" onClick={onClose}><X size={15} /></button>
-      <div className="m-head-title">Apply for Property site visit</div>
+      <div className="m-head-title">Book Property Site Visit</div>
       <div className="m-head-sub">Review the details before proceeding</div>
     </div>
     <div className="m-body">
@@ -593,10 +593,10 @@ const ApplyModal = ({ property, onClose, onProceed }: {
       </div>
       <div className="fee-block">
         <div className="fee-amount">TZS 20,000</div>
-        <div className="fee-label">One-time service fee · non-refundable</div>
+        <div className="fee-label">Site visit fee · non-refundable</div>
       </div>
       <p style={{ fontFamily: 'var(--sans)', fontSize: 12, color: 'var(--muted)', lineHeight: 1.65 }}>
-        This fee connects you directly with the property agent. Once paid, the agent is notified immediately and will reach out within 24 hours to arrange a viewing.
+        This fee covers the site visit arrangement. Once paid, the agent is notified immediately and will contact you within 24 hours to schedule the visit.
       </p>
     </div>
     <div className="m-footer">
@@ -621,7 +621,7 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
     <div className="m-body">
       <div className="fee-block">
         <div className="fee-amount">TZS 20,000</div>
-        <div className="fee-label">Service fee for agent connection</div>
+        <div className="fee-label">Site visit fee · non-refundable</div>
       </div>
       <label className="field-label">Mobile Money Provider</label>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -669,13 +669,13 @@ const SuccessModal = ({ onClose }: { onClose: () => void }) => (
   <Overlay onClose={onClose}>
     <div className="succ-hero">
       <div className="succ-icon"><CheckCircle2 size={28} /></div>
-      <div className="succ-title">Application Submitted!</div>
-      <div className="succ-sub">Payment confirmed. The agent has been notified and will contact you shortly.</div>
+      <div className="succ-title">Site Visit Booked!</div>
+      <div className="succ-sub">Payment confirmed. The agent has been notified and will contact you shortly to schedule the visit.</div>
     </div>
     <div className="m-body" style={{ paddingTop: 20 }}>
       <div className="succ-steps-wrap">
         {[
-          { label: 'Application fee received & confirmed',     icon: <CheckCheck size={14} /> },
+          { label: 'Site visit fee received & confirmed',     icon: <CheckCheck size={14} /> },
           { label: 'Agent notified instantly via SMS & email', icon: <Sparkles size={14} /> },
           { label: 'Expect a call or message within 24 hours', icon: <CheckCircle2 size={14} /> },
         ].map((s, i) => (
@@ -833,6 +833,7 @@ const Properties = () => {
         customer_email: user?.email,
         customer_name: user?.first_name && user?.last_name
           ? `${user.first_name} ${user.last_name}` : user?.first_name || 'Customer',
+        payment_type: 'site_visit' // Add payment type for site visit
       };
       let paymentSuccessful = false;
       let transactionId: string | null = null;
