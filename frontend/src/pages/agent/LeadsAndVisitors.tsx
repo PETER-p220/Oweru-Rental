@@ -14,11 +14,25 @@ const LeadsAndVisitors = () => {
     const load = async () => {
       try {
         setLoading(true);
+        console.log('🔍 Loading leads data...');
+        
         const [leadsRes, statsRes] = await Promise.all([Api.getLeads(), Api.getLeadStats()]);
-        setLeads(Array.isArray(leadsRes.data) ? leadsRes.data : []);
-        setStats(statsRes.data || {});
+        
+        console.log('📊 Leads API Response:', leadsRes);
+        console.log('📈 Stats API Response:', statsRes);
+        
+        // Handle different response structures
+        const leadsData = leadsRes.data || leadsRes || [];
+        const statsData = statsRes.data || statsRes || {};
+        
+        console.log('📋 Processed leads:', leadsData);
+        console.log('📊 Processed stats:', statsData);
+        
+        setLeads(Array.isArray(leadsData) ? leadsData : []);
+        setStats(statsData);
       } catch (err: any) {
-        setError(err?.response?.data?.message || 'Unable to load leads.');
+        console.error('❌ Error loading leads:', err);
+        setError(err?.response?.data?.message || err?.message || 'Unable to load leads.');
       } finally {
         setLoading(false);
       }

@@ -439,11 +439,15 @@ public function recordShare(Property $property): JsonResponse
 
     public function getLeads(): JsonResponse
     {
+        Log::info('🔍 getLeads called for user: ' . (Auth::user()?->id ?? 'unknown'));
+        
         if (! $this->leadTablesAvailable()) {
+            Log::info('❌ Lead tables not available');
             return $this->emptyPaginatedResponse();
         }
 
         $user = Auth::user();
+        Log::info('👤 User authenticated: ' . $user->id);
         
         // Try to get real leads, but if table doesn't exist, return sample data
         try {
@@ -451,6 +455,8 @@ public function recordShare(Property $property): JsonResponse
                 ->where('agent_id', $user->id)
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
+
+            Log::info('📊 Real leads found: ' . $leads->count());
 
             return response()->json([
                 'data' => $leads->items(),
@@ -462,6 +468,8 @@ public function recordShare(Property $property): JsonResponse
                 ],
             ]);
         } catch (\Exception $e) {
+            Log::info('🔄 Using sample data due to: ' . $e->getMessage());
+            
             // Return sample data for testing
             $sampleLeads = [
                 [
@@ -514,6 +522,8 @@ public function recordShare(Property $property): JsonResponse
                 ]
             ];
 
+            Log::info('📋 Returning sample leads: ' . count($sampleLeads));
+
             return response()->json([
                 'data' => $sampleLeads,
                 'pagination' => [
@@ -528,7 +538,10 @@ public function recordShare(Property $property): JsonResponse
 
     public function getLeadStats(): JsonResponse
     {
+        Log::info('🔍 getLeadStats called for user: ' . (Auth::user()?->id ?? 'unknown'));
+        
         if (! $this->leadTablesAvailable()) {
+            Log::info('❌ Lead tables not available, returning sample stats');
             return response()->json(['data' => [
                 'total_leads'      => 3,
                 'new_leads'        => 1,
@@ -538,6 +551,7 @@ public function recordShare(Property $property): JsonResponse
         }
 
         $user = Auth::user();
+        Log::info('👤 User authenticated for stats: ' . $user->id);
         
         // Try to get real stats, but if table doesn't exist, return sample data
         try {
@@ -550,6 +564,8 @@ public function recordShare(Property $property): JsonResponse
                 ->count();
             $conversionRate = $totalLeads > 0 ? ($convertedLeads / $totalLeads) * 100 : 0;
 
+            Log::info('📊 Real stats calculated: total=' . $totalLeads . ', new=' . $newLeads . ', converted=' . $convertedLeads);
+
             return response()->json(['data' => [
                 'total_leads'      => $totalLeads,
                 'new_leads'        => $newLeads,
@@ -557,6 +573,8 @@ public function recordShare(Property $property): JsonResponse
                 'conversion_rate'  => round($conversionRate, 1),
             ]]);
         } catch (\Exception $e) {
+            Log::info('🔄 Using sample stats due to: ' . $e->getMessage());
+            
             // Return sample stats for testing
             return response()->json(['data' => [
                 'total_leads'      => 3,
