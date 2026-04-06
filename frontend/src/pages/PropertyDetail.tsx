@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   MapPin, Bed, Bath, Square, Phone, Mail,
   Shield, CheckCircle, Heart, Share2, QrCode,
@@ -124,6 +124,7 @@ const saveBtn = (saved: boolean): React.CSSProperties => ({
 ═════════════════════════════════════════════════════════════ */
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
@@ -148,7 +149,9 @@ const PropertyDetail = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await Api.getProperty(Number(id));
+        // Get query parameters for tracking
+        const queryParams = searchParams.toString();
+        const res = await Api.getPropertyWithParams(Number(id), queryParams);
         setProperty(res.data);
       } catch (err) {
         console.error('PropertyDetail - Failed to load property:', err);
@@ -156,7 +159,7 @@ const PropertyDetail = () => {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, searchParams]);
 
   const getFeatures = (property: Property | null): string[] => {
     if (!property) return [];

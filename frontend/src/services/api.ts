@@ -519,6 +519,11 @@ class Api {
     return this.request<Property>(`public/properties/${id}`);
   }
 
+  static async getPropertyWithParams(id: number, params?: string) {
+    const url = params ? `public/properties/${id}?${params}` : `public/properties/${id}`;
+    return this.request<Property>(url);
+  }
+
   // ── Tenant ──────────────────────────────────────────────────────────────────
 
   static async getTenantDashboard()      { return this.request<any>('tenant/dashboard'); }
