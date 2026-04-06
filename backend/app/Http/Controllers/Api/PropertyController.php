@@ -221,15 +221,18 @@ class PropertyController extends Controller
 
         // Check if this is a tracking link visit
         if ($request->has('agent') && $request->input('agent') == $property->agent_id) {
-            // Increment click count for tracking
-            $property->increment('clicks');
-            
-            \Log::info('Property tracking link clicked', [
-                'property_id' => $property->id,
-                'agent_id' => $request->input('agent'),
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
+            // Increment click count for tracking - with fallback for missing column
+            try {
+                $property->increment('clicks');
+            } catch (\Exception $e) {
+                // Column doesn't exist yet, just log the visit
+                \Log::info('Property tracking link clicked (no increment)', [
+                    'property_id' => $property->id,
+                    'agent_id' => $request->input('agent'),
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent()
+                ]);
+            }
         }
 
         return response()->json(['data' => $property]);

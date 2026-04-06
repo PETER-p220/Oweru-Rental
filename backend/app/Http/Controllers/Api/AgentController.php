@@ -308,13 +308,22 @@ class AgentController extends Controller
         $links = $properties->map(function ($property) use ($user) {
             $trackingUrl = url("/properties/{$property->id}?agent={$user->id}");
 
+            // Check if columns exist, otherwise use 0 as fallback
+            try {
+                $clicks = $property->clicks ?? 0;
+                $shares = $property->shares ?? 0;
+            } catch (\Exception $e) {
+                $clicks = 0;
+                $shares = 0;
+            }
+
             return [
                 'id'          => $property->id,
                 'title'       => $property->title,
                 'tracking_url'=> $trackingUrl,
                 'qr_code_url' => url("/api/agent/qr-codes/{$property->id}"),
-                'shares'      => $property->shares ?? 0,
-                'clicks'      => $property->clicks ?? 0,
+                'shares'      => $shares,
+                'clicks'      => $clicks,
                 'created_at'  => $property->created_at,
                 'property'    => $property,
             ];

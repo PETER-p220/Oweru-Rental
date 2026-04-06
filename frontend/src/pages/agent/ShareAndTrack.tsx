@@ -109,17 +109,16 @@ const ShareAndTrack = () => {
                 <th style={thStyle}>Property</th>
                 <th style={thStyle}>Location</th>
                 <th style={thStyle}>Tracking URL</th>
-                <th style={thStyle}>QR Code</th>
                 <th style={thStyle}>Performance</th>
                 <th style={thStyle}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td style={tdStyle} colSpan={6}>Loading tracking links...</td></tr>
+                <tr><td style={tdStyle} colSpan={5}>Loading tracking links...</td></tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td style={tdStyle} colSpan={6}>
+                  <td style={tdStyle} colSpan={5}>
                     {search ? 'No tracking links found matching your search.' : 'No tracking links found.'}
                   </td>
                 </tr>
@@ -160,133 +159,83 @@ const ShareAndTrack = () => {
                         }}>
                           {item.tracking_url}
                         </div>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <button
-                            onClick={() => copyToClipboard(item.tracking_url, item.id)}
-                            style={{
-                              fontSize: '10px',
-                              padding: '3px 6px',
-                              background: copiedId === item.id ? '#22c55e' : '#f3f4f6',
-                              color: copiedId === item.id ? 'white' : '#374151',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '3px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s'
-                            }}
-                          >
-                            {copiedId === item.id ? '✓' : '📋'}
-                          </button>
-                          <button
-                            onClick={() => trackShare(item.id)}
-                            style={{
-                              fontSize: '10px',
-                              padding: '3px 6px',
-                              background: '#3b82f6',
-                              color: 'white',
-                              border: '1px solid #2563eb',
-                              borderRadius: '3px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            🔗 Track Share
-                          </button>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* QR Code */}
-                    <td style={tdStyle}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                        <div style={{
-                          width: '50px',
-                          height: '50px',
-                          background: '#f9fafb',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '6px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '9px',
-                          color: '#6b7280'
-                        }}>
-                          QR
-                        </div>
-                        <a
-                          href={item.qr_code_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => copyToClipboard(item.tracking_url, item.id)}
                           style={{
-                            fontSize: '9px',
-                            padding: '2px 4px',
-                            background: '#8b5cf6',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '3px',
-                            textDecoration: 'none',
-                            textAlign: 'center',
-                            display: 'block'
+                            fontSize: '10px',
+                            padding: '4px 8px',
+                            background: copiedId === item.id ? '#22c55e' : '#f3f4f6',
+                            color: copiedId === item.id ? 'white' : '#374151',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
                           }}
                         >
-                          View
-                        </a>
+                          {copiedId === item.id ? '✓ Copied' : '� Copy URL'}
+                        </button>
                       </div>
                     </td>
 
                     {/* Performance */}
                     <td style={tdStyle}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '10px', color: '#6b7280' }}>👁️</span>
-                          <span style={{ fontSize: '11px', fontWeight: '500', color: '#111827' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '11px', color: '#6b7280' }}>👁️</span>
+                          <span style={{ fontSize: '12px', fontWeight: '500', color: '#111827' }}>
                             {item.clicks || 0}
                           </span>
-                          <span style={{ fontSize: '9px', color: '#6b7280' }}>clicks</span>
+                          <span style={{ fontSize: '10px', color: '#6b7280' }}>clicks</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '10px', color: '#6b7280' }}>🔗</span>
-                          <span style={{ fontSize: '11px', fontWeight: '500', color: '#111827' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '11px', color: '#6b7280' }}>🔗</span>
+                          <span style={{ fontSize: '12px', fontWeight: '500', color: '#111827' }}>
                             {item.shares || 0}
                           </span>
-                          <span style={{ fontSize: '9px', color: '#6b7280' }}>shares</span>
+                          <span style={{ fontSize: '10px', color: '#6b7280' }}>shares</span>
                         </div>
                       </div>
                     </td>
 
                     {/* Actions */}
                     <td style={tdStyle}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
                         <a
                           href={item.tracking_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            fontSize: '10px',
-                            padding: '4px 8px',
-                            background: '#10b981',
+                            fontSize: '11px',
+                            padding: '6px 12px',
+                            background: '#3b82f6',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '4px',
+                            borderRadius: '6px',
                             textDecoration: 'none',
                             textAlign: 'center',
                             display: 'block'
                           }}
                         >
-                          🔗 Test Link
+                          🔗 Open Tracking Link
                         </a>
-                        <button
-                          onClick={() => trackShare(item.id)}
+                        <a
+                          href={item.qr_code_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           style={{
-                            fontSize: '10px',
-                            padding: '4px 8px',
-                            background: '#f59e0b',
+                            fontSize: '11px',
+                            padding: '6px 12px',
+                            background: '#8b5cf6',
                             color: 'white',
                             border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer'
+                            borderRadius: '6px',
+                            textDecoration: 'none',
+                            textAlign: 'center',
+                            display: 'block'
                           }}
                         >
-                          📊 Log Share
-                        </button>
+                          � View QR Code
+                        </a>
                       </div>
                     </td>
                   </tr>
