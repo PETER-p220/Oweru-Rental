@@ -125,10 +125,29 @@ const ShareAndTrack = () => {
   const totalClicks = links.reduce((sum, item) => sum + Number(item.clicks || 0), 0);
   const totalShares = links.reduce((sum, item) => sum + Number(item.shares || 0), 0);
 
-  // Copy link to clipboard, record the share, then immediately refresh counts
+  // Copy link to clipboard, record as share, then immediately refresh counts
   const handleCopy = async (item: TrackingLink) => {
     try {
-      await navigator.clipboard.writeText(item.tracking_url);
+      // Fallback for browsers that don't support clipboard API
+      const copyToClipboard = async (text: string) => {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          // Fallback for older browsers or HTTP
+          const textArea = document.createElement('textarea');
+          textArea.value = text;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          textArea.style.top = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
+      };
+
+      await copyToClipboard(item.tracking_url);
 
       // Optimistically increment shares in local state
       setLinks((prev) =>
