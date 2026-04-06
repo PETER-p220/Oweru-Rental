@@ -74,11 +74,6 @@ const LinkedOwners = () => {
                             <strong>Names:</strong> {item.landlord_names.join(', ')}
                           </div>
                         )}
-                        {item.landlord_phones?.length > 0 && (
-                          <div style={{ fontSize: '12px' }}>
-                            <strong>Phones:</strong> {item.landlord_phones.join(', ')}
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <span style={{ color: '#8a8070', fontStyle: 'italic' }}>No landlord info</span>
