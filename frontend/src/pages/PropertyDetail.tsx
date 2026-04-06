@@ -151,10 +151,22 @@ const PropertyDetail = () => {
       try {
         // Get query parameters for tracking
         const queryParams = searchParams.toString();
-        const res = await Api.getPropertyWithParams(Number(id), queryParams);
+        
+        // Mobile-friendly: Ensure proper URL handling
+        const propertyId = Number(id);
+        if (isNaN(propertyId) || propertyId <= 0) {
+          throw new Error('Invalid property ID');
+        }
+        
+        console.log('📱 Loading property:', { propertyId, queryParams, userAgent: navigator.userAgent, isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) });
+        
+        const res = await Api.getPropertyWithParams(propertyId, queryParams);
         setProperty(res.data);
-      } catch (err) {
+      } catch (err: any) {
         console.error('PropertyDetail - Failed to load property:', err);
+        // Mobile-friendly error handling
+        const errorMessage = err?.response?.data?.message || err?.message || 'Property not found';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -278,10 +290,29 @@ const PropertyDetail = () => {
         /* Save button hover */
         .pd-save-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .pd-save-btn:active { transform: scale(.98); }
+
+        /* Mobile-specific improvements */
+        @media (max-width: 768px) {
+          .pd-icon-btn { 
+            width: 44px; 
+            height: 44px; /* Larger touch targets for mobile */
+          }
+          .pd-action-btn {
+            padding: 14px 16px; /* Easier to tap on mobile */
+            font-size: 14px;
+          }
+        }
+        
+        /* Mobile viewport fix */
+        @viewport {
+          width: device-width;
+          initial-scale: 1.0;
+          maximum-scale: 1.0;
+          user-scalable: 0;
+        }
       `}</style>
 
       <div style={{ maxWidth: 1160, margin: '0 auto', padding: '32px 20px 64px' }}>
-
         {loading && (
           <div style={{ textAlign: 'center', padding: '60px 40px', color: t.muted }}>
             <div style={{ fontSize: '18px', marginBottom: '16px' }}>Loading property details...</div>
