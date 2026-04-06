@@ -80,13 +80,21 @@ class PropertyController extends Controller
             // Increment click count for tracking - with fallback for missing column
             try {
                 $property->increment('clicks');
+                \Log::info('Property tracking link clicked - SUCCESS', [
+                    'property_id' => $property->id,
+                    'agent_id' => $request->input('agent'),
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'current_clicks' => $property->clicks + 1
+                ]);
             } catch (\Exception $e) {
                 // Column doesn't exist yet, just log the visit
                 \Log::info('Property tracking link clicked (no increment)', [
                     'property_id' => $property->id,
                     'agent_id' => $request->input('agent'),
                     'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent()
+                    'user_agent' => $request->userAgent(),
+                    'error' => $e->getMessage()
                 ]);
             }
         }

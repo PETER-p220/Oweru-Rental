@@ -399,6 +399,11 @@ public function recordShare(Property $property): JsonResponse
             return response()->json(['message' => 'Property does not belong to this agent'], 403);
         }
         
+        // Check if tracking columns exist
+        $schema = \Schema::getColumnListing('properties');
+        $hasClicksColumn = in_array('clicks', $schema);
+        $hasSharesColumn = in_array('shares', $schema);
+        
         return response()->json([
             'property_exists' => true,
             'property_id' => $property->id,
@@ -408,6 +413,9 @@ public function recordShare(Property $property): JsonResponse
             'tracking_url' => url("/property/{$property->id}?agent={$user->id}"),
             'clicks' => $property->clicks ?? 0,
             'shares' => $property->shares ?? 0,
+            'database_columns' => $schema,
+            'has_clicks_column' => $hasClicksColumn,
+            'has_shares_column' => $hasSharesColumn,
         ]);
     }
 
