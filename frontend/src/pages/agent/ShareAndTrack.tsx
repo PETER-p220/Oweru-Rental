@@ -69,6 +69,23 @@ const ShareAndTrack = () => {
   const [copied, setCopied]   = useState<Record<number, boolean>>({});
 
   useEffect(() => {
+    const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const debugProperty = async (propertyId: number) => {
+    try {
+      const result = await Api.debugProperty(propertyId);
+      alert(JSON.stringify(result, null, 2));
+    } catch (err) {
+      console.error('Debug failed:', err);
+    }
+  };
+
     const load = async () => {
       try {
         setLoading(true);
@@ -274,6 +291,33 @@ const ShareAndTrack = () => {
                           }}
                         >
                           <WaIcon /> WhatsApp
+                        </button>
+
+                        {/* Debug button */}
+                        <button
+                          onClick={() => {
+                            // Inline debug function to avoid TypeScript issues
+                            (async () => {
+                              try {
+                                const result = await Api.debugProperty(item.id);
+                                alert(JSON.stringify(result, null, 2));
+                              } catch (err) {
+                                console.error('Debug failed:', err);
+                              }
+                            })();
+                          }}
+                          title="Debug property"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '5px',
+                            fontSize: '12px', fontWeight: 500,
+                            color: '#f59e0b',
+                            background: 'rgba(245,158,11,0.08)',
+                            border: '1px solid rgba(245,158,11,0.2)',
+                            borderRadius: '6px', padding: '6px 12px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          🔍 Debug
                         </button>
                       </div>
                     </td>
