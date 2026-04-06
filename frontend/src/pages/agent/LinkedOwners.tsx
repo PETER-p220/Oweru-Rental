@@ -21,36 +21,25 @@ interface PropertyEntry {
   id: number;
   title: string;
   location: string;
+  landlord_name: string | null;
+  landlord_phone: string | null;
 }
 
 interface LinkedOwner {
   id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
   properties_count: number;
   properties_list: PropertyEntry[];
-  landlord_names: string[];
-  landlord_phones: string[];
   has_landlord_info: boolean;
 }
 
-// ── Small helpers ──────────────────────────────────────────────────────────────
+// ── Icons ──────────────────────────────────────────────────────────────────────
 
 const NoBadge = () => (
   <span style={{
-    display: 'inline-block',
-    fontSize: '11px',
-    color: '#8a8070',
-    background: 'rgba(138,128,112,0.08)',
-    border: '1px solid rgba(138,128,112,0.18)',
-    borderRadius: '4px',
-    padding: '2px 8px',
-    fontStyle: 'italic',
-  }}>
-    Not set
-  </span>
+    display: 'inline-block', fontSize: '11px', color: '#8a8070',
+    background: 'rgba(138,128,112,0.08)', border: '1px solid rgba(138,128,112,0.18)',
+    borderRadius: '4px', padding: '2px 8px', fontStyle: 'italic',
+  }}>Not set</span>
 );
 
 const PhoneIcon = () => (
@@ -96,25 +85,27 @@ const LinkedOwners = () => {
     load();
   }, []);
 
-  const filtered = useMemo(
+  // Flatten all property rows across all owners for easy filtering + rendering
+  const allRows = useMemo(
     () =>
-      owners.filter((item) => {
-        if (!search) return true;
-        const q = search.toLowerCase();
-        const landlordInfo = [...(item.landlord_names || []), ...(item.landlord_phones || [])]
-          .join(' ')
-          .toLowerCase();
-        const propInfo = (item.properties_list || [])
-          .map((p) => `${p.title} ${p.location}`)
-          .join(' ')
-          .toLowerCase();
-        return landlordInfo.includes(q) || propInfo.includes(q);
-      }),
-    [owners, search]
+      owners.flatMap((owner) =>
+        (owner.properties_list || []).map((prop) => ({ owner, prop }))
+      ),
+    [owners]
   );
 
-  const totalProperties = owners.reduce((sum, item) => sum + Number(item.properties_count || 0), 0);
-  const withInfo = owners.filter((o) => o.has_landlord_info).length;
+  const filteredRows = useMemo(() => {
+    if (!search) return allRows;
+    const q = search.toLowerCase();
+    return allRows.filter(({ prop }) =>
+      `${prop.title} ${prop.location} ${prop.landlord_name ?? ''} ${prop.landlord_phone ?? ''}`
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [allRows, search]);
+
+  const totalWithInfo = owners.length;
+  const totalProps    = allRows.length;
 
   return (
     <div style={pageStyle}>
@@ -122,19 +113,21 @@ const LinkedOwners = () => {
       <section style={panelStyle}>
         <div style={sectionTitleStyle}>Agent Workspace</div>
         <h1 style={headingStyle}>Linked Owners</h1>
-        <p style={descriptionStyle}>Landlord contact details saved against your listings.</p>
+        <p style={descriptionStyle}>
+          Properties where landlord contact details have been recorded.
+        </p>
         <div style={{ ...statGridStyle, marginTop: '22px' }}>
           <div style={statCardStyle('#38bdf8')}>
-            <div style={statLabelStyle}>Total Linked</div>
-            <div style={statValueStyle}>{owners.length}</div>
+            <div style={statLabelStyle}>Owners</div>
+            <div style={statValueStyle}>{totalWithInfo}</div>
           </div>
           <div style={statCardStyle('#22c55e')}>
-            <div style={statLabelStyle}>Properties</div>
-            <div style={statValueStyle}>{totalProperties}</div>
+            <div style={statLabelStyle}>Properties with Info</div>
+            <div style={statValueStyle}>{totalProps}</div>
           </div>
           <div style={statCardStyle('#a78bfa')}>
-            <div style={statLabelStyle}>With Contact Info</div>
-            <div style={statValueStyle}>{withInfo}</div>
+            <div style={statLabelStyle}>Showing</div>
+            <div style={statValueStyle}>{filteredRows.length}</div>
           </div>
         </div>
       </section>
@@ -143,7 +136,7 @@ const LinkedOwners = () => {
       <section style={panelStyle}>
         <input
           style={{ ...inputStyle, maxWidth: '340px', marginBottom: '16px' }}
-          placeholder="Search landlord, phone, or property name..."
+          placeholder="Search property, location, landlord name or phone..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -154,121 +147,107 @@ const LinkedOwners = () => {
           <table style={tableStyle}>
             <thead>
               <tr>
-                <th style={thStyle}>Landlord Name</th>
-                <th style={thStyle}>Phone</th>
                 <th style={thStyle}>Property</th>
                 <th style={thStyle}>Location</th>
+                <th style={thStyle}>Landlord Name</th>
+                <th style={thStyle}>Landlord Phone</th>
                 <th style={thStyle}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr><td style={tdStyle} colSpan={5}>Loading...</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td style={tdStyle} colSpan={5}>No landlord info found.</td></tr>
+              ) : filteredRows.length === 0 ? (
+                <tr>
+                  <td style={tdStyle} colSpan={5}>
+                    No properties with landlord info found.
+                  </td>
+                </tr>
               ) : (
-                filtered.flatMap((item) => {
-                  const names    = item.landlord_names?.length    ? item.landlord_names    : [null];
-                  const phones   = item.landlord_phones?.length   ? item.landlord_phones   : [null];
-                  const props    = item.properties_list?.length   ? item.properties_list   : [null];
-                  const rowCount = Math.max(names.length, phones.length, props.length);
+                filteredRows.map(({ prop }) => (
+                  <tr key={prop.id}>
 
-                  return Array.from({ length: rowCount }, (_, i) => {
-                    const name    = names[i]  ?? null;
-                    const phone   = phones[i] ?? null;
-                    const prop    = props[i]  ?? null;
-                    const isFirst = i === 0;
+                    {/* Property title */}
+                    <td style={tdStyle}>
+                      <span style={{ fontSize: '13px', fontWeight: 500 }}>
+                        {prop.title}
+                      </span>
+                    </td>
 
-                    return (
-                      <tr key={`${item.id}-${i}`}>
+                    {/* Location */}
+                    <td style={tdStyle}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        fontSize: '12px', color: '#8ea0b5',
+                      }}>
+                        <PinIcon />
+                        {prop.location || '—'}
+                      </span>
+                    </td>
 
-                        {/* Landlord name */}
-                        <td style={tdStyle}>
-                          {name
-                            ? <span style={{ fontSize: '13px' }}>{name}</span>
-                            : <NoBadge />}
-                        </td>
+                    {/* Landlord name */}
+                    <td style={tdStyle}>
+                      {prop.landlord_name
+                        ? <span style={{ fontSize: '13px' }}>{prop.landlord_name}</span>
+                        : <NoBadge />}
+                    </td>
 
-                        {/* Landlord phone */}
-                        <td style={tdStyle}>
-                          {phone ? (
-                            <a
-                              href={`tel:${phone}`}
-                              style={{
-                                display: 'inline-flex', alignItems: 'center', gap: '5px',
-                                fontSize: '13px', color: '#38bdf8', textDecoration: 'none',
-                              }}
-                            >
-                              <PhoneIcon />
-                              {phone}
-                            </a>
-                          ) : <NoBadge />}
-                        </td>
+                    {/* Landlord phone — tappable */}
+                    <td style={tdStyle}>
+                      {prop.landlord_phone ? (
+                        <a
+                          href={`tel:${prop.landlord_phone}`}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '5px',
+                            fontSize: '13px', color: '#38bdf8', textDecoration: 'none',
+                          }}
+                        >
+                          <PhoneIcon />
+                          {prop.landlord_phone}
+                        </a>
+                      ) : <NoBadge />}
+                    </td>
 
-                        {/* Property title */}
-                        <td style={tdStyle}>
-                          {prop?.title
-                            ? <span style={{ fontSize: '13px', fontWeight: 500 }}>{prop.title}</span>
-                            : <NoBadge />}
-                        </td>
+                    {/* Actions */}
+                    <td style={tdStyle}>
+                      {prop.landlord_phone ? (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <a
+                            href={`tel:${prop.landlord_phone}`}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '5px',
+                              fontSize: '12px', fontWeight: 500,
+                              color: '#22c55e',
+                              background: 'rgba(34,197,94,0.08)',
+                              border: '1px solid rgba(34,197,94,0.2)',
+                              borderRadius: '6px', padding: '6px 12px',
+                              textDecoration: 'none',
+                            }}
+                          >
+                            <PhoneIcon /> Call
+                          </a>
+                          <a
+                            href={`https://wa.me/${prop.landlord_phone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '5px',
+                              fontSize: '12px', fontWeight: 500,
+                              color: '#25d366',
+                              background: 'rgba(37,211,102,0.08)',
+                              border: '1px solid rgba(37,211,102,0.2)',
+                              borderRadius: '6px', padding: '6px 12px',
+                              textDecoration: 'none',
+                            }}
+                          >
+                            <WaIcon /> WhatsApp
+                          </a>
+                        </div>
+                      ) : <NoBadge />}
+                    </td>
 
-                        {/* Property location */}
-                        <td style={tdStyle}>
-                          {prop?.location ? (
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '4px',
-                              fontSize: '12px', color: '#8ea0b5',
-                            }}>
-                              <PinIcon />
-                              {prop.location}
-                            </span>
-                          ) : <NoBadge />}
-                        </td>
-
-                        {/* Actions — first row only */}
-                        <td style={tdStyle}>
-                          {isFirst ? (
-                            phone ? (
-                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                <a
-                                  href={`tel:${phone}`}
-                                  style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: '5px',
-                                    fontSize: '12px', fontWeight: 500,
-                                    color: '#22c55e',
-                                    background: 'rgba(34,197,94,0.08)',
-                                    border: '1px solid rgba(34,197,94,0.2)',
-                                    borderRadius: '6px', padding: '6px 12px',
-                                    textDecoration: 'none',
-                                  }}
-                                >
-                                  <PhoneIcon /> Call
-                                </a>
-                                <a
-                                  href={`https://wa.me/${phone.replace(/\D/g, '')}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: '5px',
-                                    fontSize: '12px', fontWeight: 500,
-                                    color: '#25d366',
-                                    background: 'rgba(37,211,102,0.08)',
-                                    border: '1px solid rgba(37,211,102,0.2)',
-                                    borderRadius: '6px', padding: '6px 12px',
-                                    textDecoration: 'none',
-                                  }}
-                                >
-                                  <WaIcon /> WhatsApp
-                                </a>
-                              </div>
-                            ) : <NoBadge />
-                          ) : null}
-                        </td>
-
-                      </tr>
-                    );
-                  });
-                })
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

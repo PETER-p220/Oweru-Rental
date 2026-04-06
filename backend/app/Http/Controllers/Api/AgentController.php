@@ -214,57 +214,46 @@ class AgentController extends Controller
                 ->get();
 
             $owners->each(function ($owner) {
-                $landlordNames = $owner->ownedProperties
-                    ->pluck('landlord_name')
-                    ->filter(fn($v) => !empty($v))
-                    ->unique()
-                    ->values();
+                // Only properties that actually have landlord info filled in
+                $propertiesWithLandlord = $owner->ownedProperties
+                    ->filter(fn($p) => !empty($p->landlord_name) || !empty($p->landlord_phone));
 
-                $landlordPhones = $owner->ownedProperties
-                    ->pluck('landlord_phone')
-                    ->filter(fn($v) => !empty($v))
-                    ->unique()
-                    ->values();
-
-                // Each property's title + location for display in the table
-                $owner->properties_list = $owner->ownedProperties
+                $owner->properties_list = $propertiesWithLandlord
                     ->map(fn($p) => [
-                        'id'       => $p->id,
-                        'title'    => $p->title,
-                        'location' => $p->location,
+                        'id'             => $p->id,
+                        'title'          => $p->title,
+                        'location'       => $p->location,
+                        'landlord_name'  => $p->landlord_name,
+                        'landlord_phone' => $p->landlord_phone,
                     ])
                     ->values();
 
-                $owner->landlord_names    = $landlordNames->toArray();
-                $owner->landlord_phones   = $landlordPhones->toArray();
-                $owner->has_landlord_info = $landlordNames->isNotEmpty() || $landlordPhones->isNotEmpty();
+                // Derive landlord names/phones only from those filtered properties
+                $owner->landlord_names = $propertiesWithLandlord
+                    ->pluck('landlord_name')
+                    ->filter(fn($v) => !empty($v))
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                $owner->landlord_phones = $propertiesWithLandlord
+                    ->pluck('landlord_phone')
+                    ->filter(fn($v) => !empty($v))
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                $owner->has_landlord_info = $propertiesWithLandlord->isNotEmpty();
 
                 unset($owner->ownedProperties);
             });
 
+            // Remove owners who have zero properties with landlord info
+            $owners = $owners->filter(fn($o) => $o->has_landlord_info)->values();
+
         } catch (\Illuminate\Database\QueryException $e) {
             if (str_contains($e->getMessage(), 'Unknown column')) {
-                $owners = User::whereHas('ownedProperties', function ($query) use ($user) {
-                        $query->where('agent_id', $user->id);
-                    })
-                    ->withCount(['ownedProperties as properties_count' => function ($query) use ($user) {
-                        $query->where('agent_id', $user->id);
-                    }])
-                    ->with(['ownedProperties' => function ($query) use ($user) {
-                        $query->where('agent_id', $user->id)
-                              ->select('id', 'owner_id', 'title', 'location');
-                    }])
-                    ->get();
-
-                $owners->each(function ($owner) {
-                    $owner->properties_list = $owner->ownedProperties
-                        ->map(fn($p) => ['id' => $p->id, 'title' => $p->title, 'location' => $p->location])
-                        ->values();
-                    $owner->landlord_names    = [];
-                    $owner->landlord_phones   = [];
-                    $owner->has_landlord_info = false;
-                    unset($owner->ownedProperties);
-                });
+                $owners = collect();
             } else {
                 throw $e;
             }
