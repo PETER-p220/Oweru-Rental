@@ -41,6 +41,8 @@ const LinkedOwners = () => {
       try {
         setLoading(true);
         const res = await Api.getLinkedOwners();
+        // Api.request() already does `data.data ?? data`, so res.data IS
+        // the owners array directly — no extra unwrapping needed.
         setOwners(Array.isArray(res.data) ? res.data : []);
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Unable to load linked owners.');

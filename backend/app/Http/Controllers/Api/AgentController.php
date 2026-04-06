@@ -199,18 +199,12 @@ class AgentController extends Controller
     public function getLinkedOwners(): JsonResponse
     {
         $user = Auth::user();
-        
-        // Debug logging
-        \Log::info('getLinkedOwners called', [
-            'user_id' => $user?->id,
-            'user_type' => $user?->user_type,
-            'authenticated' => Auth::check()
-        ]);
-        
+
         try {
-            // Get owners with their properties and landlord info
-            $owners = User::where('user_type', 'landlord')
-                ->whereHas('ownedProperties', function ($query) use ($user) {
+            // Find all users who are the owner_id on any property this agent manages.
+            // NOTE: We do NOT filter by user_type='landlord' because agents often
+            // create listings where owner_id is their own account or any user.
+            $owners = User::whereHas('ownedProperties', function ($query) use ($user) {
                     $query->where('agent_id', $user->id);
                 })
                 ->withCount(['ownedProperties as properties_count' => function ($query) use ($user) {
@@ -222,50 +216,30 @@ class AgentController extends Controller
                 }])
                 ->get();
 
-            \Log::info('Query results', [
-                'owners_count' => $owners->count(),
-                'owners_data' => $owners->toArray()
-            ]);
-
-            // Add landlord contact info to each owner
             $owners->each(function ($owner) {
-                // Get unique landlord names and phones from properties
                 $landlordNames = $owner->ownedProperties
                     ->pluck('landlord_name')
-                    ->filter(function($value) { return !empty($value); })
+                    ->filter(fn($v) => !empty($v))
                     ->unique()
                     ->values();
-                
+
                 $landlordPhones = $owner->ownedProperties
                     ->pluck('landlord_phone')
-                    ->filter(function($value) { return !empty($value); })
+                    ->filter(fn($v) => !empty($v))
                     ->unique()
                     ->values();
 
-                // Debug logging
-                \Log::info("Owner {$owner->id} properties:", [
-                    'properties_count' => $owner->ownedProperties->count(),
-                    'landlord_names_raw' => $owner->ownedProperties->pluck('landlord_name')->toArray(),
-                    'landlord_phones_raw' => $owner->ownedProperties->pluck('landlord_phone')->toArray(),
-                    'landlord_names_filtered' => $landlordNames->toArray(),
-                    'landlord_phones_filtered' => $landlordPhones->toArray()
-                ]);
-
-                // Convert to arrays for JSON response
-                $owner->landlord_names = $landlordNames->toArray();
+                $owner->landlord_names  = $landlordNames->toArray();
                 $owner->landlord_phones = $landlordPhones->toArray();
                 $owner->has_landlord_info = $landlordNames->isNotEmpty() || $landlordPhones->isNotEmpty();
-                
-                // Hide the properties relationship to avoid circular data
+
                 unset($owner->ownedProperties);
             });
 
         } catch (\Illuminate\Database\QueryException $e) {
-            // Fallback if landlord columns don't exist yet
+            // Fallback: landlord_name / landlord_phone columns may not exist yet
             if (str_contains($e->getMessage(), 'Unknown column')) {
-                // Get basic owner info without landlord fields
-                $owners = User::where('user_type', 'landlord')
-                    ->whereHas('ownedProperties', function ($query) use ($user) {
+                $owners = User::whereHas('ownedProperties', function ($query) use ($user) {
                         $query->where('agent_id', $user->id);
                     })
                     ->withCount(['ownedProperties as properties_count' => function ($query) use ($user) {
@@ -273,9 +247,8 @@ class AgentController extends Controller
                     }])
                     ->get();
 
-                // Add empty landlord info for consistency
                 $owners->each(function ($owner) {
-                    $owner->landlord_names = [];
+                    $owner->landlord_names  = [];
                     $owner->landlord_phones = [];
                     $owner->has_landlord_info = false;
                 });
@@ -286,18 +259,6 @@ class AgentController extends Controller
 
         return response()->json(['data' => $owners]);
     }
-
-    public function testAuth(): JsonResponse
-    {
-        $user = Auth::user();
-        return response()->json([
-            'authenticated' => Auth::check(),
-            'user_id' => $user?->id,
-            'user_type' => $user?->user_type,
-            'message' => 'Auth test working'
-        ]);
-    }
-
     public function linkOwner(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
