@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Api from '../../services/api';
 import {
   descriptionStyle,
@@ -32,11 +32,14 @@ const CheckIcon = () => (
   </svg>
 );
 
-const ShareIcon = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+const RefreshIcon = ({ spinning }: { spinning: boolean }) => (
+  <svg
+    width="13" height="13" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    style={{ animation: spinning ? 'spin 1s linear infinite' : 'none' }}
+  >
+    <polyline points="23 4 23 10 17 10"/>
+    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
   </svg>
 );
 
@@ -58,47 +61,59 @@ interface TrackingLink {
   created_at: string;
 }
 
+// How often (ms) to silently refresh click/share counts in the background
+const POLL_INTERVAL_MS = 15_000;
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const ShareAndTrack = () => {
-  const [links, setLinks]     = useState<TrackingLink[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
-  const [search, setSearch]   = useState('');
-  // Track which row just had its link copied: id → 'copied' | undefined
-  const [copied, setCopied]   = useState<Record<number, boolean>>({});
+  const [links, setLinks]           = useState<TrackingLink[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError]           = useState('');
+  const [search, setSearch]         = useState('');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  // Track which row just had its link copied: id → true | undefined
+  const [copied, setCopied]         = useState<Record<number, boolean>>({});
 
-  useEffect(() => {
-    const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  // Keep a ref so the polling interval can always call the latest fetchLinks
+  const fetchLinksRef = useRef<() => Promise<void>>(() => fetchLinks(true));
 
-  const debugProperty = async (propertyId: number) => {
+  const fetchLinks = useCallback(async (silent = false) => {
     try {
-      const result = await Api.debugProperty(propertyId);
-      alert(JSON.stringify(result, null, 2));
-    } catch (err) {
-      console.error('Debug failed:', err);
-    }
-  };
+      if (!silent) setLoading(true);
+      else setRefreshing(true);
 
-    const load = async () => {
-      try {
-        setLoading(true);
-        const res = await Api.getTrackingLinks();
-        setLinks(Array.isArray(res.data) ? res.data : []);
-      } catch (err: any) {
+      const res = await Api.getTrackingLinks();
+      setLinks(Array.isArray(res.data) ? res.data : []);
+      setLastUpdated(new Date());
+      setError('');
+    } catch (err: any) {
+      // Only surface errors on the initial (non-silent) load
+      if (!silent) {
         setError(err?.response?.data?.message || 'Unable to load tracking links.');
-      } finally {
-        setLoading(false);
       }
-    };
-    load();
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  // Store latest fetchLinks in ref for the interval to use
+  useEffect(() => {
+    fetchLinksRef.current = () => fetchLinks(true);
+  }, [fetchLinks]);
+
+  // Initial load + polling
+  useEffect(() => {
+    fetchLinks(false);
+
+    const interval = setInterval(() => {
+      fetchLinksRef.current?.();
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [fetchLinks]);
 
   const filtered = useMemo(
     () => links.filter((item) =>
@@ -110,7 +125,7 @@ const ShareAndTrack = () => {
   const totalClicks = links.reduce((sum, item) => sum + Number(item.clicks || 0), 0);
   const totalShares = links.reduce((sum, item) => sum + Number(item.shares || 0), 0);
 
-  // Copy link to clipboard and record the share server-side
+  // Copy link to clipboard, record the share, then immediately refresh counts
   const handleCopy = async (item: TrackingLink) => {
     try {
       await navigator.clipboard.writeText(item.tracking_url);
@@ -120,10 +135,11 @@ const ShareAndTrack = () => {
         prev.map((l) => l.id === item.id ? { ...l, shares: l.shares + 1 } : l)
       );
 
-      // Record on server
+      // Record on server, then pull fresh counts right away
       await Api.recordShare(item.id);
+      fetchLinks(true);   // silent refresh — updates real click count too
 
-      // Show checkmark feedback for 2s
+      // Show checkmark feedback for 2 s
       setCopied((prev) => ({ ...prev, [item.id]: true }));
       setTimeout(() => setCopied((prev) => ({ ...prev, [item.id]: false })), 2000);
     } catch {
@@ -131,17 +147,21 @@ const ShareAndTrack = () => {
     }
   };
 
-  // Share via WhatsApp (also records the share)
+  // Share via WhatsApp, record the share, then refresh counts
   const handleWhatsApp = async (item: TrackingLink) => {
     setLinks((prev) =>
       prev.map((l) => l.id === item.id ? { ...l, shares: l.shares + 1 } : l)
     );
     await Api.recordShare(item.id);
+    fetchLinks(true);   // silent refresh
     window.open(
       `https://wa.me/?text=${encodeURIComponent(`Check out this property: ${item.tracking_url}`)}`,
       '_blank'
     );
   };
+
+  // Manual refresh button handler
+  const handleManualRefresh = () => fetchLinks(true);
 
   return (
     <div style={pageStyle}>
@@ -152,6 +172,7 @@ const ShareAndTrack = () => {
         <p style={descriptionStyle}>
           Tracking links for your listings. Every click on the link is counted automatically.
           Use Copy or WhatsApp to share — each share is recorded too.
+          Counts refresh every {POLL_INTERVAL_MS / 1000} seconds automatically.
         </p>
         <div style={{ ...statGridStyle, marginTop: '22px' }}>
           <div style={statCardStyle('#38bdf8')}>
@@ -171,14 +192,47 @@ const ShareAndTrack = () => {
 
       {/* ── Table ── */}
       <section style={panelStyle}>
-        <input
-          style={{ ...inputStyle, maxWidth: '340px', marginBottom: '16px' }}
-          placeholder="Search properties..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        {/* Search + refresh row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          <input
+            style={{ ...inputStyle, maxWidth: '340px' }}
+            placeholder="Search properties..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          {/* Manual refresh button */}
+          <button
+            onClick={handleManualRefresh}
+            disabled={refreshing}
+            title="Refresh counts"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              fontSize: '12px', fontWeight: 500,
+              color: refreshing ? '#6b7280' : '#38bdf8',
+              background: 'rgba(56,189,248,0.08)',
+              border: '1px solid rgba(56,189,248,0.2)',
+              borderRadius: '6px', padding: '6px 12px',
+              cursor: refreshing ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            <RefreshIcon spinning={refreshing} />
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+
+          {/* Last-updated timestamp */}
+          {lastUpdated && (
+            <span style={{ fontSize: '11px', color: '#6b7280' }}>
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
 
         {error && <div style={{ color: '#e07070', marginBottom: '16px' }}>{error}</div>}
+
+        {/* Spin keyframe injected once */}
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
         <div style={tableWrapStyle}>
           <table style={tableStyle}>
@@ -193,7 +247,7 @@ const ShareAndTrack = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td style={tdStyle} colSpan={5}>Loading tracking links...</td></tr>
+                <tr><td style={tdStyle} colSpan={5}>Loading tracking links…</td></tr>
               ) : filtered.length === 0 ? (
                 <tr><td style={tdStyle} colSpan={5}>No tracking links found.</td></tr>
               ) : (
@@ -222,6 +276,9 @@ const ShareAndTrack = () => {
                           whiteSpace: 'nowrap',
                         }}
                         title={item.tracking_url}
+                        // After opening the link (which triggers a backend click increment),
+                        // schedule a refresh so the count updates shortly after
+                        onClick={() => setTimeout(() => fetchLinks(true), 2000)}
                       >
                         {item.tracking_url}
                       </a>
@@ -291,62 +348,6 @@ const ShareAndTrack = () => {
                           }}
                         >
                           <WaIcon /> WhatsApp
-                        </button>
-
-                        {/* Debug button */}
-                        <button
-                          onClick={() => {
-                            // Inline debug function to avoid TypeScript issues
-                            (async () => {
-                              try {
-                                const result = await Api.debugProperty(item.id);
-                                console.log('🔍 Debug Property Info:', result);
-                                
-                                // Create a more user-friendly way to view debug info
-                                const debugInfo = JSON.stringify(result, null, 2);
-                                
-                                // Copy to clipboard for easy access
-                                navigator.clipboard.writeText(debugInfo).then(() => {
-                                  // Show success message
-                                  const successMsg = document.createElement('div');
-                                  successMsg.textContent = '🔍 Debug info copied to clipboard! Check console for details.';
-                                  successMsg.style.cssText = `
-                                    position: fixed;
-                                    top: 20px;
-                                    right: 20px;
-                                    background: #10b981;
-                                    color: white;
-                                    padding: 12px 16px;
-                                    border-radius: 8px;
-                                    z-index: 9999;
-                                    font-size: 14px;
-                                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                                  `;
-                                  document.body.appendChild(successMsg);
-                                  
-                                  setTimeout(() => {
-                                    document.body.removeChild(successMsg);
-                                  }, 3000);
-                                });
-                                
-                              } catch (err) {
-                                console.error('Debug failed:', err);
-                                alert('Debug failed. Check console for details.');
-                              }
-                            })();
-                          }}
-                          title="Debug property"
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            fontSize: '12px', fontWeight: 500,
-                            color: '#f59e0b',
-                            background: 'rgba(245,158,11,0.08)',
-                            border: '1px solid rgba(245,158,11,0.2)',
-                            borderRadius: '6px', padding: '6px 12px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          🔍 Debug
                         </button>
                       </div>
                     </td>
