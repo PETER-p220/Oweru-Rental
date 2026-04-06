@@ -215,9 +215,22 @@ class PropertyController extends Controller
         ]);
     }
 
-    public function show(Property $property): JsonResponse
+    public function show(Property $property, Request $request): JsonResponse
     {
         $property->load(['owner', 'agent', 'applications']);
+
+        // Check if this is a tracking link visit
+        if ($request->has('agent') && $request->input('agent') == $property->agent_id) {
+            // Increment click count for tracking
+            $property->increment('clicks');
+            
+            \Log::info('Property tracking link clicked', [
+                'property_id' => $property->id,
+                'agent_id' => $request->input('agent'),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+        }
 
         return response()->json(['data' => $property]);
     }

@@ -32,6 +32,8 @@ class Property extends Model
         'agent_id',
         'landlord_name', // For agent reference
         'landlord_phone', // For agent reference
+        'clicks', // Tracking clicks
+        'shares', // Tracking shares
     ];
 
     protected $casts = [

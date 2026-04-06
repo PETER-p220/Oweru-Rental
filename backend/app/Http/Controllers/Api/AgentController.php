@@ -323,6 +323,33 @@ class AgentController extends Controller
         return response()->json(['data' => $links]);
     }
 
+    public function trackShare(Request $request): JsonResponse
+    {
+        $request->validate([
+            'property_id' => 'required|exists:properties,id'
+        ]);
+
+        $property = Property::find($request->input('property_id'));
+        $user = Auth::user();
+
+        // Verify the property belongs to the agent
+        if ($property->agent_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Increment share count
+        $property->increment('shares');
+
+        \Log::info('Property shared', [
+            'property_id' => $property->id,
+            'agent_id' => $user->id,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        return response()->json(['message' => 'Share tracked successfully']);
+    }
+
     public function generateQRCode(Property $property): JsonResponse
     {
         $user = Auth::user();
