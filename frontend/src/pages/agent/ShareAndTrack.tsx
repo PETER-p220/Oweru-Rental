@@ -300,9 +300,38 @@ const ShareAndTrack = () => {
                             (async () => {
                               try {
                                 const result = await Api.debugProperty(item.id);
-                                alert(JSON.stringify(result, null, 2));
+                                console.log('🔍 Debug Property Info:', result);
+                                
+                                // Create a more user-friendly way to view debug info
+                                const debugInfo = JSON.stringify(result, null, 2);
+                                
+                                // Copy to clipboard for easy access
+                                navigator.clipboard.writeText(debugInfo).then(() => {
+                                  // Show success message
+                                  const successMsg = document.createElement('div');
+                                  successMsg.textContent = '🔍 Debug info copied to clipboard! Check console for details.';
+                                  successMsg.style.cssText = `
+                                    position: fixed;
+                                    top: 20px;
+                                    right: 20px;
+                                    background: #10b981;
+                                    color: white;
+                                    padding: 12px 16px;
+                                    border-radius: 8px;
+                                    z-index: 9999;
+                                    font-size: 14px;
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                                  `;
+                                  document.body.appendChild(successMsg);
+                                  
+                                  setTimeout(() => {
+                                    document.body.removeChild(successMsg);
+                                  }, 3000);
+                                });
+                                
                               } catch (err) {
                                 console.error('Debug failed:', err);
+                                alert('Debug failed. Check console for details.');
                               }
                             })();
                           }}
