@@ -691,6 +691,10 @@ class Api {
   static async generateQRCode(propertyId: number) {
     return this.request(`agent/qr-codes/${propertyId}`);
   }
+  static async recordShare(propertyId: number) {
+  return this.request<any>(`agent/listings/${propertyId}/share`, { method: 'POST' });
+}
+
 
   // ── Owner / Landlord ────────────────────────────────────────────────────────
 

@@ -368,6 +368,22 @@ class AgentController extends Controller
 
         return response()->json(['message' => 'Share tracked successfully']);
     }
+    
+public function recordShare(Property $property): JsonResponse
+{
+    $user = Auth::user();
+ 
+    if ($property->agent_id !== $user->id) {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+ 
+    $property->increment('shares');
+ 
+    return response()->json([
+        'message' => 'Share recorded',
+        'shares'  => $property->shares,
+    ]);
+}
 
     public function debugProperty($id): JsonResponse
     {
