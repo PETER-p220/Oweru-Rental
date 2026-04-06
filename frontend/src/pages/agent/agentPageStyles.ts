@@ -4,10 +4,11 @@ export const pageStyle: CSSProperties = {
   display: 'grid',
   gap: '24px',
   color: '#e8e4dc',
+  backgroundColor: '#1e293b', // slate-800 instead of black
 };
 
 export const panelStyle: CSSProperties = {
-  background: '#0f1114',
+  background: '#334155', // slate-700 instead of black
   border: '1px solid rgba(56,189,248,0.12)',
   borderRadius: '20px',
   padding: '24px',

@@ -187,7 +187,7 @@ const Home = () => {
         .sans{font-family:'DM Sans',sans-serif}
 
         .hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden;border-bottom:1px solid var(--border)}
-        .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 70% 50%,rgba(201,168,76,0.07) 0%,transparent 60%),radial-gradient(ellipse 50% 80% at 20% 80%,rgba(201,168,76,0.04) 0%,transparent 50%),linear-gradient(160deg,#0f0f0f 0%,#0a0a0a 60%,#0d0c08 100%)}
+        .hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 70% 50%,rgba(201,168,76,0.07) 0%,transparent 60%),radial-gradient(ellipse 50% 80% at 20% 80%,rgba(201,168,76,0.04) 0%,transparent 50%),linear-gradient(160deg,#1e293b 0%,#334155 60%,#1e293b 100%)}
         .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,0.04) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%)}
         .hero-number{position:absolute;right:8%;top:50%;transform:translateY(-50%);font-size:clamp(180px,22vw,320px);font-weight:700;color:transparent;-webkit-text-stroke:1px rgba(201,168,76,0.08);line-height:1;user-select:none;letter-spacing:-0.05em}
         .hero-content{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:120px 40px 80px;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;width:100%}

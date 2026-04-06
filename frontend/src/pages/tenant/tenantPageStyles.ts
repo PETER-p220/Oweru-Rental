@@ -14,15 +14,22 @@ export const palette = {
   borderSoft: 'rgba(255,255,255,0.06)',
 } as const;
 
-export const pageStyle: CSSProperties = { display: 'grid', gap: '24px' };
+export const pageStyle: CSSProperties = { 
+  display: 'grid', 
+  gap: '24px',
+  backgroundColor: '#1e293b', // slate-800
+  color: '#e8e4dc'
+};
+
 export const panelStyle: CSSProperties = {
-  background: 'linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%)',
+  background: 'linear-gradient(180deg, #334155 0%, #1e293b 100%)', // slate-700 to slate-800
   border: `1px solid ${palette.border}`,
   borderRadius: '24px',
   padding: '28px',
   color: palette.cream,
   boxShadow: '0 24px 60px rgba(0,0,0,0.28)',
 };
+
 export const sectionTitleStyle: CSSProperties = {
   fontSize: '12px',
   letterSpacing: '0.24em',

@@ -129,7 +129,7 @@ const Register = () => {
         }
         .rg-right { flex: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 48px; overflow-y: auto; }
         .rg-left { width: 40%; min-height: 100vh; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 48px; border-right: 1px solid var(--border); flex-shrink: 0; }
-        .rg-left-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 30% 30%, rgba(201,168,76,0.08) 0%, transparent 55%), radial-gradient(ellipse 50% 60% at 80% 80%, rgba(201,168,76,0.05) 0%, transparent 50%), linear-gradient(160deg, #0e0e0b 0%, #0a0a0a 100%); }
+        .rg-left-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 30% 30%, rgba(201,168,76,0.08) 0%, transparent 55%), radial-gradient(ellipse 50% 60% at 80% 80%, rgba(201,168,76,0.05) 0%, transparent 50%), linear-gradient(160deg, #1e293b 0%, #334155 100%); }
         .rg-left-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(201,168,76,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.035) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 10%, transparent 100%); }
         .rg-left-watermark { position: absolute; top: -4%; left: -3%; font-size: clamp(100px, 14vw, 180px); font-weight: 700; color: transparent; -webkit-text-stroke: 1px rgba(201,168,76,0.055); line-height: 1; user-select: none; letter-spacing: -0.05em; }
         .rg-left-content { position: relative; z-index: 2; }
