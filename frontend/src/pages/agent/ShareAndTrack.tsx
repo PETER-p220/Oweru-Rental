@@ -368,6 +368,34 @@ const ShareAndTrack = () => {
                         >
                           <WaIcon /> WhatsApp
                         </button>
+
+                        {/* Debug button */}
+                        <button
+                          onClick={() => {
+                            (async () => {
+                              try {
+                                const result = await Api.debugProperty(item.id);
+                                console.log('🔍 Debug Property Info:', result);
+                                alert(`Debug Info: has_clicks_column: ${result.data?.has_clicks_column}, has_shares_column: ${result.data?.has_shares_column}`);
+                              } catch (err) {
+                                console.error('Debug failed:', err);
+                                alert('Debug failed. Check console for details.');
+                              }
+                            })();
+                          }}
+                          title="Debug property"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '5px',
+                            fontSize: '12px', fontWeight: 500,
+                            color: '#f59e0b',
+                            background: 'rgba(245,158,11,0.08)',
+                            border: '1px solid rgba(245,158,11,0.2)',
+                            borderRadius: '6px', padding: '6px 12px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          🔍 Debug
+                        </button>
                       </div>
                     </td>
 
