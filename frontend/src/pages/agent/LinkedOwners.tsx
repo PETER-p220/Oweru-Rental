@@ -17,6 +17,19 @@ import {
   thStyle,
 } from './agentPageStyles';
 
+interface PropertyDetail {
+  id: number;
+  title: string;
+  location: string;
+  address: string;
+}
+
+interface LandlordPropertyGroup {
+  landlord_name: string;
+  landlord_phone: string;
+  properties: PropertyDetail[];
+}
+
 interface LinkedOwner {
   id: number;
   first_name: string;
@@ -27,6 +40,7 @@ interface LinkedOwner {
   landlord_names: string[];
   landlord_phones: string[];
   has_landlord_info: boolean;
+  properties_by_landlord: LandlordPropertyGroup[];
 }
 
 // ── Small helpers ──────────────────────────────────────────────────────────────
@@ -87,10 +101,19 @@ const LinkedOwners = () => {
       owners.filter((item) => {
         if (!search) return true;
         const q = search.toLowerCase();
-        return [...(item.landlord_names || []), ...(item.landlord_phones || [])]
+        
+        // Search in landlord names and phones
+        const landlordInfo = [...(item.landlord_names || []), ...(item.landlord_phones || [])]
           .join(' ')
           .toLowerCase()
           .includes(q);
+        
+        // Search in property titles and locations
+        const propertyInfo = item.properties_by_landlord?.flatMap(group => 
+          group.properties.map(prop => `${prop.title} ${prop.location} ${prop.address || ''}`)
+        ).join(' ').toLowerCase().includes(q) || false;
+        
+        return landlordInfo || propertyInfo;
       }),
     [owners, search]
   );
@@ -104,7 +127,7 @@ const LinkedOwners = () => {
       <section style={panelStyle}>
         <div style={sectionTitleStyle}>Agent Workspace</div>
         <h1 style={headingStyle}>Linked Owners</h1>
-        <p style={descriptionStyle}>Landlord contact details saved against your listings.</p>
+        <p style={descriptionStyle}>Landlord contact details and their properties with location information.</p>
         <div style={{ ...statGridStyle, marginTop: '22px' }}>
           <div style={statCardStyle('#38bdf8')}>
             <div style={statLabelStyle}>Total Linked</div>
@@ -124,8 +147,8 @@ const LinkedOwners = () => {
       {/* ── Table ── */}
       <section style={panelStyle}>
         <input
-          style={{ ...inputStyle, maxWidth: '340px', marginBottom: '16px' }}
-          placeholder="Search landlord name or phone..."
+          style={{ ...inputStyle, maxWidth: '340px' }}
+          placeholder="Search by landlord name, phone, property title, or location..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -138,7 +161,7 @@ const LinkedOwners = () => {
               <tr>
                 <th style={thStyle}>Landlord Name</th>
                 <th style={thStyle}>Phone</th>
-                <th style={thStyle}>Properties</th>
+                <th style={thStyle}>Properties with Location</th>
                 <th style={thStyle}>Actions</th>
               </tr>
             </thead>
@@ -184,19 +207,55 @@ const LinkedOwners = () => {
                           ) : <NoBadge />}
                         </td>
 
-                        {/* Properties count — first row of this owner only */}
+                        {/* Properties with location details — first row of this owner only */}
                         <td style={tdStyle}>
                           {isFirst && (
-                            <span style={{
-                              display: 'inline-block',
-                              fontSize: '12px', fontWeight: 500,
-                              color: '#22c55e',
-                              background: 'rgba(34,197,94,0.08)',
-                              border: '1px solid rgba(34,197,94,0.2)',
-                              borderRadius: '4px', padding: '2px 10px',
-                            }}>
-                              {item.properties_count || 0}
-                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '120px', overflowY: 'auto' }}>
+                              {item.properties_by_landlord?.length > 0 ? (
+                                item.properties_by_landlord.map((landlordGroup, groupIndex) => (
+                                  <div key={groupIndex} style={{
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '6px',
+                                    padding: '8px',
+                                    background: '#f9fafb'
+                                  }}>
+                                    {landlordGroup.landlord_name && (
+                                      <div style={{ fontSize: '11px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
+                                        {landlordGroup.landlord_name}
+                                      </div>
+                                    )}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                      {landlordGroup.properties.map((property) => (
+                                        <div key={property.id} style={{
+                                          fontSize: '11px',
+                                          color: '#6b7280',
+                                          padding: '4px 6px',
+                                          background: 'white',
+                                          borderRadius: '4px',
+                                          border: '1px solid #e5e7eb'
+                                        }}>
+                                          <div style={{ fontWeight: '500', color: '#111827', marginBottom: '2px' }}>
+                                            {property.title}
+                                          </div>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                            <div>📍 {property.location}</div>
+                                            {property.address && (
+                                              <div style={{ fontStyle: 'italic', color: '#9ca3af' }}>
+                                                {property.address}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>
+                                  No properties with landlord info
+                                </div>
+                              )}
+                            </div>
                           )}
                         </td>
 

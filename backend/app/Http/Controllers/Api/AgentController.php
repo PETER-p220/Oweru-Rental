@@ -212,7 +212,7 @@ class AgentController extends Controller
                 }])
                 ->with(['ownedProperties' => function ($query) use ($user) {
                     $query->where('agent_id', $user->id)
-                          ->select('id', 'owner_id', 'landlord_name', 'landlord_phone');
+                          ->select('id', 'owner_id', 'landlord_name', 'landlord_phone', 'title', 'location', 'address');
                 }])
                 ->get();
 
@@ -229,10 +229,31 @@ class AgentController extends Controller
                     ->unique()
                     ->values();
 
-                $owner->landlord_names  = $landlordNames->toArray();
+                // Get property details grouped by landlord info
+                $propertiesByLandlord = [];
+                $owner->ownedProperties->each(function ($property) use (&$propertiesByLandlord) {
+                    $landlordKey = ($property->landlord_name ?: 'Unknown') . '|' . ($property->landlord_phone ?: 'No Phone');
+                    if (!isset($propertiesByLandlord[$landlordKey])) {
+                        $propertiesByLandlord[$landlordKey] = [
+                            'landlord_name' => $property->landlord_name,
+                            'landlord_phone' => $property->landlord_phone,
+                            'properties' => []
+                        ];
+                    }
+                    $propertiesByLandlord[$landlordKey]['properties'][] = [
+                        'id' => $property->id,
+                        'title' => $property->title,
+                        'location' => $property->location,
+                        'address' => $property->address
+                    ];
+                });
+
+                $owner->landlord_names = $landlordNames->toArray();
                 $owner->landlord_phones = $landlordPhones->toArray();
                 $owner->has_landlord_info = $landlordNames->isNotEmpty() || $landlordPhones->isNotEmpty();
-
+                $owner->properties_by_landlord = array_values($propertiesByLandlord);
+                
+                // Hide the properties relationship to avoid circular data
                 unset($owner->ownedProperties);
             });
 
