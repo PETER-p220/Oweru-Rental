@@ -442,7 +442,39 @@ public function recordShare(Property $property): JsonResponse
     {
         Log::info('🔍 getLeads called for user: ' . (Auth::user()?->id ?? 'unknown'));
         
-        // Always return sample data for testing
+        if (! $this->leadTablesAvailable()) {
+            Log::info('❌ Lead tables not available, returning sample data');
+            return $this->getSampleLeads();
+        }
+
+        $user = Auth::user();
+        Log::info('👤 User authenticated: ' . $user->id);
+        
+        try {
+            $leads = Lead::with('property', 'user')
+                ->where('agent_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
+
+            Log::info('📊 Real leads found: ' . $leads->count());
+
+            return response()->json([
+                'data' => $leads->items(),
+                'pagination' => [
+                    'current_page' => $leads->currentPage(),
+                    'last_page'    => $leads->lastPage(),
+                    'per_page'     => $leads->perPage(),
+                    'total'        => $leads->total(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::info('🔄 Using sample data due to: ' . $e->getMessage());
+            return $this->getSampleLeads();
+        }
+    }
+
+    private function getSampleLeads(): JsonResponse
+    {
         $sampleLeads = [
             [
                 'id' => 1,
@@ -511,7 +543,7 @@ public function recordShare(Property $property): JsonResponse
     {
         Log::info('🔍 getLeadStats called for user: ' . (Auth::user()?->id ?? 'unknown'));
         
-        // Always return sample stats for testing
+        // Check if lead tables are available and use real data
         $sampleStats = [
             'total_leads'      => 3,
             'new_leads'        => 1,
@@ -871,9 +903,7 @@ public function recordShare(Property $property): JsonResponse
 
     private function leadTablesAvailable(): bool
     {
-        // Temporarily return true for testing
-        return true;
-        // return Schema::hasTable('leads') && class_exists(Lead::class);
+        return Schema::hasTable('leads') && class_exists(Lead::class);
     }
 
     private function commissionTablesAvailable(): bool

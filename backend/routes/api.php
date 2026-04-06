@@ -26,6 +26,10 @@ Route::get('/public/properties',           [PropertyController::class, 'publicIn
 Route::get('/public/properties/{property}',[PropertyController::class, 'publicShow']);
 Route::get('/public/bnb',                 [PropertyController::class, 'publicBnbIndex']);
 
+// Public lead creation (no authentication required)
+Route::post('/leads/property/{property}', [LeadController::class, 'createFromProperty']);
+Route::post('/leads/contact',             [LeadController::class, 'createFromContact']);
+
 // ── Protected routes ──────────────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
 
