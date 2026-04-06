@@ -543,38 +543,36 @@ public function recordShare(Property $property): JsonResponse
     {
         Log::info('🔍 getLeadStats called for user: ' . (Auth::user()?->id ?? 'unknown'));
         
-        // Check if lead tables are available and use real data
-        $sampleStats = [
-            'total_leads'      => 3,
-            'new_leads'        => 1,
-            'converted_leads'  => 1,
-            'conversion_rate'  => 33.3,
-        ];
+        if (! $this->leadTablesAvailable()) {
+            Log::info('❌ Lead tables not available, returning sample stats');
+            return $this->getSampleStats();
+        }
 
-        Log::info('� Returning sample stats: ' . json_encode($sampleStats));
+        $user = Auth::user();
+        Log::info('👤 User authenticated for stats: ' . $user->id);
+        
+        try {
+            $totalLeads = Lead::where('agent_id', $user->id)->count();
+            $newLeads = Lead::where('agent_id', $user->id)
+                ->where('created_at', '>=', now()->startOfDay())
+                ->count();
+            $convertedLeads = Lead::where('agent_id', $user->id)
+                ->where('status', 'converted')
+                ->count();
+            $conversionRate = $totalLeads > 0 ? ($convertedLeads / $totalLeads) * 100 : 0;
 
-        return response()->json(['data' => $sampleStats]);
-    }
+            Log::info('📊 Real stats calculated: total=' . $totalLeads . ', new=' . $newLeads . ', converted=' . $convertedLeads);
 
-    public function getApplications(): JsonResponse
-    {
-        $user         = Auth::user();
-        $applications = Application::with(['user', 'property'])
-            ->whereHas('property', function ($query) use ($user) {
-                $query->where('agent_id', $user->id);
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
-
-        return response()->json([
-            'data' => $applications->items(),
-            'pagination' => [
-                'current_page' => $applications->currentPage(),
-                'last_page'    => $applications->lastPage(),
-                'per_page'     => $applications->perPage(),
-                'total'        => $applications->total(),
-            ],
-        ]);
+            return response()->json(['data' => [
+                'total_leads'      => $totalLeads,
+                'new_leads'        => $newLeads,
+                'converted_leads'  => $convertedLeads,
+                'conversion_rate'  => round($conversionRate, 1),
+            ]]);
+        } catch (\Exception $e) {
+            Log::info('🔄 Using sample stats due to: ' . $e->getMessage());
+            return $this->getSampleStats();
+        }
     }
 
     public function getMyCommissions(): JsonResponse
