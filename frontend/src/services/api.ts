@@ -654,7 +654,7 @@ class Api {
   static async getMyListings()            { return this.request<any[]>('agent/my-listings'); }
   static async getLinkedOwners()          { return this.request<any[]>('agent/linked-owners'); }
   static async getTrackingLinks()         { return this.request<any[]>('agent/tracking'); }
-  static async trackShare(propertyId: number) { return this.request<any>('agent/track-share', { method: 'POST', body: JSON.stringify({ property_id: propertyId }) }); }
+  static async recordShare(propertyId: number) { return this.request<any>(`agent/listings/${propertyId}/share`, { method: 'POST' }); }
   static async debugProperty(id: number) { return this.request<any>(`agent/debug-property/${id}`); }
   static async getLeads()                 { return this.request<any[]>('agent/leads'); }
   static async getLeadStats()             { return this.request<any>('agent/lead-stats'); }
@@ -691,10 +691,6 @@ class Api {
   static async generateQRCode(propertyId: number) {
     return this.request(`agent/qr-codes/${propertyId}`);
   }
-  static async recordShare(propertyId: number) {
-  return this.request<any>(`agent/listings/${propertyId}/share`, { method: 'POST' });
-}
-
 
   // ── Owner / Landlord ────────────────────────────────────────────────────────
 

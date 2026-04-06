@@ -120,6 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/agent/listings/{property}',                [AgentController::class, 'updateListing']);
         Route::delete('/agent/listings/{property}',             [AgentController::class, 'deleteListing']);
         Route::get('/agent/listings/{property}/analytics',      [AgentController::class, 'getPropertyAnalytics']);
+        Route::post('/agent/listings/{property}/share',        [AgentController::class, 'recordShare']);
 
         // Linked Owners
         Route::get('/agent/linked-owners',  [AgentController::class, 'getLinkedOwners']);
