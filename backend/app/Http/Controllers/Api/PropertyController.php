@@ -79,24 +79,40 @@ class PropertyController extends Controller
         if ($request->has('agent') && $request->input('agent') == $property->agent_id) {
             // Increment click count for tracking - with fallback for missing column
             try {
+                $beforeClicks = $property->clicks ?? 0;
                 $property->increment('clicks');
+                $property->refresh(); // Get updated value
+                
                 \Log::info('Property tracking link clicked - SUCCESS', [
                     'property_id' => $property->id,
                     'agent_id' => $request->input('agent'),
                     'ip' => $request->ip(),
                     'user_agent' => $request->userAgent(),
-                    'current_clicks' => $property->clicks + 1
+                    'before_clicks' => $beforeClicks,
+                    'after_clicks' => $property->clicks,
+                    'increment_successful' => ($property->clicks > $beforeClicks)
                 ]);
             } catch (\Exception $e) {
                 // Column doesn't exist yet, just log the visit
-                \Log::info('Property tracking link clicked (no increment)', [
+                \Log::error('Property tracking link click FAILED', [
                     'property_id' => $property->id,
                     'agent_id' => $request->input('agent'),
                     'ip' => $request->ip(),
                     'user_agent' => $request->userAgent(),
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'current_clicks' => $property->clicks ?? 0
                 ]);
             }
+        } else {
+            // Log when tracking condition fails
+            \Log::info('Property tracking link visit - NO TRACKING', [
+                'property_id' => $property->id,
+                'has_agent_param' => $request->has('agent'),
+                'agent_param' => $request->input('agent'),
+                'property_agent_id' => $property->agent_id,
+                'agent_match' => ($request->input('agent') == $property->agent_id),
+                'ip' => $request->ip()
+            ]);
         }
 
         return response()->json(['data' => $property]);
