@@ -52,8 +52,8 @@ const LeadsAndVisitors = () => {
                 <tr key={item.id}>
                   <td style={tdStyle}>
                     <div>{item.name || item.user?.first_name || 'Lead'}</div>
-                    <div style={{ color: '#8ea0b5', marginTop: '4px' }}>{item.email}</div>
-                    {item.phone && <div style={{ color: '#8ea0b5', marginTop: '4px' }}>{item.phone}</div>}
+                    <div style={{ color: '#cbd5e1', marginTop: '4px' }}>{item.email}</div>
+                    {item.phone && <div style={{ color: '#cbd5e1', marginTop: '4px' }}>{item.phone}</div>}
                   </td>
                   <td style={tdStyle}>
                     <div>{item.property?.title || 'General interest'}</div>
