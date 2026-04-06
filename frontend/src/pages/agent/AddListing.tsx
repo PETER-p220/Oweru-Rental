@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building, Plus, Camera, MapPin, Home, Save, ArrowLeft, FileText, X } from 'lucide-react';
+import { Building, Plus, Camera, MapPin, Home, Save, ArrowLeft, FileText, X, User, Phone } from 'lucide-react';
 import Api from '../../services/api';
 
 interface PropertyData {
@@ -16,6 +16,8 @@ interface PropertyData {
   available: boolean;
   images: string[];
   owner_id: number; // Add owner_id to interface
+  landlord_name: string; // Landlord's name for agent reference
+  landlord_phone: string; // Landlord's phone for agent reference
 }
 
 const AddListing: React.FC = () => {
@@ -37,7 +39,9 @@ const AddListing: React.FC = () => {
     featured: false,
     available: true,
     images: [],
-    owner_id: user?.id || 0 // Add owner_id field
+    owner_id: user?.id || 0, // Add owner_id field
+    landlord_name: '', // Landlord's name for agent reference
+    landlord_phone: '' // Landlord's phone for agent reference
   });
 
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
@@ -717,6 +721,61 @@ const AddListing: React.FC = () => {
                 </label>
               </div>
             </div>
+          </div>
+
+          {/* Landlord Information - For Agent Reference */}
+          <div className="al-section">
+            <h2 className="al-section-title">
+              <User size={20} />
+              Landlord Information
+              <span style={{ 
+                fontSize: '12px', 
+                color: 'var(--text-secondary)', 
+                fontWeight: '300',
+                marginLeft: '8px',
+                fontStyle: 'italic'
+              }}>
+                (For your reference only)
+              </span>
+            </h2>
+            <div className="al-grid al-grid-2">
+              <div className="al-form-group">
+                <label className="al-label">
+                  <User size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Landlord Name
+                </label>
+                <input
+                  type="text"
+                  name="landlord_name"
+                  value={formData.landlord_name}
+                  onChange={handleInputChange}
+                  className="al-input"
+                  placeholder="e.g., John Smith"
+                />
+              </div>
+              <div className="al-form-group">
+                <label className="al-label">
+                  <Phone size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Landlord Phone
+                </label>
+                <input
+                  type="tel"
+                  name="landlord_phone"
+                  value={formData.landlord_phone}
+                  onChange={handleInputChange}
+                  className="al-input"
+                  placeholder="e.g., 0712 345 678"
+                />
+              </div>
+            </div>
+            <p style={{
+              fontSize: '12px',
+              color: 'var(--text-secondary)',
+              fontStyle: 'italic',
+              marginTop: '12px'
+            }}>
+              This information helps you remember which landlord owns this property. It won't be displayed to tenants.
+            </p>
           </div>
 
           {/* Images */}

@@ -30,6 +30,8 @@ class Property extends Model
         'longitude',
         'owner_id',
         'agent_id',
+        'landlord_name', // For agent reference
+        'landlord_phone', // For agent reference
     ];
 
     protected $casts = [

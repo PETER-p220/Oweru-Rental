@@ -10,6 +10,45 @@ use Illuminate\Support\Facades\Log;
 class PaymentController extends Controller
 {
     /**
+     * Map frontend provider names to Selcom API provider codes
+     */
+    private function mapProviderForSelcom(string $provider): string
+    {
+        $mapping = [
+            'TIGO' => 'TIGO',
+            'MPESA' => 'MPESA', 
+            'AIRTEL' => 'AIRTEL',
+            // HALOTEL temporarily disabled due to 406 error from Selcom
+            // 'HALOTEL' => 'HALOTEL',
+        ];
+
+        // If exact match exists, use it
+        if (isset($mapping[$provider])) {
+            return $mapping[$provider];
+        }
+
+        // Fallback: try common variations and correct Selcom codes
+        $provider = strtoupper($provider);
+        switch ($provider) {
+            case 'TIGO':
+            case 'TIGOPESA':
+                return 'TIGO';
+            case 'MPESA':
+            case 'M_PESA':
+                return 'MPESA';
+            case 'AIRTEL':
+            case 'AIRTELMONEY':
+                return 'AIRTEL';
+            case 'HALOTEL':
+            case 'HALOTELMONEY':
+                // Halotel currently not supported by Selcom API
+                throw new \Exception('Halotel payments are currently not supported. Please use Tigo Pesa, M-Pesa, or Airtel Money.');
+            default:
+                throw new \Exception("Unsupported provider: {$provider}");
+        }
+    }
+
+    /**
      * Initiate Selcom mobile money payment
      */
     public function initiateMobileMoney(Request $request)
@@ -18,7 +57,7 @@ class PaymentController extends Controller
             $validated = $request->validate([
                 'amount' => 'required|numeric|min:1000',
                 'phone_number' => 'required|string|min:10|max:13',
-                'provider' => 'required|in:TIGO,MPESA,AIRTEL,HALOTEL',
+                'provider' => 'required|in:TIGO,MPESA,AIRTEL',
                 'customer_email' => 'required|email',
                 'customer_name' => 'required|string',
                 'order_id' => 'required|string',
@@ -28,7 +67,7 @@ class PaymentController extends Controller
             ], [
                 'phone_number.regex' => 'Phone number must be in format 2557xxxxxx or 07xxxxxx (Tanzania numbers only)',
                 'amount.min' => 'Minimum amount is 100 TZS',
-                'provider.in' => 'Provider must be TIGO, MPESA, AIRTEL, or HALOTEL'
+                'provider.in' => 'Provider must be TIGO, MPESA, or AIRTEL'
             ]);
 
             // Selcom API credentials from environment
@@ -49,7 +88,7 @@ class PaymentController extends Controller
                 'vendor_id' => $vendorId,
                 'order_id' => $validated['order_id'],
                 'phone_number' => $validated['phone_number'],
-                'provider' => $validated['provider'],
+                'provider' => $this->mapProviderForSelcom($validated['provider']),
                 'customer_email' => $validated['customer_email'],
                 'customer_name' => $validated['customer_name'],
                 'webhook_url' => url('/api/payment/webhook'),

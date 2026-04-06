@@ -610,7 +610,7 @@ const ApplyModal = ({ property, onClose, onProceed }: {
 const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber, paymentMethod, setPaymentMethod }: {
   processing: boolean; onClose: () => void; onPay: () => void;
   phoneNumber: string; setPhoneNumber: (value: string) => void;
-  paymentMethod: 'tigo' | 'mpesa' | 'airtel' | 'halotel'; setPaymentMethod: (value: 'tigo' | 'mpesa' | 'airtel' | 'halotel') => void;
+  paymentMethod: 'tigo' | 'mpesa' | 'airtel'; setPaymentMethod: (value: 'tigo' | 'mpesa' | 'airtel') => void;
 }) => (
   <Overlay onClose={() => !processing && onClose()}>
     <div className="m-head-navy">
@@ -629,8 +629,9 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
           { value: 'tigo',   label: 'Tigo Pesa' },
           { value: 'mpesa',  label: 'M-Pesa' },
           { value: 'airtel', label: 'Airtel Money' },
-          { value: 'halotel', label: 'Halotel Money' },
-        ] as { value: 'tigo' | 'mpesa' | 'airtel' | 'halotel'; label: string }[]).map(p => (
+          // Halotel temporarily disabled - Selcom API returns 406 error
+          // { value: 'halotel', label: 'Halotel Money' },
+        ] as { value: 'tigo' | 'mpesa' | 'airtel'; label: string }[]).map(p => (
           <button
             key={p.value}
             className={`provider-btn ${p.value}`}
@@ -718,7 +719,7 @@ const Properties = () => {
   const [modal,         setModal]        = useState<ModalStep>('none');
   const [selProp,       setSelProp]      = useState<Property | null>(null);
   const [paying,        setPaying]       = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'tigo' | 'mpesa' | 'airtel' | 'halotel'>('tigo');
+  const [paymentMethod, setPaymentMethod] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
   const [phoneNumber,   setPhoneNumber]   = useState('');
 
   const { toasts, addToast, removeToast } = useToast();

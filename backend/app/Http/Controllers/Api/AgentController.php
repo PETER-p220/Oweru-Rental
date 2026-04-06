@@ -66,6 +66,8 @@ class AgentController extends Controller
             'owner_id'    => 'required|exists:users,id',
             'images'      => 'sometimes|array',
             'images.*'    => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'landlord_name'  => 'sometimes|string|max:255', // Optional landlord info for agent reference
+            'landlord_phone' => 'sometimes|string|max:20',  // Optional landlord phone for agent reference
         ]);
 
         if ($validator->fails()) {
@@ -103,6 +105,8 @@ class AgentController extends Controller
             'amenities'   => $request->amenities ?? [],
             'featured'    => false,
             'dalali'      => $trackingCode,
+            'landlord_name'  => $request->landlord_name, // Store landlord info for agent reference
+            'landlord_phone' => $request->landlord_phone, // Store landlord phone for agent reference
         ]);
 
         return response()->json([
@@ -202,7 +206,34 @@ class AgentController extends Controller
             ->withCount(['ownedProperties as properties_count' => function ($query) use ($user) {
                 $query->where('agent_id', $user->id);
             }])
+            ->with(['ownedProperties' => function ($query) use ($user) {
+                $query->where('agent_id', $user->id)
+                      ->select('id', 'owner_id', 'landlord_name', 'landlord_phone');
+            }])
             ->get();
+
+        // Add landlord contact info to each owner
+        $owners->each(function ($owner) {
+            // Get unique landlord names and phones from properties
+            $landlordNames = $owner->ownedProperties
+                ->pluck('landlord_name')
+                ->filter()
+                ->unique()
+                ->values();
+            
+            $landlordPhones = $owner->ownedProperties
+                ->pluck('landlord_phone')
+                ->filter()
+                ->unique()
+                ->values();
+
+            $owner->landlord_names = $landlordNames;
+            $owner->landlord_phones = $landlordPhones;
+            $owner->has_landlord_info = $landlordNames->isNotEmpty() || $landlordPhones->isNotEmpty();
+            
+            // Hide the properties relationship to avoid circular data
+            unset($owner->ownedProperties);
+        });
 
         return response()->json(['data' => $owners]);
     }
