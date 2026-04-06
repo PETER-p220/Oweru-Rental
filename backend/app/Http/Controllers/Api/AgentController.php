@@ -201,9 +201,6 @@ class AgentController extends Controller
         $user = Auth::user();
 
         try {
-            // Find all users who are the owner_id on any property this agent manages.
-            // NOTE: We do NOT filter by user_type='landlord' because agents often
-            // create listings where owner_id is their own account or any user.
             $owners = User::whereHas('ownedProperties', function ($query) use ($user) {
                     $query->where('agent_id', $user->id);
                 })
@@ -212,7 +209,7 @@ class AgentController extends Controller
                 }])
                 ->with(['ownedProperties' => function ($query) use ($user) {
                     $query->where('agent_id', $user->id)
-                          ->select('id', 'owner_id', 'landlord_name', 'landlord_phone', 'title', 'location', 'address');
+                          ->select('id', 'owner_id', 'title', 'location', 'landlord_name', 'landlord_phone');
                 }])
                 ->get();
 
@@ -229,36 +226,23 @@ class AgentController extends Controller
                     ->unique()
                     ->values();
 
-                // Get property details grouped by landlord info
-                $propertiesByLandlord = [];
-                $owner->ownedProperties->each(function ($property) use (&$propertiesByLandlord) {
-                    $landlordKey = ($property->landlord_name ?: 'Unknown') . '|' . ($property->landlord_phone ?: 'No Phone');
-                    if (!isset($propertiesByLandlord[$landlordKey])) {
-                        $propertiesByLandlord[$landlordKey] = [
-                            'landlord_name' => $property->landlord_name,
-                            'landlord_phone' => $property->landlord_phone,
-                            'properties' => []
-                        ];
-                    }
-                    $propertiesByLandlord[$landlordKey]['properties'][] = [
-                        'id' => $property->id,
-                        'title' => $property->title,
-                        'location' => $property->location,
-                        'address' => $property->address
-                    ];
-                });
+                // Each property's title + location for display in the table
+                $owner->properties_list = $owner->ownedProperties
+                    ->map(fn($p) => [
+                        'id'       => $p->id,
+                        'title'    => $p->title,
+                        'location' => $p->location,
+                    ])
+                    ->values();
 
-                $owner->landlord_names = $landlordNames->toArray();
-                $owner->landlord_phones = $landlordPhones->toArray();
+                $owner->landlord_names    = $landlordNames->toArray();
+                $owner->landlord_phones   = $landlordPhones->toArray();
                 $owner->has_landlord_info = $landlordNames->isNotEmpty() || $landlordPhones->isNotEmpty();
-                $owner->properties_by_landlord = array_values($propertiesByLandlord);
-                
-                // Hide the properties relationship to avoid circular data
+
                 unset($owner->ownedProperties);
             });
 
         } catch (\Illuminate\Database\QueryException $e) {
-            // Fallback: landlord_name / landlord_phone columns may not exist yet
             if (str_contains($e->getMessage(), 'Unknown column')) {
                 $owners = User::whereHas('ownedProperties', function ($query) use ($user) {
                         $query->where('agent_id', $user->id);
@@ -266,12 +250,20 @@ class AgentController extends Controller
                     ->withCount(['ownedProperties as properties_count' => function ($query) use ($user) {
                         $query->where('agent_id', $user->id);
                     }])
+                    ->with(['ownedProperties' => function ($query) use ($user) {
+                        $query->where('agent_id', $user->id)
+                              ->select('id', 'owner_id', 'title', 'location');
+                    }])
                     ->get();
 
                 $owners->each(function ($owner) {
-                    $owner->landlord_names  = [];
-                    $owner->landlord_phones = [];
+                    $owner->properties_list = $owner->ownedProperties
+                        ->map(fn($p) => ['id' => $p->id, 'title' => $p->title, 'location' => $p->location])
+                        ->values();
+                    $owner->landlord_names    = [];
+                    $owner->landlord_phones   = [];
                     $owner->has_landlord_info = false;
+                    unset($owner->ownedProperties);
                 });
             } else {
                 throw $e;
