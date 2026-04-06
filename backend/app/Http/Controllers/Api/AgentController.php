@@ -306,7 +306,8 @@ class AgentController extends Controller
         $properties = Property::where('agent_id', $user->id)->get();
 
         $links = $properties->map(function ($property) use ($user) {
-            $trackingUrl = url("/properties/{$property->id}?agent={$user->id}");
+            // Use frontend route format: /property/:id?agent=:agent_id
+            $trackingUrl = url("/property/{$property->id}?agent={$user->id}");
 
             // Check if columns exist, otherwise use 0 as fallback
             try {
@@ -404,7 +405,7 @@ public function recordShare(Property $property): JsonResponse
             'property_title' => $property->title,
             'agent_id' => $property->agent_id,
             'user_id' => $user->id,
-            'tracking_url' => url("/properties/{$property->id}?agent={$user->id}"),
+            'tracking_url' => url("/property/{$property->id}?agent={$user->id}"),
             'clicks' => $property->clicks ?? 0,
             'shares' => $property->shares ?? 0,
         ]);

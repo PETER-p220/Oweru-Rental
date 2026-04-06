@@ -71,9 +71,25 @@ class PropertyController extends Controller
     /**
      * Public property detail — no authentication required.
      */
-    public function publicShow(Property $property): JsonResponse
+    public function publicShow(Property $property, Request $request): JsonResponse
     {
         $property->load(['owner', 'agent']);
+
+        // Check if this is a tracking link visit
+        if ($request->has('agent') && $request->input('agent') == $property->agent_id) {
+            // Increment click count for tracking - with fallback for missing column
+            try {
+                $property->increment('clicks');
+            } catch (\Exception $e) {
+                // Column doesn't exist yet, just log the visit
+                \Log::info('Property tracking link clicked (no increment)', [
+                    'property_id' => $property->id,
+                    'agent_id' => $request->input('agent'),
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent()
+                ]);
+            }
+        }
 
         return response()->json(['data' => $property]);
     }
