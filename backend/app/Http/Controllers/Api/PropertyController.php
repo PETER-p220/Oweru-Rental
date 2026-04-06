@@ -75,6 +75,16 @@ class PropertyController extends Controller
     {
         $property->load(['owner', 'agent']);
 
+        // Log the full request for debugging
+        \Log::info('Property publicShow - Full Request', [
+            'property_id' => $property->id,
+            'full_url' => $request->fullUrl(),
+            'query_params' => $request->query(),
+            'all_params' => $request->all(),
+            'method' => $request->method(),
+            'ip' => $request->ip()
+        ]);
+
         // Check if this is a tracking link visit
         if ($request->has('agent') && $request->input('agent') == $property->agent_id) {
             // Increment click count for tracking - with fallback for missing column
