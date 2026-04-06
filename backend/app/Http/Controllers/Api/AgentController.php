@@ -200,6 +200,13 @@ class AgentController extends Controller
     {
         $user = Auth::user();
         
+        // Debug logging
+        \Log::info('getLinkedOwners called', [
+            'user_id' => $user?->id,
+            'user_type' => $user?->user_type,
+            'authenticated' => Auth::check()
+        ]);
+        
         try {
             // Get owners with their properties and landlord info
             $owners = User::where('user_type', 'landlord')
@@ -214,6 +221,11 @@ class AgentController extends Controller
                           ->select('id', 'owner_id', 'landlord_name', 'landlord_phone');
                 }])
                 ->get();
+
+            \Log::info('Query results', [
+                'owners_count' => $owners->count(),
+                'owners_data' => $owners->toArray()
+            ]);
 
             // Add landlord contact info to each owner
             $owners->each(function ($owner) {
@@ -273,6 +285,17 @@ class AgentController extends Controller
         }
 
         return response()->json(['data' => $owners]);
+    }
+
+    public function testAuth(): JsonResponse
+    {
+        $user = Auth::user();
+        return response()->json([
+            'authenticated' => Auth::check(),
+            'user_id' => $user?->id,
+            'user_type' => $user?->user_type,
+            'message' => 'Auth test working'
+        ]);
     }
 
     public function linkOwner(Request $request): JsonResponse

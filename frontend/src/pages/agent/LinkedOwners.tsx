@@ -41,7 +41,11 @@ const LinkedOwners = () => {
       try {
         setLoading(true);
         const res = await Api.getLinkedOwners();
-        setOwners(Array.isArray(res.data) ? res.data : []);
+        // Controller returns { data: [...] }, axios wraps that in res.data
+        // so the actual array is at res.data.data
+        const payload = (res as any).data;
+        const list = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
+        setOwners(list as LinkedOwner[]);
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Unable to load linked owners.');
       } finally {
