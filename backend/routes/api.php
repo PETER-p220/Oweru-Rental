@@ -123,7 +123,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Linked Owners
         Route::get('/agent/linked-owners',  [AgentController::class, 'getLinkedOwners']);
-        Route::get('/agent/test-auth',      [AgentController::class, 'testAuth']);
         Route::post('/agent/link-owner',    [AgentController::class, 'linkOwner']);
 
         // Tracking / QR
