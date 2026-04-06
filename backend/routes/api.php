@@ -128,6 +128,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Tracking
         Route::get('/agent/tracking',              [AgentController::class, 'getTrackingLinks']);
         Route::post('/agent/track-share',         [AgentController::class, 'trackShare']);
+        Route::get('/agent/debug-property/{id}', [AgentController::class, 'debugProperty']);
         Route::get('/agent/qr-codes/{property}',   [AgentController::class, 'generateQRCode']);
 
         // Notifications

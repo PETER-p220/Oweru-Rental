@@ -347,7 +347,17 @@ class AgentController extends Controller
         }
 
         // Increment share count
-        $property->increment('shares');
+        try {
+            $property->increment('shares');
+        } catch (\Exception $e) {
+            // Column doesn't exist yet, just log the share
+            \Log::info('Property shared (no increment)', [
+                'property_id' => $property->id,
+                'agent_id' => $user->id,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+        }
 
         \Log::info('Property shared', [
             'property_id' => $property->id,
@@ -357,6 +367,31 @@ class AgentController extends Controller
         ]);
 
         return response()->json(['message' => 'Share tracked successfully']);
+    }
+
+    public function debugProperty($id): JsonResponse
+    {
+        $user = Auth::user();
+        $property = Property::find($id);
+        
+        if (!$property) {
+            return response()->json(['message' => 'Property not found'], 404);
+        }
+        
+        if ($property->agent_id !== $user->id) {
+            return response()->json(['message' => 'Property does not belong to this agent'], 403);
+        }
+        
+        return response()->json([
+            'property_exists' => true,
+            'property_id' => $property->id,
+            'property_title' => $property->title,
+            'agent_id' => $property->agent_id,
+            'user_id' => $user->id,
+            'tracking_url' => url("/properties/{$property->id}?agent={$user->id}"),
+            'clicks' => $property->clicks ?? 0,
+            'shares' => $property->shares ?? 0,
+        ]);
     }
 
     public function generateQRCode(Property $property): JsonResponse

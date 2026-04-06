@@ -60,6 +60,15 @@ const ShareAndTrack = () => {
     }
   };
 
+  const debugProperty = async (propertyId: number) => {
+    try {
+      const result = await Api.debugProperty(propertyId);
+      alert(JSON.stringify(result, null, 2));
+    } catch (err) {
+      console.error('Debug failed:', err);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -218,6 +227,34 @@ const ShareAndTrack = () => {
                         >
                           🔗 Open Tracking Link
                         </a>
+                        <button
+                          onClick={() => debugProperty(item.id)}
+                          style={{
+                            fontSize: '10px',
+                            padding: '6px 12px',
+                            background: '#f59e0b',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          🔍 Debug Property
+                        </button>
+                        <button
+                          onClick={() => trackShare(item.id)}
+                          style={{
+                            fontSize: '10px',
+                            padding: '6px 12px',
+                            background: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          📊 Log Share
+                        </button>
                         <a
                           href={item.qr_code_url}
                           target="_blank"

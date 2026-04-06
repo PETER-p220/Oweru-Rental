@@ -655,6 +655,7 @@ class Api {
   static async getLinkedOwners()          { return this.request<any[]>('agent/linked-owners'); }
   static async getTrackingLinks()         { return this.request<any[]>('agent/tracking'); }
   static async trackShare(propertyId: number) { return this.request<any>('agent/track-share', { method: 'POST', body: JSON.stringify({ property_id: propertyId }) }); }
+  static async debugProperty(id: number) { return this.request<any>(`agent/debug-property/${id}`); }
   static async getLeads()                 { return this.request<any[]>('agent/leads'); }
   static async getLeadStats()             { return this.request<any>('agent/lead-stats'); }
   static async getAgentApplications()     { return this.request<any[]>('agent/applications'); }
