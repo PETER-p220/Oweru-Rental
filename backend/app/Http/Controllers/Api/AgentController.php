@@ -575,6 +575,27 @@ public function recordShare(Property $property): JsonResponse
         }
     }
 
+    public function getApplications(): JsonResponse
+    {
+        $user         = Auth::user();
+        $applications = Application::with(['user', 'property'])
+            ->whereHas('property', function ($query) use ($user) {
+                $query->where('agent_id', $user->id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json([
+            'data' => $applications->items(),
+            'pagination' => [
+                'current_page' => $applications->currentPage(),
+                'last_page'    => $applications->lastPage(),
+                'per_page'     => $applications->perPage(),
+                'total'        => $applications->total(),
+            ],
+        ]);
+    }
+
     public function getMyCommissions(): JsonResponse
     {
         if (! $this->commissionTablesAvailable()) {
