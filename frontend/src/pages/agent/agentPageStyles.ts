@@ -1,10 +1,13 @@
 import type { CSSProperties } from 'react';
 
+// Base styles
 export const pageStyle: CSSProperties = {
   display: 'grid',
   gap: '24px',
   color: '#e8e4dc',
   backgroundColor: '#1e293b', // slate-800 instead of black
+  padding: '16px',
+  minHeight: '100vh',
 };
 
 export const panelStyle: CSSProperties = {
@@ -24,21 +27,21 @@ export const sectionTitleStyle: CSSProperties = {
 };
 
 export const headingStyle: CSSProperties = {
-  fontSize: '34px',
+  fontSize: 'clamp(24px, 5vw, 34px)', // Responsive font size
   lineHeight: 1.1,
   margin: 0,
 };
 
 export const descriptionStyle: CSSProperties = {
   color: '#9aa4b2',
-  fontSize: '15px',
+  fontSize: 'clamp(14px, 3vw, 15px)', // Responsive font size
   lineHeight: 1.7,
   maxWidth: '70ch',
 };
 
 export const statGridStyle: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', // Smaller minimum for mobile
   gap: '14px',
 };
 
@@ -51,13 +54,13 @@ export const statCardStyle = (accent: string): CSSProperties => ({
 
 export const statLabelStyle: CSSProperties = {
   color: '#8ea0b5',
-  fontSize: '12px',
+  fontSize: '11px', // Smaller for mobile
   textTransform: 'uppercase',
   letterSpacing: '0.12em',
 };
 
 export const statValueStyle: CSSProperties = {
-  fontSize: '30px',
+  fontSize: 'clamp(24px, 4vw, 30px)', // Responsive font size
   marginTop: '8px',
 };
 
@@ -75,7 +78,7 @@ export const tableStyle: CSSProperties = {
 export const thStyle: CSSProperties = {
   textAlign: 'left',
   padding: '14px 16px',
-  fontSize: '12px',
+  fontSize: '11px', // Smaller for mobile
   color: '#8ea0b5',
   textTransform: 'uppercase',
   letterSpacing: '0.1em',
@@ -86,7 +89,7 @@ export const tdStyle: CSSProperties = {
   padding: '14px 16px',
   borderBottom: '1px solid rgba(255,255,255,0.05)',
   verticalAlign: 'top',
-  fontSize: '14px',
+  fontSize: '13px', // Smaller for mobile
 };
 
 export const inputStyle: CSSProperties = {
@@ -97,6 +100,7 @@ export const inputStyle: CSSProperties = {
   borderRadius: '12px',
   color: '#e8e4dc',
   outline: 'none',
+  fontSize: '14px',
 };
 
 export const textareaStyle: CSSProperties = {
@@ -110,14 +114,79 @@ export const selectStyle: CSSProperties = {
 };
 
 export const buttonStyle = (variant: 'primary' | 'ghost' = 'primary'): CSSProperties => ({
-  padding: '12px 16px',
+  padding: '10px 14px', // Smaller padding for mobile
   borderRadius: '12px',
   border: variant === 'primary' ? '1px solid rgba(56,189,248,0.35)' : '1px solid rgba(255,255,255,0.08)',
   background: variant === 'primary' ? '#38bdf8' : 'rgba(255,255,255,0.03)',
   color: variant === 'primary' ? '#03131d' : '#e8e4dc',
   cursor: 'pointer',
   fontWeight: 600,
+  fontSize: '13px', // Smaller for mobile
+  whiteSpace: 'nowrap',
 });
+
+// Mobile-specific styles
+export const mobileTableContainer: CSSProperties = {
+  display: 'none', // Hidden by default
+};
+
+export const mobileCard: CSSProperties = {
+  background: 'rgba(255,255,255,0.02)',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: '16px',
+  padding: '16px',
+  marginBottom: '12px',
+};
+
+export const mobileCardHeader: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  marginBottom: '12px',
+  flexWrap: 'wrap',
+  gap: '8px',
+};
+
+export const mobileCardTitle: CSSProperties = {
+  fontSize: '16px',
+  fontWeight: '600',
+  color: '#e8e4dc',
+  margin: 0,
+};
+
+export const mobileCardStatus: CSSProperties = {
+  padding: '4px 8px',
+  borderRadius: '6px',
+  fontSize: '11px',
+  textTransform: 'uppercase',
+  fontWeight: '600',
+};
+
+export const mobileCardSection: CSSProperties = {
+  marginBottom: '12px',
+};
+
+export const mobileCardLabel: CSSProperties = {
+  fontSize: '11px',
+  color: '#8ea0b5',
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  marginBottom: '4px',
+};
+
+export const mobileCardValue: CSSProperties = {
+  fontSize: '14px',
+  color: '#cbd5e1',
+};
+
+export const mobileCardActions: CSSProperties = {
+  display: 'flex',
+  gap: '8px',
+  flexWrap: 'wrap',
+};
+
+// Media query helper
+export const mobileMediaQuery = '@media (max-width: 768px)';
 
 export const formatCurrency = (value: number | string | null | undefined) =>
   new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(Number(value || 0));

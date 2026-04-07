@@ -5,6 +5,8 @@ import {
   buttonStyle, descriptionStyle, formatDate, headingStyle,
   inputStyle, pageStyle, palette, panelStyle, sectionTitleStyle,
   tableStyle, tableWrapStyle, tdStyle, thStyle,
+  mobileTableContainer, mobileCard, mobileCardHeader, mobileCardTitle,
+  mobileCardSection, mobileCardLabel, mobileCardValue, mobileCardActions,
 } from './tenantPageStyles';
 
 const Notifications = () => {
@@ -94,66 +96,120 @@ const Notifications = () => {
           </div>
         )}
 
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.muted, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${palette.amber}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            Loading notifications...
-          </div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.muted }}>
-            <BellOff size={40} style={{ opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
-            <div style={{ fontSize: '16px' }}>No notifications found</div>
-          </div>
-        ) : (
-          <div style={tableWrapStyle}>
-            <table style={tableStyle}>
-              <thead>
-                <tr>{['Title & Message', 'Type', 'Date', 'Actions'].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr>
-              </thead>
-              <tbody>
-                {filtered.map((item) => (
-                  <tr key={item.id}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <td style={tdStyle}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                        {!item.read_at && (
-                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: palette.amber, flexShrink: 0, marginTop: 5 }} />
-                        )}
-                        <div>
-                          <div style={{ fontWeight: item.read_at ? 400 : 600 }}>{item.title}</div>
-                          <div style={{ color: palette.muted, fontSize: '13px', marginTop: '3px' }}>{item.message}</div>
-                        </div>
+        {/* Desktop Table */}
+        <div style={tableWrapStyle}>
+          <table style={tableStyle}>
+            <thead>
+              <tr>{['Title & Message', 'Type', 'Date', 'Actions'].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {filtered.map((item) => (
+                <tr key={item.id}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <td style={tdStyle}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                      {!item.read_at && (
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: palette.amber, flexShrink: 0, marginTop: 5 }} />
+                      )}
+                      <div>
+                        <div style={{ fontWeight: item.read_at ? 400 : 600 }}>{item.title}</div>
+                        <div style={{ color: palette.muted, fontSize: '13px', marginTop: '3px' }}>{item.message}</div>
                       </div>
-                    </td>
-                    <td style={{ ...tdStyle, color: palette.muted, fontSize: '12px' }}>{item.type || 'system'}</td>
-                    <td style={{ ...tdStyle, color: palette.muted, fontSize: '13px' }}>{formatDate(item.created_at)}</td>
-                    <td style={tdStyle}>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {!item.read_at && (
-                          <button style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
-                            onClick={() => Api.markNotificationAsRead(item.id).then(load)}>
-                            <CheckCheck size={11} /> Read
-                          </button>
-                        )}
+                    </div>
+                  </td>
+                  <td style={{ ...tdStyle, color: palette.muted, fontSize: '12px' }}>{item.type || 'system'}</td>
+                  <td style={{ ...tdStyle, color: palette.muted, fontSize: '13px' }}>{formatDate(item.created_at)}</td>
+                  <td style={tdStyle}>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {!item.read_at && (
                         <button style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
-                          onClick={() => Api.archiveNotification(item.id).then(load)}>
-                          <Archive size={11} />
+                          onClick={() => Api.markNotificationAsRead(item.id).then(load)}>
+                          <CheckCheck size={11} /> Read
                         </button>
-                        <button style={{ ...buttonStyle('danger'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
-                          onClick={() => Api.deleteNotification(item.id).then(load)}>
-                          <Trash2 size={11} />
-                        </button>
+                      )}
+                      <button style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
+                        onClick={() => Api.archiveNotification(item.id).then(load)}>
+                        <Archive size={11} />
+                      </button>
+                      <button style={{ ...buttonStyle('danger'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
+                        onClick={() => Api.deleteNotification(item.id).then(load)}>
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div style={mobileTableContainer}>
+          {loading ? (
+            <div style={mobileCard}>
+              <div style={mobileCardValue}>Loading notifications...</div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={mobileCard}>
+              <div style={mobileCardValue}>No notifications found</div>
+            </div>
+          ) : (
+            filtered.map((item) => (
+              <div key={item.id} style={mobileCard}>
+                <div style={mobileCardHeader}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                      {!item.read_at && (
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: palette.amber, flexShrink: 0 }} />
+                      )}
+                      <div>
+                        <div style={{ fontWeight: item.read_at ? 400 : 600, fontSize: '16px' }}>{item.title}</div>
+                        <div style={{ color: palette.muted, fontSize: '14px', marginTop: '2px' }}>{item.message}</div>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', color: palette.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    {formatDate(item.created_at)}
+                  </div>
+                </div>
+
+                <div style={mobileCardSection}>
+                  <div style={mobileCardLabel}>Type</div>
+                  <div style={mobileCardValue}>{item.type || 'system'}</div>
+                </div>
+
+                <div style={mobileCardActions}>
+                  {!item.read_at && (
+                    <button style={{ ...buttonStyle('secondary'), flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                      onClick={() => Api.markNotificationAsRead(item.id).then(load)}>
+                      <CheckCheck size={12} /> Read
+                    </button>
+                  )}
+                  <button style={{ ...buttonStyle('secondary'), flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                    onClick={() => Api.archiveNotification(item.id).then(load)}>
+                    <Archive size={12} /> Archive
+                  </button>
+                  <button style={{ ...buttonStyle('danger'), flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                    onClick={() => Api.deleteNotification(item.id).then(load)}>
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </section>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @media (max-width: 768px) {
+          div[style*="overflowX: auto"] {
+            display: none;
+          }
+          div[style*="display: none"] {
+            display: block !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

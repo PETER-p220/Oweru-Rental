@@ -5,6 +5,8 @@ import {
   buttonStyle, descriptionStyle, formatCurrency, formatDate, getStatusColor,
   headingStyle, pageStyle, palette, panelStyle, sectionTitleStyle,
   selectStyle, statusPillStyle, tableStyle, tableWrapStyle, tdStyle, thStyle,
+  mobileTableContainer, mobileCard, mobileCardHeader, mobileCardTitle,
+  mobileCardSection, mobileCardLabel, mobileCardValue, mobileCardActions,
 } from './tenantPageStyles';
 
 const Payments = () => {

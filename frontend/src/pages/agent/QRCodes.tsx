@@ -1,7 +1,30 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import Api from '../../services/api';
-import { buttonStyle, descriptionStyle, headingStyle, pageStyle, panelStyle, sectionTitleStyle, statCardStyle, statGridStyle, statLabelStyle, statValueStyle, tableStyle, tableWrapStyle, tdStyle, thStyle } from './agentPageStyles';
+import { 
+  buttonStyle, 
+  descriptionStyle, 
+  headingStyle, 
+  pageStyle, 
+  panelStyle, 
+  sectionTitleStyle, 
+  statCardStyle, 
+  statGridStyle, 
+  statLabelStyle, 
+  statValueStyle, 
+  tableStyle, 
+  tableWrapStyle, 
+  tdStyle, 
+  thStyle,
+  mobileTableContainer,
+  mobileCard,
+  mobileCardHeader,
+  mobileCardTitle,
+  mobileCardSection,
+  mobileCardLabel,
+  mobileCardValue,
+  mobileCardActions
+} from './agentPageStyles';
 
 // Custom styles for slate-800 background
 const slate800PageStyle = {

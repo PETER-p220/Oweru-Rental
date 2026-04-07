@@ -1,224 +1,277 @@
 import type { CSSProperties } from 'react';
 
+// Color palette for consistent theming
 export const palette = {
-  amber:        '#f59e0b',
-  amberDim:     '#d97706',
-  amberGlow:    'rgba(245,158,11,0.12)',
-  amberBorder:  'rgba(245,158,11,0.22)',
-  green:        '#34d399',
-  red:          '#f87171',
-  blue:         '#60a5fa',
-  purple:       '#a78bfa',
-  cream:        '#f1ede6',
-  muted:        '#94a3b8',
-  mutedDark:    '#64748b',
+  amber: '#f59e0b',
+  amberDim: 'rgba(245,158,11,0.35)',
+  cream: '#e8e4dc',
+  muted: '#9aa4b2',
+  mutedDark: '#8ea0b5',
+  slate900: '#03131d',
+  slate800: '#1e293b',
+  slate700: '#334155',
+  borderSoft: 'rgba(255,255,255,0.08)',
+  borderFaint: 'rgba(255,255,255,0.06)',
+};
 
-  /* Slate palette */
-  slate900:     '#0f172a',
-  slate800:     '#1e293b',
-  slate750:     '#243044',
-  slate700:     '#334155',
-  slate600:     '#475569',
-  slate500:     '#64748b',
-
-  /* Glass / overlay */
-  glass:        'rgba(30,41,59,0.85)',
-  glassLight:   'rgba(51,65,85,0.5)',
-  overlay:      'rgba(15,23,42,0.7)',
-
-  border:       'rgba(245,158,11,0.14)',
-  borderSoft:   'rgba(148,163,184,0.1)',
-  borderFaint:  'rgba(148,163,184,0.06)',
-} as const;
-
-/* ─── Page wrapper ─── */
 export const pageStyle: CSSProperties = {
   display: 'grid',
-  gap: '20px',
-  background: palette.slate900,
-  color: palette.cream,
+  gap: '24px',
+  color: '#e8e4dc',
+  backgroundColor: '#1e293b', // slate-800
+  padding: '16px',
   minHeight: '100vh',
-  fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif",
 };
 
-/* ─── Panel ─── */
 export const panelStyle: CSSProperties = {
-  background: `linear-gradient(145deg, ${palette.slate750} 0%, ${palette.slate800} 100%)`,
+  background: 'linear-gradient(135deg, #334155 0%, #1e293b 100%)', // slate-700 to slate-800
   border: `1px solid ${palette.borderSoft}`,
   borderRadius: '20px',
-  padding: '32px',
-  color: palette.cream,
-  boxShadow: '0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)',
-  position: 'relative' as const,
-  overflow: 'hidden' as const,
+  padding: '24px',
+  boxShadow: '0 24px 60px rgba(0,0,0,0.22)',
 };
 
-/* ─── Typography ─── */
 export const sectionTitleStyle: CSSProperties = {
-  fontSize: '10px',
-  letterSpacing: '0.3em',
-  textTransform: 'uppercase',
   color: palette.amber,
-  marginBottom: '8px',
-  fontWeight: 600,
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
+  fontSize: '12px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.18em',
+  marginBottom: '10px',
 };
 
 export const headingStyle: CSSProperties = {
-  fontSize: '28px',
+  fontSize: 'clamp(24px, 5vw, 34px)', // Responsive font size
   lineHeight: 1.1,
   margin: 0,
-  fontWeight: 700,
-  letterSpacing: '-0.5px',
-  color: palette.cream,
 };
 
 export const descriptionStyle: CSSProperties = {
-  color: palette.muted,
-  fontSize: '14px',
+  color: '#9aa4b2',
+  fontSize: 'clamp(14px, 3vw, 15px)', // Responsive font size
   lineHeight: 1.7,
-  margin: '6px 0 0',
+  maxWidth: '70ch',
 };
 
-/* ─── Metric cards ─── */
-export const metricGridStyle: CSSProperties = {
+export const statGridStyle: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-  gap: '12px',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', // Smaller minimum for mobile
+  gap: '14px',
 };
 
-export const metricCardStyle: CSSProperties = {
-  padding: '20px',
-  borderRadius: '14px',
-  background: palette.glassLight,
+export const statCardStyle = (accent: string): CSSProperties => ({
+  padding: '18px',
+  borderRadius: '18px',
+  background: 'rgba(255,255,255,0.02)',
+  border: `1px solid ${accent}22`,
+});
+
+export const statLabelStyle: CSSProperties = {
+  color: palette.mutedDark,
+  fontSize: '11px', // Smaller for mobile
+  textTransform: 'uppercase',
+  letterSpacing: '0.12em',
+};
+
+export const statValueStyle: CSSProperties = {
+  fontSize: 'clamp(24px, 4vw, 30px)', // Responsive font size
+  marginTop: '8px',
+};
+
+export const tableWrapStyle: CSSProperties = {
+  overflowX: 'auto',
+  borderRadius: '16px',
   border: `1px solid ${palette.borderFaint}`,
-  position: 'relative' as const,
-  overflow: 'hidden' as const,
 };
-
-/* ─── Table ─── */
-export const tableWrapStyle: CSSProperties = { overflowX: 'auto' };
 
 export const tableStyle: CSSProperties = {
   width: '100%',
   borderCollapse: 'collapse',
-  minWidth: '680px',
 };
 
 export const thStyle: CSSProperties = {
   textAlign: 'left',
-  padding: '10px 14px',
-  fontSize: '10px',
-  letterSpacing: '0.2em',
-  textTransform: 'uppercase',
+  padding: '14px 16px',
+  fontSize: '11px', // Smaller for mobile
   color: palette.mutedDark,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
   borderBottom: `1px solid ${palette.borderFaint}`,
-  fontWeight: 600,
 };
 
 export const tdStyle: CSSProperties = {
-  padding: '14px',
+  padding: '14px 16px',
   borderBottom: `1px solid rgba(148,163,184,0.05)`,
   verticalAlign: 'top',
-  color: palette.cream,
-  fontSize: '14px',
+  fontSize: '13px', // Smaller for mobile
 };
 
-/* ─── Inputs ─── */
 export const inputStyle: CSSProperties = {
   width: '100%',
-  padding: '10px 14px',
-  borderRadius: '12px',
-  background: 'rgba(15,23,42,0.6)',
+  padding: '12px 14px',
+  background: 'rgba(255,255,255,0.04)',
   border: `1px solid ${palette.borderSoft}`,
+  borderRadius: '12px',
   color: palette.cream,
-  fontSize: '14px',
   outline: 'none',
-  transition: 'border-color 0.2s',
-};
-
-export const selectStyle: CSSProperties = {
-  ...inputStyle,
-  appearance: 'none',
-  cursor: 'pointer',
+  fontSize: '14px',
 };
 
 export const textareaStyle: CSSProperties = {
   ...inputStyle,
-  minHeight: '120px',
-  resize: 'vertical' as const,
+  minHeight: '130px',
+  resize: 'vertical',
 };
 
-/* ─── Buttons ─── */
-export const buttonStyle = (tone: 'primary' | 'secondary' | 'danger' = 'secondary'): CSSProperties => {
-  const map = {
-    primary:   { color: palette.slate900,  bg: palette.amber,                  border: palette.amberDim,               hover: '#fff' },
-    secondary: { color: palette.cream,     bg: 'rgba(148,163,184,0.08)',        border: 'rgba(148,163,184,0.15)',        hover: palette.cream },
-    danger:    { color: '#fca5a5',         bg: 'rgba(248,113,113,0.1)',         border: 'rgba(248,113,113,0.2)',         hover: '#fff' },
-  } as const;
+export const selectStyle: CSSProperties = {
+  ...inputStyle,
+};
+
+export const buttonStyle = (variant: 'primary' | 'ghost' | 'secondary' | 'danger' = 'primary'): CSSProperties => {
+  const variants = {
+    primary: {
+      border: `1px solid ${palette.amberDim}`,
+      background: palette.amber,
+      color: palette.slate900,
+    },
+    ghost: {
+      border: `1px solid ${palette.borderSoft}`,
+      background: 'rgba(255,255,255,0.03)',
+      color: palette.cream,
+    },
+    secondary: {
+      border: `1px solid ${palette.borderSoft}`,
+      background: 'rgba(255,255,255,0.08)',
+      color: palette.cream,
+    },
+    danger: {
+      border: `1px solid rgba(239,68,68,0.35)`,
+      background: '#ef4444',
+      color: palette.cream,
+    },
+  };
+
+  const style = variants[variant] || variants.primary;
+
   return {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    padding: '8px 16px',
-    borderRadius: '10px',
-    background: map[tone].bg,
-    border: `1px solid ${map[tone].border}`,
-    color: map[tone].color,
-    fontSize: '13px',
-    fontWeight: 600,
+    padding: '10px 14px', // Smaller padding for mobile
+    borderRadius: '12px',
+    border: style.border,
+    background: style.background,
+    color: style.color,
     cursor: 'pointer',
-    transition: 'all 0.18s ease',
-    letterSpacing: '0.02em',
-    whiteSpace: 'nowrap' as const,
+    fontWeight: 600,
+    fontSize: '13px', // Smaller for mobile
+    whiteSpace: 'nowrap',
   };
 };
 
-/* ─── Status pills ─── */
+// Mobile-specific styles
+export const mobileTableContainer: CSSProperties = {
+  display: 'none', // Hidden by default
+};
+
+export const mobileCard: CSSProperties = {
+  background: 'rgba(255,255,255,0.02)',
+  border: `1px solid ${palette.borderFaint}`,
+  borderRadius: '16px',
+  padding: '16px',
+  marginBottom: '12px',
+};
+
+export const mobileCardHeader: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  marginBottom: '12px',
+  flexWrap: 'wrap',
+  gap: '8px',
+};
+
+export const mobileCardTitle: CSSProperties = {
+  fontSize: '16px',
+  fontWeight: '600',
+  color: palette.cream,
+  margin: 0,
+};
+
+export const mobileCardStatus: CSSProperties = {
+  padding: '4px 8px',
+  borderRadius: '6px',
+  fontSize: '11px',
+  textTransform: 'uppercase',
+  fontWeight: '600',
+};
+
+export const mobileCardSection: CSSProperties = {
+  marginBottom: '12px',
+};
+
+export const mobileCardLabel: CSSProperties = {
+  fontSize: '11px',
+  color: palette.mutedDark,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  marginBottom: '4px',
+};
+
+export const mobileCardValue: CSSProperties = {
+  fontSize: '14px',
+  color: palette.cream,
+};
+
+export const mobileCardActions: CSSProperties = {
+  display: 'flex',
+  gap: '8px',
+  flexWrap: 'wrap',
+};
+
+// Media query helper
+export const mobileMediaQuery = '@media (max-width: 768px)';
+
+// Status color helper for payments and applications
+export const getStatusColor = (status?: string | null | undefined): string => {
+  if (!status) return palette.muted;
+  
+  switch (status.toLowerCase()) {
+    case 'completed':
+    case 'approved':
+    case 'active':
+      return palette.amber;
+    case 'pending':
+    case 'processing':
+      return palette.amber;
+    case 'failed':
+    case 'rejected':
+    case 'cancelled':
+      return '#ef4444'; // red
+    case 'refunded':
+      return '#8b5cf6'; // purple
+    default:
+      return palette.muted;
+  }
+};
+
+// Status pill style helper
 export const statusPillStyle = (color: string): CSSProperties => ({
   display: 'inline-flex',
   alignItems: 'center',
   gap: '5px',
   padding: '3px 10px',
-  borderRadius: '999px',
-  background: `${color}18`,
-  border: `1px solid ${color}35`,
-  color,
+  borderRadius: '10px',
   fontSize: '11px',
-  letterSpacing: '0.08em',
+  fontWeight: 600,
   textTransform: 'uppercase',
-  fontWeight: 700,
+  letterSpacing: '0.02em',
+  background: `${color}15`,
+  border: `1px solid ${color}40`,
+  color: color,
 });
 
-/* ─── Helpers ─── */
-export const formatCurrency = (amount?: number | string | null) => {
-  const value = Number(amount ?? 0);
-  return new Intl.NumberFormat('en-TZ', {
-    style: 'currency',
-    currency: 'TZS',
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(value) ? value : 0);
-};
+export const formatCurrency = (value: number | string | null | undefined) =>
+  new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(Number(value || 0));
 
 export const formatDate = (value?: string | null) => {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-};
-
-export const getStatusColor = (status?: string | null) => {
-  switch ((status || '').toLowerCase()) {
-    case 'approved': case 'active': case 'completed': case 'paid': case 'read':
-      return palette.green;
-    case 'pending': case 'processing': case 'unread':
-      return palette.amber;
-    case 'rejected': case 'failed': case 'overdue':
-      return palette.red;
-    default:
-      return palette.blue;
-  }
+  if (!value) return 'N/A';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 'N/A' : parsed.toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
 };

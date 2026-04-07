@@ -1,7 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Api from '../../services/api';
-import { buttonStyle, descriptionStyle, formatDate, headingStyle, inputStyle, pageStyle, panelStyle, sectionTitleStyle, statCardStyle, statGridStyle, statLabelStyle, statValueStyle, tableStyle, tableWrapStyle, tdStyle, thStyle } from './agentPageStyles';
+import { 
+  buttonStyle, 
+  descriptionStyle, 
+  formatDate, 
+  headingStyle, 
+  inputStyle, 
+  pageStyle, 
+  panelStyle, 
+  sectionTitleStyle, 
+  statCardStyle, 
+  statGridStyle, 
+  statLabelStyle, 
+  statValueStyle, 
+  tableStyle, 
+  tableWrapStyle, 
+  tdStyle, 
+  thStyle,
+  mobileTableContainer,
+  mobileCard,
+  mobileCardHeader,
+  mobileCardTitle,
+  mobileCardStatus,
+  mobileCardSection,
+  mobileCardLabel,
+  mobileCardValue,
+  mobileCardActions,
+  mobileMediaQuery
+} from './agentPageStyles';
 
 const LeadsAndVisitors = () => {
   const [leads, setLeads] = useState<any[]>([]);
@@ -58,6 +85,8 @@ const LeadsAndVisitors = () => {
       <section style={panelStyle}>
         <input style={{ ...inputStyle, maxWidth: '340px', marginBottom: '16px' }} placeholder="Search leads" value={search} onChange={(e) => setSearch(e.target.value)} />
         {error && <div style={{ color: '#e07070', marginBottom: '16px' }}>{error}</div>}
+        
+        {/* Desktop Table */}
         <div style={tableWrapStyle}>
           <table style={tableStyle}>
             <thead><tr><th style={thStyle}>Lead</th><th style={thStyle}>Property</th><th style={thStyle}>Status</th><th style={thStyle}>Created</th></tr></thead>
@@ -86,7 +115,86 @@ const LeadsAndVisitors = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Cards */}
+        <div style={{ ...mobileTableContainer, marginTop: '20px' }}>
+          {loading ? (
+            <div style={mobileCard}>
+              <div style={mobileCardValue}>Loading leads...</div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={mobileCard}>
+              <div style={mobileCardValue}>No leads found.</div>
+            </div>
+          ) : (
+            filtered.map((item) => (
+              <div key={item.id} style={mobileCard}>
+                <div style={mobileCardHeader}>
+                  <div>
+                    <h3 style={mobileCardTitle}>{item.name || item.user?.first_name || 'Lead'}</h3>
+                    <div style={{ color: '#cbd5e1', fontSize: '13px', marginTop: '2px' }}>{item.email}</div>
+                    {item.phone && <div style={{ color: '#cbd5e1', fontSize: '13px', marginTop: '2px' }}>{item.phone}</div>}
+                  </div>
+                  <div style={{
+                    ...mobileCardStatus,
+                    background: item.status === 'new' ? '#22c55e' : 
+                               item.status === 'contacted' ? '#38bdf8' : 
+                               item.status === 'interested' ? '#f59e0b' : 
+                               item.status === 'converted' ? '#10b981' : '#ef4444',
+                    color: '#fff'
+                  }}>
+                    {item.status || 'new'}
+                  </div>
+                </div>
+
+                {item.property && (
+                  <div style={mobileCardSection}>
+                    <div style={mobileCardLabel}>Property</div>
+                    <div style={mobileCardValue}>{item.property.title}</div>
+                    {item.property.id && (
+                      <div style={{ marginTop: '6px' }}>
+                        <Link to={`/property/${item.property.id}`} style={{ color: '#38bdf8', textDecoration: 'none', fontSize: '13px' }}>
+                          View Property
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div style={mobileCardSection}>
+                  <div style={mobileCardLabel}>Created</div>
+                  <div style={mobileCardValue}>{formatDate(item.created_at)}</div>
+                </div>
+
+                <div style={mobileCardActions}>
+                  {item.email && (
+                    <a href={`mailto:${item.email}`} style={{ ...buttonStyle('ghost'), textDecoration: 'none', flex: 1, textAlign: 'center' }}>
+                      Email
+                    </a>
+                  )}
+                  {item.phone && (
+                    <a href={`tel:${item.phone}`} style={{ ...buttonStyle('ghost'), textDecoration: 'none', flex: 1, textAlign: 'center' }}>
+                      Call
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </section>
+
+      {/* CSS for responsive layout */}
+      <style>{`
+        @media (max-width: 768px) {
+          div[style*="overflowX: auto"] {
+            display: none;
+          }
+          div[style*="display: none"] {
+            display: block !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
