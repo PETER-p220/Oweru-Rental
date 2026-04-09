@@ -38,11 +38,11 @@ interface ApplicationItem {
 
 const ApplicationsPage = () => {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
-  const [searchParams] = useSearchParams();
-  const propertyId = searchParams.get('property');
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState('');
+  const [search, setSearch]             = useState('');
+  const [searchParams]                  = useSearchParams();
+  const propertyId                      = searchParams.get('property');
 
   useEffect(() => {
     if (propertyId) handleApplyForProperty(propertyId);
@@ -94,51 +94,66 @@ const ApplicationsPage = () => {
   }, [applications]);
 
   return (
-    <div style={{ ...pageStyle, padding: '0', backgroundColor: '#0a0a0a' }}>
-      {/* Header */}
-      <section style={{ ...panelStyle, borderBottom: `1px solid ${palette.borderSoft || '#1f1f1f'}` }}>
+    <div style={{ ...pageStyle, padding: '0', backgroundColor: '#f8fafc' }}>
+
+      {/* ── Header ── */}
+      <section style={{
+        ...panelStyle,
+        borderRadius: 0,
+        borderLeft: 'none',
+        borderRight: 'none',
+        borderTop: 'none',
+        borderBottom: '1px solid #e2e8f0',
+        boxShadow: '0 1px 3px rgba(15,45,110,0.06)',
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ ...sectionTitleStyle, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: palette.amber }} />
+            <div style={{
+              ...sectionTitleStyle,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: '#eff6ff',
+              padding: '4px 12px',
+              borderRadius: '100px',
+              marginBottom: '12px',
+            }}>
+              <FileCheck size={12} />
               Tenant Workspace
             </div>
-            <h1 style={{ ...headingStyle, fontSize: '28px', letterSpacing: '-0.02em' }}>My Applications</h1>
-            <p style={{ ...descriptionStyle, maxWidth: '460px' }}>
+            <h1 style={{ ...headingStyle, fontSize: '26px', letterSpacing: '-0.02em' }}>My Applications</h1>
+            <p style={{ ...descriptionStyle, maxWidth: '460px', marginTop: '6px' }}>
               Track the status of all your rental applications in one place.
             </p>
           </div>
 
-          {/* Status Overview */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignSelf: 'flex-end' }}>
+          {/* Status summary pills */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignSelf: 'flex-end' }}>
             {Object.entries(statusCounts).map(([status, count]) => (
               <div
                 key={status}
                 style={{
-                  padding: '8px 16px',
-                  borderRadius: '9999px',
-                  background: `${getStatusColor(status)}15`,
-                  border: `1px solid ${getStatusColor(status)}30`,
+                  padding: '6px 14px',
+                  borderRadius: '100px',
+                  background: `${getStatusColor(status)}12`,
+                  border: `1px solid ${getStatusColor(status)}28`,
                   color: getStatusColor(status),
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                  gap: '7px',
                 }}
               >
                 <span style={{ textTransform: 'capitalize' }}>{status}</span>
-                <span
-                  style={{
-                    background: `${getStatusColor(status)}25`,
-                    color: getStatusColor(status),
-                    borderRadius: '9999px',
-                    padding: '2px 8px',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                  }}
-                >
+                <span style={{
+                  background: `${getStatusColor(status)}20`,
+                  color: getStatusColor(status),
+                  borderRadius: '100px',
+                  padding: '1px 7px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                }}>
                   {count}
                 </span>
               </div>
@@ -146,90 +161,98 @@ const ApplicationsPage = () => {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div style={{ marginTop: '28px', maxWidth: '420px', position: 'relative' }}>
+        {/* Search */}
+        <div style={{ marginTop: '24px', maxWidth: '420px', position: 'relative' }}>
           <Search
-            size={18}
+            size={16}
             style={{
               position: 'absolute',
-              left: '16px',
+              left: '14px',
               top: '50%',
               transform: 'translateY(-50%)',
-              color: palette.muted,
+              color: '#94a3b8',
+              pointerEvents: 'none',
             }}
           />
           <input
             style={{
               ...inputStyle,
-              paddingLeft: '52px',
-              paddingRight: '20px',
-              borderRadius: '12px',
-              height: '48px',
-              fontSize: '15px',
-              border: `1px solid ${palette.borderSoft || '#333'}`,
+              paddingLeft: '42px',
+              paddingRight: '16px',
+              borderRadius: '8px',
+              height: '44px',
+              fontSize: '14px',
+              border: '1.5px solid #e2e8f0',
+              background: '#f8fafc',
+              color: '#1e293b',
+              outline: 'none',
+              width: '100%',
             }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by property, location, or message..."
+            onFocus={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.12)'; }}
+            onBlur={e  => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
           />
         </div>
       </section>
 
-      {/* Content Section */}
-      <section style={{ ...panelStyle, paddingTop: '32px' }}>
+      {/* ── Content ── */}
+      <section style={{ ...panelStyle, margin: '20px', borderRadius: '14px' }}>
+        {/* Error */}
         {error && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              color: '#f87171',
-              background: 'rgba(248, 113, 113, 0.08)',
-              border: '1px solid rgba(248, 113, 113, 0.2)',
-              borderRadius: '12px',
-              padding: '16px 20px',
-              marginBottom: '24px',
-              fontSize: '14.5px',
-            }}
-          >
-            <AlertCircle size={20} />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            color: '#dc2626',
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '10px',
+            padding: '14px 18px',
+            marginBottom: '24px',
+            fontSize: '14px',
+          }}>
+            <AlertCircle size={18} style={{ flexShrink: 0 }} />
             {error}
           </div>
         )}
 
+        {/* Loading */}
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: palette.muted, padding: '80px 0' }}>
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                border: `3px solid ${palette.amber}`,
-                borderTopColor: 'transparent',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-              }}
-            />
-            Loading your applications...
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', color: '#64748b', padding: '80px 0' }}>
+            <div style={{
+              width: 20,
+              height: 20,
+              border: '2.5px solid #3b82f6',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }} />
+            <span style={{ fontSize: '14px', fontWeight: 500 }}>Loading your applications…</span>
           </div>
+
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '100px 20px', color: palette.muted }}>
-            <ClipboardList size={56} style={{ opacity: 0.25, margin: '0 auto 20px' }} />
-            <div style={{ fontSize: '18px', marginBottom: '8px', color: '#ddd' }}>No applications found</div>
-            <div style={{ fontSize: '14.5px', maxWidth: '320px', margin: '0 auto' }}>
+          /* Empty state */
+          <div style={{ textAlign: 'center', padding: '80px 20px', color: '#94a3b8' }}>
+            <div style={{ width: 64, height: 64, background: '#eff6ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <ClipboardList size={28} style={{ color: '#2563eb' }} />
+            </div>
+            <div style={{ fontSize: '17px', fontWeight: 600, marginBottom: '8px', color: '#334155' }}>No applications found</div>
+            <div style={{ fontSize: '14px', maxWidth: '300px', margin: '0 auto', lineHeight: 1.6 }}>
               You haven't submitted any applications yet. Start browsing properties to apply.
             </div>
           </div>
+
         ) : (
           <>
-            {/* Desktop Table */}
+            {/* ── Desktop Table ── */}
             <div style={tableWrapStyle}>
               <table style={tableStyle}>
                 <thead>
                   <tr>
                     {['Property', 'Price', 'Status', 'Message', 'Applied'].map((h) => (
-                      <th key={h} style={thStyle}>
-                        {h}
-                      </th>
+                      <th key={h} style={thStyle}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -237,18 +260,21 @@ const ApplicationsPage = () => {
                   {filtered.map((item) => (
                     <tr
                       key={item.id}
-                      style={{ transition: 'background 0.2s' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)')}
+                      style={{ transition: 'background 0.15s' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       <td style={tdStyle}>
-                        <div style={{ fontWeight: 600, fontSize: '15px' }}>{item.property?.title || 'Untitled Property'}</div>
-                        <div style={{ color: palette.muted, fontSize: '13px', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <MapPin size={13} /> {item.property?.location || 'No location provided'}
+                        <div style={{ fontWeight: 600, fontSize: '14px', color: '#0f172a' }}>
+                          {item.property?.title || 'Untitled Property'}
+                        </div>
+                        <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={12} />
+                          {item.property?.location || 'No location provided'}
                         </div>
                       </td>
                       <td style={tdStyle}>
-                        <div style={{ fontWeight: 700, color: palette.amber, fontSize: '15.5px' }}>
+                        <div style={{ fontWeight: 700, color: '#2563eb', fontSize: '15px' }}>
                           {formatCurrency(item.property?.price)}
                         </div>
                       </td>
@@ -257,13 +283,16 @@ const ApplicationsPage = () => {
                           {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Unknown'}
                         </span>
                       </td>
-                      <td style={{ ...tdStyle, maxWidth: '240px' }}>
-                        <div style={{ color: palette.muted, fontSize: '13.5px', lineHeight: '1.4' }}>
+                      <td style={{ ...tdStyle, maxWidth: '220px' }}>
+                        <div style={{ color: '#64748b', fontSize: '13px', lineHeight: 1.5 }}>
                           {item.message || '—'}
                         </div>
                       </td>
-                      <td style={{ ...tdStyle, color: palette.muted, fontSize: '13.5px', whiteSpace: 'nowrap' }}>
-                        {formatDate(item.created_at)}
+                      <td style={{ ...tdStyle, color: '#94a3b8', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Clock size={12} />
+                          {formatDate(item.created_at)}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -271,39 +300,49 @@ const ApplicationsPage = () => {
               </table>
             </div>
 
-            {/* Mobile Cards */}
+            {/* ── Mobile Cards ── */}
             <div style={mobileTableContainer}>
               {filtered.map((item) => (
-                <div key={item.id} style={{ ...mobileCard, borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                <div key={item.id} style={{
+                  ...mobileCard,
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0',
+                  background: '#ffffff',
+                  boxShadow: '0 1px 3px rgba(15,45,110,0.06)',
+                }}>
                   <div style={mobileCardHeader}>
                     <div style={{ flex: 1 }}>
-                      <div style={mobileCardTitle}>{item.property?.title || 'Untitled Property'}</div>
-                      <div style={{ color: palette.muted, fontSize: '13px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <MapPin size={13} /> {item.property?.location || 'No location'}
+                      <div style={{ ...mobileCardTitle, color: '#0f172a' }}>
+                        {item.property?.title || 'Untitled Property'}
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <MapPin size={12} />
+                        {item.property?.location || 'No location'}
                       </div>
                     </div>
-                    <div style={{ fontSize: '19px', fontWeight: 700, color: palette.amber }}>
+                    <div style={{ fontSize: '17px', fontWeight: 700, color: '#2563eb' }}>
                       {formatCurrency(item.property?.price)}
                     </div>
                   </div>
 
                   <div style={mobileCardSection}>
                     <div style={mobileCardLabel}>Status</div>
-                    <div style={mobileCardValue}>
-                      <span style={statusPillStyle(getStatusColor(item.status))}>
-                        {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Unknown'}
-                      </span>
-                    </div>
+                    <span style={statusPillStyle(getStatusColor(item.status))}>
+                      {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Unknown'}
+                    </span>
                   </div>
 
                   <div style={mobileCardSection}>
                     <div style={mobileCardLabel}>Message</div>
-                    <div style={mobileCardValue}>{item.message || 'No message provided'}</div>
+                    <div style={{ ...mobileCardValue, color: '#64748b' }}>{item.message || 'No message provided'}</div>
                   </div>
 
                   <div style={mobileCardSection}>
                     <div style={mobileCardLabel}>Applied on</div>
-                    <div style={mobileCardValue}>{formatDate(item.created_at)}</div>
+                    <div style={{ ...mobileCardValue, display: 'flex', alignItems: 'center', gap: '5px', color: '#475569' }}>
+                      <Clock size={12} />
+                      {formatDate(item.created_at)}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -313,23 +352,15 @@ const ApplicationsPage = () => {
       </section>
 
       <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         @media (max-width: 768px) {
           div[style*="overflowX: auto"] { display: none !important; }
-          div[style*="display: none"] { display: block !important; }
+          div[style*="display: none"]   { display: block !important; }
         }
 
-        table {
-          border-collapse: separate;
-          border-spacing: 0;
-        }
-
-        th, td {
-          transition: all 0.15s ease;
-        }
+        table { border-collapse: separate; border-spacing: 0; }
+        th, td { transition: all 0.15s ease; }
       `}</style>
     </div>
   );

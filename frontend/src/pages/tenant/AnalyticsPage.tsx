@@ -34,12 +34,12 @@ const MetricCard = ({
       </div>
       <div style={{
         fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase',
-        color: palette.muted, fontWeight: 600,
+        color: palette.gray400, fontWeight: 600,
       }}>{label}</div>
     </div>
 
     <div style={{ fontSize: '40px', fontWeight: 800, color, letterSpacing: '-1px', lineHeight: 1 }}>{value}</div>
-    {sub && <div style={{ fontSize: '12px', color: palette.muted, marginTop: '8px' }}>{sub}</div>}
+    {sub && <div style={{ fontSize: '12px', color: palette.gray400, marginTop: '8px' }}>{sub}</div>}
 
     {/* Bottom accent bar */}
     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, ${color}50, transparent)` }} />
@@ -66,7 +66,7 @@ const AnalyticsPage = () => {
   const total = (statuses.pending ?? 0) + (statuses.approved ?? 0) + (statuses.rejected ?? 0);
 
   const metrics = [
-    { label: 'Pending',  value: statuses.pending ?? 0,  icon: Clock,        color: palette.amber,    sub: 'Awaiting review' },
+    { label: 'Pending',  value: statuses.pending ?? 0,  icon: Clock,        color: '#d97706',    sub: 'Awaiting review' },
     { label: 'Approved', value: statuses.approved ?? 0, icon: CheckCircle,  color: '#34d399',        sub: 'Accepted applications' },
     { label: 'Rejected', value: statuses.rejected ?? 0, icon: XCircle,      color: '#f87171',        sub: 'Unsuccessful applications' },
   ];
@@ -75,11 +75,11 @@ const AnalyticsPage = () => {
     <div style={{ ...pageStyle, padding: '0' }}>
       {/* Header */}
       <section style={{ ...panelStyle }}>
-        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)` }} />
+        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.blue600}, transparent)` }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <div style={sectionTitleStyle}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.amber, display: 'inline-block' }} />
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.blue600, display: 'inline-block' }} />
               Tenant Workspace
             </div>
             <h1 style={headingStyle}>Analytics</h1>
@@ -89,7 +89,7 @@ const AnalyticsPage = () => {
             <div style={{
               padding: '10px 18px', borderRadius: '12px',
               background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)',
-              color: palette.amber, fontSize: '13px', fontWeight: 600,
+              color: palette.blue600, fontSize: '13px', fontWeight: 600,
               display: 'flex', alignItems: 'center', gap: '8px',
             }}>
               <BarChart2 size={14} />
@@ -108,8 +108,8 @@ const AnalyticsPage = () => {
         )}
 
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.muted, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${palette.amber}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
+            <div style={{ width: 16, height: 16, border: `2px solid ${palette.blue600}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             Loading analytics...
           </div>
         ) : (
@@ -121,12 +121,12 @@ const AnalyticsPage = () => {
             {/* Progress bar breakdown */}
             {total > 0 && (
               <div style={{ borderRadius: '14px', background: 'rgba(15,23,42,0.4)', border: '1px solid rgba(148,163,184,0.06)', padding: '20px 24px' }}>
-                <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.muted, marginBottom: '16px', fontWeight: 600 }}>Application Breakdown</div>
+                <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.gray400, marginBottom: '16px', fontWeight: 600 }}>Application Breakdown</div>
                 {/* Stacked bar */}
                 <div style={{ display: 'flex', height: '8px', borderRadius: '999px', overflow: 'hidden', background: 'rgba(148,163,184,0.1)', marginBottom: '14px' }}>
                   {[
                     { pct: (statuses.approved ?? 0) / total, color: '#34d399' },
-                    { pct: (statuses.pending ?? 0) / total,  color: palette.amber },
+                    { pct: (statuses.pending ?? 0) / total, color: '#d97706' },
                     { pct: (statuses.rejected ?? 0) / total, color: '#f87171' },
                   ].map((seg, i) => (
                     <div key={i} style={{ width: `${seg.pct * 100}%`, background: seg.color, transition: 'width 0.5s ease' }} />
@@ -135,12 +135,12 @@ const AnalyticsPage = () => {
                 <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
                   {[
                     { label: 'Approved', color: '#34d399', val: statuses.approved ?? 0 },
-                    { label: 'Pending',  color: palette.amber, val: statuses.pending ?? 0 },
+                    { label: 'Pending', color: '#d97706', val: statuses.pending ?? 0 },
                     { label: 'Rejected', color: '#f87171', val: statuses.rejected ?? 0 },
                   ].map(l => (
-                    <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: palette.muted }}>
+                    <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: palette.gray400 }}>
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: l.color }} />
-                      {l.label}: <span style={{ color: palette.cream, fontWeight: 600 }}>{l.val}</span>
+                      {l.label}: <span style={{ color: palette.white, fontWeight: 600 }}>{l.val}</span>
                     </div>
                   ))}
                 </div>

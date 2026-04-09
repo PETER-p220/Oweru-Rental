@@ -126,7 +126,7 @@ const TenantDashboard = () => {
           <Link className="td-action primary" to="/properties">Browse Properties</Link>
           <Link className="td-action" to="/dashboard/tenant/saved-properties">Saved Properties</Link>
           <Link className="td-action" to="/dashboard/tenant/applications">My Applications</Link>
-          <Link className="td-action" to="/dashboard/tenant/contracts">My Contracts</Link>
+          <Link className="td-action" to="/dashboard/tenant/digital-contracts">Digital Contracts</Link>
           <Link className="td-action" to="/dashboard/tenant/messages">Messages</Link>
         </div>
 

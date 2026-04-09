@@ -85,6 +85,7 @@ const LandlordDashboard = () => {
     { label: 'Add Property', icon: Plus, to: 'add-property', primary: true },
     { label: 'My Properties', icon: Building, to: 'my-properties', primary: false },
     { label: 'Applications', icon: FileText, to: 'applications', primary: false },
+    { label: 'Digital Contracts', icon: FileText, to: 'digital-contracts', primary: false },
     { label: 'Contracts', icon: FileText, to: 'contracts', primary: false },
     { label: 'Analytics', icon: BarChart3, to: 'analytics', primary: false },
   ];

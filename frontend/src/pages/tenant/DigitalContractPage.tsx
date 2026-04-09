@@ -125,7 +125,7 @@ const DigitalContractPage = () => {
     
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = palette.amber;
+    ctx.strokeStyle = palette.blue600;
     ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
     ctx.stroke();
   };
@@ -281,9 +281,9 @@ const DigitalContractPage = () => {
     <div style={{ ...pageStyle, padding: '0' }}>
       {/* Header */}
       <section style={{ ...panelStyle }}>
-        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)` }} />
+        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.blue600}, transparent)` }} />
         <div style={sectionTitleStyle}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.amber, display: 'inline-block' }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.blue600, display: 'inline-block' }} />
           Tenant Workspace
         </div>
         <h1 style={headingStyle}>Digital Contracts</h1>
@@ -299,12 +299,12 @@ const DigitalContractPage = () => {
         )}
 
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.muted, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${palette.amber}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
+            <div style={{ width: 16, height: 16, border: `2px solid ${palette.blue600}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             Loading contracts...
           </div>
         ) : contracts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.muted }}>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.gray400 }}>
             <FileText size={48} style={{ opacity: 0.3, margin: '0 auto 12px' }} />
             <div style={{ fontSize: '16px' }}>No contracts found</div>
             <div style={{ fontSize: '13px', opacity: 0.7 }}>Your landlord will send contracts here</div>
@@ -322,7 +322,7 @@ const DigitalContractPage = () => {
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                     <td style={tdStyle}>
                       <div style={{ fontWeight: 600 }}>{contract.title}</div>
-                      <div style={{ color: palette.muted, fontSize: '13px', marginTop: '4px' }}>
+                      <div style={{ color: palette.gray400, fontSize: '13px', marginTop: '4px' }}>
                         {formatDate(contract.created_at)}
                       </div>
                     </td>
@@ -372,7 +372,7 @@ const DigitalContractPage = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <div>
                 <h2 style={{ ...headingStyle, fontSize: '20px' }}>{selectedContract.title}</h2>
-                <p style={{ color: palette.muted, fontSize: '14px', marginTop: '4px' }}>
+                <p style={{ color: palette.gray400, fontSize: '14px', marginTop: '4px' }}>
                   Property: {selectedContract.property?.title} - {selectedContract.property?.location}
                 </p>
               </div>
@@ -387,7 +387,7 @@ const DigitalContractPage = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {selectedContract.fields.map((field) => (
                 <div key={field.id}>
-                  <label style={{ display: 'block', marginBottom: '8px', color: palette.cream, fontSize: '14px', fontWeight: 500 }}>
+                  <label style={{ display: 'block', marginBottom: '8px', color: palette.gray800, fontSize: '14px', fontWeight: 500 }}>
                     {field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
                   </label>
                   {renderField(field)}
@@ -409,7 +409,7 @@ const DigitalContractPage = () => {
                   >
                     {submitting ? (
                       <>
-                        <div style={{ width: 14, height: 14, border: `2px solid ${palette.cream}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginRight: '8px' }} />
+                        <div style={{ width: 14, height: 14, border: `2px solid ${palette.white}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginRight: '8px' }} />
                         Submitting...
                       </>
                     ) : (
@@ -444,7 +444,7 @@ const DigitalContractPage = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <p style={{ color: palette.muted, fontSize: '14px' }}>
+              <p style={{ color: palette.gray400, fontSize: '14px' }}>
                 Draw your signature in the box below:
               </p>
 
