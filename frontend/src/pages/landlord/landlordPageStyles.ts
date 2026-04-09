@@ -1,17 +1,17 @@
 import type { CSSProperties } from 'react';
 
 export const palette = {
-  gold: '#c9a84c',
-  green: '#70c490',
-  red: '#e07070',
-  blue: '#60a5fa',
+  gold: '#2563eb',
+  green: '#16a34a',
+  red: '#dc2626',
+  blue: '#3b82f6',
   amber: '#f59e0b',
-  cream: '#e8e4dc',
-  muted: '#9f9587',
-  panel: 'rgba(17,17,17,0.96)',
+  cream: '#ffffff',
+  muted: '#64748b',
+  panel: 'rgba(15,23,42,0.96)',
   panelAlt: 'rgba(255,255,255,0.025)',
-  border: 'rgba(201,168,76,0.14)',
-  borderSoft: 'rgba(255,255,255,0.06)',
+  border: 'rgba(59,130,246,0.14)',
+  borderSoft: 'rgba(59,130,246,0.10)',
 } as const;
 
 export const pageStyle: CSSProperties = {
@@ -177,7 +177,7 @@ export const getStatusColor = (status?: string | null) => {
     case 'completed':
       return palette.green;
     case 'pending':
-      return palette.amber;
+      return palette.blue600;
     case 'rejected':
     case 'failed':
     case 'cancelled':

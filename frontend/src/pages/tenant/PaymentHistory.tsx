@@ -31,13 +31,13 @@ const StatCard = ({ label, value, icon: Icon, accent = false }: { label: string;
       background: accent ? 'rgba(245,158,11,0.15)' : 'rgba(148,163,184,0.08)',
       border: accent ? '1px solid rgba(245,158,11,0.25)' : '1px solid rgba(148,163,184,0.1)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: accent ? palette.amber : palette.muted,
+      color: accent ? palette.blue600 : palette.gray400,
     }}>
       <Icon size={16} />
     </div>
     <div>
-      <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.muted, marginBottom: '6px', fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: '26px', fontWeight: 700, color: accent ? palette.amber : palette.cream, letterSpacing: '-0.5px' }}>{value}</div>
+      <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.gray400, marginBottom: '6px', fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: '26px', fontWeight: 700, color: accent ? palette.blue600 : palette.white, letterSpacing: '-0.5px' }}>{value}</div>
     </div>
   </div>
 );
@@ -68,12 +68,12 @@ const PaymentHistory = () => {
       {/* Header panel */}
       <section style={{ ...panelStyle, borderRadius: '20px' }}>
         {/* Decorative amber line */}
-        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)`, borderRadius: '1px' }} />
+        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.blue600}, transparent)`, borderRadius: '1px' }} />
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <div style={sectionTitleStyle}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.amber, display: 'inline-block' }} />
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.blue600, display: 'inline-block' }} />
               Tenant Workspace
             </div>
             <h1 style={headingStyle}>Payment History</h1>
@@ -97,12 +97,12 @@ const PaymentHistory = () => {
         )}
 
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.muted, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${palette.amber}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
+            <div style={{ width: 16, height: 16, border: `2px solid ${palette.blue600}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             Loading payment history...
           </div>
         ) : payments.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.muted }}>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.gray400 }}>
             <Calendar size={40} style={{ opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
             <div style={{ fontSize: '16px', marginBottom: '6px' }}>No payment records found</div>
             <div style={{ fontSize: '13px', opacity: 0.7 }}>Your payment history will appear here once transactions are made.</div>
@@ -123,14 +123,14 @@ const PaymentHistory = () => {
                     onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                     <td style={tdStyle}>
-                      <div style={{ color: palette.muted, fontSize: '13px' }}>{formatDate(item.paid_at || item.created_at)}</div>
+                      <div style={{ color: palette.gray400, fontSize: '13px' }}>{formatDate(item.due_date || item.created_at)}</div>
                     </td>
                     <td style={tdStyle}>
                       <div style={{ fontWeight: 500 }}>{item.description || item.type || 'Payment'}</div>
-                      {item.property?.title && <div style={{ color: palette.muted, fontSize: '12px', marginTop: '3px' }}>{item.property.title}</div>}
+                      {item.property?.title && <div style={{ color: palette.gray400, fontSize: '12px', marginTop: '3px' }}>{item.property.title}</div>}
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ fontWeight: 700, color: palette.amber, letterSpacing: '-0.3px' }}>{formatCurrency(item.amount)}</div>
+                      <div style={{ fontWeight: 700, color: palette.blue600, letterSpacing: '-0.3px' }}>{formatCurrency(item.amount)}</div>
                     </td>
                     <td style={tdStyle}>
                       <span style={statusPillStyle(getStatusColor(item.status))}>{item.status || 'unknown'}</span>

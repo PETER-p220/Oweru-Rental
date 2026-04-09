@@ -39,11 +39,11 @@ const Notifications = () => {
     <div style={{ ...pageStyle, padding: '0' }}>
       {/* Header */}
       <section style={{ ...panelStyle }}>
-        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)` }} />
+        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.blue600}, transparent)` }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
           <div>
             <div style={sectionTitleStyle}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.amber, display: 'inline-block' }} />
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.blue600, display: 'inline-block' }} />
               Tenant Workspace
             </div>
             <h1 style={headingStyle}>Notifications</h1>
@@ -66,18 +66,18 @@ const Notifications = () => {
           ].map(({ label, value, accent }) => (
             <div key={label} style={{
               padding: '10px 18px', borderRadius: '12px',
-              background: accent ? 'rgba(245,158,11,0.1)' : 'rgba(15,23,42,0.5)',
-              border: accent ? '1px solid rgba(245,158,11,0.25)' : '1px solid rgba(148,163,184,0.08)',
+              background: accent ? 'rgba(15,23,42,0.1)' : 'rgba(15,23,42,0.5)',
+              border: accent ? '1px solid rgba(15,23,42,0.25)' : '1px solid rgba(148,163,184,0.08)',
               display: 'flex', gap: '10px', alignItems: 'center',
             }}>
-              <span style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: palette.muted, fontWeight: 600 }}>{label}</span>
-              <span style={{ fontSize: '20px', fontWeight: 700, color: accent ? palette.amber : palette.cream }}>{value}</span>
+              <span style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: palette.gray400, fontWeight: 600 }}>{label}</span>
+              <span style={{ fontSize: '20px', fontWeight: 700, color: accent ? palette.blue600 : palette.white }}>{value}</span>
             </div>
           ))}
 
           {/* Search */}
           <div style={{ flex: 1, minWidth: '200px', maxWidth: '320px', position: 'relative' as const }}>
-            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: palette.muted }} />
+            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: palette.gray400 }} />
             <input
               style={{ ...inputStyle, paddingLeft: '36px', borderRadius: '12px' }}
               value={search}
@@ -110,16 +110,16 @@ const Notifications = () => {
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                       {!item.read_at && (
-                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: palette.amber, flexShrink: 0, marginTop: 5 }} />
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: palette.blue600, flexShrink: 0, marginTop: 5 }} />
                       )}
                       <div>
                         <div style={{ fontWeight: item.read_at ? 400 : 600 }}>{item.title}</div>
-                        <div style={{ color: palette.muted, fontSize: '13px', marginTop: '3px' }}>{item.message}</div>
+                        <div style={{ color: palette.gray400, fontSize: '13px', marginTop: '3px' }}>{item.message}</div>
                       </div>
                     </div>
                   </td>
-                  <td style={{ ...tdStyle, color: palette.muted, fontSize: '12px' }}>{item.type || 'system'}</td>
-                  <td style={{ ...tdStyle, color: palette.muted, fontSize: '13px' }}>{formatDate(item.created_at)}</td>
+                  <td style={{ ...tdStyle, color: palette.gray400, fontSize: '12px' }}>{item.type || 'system'}</td>
+                  <td style={{ ...tdStyle, color: palette.gray400, fontSize: '13px' }}>{formatDate(item.created_at)}</td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       {!item.read_at && (
@@ -161,15 +161,15 @@ const Notifications = () => {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                       {!item.read_at && (
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: palette.amber, flexShrink: 0 }} />
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: palette.blue600, flexShrink: 0 }} />
                       )}
                       <div>
                         <div style={{ fontWeight: item.read_at ? 400 : 600, fontSize: '16px' }}>{item.title}</div>
-                        <div style={{ color: palette.muted, fontSize: '14px', marginTop: '2px' }}>{item.message}</div>
+                        <div style={{ color: palette.gray400, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{formatDate(item.created_at)}</div>
                       </div>
                     </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: palette.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  <div style={{ fontSize: '12px', color: palette.gray400, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                     {formatDate(item.created_at)}
                   </div>
                 </div>

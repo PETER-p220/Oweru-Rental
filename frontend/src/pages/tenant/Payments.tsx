@@ -39,9 +39,9 @@ const Payments = () => {
     <div style={{ ...pageStyle, padding: '0' }}>
       {/* Header */}
       <section style={{ ...panelStyle }}>
-        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)` }} />
+        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.blue600}, transparent)` }} />
         <div style={sectionTitleStyle}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.amber, display: 'inline-block' }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.blue600, display: 'inline-block' }} />
           Tenant Workspace
         </div>
         <h1 style={headingStyle}>Rent Payments</h1>
@@ -55,14 +55,14 @@ const Payments = () => {
           ].map(({ label, value, icon: Icon, accent }) => (
             <div key={label} style={{
               padding: '20px', borderRadius: '14px',
-              background: accent ? 'rgba(245,158,11,0.1)' : 'rgba(15,23,42,0.5)',
-              border: accent ? '1px solid rgba(245,158,11,0.25)' : '1px solid rgba(148,163,184,0.08)',
+              background: accent ? 'rgba(15,23,42,0.5)' : 'rgba(15,23,42,0.5)',
+              border: accent ? '1px solid rgba(15,23,42,0.5)' : '1px solid rgba(148,163,184,0.08)',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.muted, fontWeight: 600 }}>{label}</span>
-                <Icon size={14} style={{ color: accent ? palette.amber : palette.muted }} />
+                <span style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.gray400, fontWeight: 600 }}>{label}</span>
+                <Icon size={14} style={{ color: accent ? palette.blue600 : palette.gray400 }} />
               </div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: accent ? palette.amber : palette.cream, letterSpacing: '-0.5px' }}>{value}</div>
+              <div style={{ fontSize: '24px', fontWeight: 700, color: accent ? palette.blue600 : palette.white, letterSpacing: '-0.5px' }}>{value}</div>
             </div>
           ))}
         </div>
@@ -77,8 +77,8 @@ const Payments = () => {
         )}
 
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.muted, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${palette.amber}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
+            <div style={{ width: 16, height: 16, border: `2px solid ${palette.blue600}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             Loading payments...
           </div>
         ) : (
@@ -87,11 +87,11 @@ const Payments = () => {
               <div style={{
                 display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap',
                 padding: '16px 20px', borderRadius: '14px', marginBottom: '24px',
-                background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)',
+                background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(15,23,42,0.5)',
               }}>
-                <CreditCard size={16} style={{ color: palette.amber }} />
-                <span style={{ color: palette.cream, fontSize: '14px', fontWeight: 500 }}>
-                  Next payment due: <span style={{ color: palette.amber }}>{formatCurrency(nextPending.amount)}</span>
+                <CreditCard size={16} style={{ color: palette.blue600 }} />
+                <span style={{ color: palette.white, fontSize: '14px', fontWeight: 500 }}>
+                  Next payment due: <span style={{ color: palette.blue600 }}>{formatCurrency(nextPending.amount)}</span>
                 </span>
                 <select
                   style={{ ...selectStyle, maxWidth: '220px', padding: '8px 12px', borderRadius: '10px' }}
@@ -110,9 +110,9 @@ const Payments = () => {
             )}
 
             {payments.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 0', color: palette.muted }}>
+              <div style={{ textAlign: 'center', padding: '60px 0', color: palette.gray400 }}>
                 <CreditCard size={40} style={{ opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
-                <div style={{ fontSize: '16px' }}>No payments found</div>
+                <div style={{ fontSize: '13px', opacity: 0.7, marginTop: '6px' }}>Browse properties and set up your payment method.</div>
               </div>
             ) : (
               <div style={tableWrapStyle}>
@@ -126,8 +126,8 @@ const Payments = () => {
                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <td style={tdStyle}><div style={{ fontWeight: 500 }}>{item.description || item.type || 'Payment'}</div></td>
-                        <td style={tdStyle}><div style={{ fontWeight: 700, color: palette.amber }}>{formatCurrency(item.amount)}</div></td>
-                        <td style={tdStyle}><div style={{ color: palette.muted, fontSize: '13px' }}>{formatDate(item.due_date || item.created_at)}</div></td>
+                        <td style={tdStyle}><div style={{ fontWeight: 700, color: palette.blue600 }}>{formatCurrency(item.amount)}</div></td>
+                        <td style={tdStyle}><div style={{ color: palette.gray400, fontSize: '13px' }}>{formatDate(item.due_date || item.created_at)}</div></td>
                         <td style={tdStyle}>{item.property?.title || '—'}</td>
                         <td style={tdStyle}><span style={statusPillStyle(getStatusColor(item.status))}>{item.status || 'unknown'}</span></td>
                       </tr>

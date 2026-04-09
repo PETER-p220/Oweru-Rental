@@ -59,24 +59,24 @@ const SavedProperties = () => {
     <div style={{ ...pageStyle, padding: '0' }}>
       {/* Header */}
       <section style={{ ...panelStyle }}>
-        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)` }} />
+        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.blue600}, transparent)` }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <div style={sectionTitleStyle}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.amber, display: 'inline-block' }} />
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.blue600, display: 'inline-block' }} />
               Tenant Workspace
             </div>
             <h1 style={headingStyle}>Saved Properties</h1>
             <p style={descriptionStyle}>Properties saved from your tenant account.</p>
           </div>
           {items.length > 0 && (
-            <div style={{ padding: '10px 18px', borderRadius: '12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)', color: palette.amber, fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ padding: '10px 18px', borderRadius: '12px', background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.18)', color: palette.blue600, fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Bookmark size={14} /> {items.length} Saved
             </div>
           )}
         </div>
         <div style={{ marginTop: '20px', maxWidth: '360px', position: 'relative' as const }}>
-          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: palette.muted }} />
+          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: palette.gray400 }} />
           <input style={{ ...inputStyle, paddingLeft: '36px', borderRadius: '12px' }} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search saved properties…" />
         </div>
       </section>
@@ -85,12 +85,12 @@ const SavedProperties = () => {
       <section style={{ ...panelStyle }}>
         {error && <div style={{ color: '#f87171', marginBottom: '16px', fontSize: '14px' }}>{error}</div>}
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.muted, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${palette.amber}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
+            <div style={{ width: 16, height: 16, border: `2px solid ${palette.blue600}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             Loading saved properties...
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.muted }}>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.gray400 }}>
             <Heart size={40} style={{ opacity: 0.3, margin: '0 auto 12px', display: 'block' }} />
             <div style={{ fontSize: '16px' }}>No saved properties</div>
             <div style={{ fontSize: '13px', opacity: 0.7, marginTop: '6px' }}>Browse properties and save your favorites.</div>
@@ -116,13 +116,13 @@ const SavedProperties = () => {
 
                 {/* Info */}
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: '15px', fontWeight: 600, color: palette.cream, marginBottom: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                  <div style={{ fontSize: '15px', fontWeight: 600, color: palette.white, marginBottom: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
                     {property?.title || 'Untitled property'}
                   </div>
-                  <div style={{ color: palette.muted, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '5px' }}>
+                  <div style={{ color: palette.gray500, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '5px' }}>
                     <MapPin size={11} /> {property?.location || 'No location'}
                   </div>
-                  <div style={{ display: 'flex', gap: '12px', color: palette.mutedDark, fontSize: '12px' }}>
+                  <div style={{ display: 'flex', gap: '12px', color: palette.gray500, fontSize: '12px' }}>
                     {property?.bedrooms && <><Bed size={10} /> {property.bedrooms} bed</>}
                     {property?.bathrooms && <><Bath size={10} /> {property.bathrooms} bath</>}
                     {property?.area && <><Square size={10} /> {property.area} sqm</>}
@@ -130,7 +130,7 @@ const SavedProperties = () => {
                 </div>
 
                 {/* Price */}
-                <div style={{ fontWeight: 700, color: palette.amber, fontSize: '17px', letterSpacing: '-0.3px', whiteSpace: 'nowrap' as const }}>
+                <div style={{ fontWeight: 700, color: palette.blue600, fontSize: '17px', letterSpacing: '-0.3px', whiteSpace: 'nowrap' as const }}>
                   {formatCurrency(property?.price)}
                 </div>
 
@@ -183,7 +183,7 @@ const SavedProperties = () => {
                 )}
 
                 {selectedProperty.property_type && (
-                  <div style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '20px', padding: '4px 12px', color: palette.amber, fontSize: '12px', textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '5px', backdropFilter: 'blur(4px)' }}>
+                  <div style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(37,99,235,0.18)', border: '1px solid rgba(37,99,235,0.35)', borderRadius: '20px', padding: '4px 12px', color: palette.blue600, fontSize: '12px', textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '5px', backdropFilter: 'blur(4px)' }}>
                     <Tag size={11} /> {selectedProperty.property_type}
                   </div>
                 )}
@@ -191,9 +191,9 @@ const SavedProperties = () => {
 
               {/* Thumbnail strip */}
               {images.length > 1 && (
-                <div style={{ display: 'flex', gap: '8px', padding: '10px 20px', background: palette.slate900, overflowX: 'auto', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', gap: '8px', padding: '10px 20px', background: palette.gray900, overflowX: 'auto', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   {images.map((img: string, i: number) => (
-                    <div key={i} onClick={() => setActiveImageIndex(i)} style={{ width: 64, height: 44, borderRadius: '6px', overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `2px solid ${i === activeImageIndex ? palette.amber : 'transparent'}`, opacity: i === activeImageIndex ? 1 : 0.45, transition: 'all 0.2s' }}>
+                    <div key={i} onClick={() => setActiveImageIndex(i)} style={{ width: 64, height: 44, borderRadius: '6px', overflow: 'hidden', cursor: 'pointer', flexShrink: 0, border: `2px solid ${i === activeImageIndex ? palette.blue600 : 'transparent'}`, opacity: i === activeImageIndex ? 1 : 0.45, transition: 'all 0.2s' }}>
                       <img src={img} alt={`thumb-${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   ))}
@@ -204,12 +204,12 @@ const SavedProperties = () => {
               <div style={{ overflowY: 'auto', padding: '28px 28px 32px', flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
                   <div>
-                    <h2 style={{ color: palette.cream, fontSize: '22px', margin: '0 0 6px', fontWeight: 700, letterSpacing: '-0.3px' }}>{selectedProperty.title}</h2>
-                    <div style={{ color: palette.muted, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={13} /> {selectedProperty.location}</div>
+                    <h2 style={{ color: palette.gray800, fontSize: '22px', margin: '0 0 6px', fontWeight: 700, letterSpacing: '-0.3px' }}>{selectedProperty.title}</h2>
+                    <div style={{ color: palette.gray500, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={13} /> {selectedProperty.location}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '28px', color: palette.amber, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.5px' }}>{formatCurrency(selectedProperty.price)}</div>
-                    <div style={{ fontSize: '12px', color: palette.muted, marginTop: '4px' }}>/month</div>
+                    <div style={{ fontSize: '28px', color: palette.blue600, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.5px' }}>{formatCurrency(selectedProperty.price)}</div>
+                    <div style={{ fontSize: '12px', color: palette.gray500, marginTop: '4px' }}>/month</div>
                   </div>
                 </div>
 
@@ -221,16 +221,16 @@ const SavedProperties = () => {
                     selectedProperty.bathrooms && { icon: <Bath size={14} />,   label: `${selectedProperty.bathrooms} Bath${selectedProperty.bathrooms !== 1 ? 's' : ''}` },
                     selectedProperty.area      && { icon: <Square size={14} />, label: `${selectedProperty.area} sqm` },
                   ].filter(Boolean).map((stat: any, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: '10px', padding: '8px 14px', color: palette.cream, fontSize: '13px' }}>
-                      <span style={{ color: palette.amber }}>{stat.icon}</span> {stat.label}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.15)', borderRadius: '10px', padding: '8px 14px', color: palette.white, fontSize: '13px' }}>
+                      <span style={{ color: palette.blue600 }}>{stat.icon}</span> {stat.label}
                     </div>
                   ))}
                 </div>
 
                 {selectedProperty.description && (
                   <div>
-                    <div style={{ fontSize: '10px', color: palette.muted, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '10px', fontWeight: 600 }}>About this property</div>
-                    <p style={{ color: palette.muted, lineHeight: 1.75, fontSize: '14px', margin: 0 }}>{selectedProperty.description}</p>
+                    <div style={{ fontSize: '10px', color: palette.gray400, textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '10px', fontWeight: 600 }}>About this property</div>
+                    <p style={{ color: palette.gray400, lineHeight: 1.75, fontSize: '14px', margin: 0 }}>{selectedProperty.description}</p>
                   </div>
                 )}
               </div>

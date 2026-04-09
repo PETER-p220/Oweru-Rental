@@ -252,7 +252,7 @@ const DigitalContractPage = () => {
       <section style={{ ...panelStyle }}>
         {error && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.18)', borderRadius: '12px', padding: '14px 18px', marginBottom: '20px', fontSize: '14px' }}>
-            <AlertCircle size={16} /> {error}
+            <AlertCircle size={16} style={{ color: '#f87171' }} /> {error}
           </div>
         )}
 
@@ -265,7 +265,7 @@ const DigitalContractPage = () => {
           <div style={{ textAlign: 'center', padding: '60px 0', color: palette.muted }}>
             <FileText size={48} style={{ opacity: 0.3, margin: '0 auto 12px' }} />
             <div style={{ fontSize: '16px' }}>No digital contracts found</div>
-            <div style={{ fontSize: '13px', opacity: 0.7 }}>Create your first digital contract to get started</div>
+            <div style={{ fontSize: '13px', opacity: 0.7, color: palette.muted }}>Create your first digital contract to get started</div>
           </div>
         ) : (
           <div style={tableWrapStyle}>

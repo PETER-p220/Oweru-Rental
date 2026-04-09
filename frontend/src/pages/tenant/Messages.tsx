@@ -47,11 +47,11 @@ const Messages = () => {
     <div style={{ ...pageStyle, padding: '0' }}>
       {/* Header */}
       <section style={{ ...panelStyle }}>
-        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)` }} />
+        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.blue600}, transparent)` }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
           <div>
             <div style={sectionTitleStyle}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.amber, display: 'inline-block' }} />
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.blue600, display: 'inline-block' }} />
               Tenant Workspace
             </div>
             <h1 style={headingStyle}>Messages</h1>
@@ -68,8 +68,8 @@ const Messages = () => {
                 border: accent ? '1px solid rgba(245,158,11,0.25)' : '1px solid rgba(148,163,184,0.08)',
                 textAlign: 'center',
               }}>
-                <div style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: palette.muted, fontWeight: 600 }}>{label}</div>
-                <div style={{ fontSize: '22px', fontWeight: 700, color: accent ? palette.amber : palette.cream, marginTop: '4px' }}>{value}</div>
+                <div style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: palette.gray400, fontWeight: 600 }}>{label}</div>
+                <div style={{ fontSize: '22px', fontWeight: 700, color: accent ? palette.blue600 : palette.white, marginTop: '4px' }}>{value}</div>
               </div>
             ))}
           </div>
@@ -80,8 +80,8 @@ const Messages = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) minmax(300px, 0.9fr)', gap: '20px' }}>
         {/* Messages table */}
         <section style={{ ...panelStyle }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: palette.cream, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Inbox size={15} style={{ color: palette.amber }} /> Inbox
+          <div style={{ fontSize: '13px', fontWeight: 600, color: palette.white, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Inbox size={15} style={{ color: palette.blue600 }} /> Inbox
           </div>
           {error && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.18)', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px', fontSize: '14px' }}>
@@ -89,12 +89,12 @@ const Messages = () => {
             </div>
           )}
           {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.muted, padding: '40px 0' }}>
-              <div style={{ width: 16, height: 16, border: `2px solid ${palette.amber}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
+              <div style={{ width: 16, height: 16, border: `2px solid ${palette.blue600}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
               Loading messages...
             </div>
           ) : messages.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: palette.muted }}>
+            <div style={{ textAlign: 'center', padding: '40px 0', color: palette.gray400 }}>
               <MessageCircle size={36} style={{ opacity: 0.3, margin: '0 auto 10px', display: 'block' }} />
               No messages yet
             </div>
@@ -110,7 +110,7 @@ const Messages = () => {
                       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                       <td style={{ ...tdStyle, width: 20 }}>
-                        {!item.read_at && <div style={{ width: 7, height: 7, borderRadius: '50%', background: palette.amber }} />}
+                        {!item.read_at && <div style={{ width: 7, height: 7, borderRadius: '50%', background: palette.blue600 }} />}
                       </td>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 500, fontSize: '13px' }}>
@@ -118,15 +118,15 @@ const Messages = () => {
                             ? `To: ${item.recipient?.first_name} ${item.recipient?.last_name}`
                             : `From: ${item.sender?.first_name} ${item.sender?.last_name}`}
                         </div>
-                        <div style={{ fontSize: '11px', color: palette.mutedDark, marginTop: '2px' }}>
+                        <div style={{ fontSize: '11px', color: palette.gray500, marginTop: '2px' }}>
                           {item.direction === 'sent' ? 'Sent' : 'Received'}
                         </div>
                       </td>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: item.read_at ? 400 : 600, fontSize: '13px' }}>{item.subject || 'No subject'}</div>
-                        <div style={{ color: palette.muted, fontSize: '12px', marginTop: '3px' }}>{item.body}</div>
+                        <div style={{ color: palette.gray500, fontSize: '12px', marginTop: '3px' }}>{item.body}</div>
                       </td>
-                      <td style={{ ...tdStyle, color: palette.muted, fontSize: '12px', whiteSpace: 'nowrap' as const }}>{formatDate(item.created_at)}</td>
+                      <td style={{ ...tdStyle, color: palette.gray400, fontSize: '12px', whiteSpace: 'nowrap' as const }}>{formatDate(item.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -137,10 +137,10 @@ const Messages = () => {
 
         {/* Compose */}
         <section style={{ ...panelStyle, alignSelf: 'start' }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: palette.cream, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <MessageSquare size={15} style={{ color: palette.amber }} /> Compose
+          <div style={{ fontSize: '13px', fontWeight: 600, color: palette.white, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <MessageSquare size={15} style={{ color: palette.blue600 }} /> Compose
           </div>
-          <div style={{ color: palette.muted, fontSize: '13px', lineHeight: 1.6, marginBottom: '20px' }}>
+          <div style={{ color: palette.gray400, fontSize: '13px', lineHeight: 1.6, marginBottom: '20px' }}>
             {recipient
               ? `Sending to ${recipient.name}${recipient.property_title ? ` about ${recipient.property_title}` : ''}.`
               : 'Message will be sent to your assigned landlord when tenancy is active.'}

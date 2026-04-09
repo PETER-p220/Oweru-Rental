@@ -26,9 +26,9 @@ const Contract = () => {
     <div style={{ ...pageStyle, padding: '0' }}>
       {/* Header */}
       <section style={{ ...panelStyle }}>
-        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)` }} />
+        <div style={{ position: 'absolute', top: 0, left: 32, right: 32, height: '2px', background: `linear-gradient(90deg, transparent, ${palette.blue600}, transparent)` }} />
         <div style={sectionTitleStyle}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.amber, display: 'inline-block' }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.blue600, display: 'inline-block' }} />
           Tenant Workspace
         </div>
         <h1 style={headingStyle}>My Contract</h1>
@@ -38,12 +38,12 @@ const Contract = () => {
       {/* Content */}
       <section style={{ ...panelStyle }}>
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.muted, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${palette.amber}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
+            <div style={{ width: 16, height: 16, border: `2px solid ${palette.blue600}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             Loading contract...
           </div>
         ) : error || !contract ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: '16px', color: palette.muted }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: '16px', color: palette.gray400 }}>
             <AlertCircle size={48} style={{ opacity: 0.3 }} />
             <div style={{ fontSize: '16px' }}>{error || 'No active contract found'}</div>
           </div>
@@ -56,7 +56,7 @@ const Contract = () => {
                 <CheckCircle size={10} />
                 {contract.status || 'unknown'}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: palette.muted, fontSize: '13px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: palette.gray400, fontSize: '13px' }}>
                 <Calendar size={13} />
                 {formatDate(contract.start_date)} — {formatDate(contract.end_date)}
               </div>
@@ -70,37 +70,38 @@ const Contract = () => {
               overflow: 'hidden',
             }}>
               {/* Amber accent top */}
-              <div style={{ height: '3px', background: `linear-gradient(90deg, ${palette.amber}, transparent)` }} />
+              <div style={{ height: '3px', background: `linear-gradient(90deg, ${palette.blue600}, transparent)` }} />
               <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'start' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: palette.amber }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: palette.blue600 }}>
                       <FileText size={15} />
                     </div>
-                    <div style={{ fontSize: '18px', fontWeight: 700, color: palette.cream }}>{contract.property?.title || 'Untitled property'}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 700, color: palette.gray800 }}>{contract.property?.title || 'Untitled property'}</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: palette.muted, fontSize: '13px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: palette.gray400, fontSize: '13px' }}>
                     <MapPin size={12} />
                     {contract.property?.location || 'No location'}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.muted, marginBottom: '6px' }}>Monthly Rent</div>
-                  <div style={{ fontSize: '26px', fontWeight: 700, color: palette.amber, letterSpacing: '-0.5px' }}>{formatCurrency(contract.rent_amount)}</div>
+                  <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.gray400, marginBottom: '6px' }}>Monthly Rent</div>
+                  <div style={{ fontSize: '26px', fontWeight: 700, color: palette.blue600, letterSpacing: '-0.5px' }}>{formatCurrency(contract.rent_amount)}</div>
                 </div>
               </div>
             </div>
 
             {/* Terms */}
             {contract.terms && (
+              
               <div style={{
                 borderRadius: '14px',
                 background: 'rgba(15,23,42,0.4)',
                 border: '1px solid rgba(148,163,184,0.06)',
                 padding: '20px 24px',
               }}>
-                <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.muted, marginBottom: '12px', fontWeight: 600 }}>Contract Terms</div>
-                <p style={{ color: palette.muted, lineHeight: 1.8, fontSize: '14px', margin: 0 }}>{contract.terms}</p>
+                <div style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: palette.gray400, marginBottom: '12px', fontWeight: 600 }}>Contract Terms</div>
+                <p style={{ color: palette.gray400, lineHeight: 1.8, fontSize: '14px', margin: 0 }}>{contract.terms}</p>
               </div>
             )}
 
