@@ -533,6 +533,11 @@ class Api {
   static async createContract(data: any)  { return this.request<any>('tenant/contracts', { method: 'POST', body: JSON.stringify(data) }); }
   static async updateContract(id: number, data: any) { return this.request<any>(`tenant/contracts/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
   static async signContract(id: number) { return this.request<any>(`tenant/contracts/${id}/sign`, { method: 'POST' }); }
+  
+  // Digital Contract APIs
+  static async getTenantDigitalContracts() { return this.request<any[]>('tenant/digital-contracts'); }
+  static async downloadDigitalContract(id: number) { return this.request(`tenant/digital-contracts/${id}/download`); }
+  static async submitDigitalContract(data: any) { return this.request<any>('tenant/digital-contracts/submit', { method: 'POST', body: JSON.stringify(data) }); }
   static async getMyPayments()           { return this.request<any>('tenant/payments'); }
   static async getPaymentMethods()       { return this.request<any>('tenant/payment-methods'); }
   static async getPaymentStats()         { return this.request<any>('tenant/payment-stats'); }
@@ -800,6 +805,12 @@ class Api {
       headers: { 'Accept': 'application/pdf' },
     });
   }
+
+  // Digital Contract APIs for Landlords
+  static async createDigitalContract(data: any) { return this.request<any>('owner/digital-contracts', { method: 'POST', body: JSON.stringify(data) }); }
+  static async uploadContractFile(formData: FormData) { return this.request<any>('owner/digital-contracts/upload', { method: 'POST', body: formData, headers: {} }); }
+  static async sendContractToTenant(contractId: number) { return this.request<any>(`owner/digital-contracts/${contractId}/send`, { method: 'POST' }); }
+  static async downloadLandlordDigitalContract(id: number) { return this.request(`owner/digital-contracts/${id}/download`); }
 
   static async sendOwnerMessage(data: {
     recipient_id: number;

@@ -24,6 +24,7 @@ import Notifications from './pages/tenant/Notifications';
 import Messages from './pages/tenant/Messages';
 import SavedProperties from './pages/tenant/SavedProperties';
 import TenantApplicationsPage from './pages/tenant/ApplicationsPage';
+import TenantDigitalContractPage from './pages/tenant/DigitalContractPage';
 import TenantAnalyticsPage from './pages/tenant/AnalyticsPage';
 
 // Landlord pages
@@ -33,6 +34,7 @@ import AddProperty from './pages/landlord/AddProperty';
 import EditPropertySimple from './pages/landlord/EditPropertySimple';
 import ApplicationsPage from './pages/landlord/ApplicationsPage';
 import ContractsPage from './pages/landlord/ContractsPage';
+import DigitalContractPage from './pages/landlord/DigitalContractPage';
 import RentCollectionPage from './pages/landlord/RentCollectionPage';
 import ReceiptsPage from './pages/landlord/ReceiptsPage';
 import CommissionReportsPage from './pages/landlord/CommissionReportsPage';
@@ -101,6 +103,7 @@ const TenantRoutes = () => (
         <Route path="" element={<TenantDashboard />} />
         <Route path="properties" element={<Properties />} />
         <Route path="applications" element={<TenantApplicationsPage />} />
+        <Route path="digital-contracts" element={<TenantDigitalContractPage />} />
         <Route path="analytics" element={<TenantAnalyticsPage />} />
         <Route path="saved-properties" element={<SavedProperties />} />
         <Route path="settings" element={<SettingsPage />} />
@@ -124,8 +127,9 @@ const LandlordRoutes = () => (
         <Route path="my-properties" element={<MyProperties />} />
         <Route path="add-property" element={<AddProperty />} />
         <Route path="applications" element={<ApplicationsPage />} />
-        <Route path="tenants" element={<MyTenants />} />
+        <Route path="digital-contracts" element={<DigitalContractPage />} />
         <Route path="contracts" element={<ContractsPage />} />
+        <Route path="tenants" element={<MyTenants />} />
         <Route path="rent-collection" element={<RentCollectionPage />} />
         <Route path="receipts" element={<ReceiptsPage />} />
         <Route path="commissions" element={<CommissionReportsPage />} />
