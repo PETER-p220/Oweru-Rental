@@ -93,22 +93,22 @@ const MyTenants = () => {
 
         <div style={{ ...metricGridStyle, marginTop: '22px' }}>
           <div style={metricCardStyle}>
-            <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Active tenants</div>
+            <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Active tenants</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{tenants.length}</div>
           </div>
           <div style={metricCardStyle}>
-            <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Search</div>
+            <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Search</div>
             <input style={{ ...inputStyle, marginTop: '8px' }} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search tenants or properties" />
           </div>
         </div>
       </section>
 
       <section style={panelStyle}>
-        {error && <div style={{ marginBottom: '16px', color: '#e07070' }}>{error}</div>}
+        {error && <div style={{ marginBottom: '16px', color: 'var(--error-color)' }}>{error}</div>}
         {loading ? (
-          <div style={{ color: '#9f9587' }}>Loading tenants...</div>
+          <div style={{ color: 'var(--text-color)' }}>Loading tenants...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ color: '#9f9587' }}>No tenants matched your search.</div>
+          <div style={{ color: 'var(--text-color)' }}>No tenants matched your search.</div>
         ) : (
           <div style={tableWrapStyle}>
             <table style={tableStyle}>
@@ -126,12 +126,12 @@ const MyTenants = () => {
                   <tr key={tenant.id}>
                     <td style={tdStyle}>
                       <div>{tenant.user?.first_name} {tenant.user?.last_name}</div>
-                      <div style={{ color: '#9f9587', marginTop: '4px' }}>{tenant.user?.email || 'No email'}</div>
-                      <div style={{ color: '#9f9587', marginTop: '4px' }}>{tenant.user?.phone || 'No phone'}</div>
+                      <div style={{ color: 'var(--text-color)', marginTop: '4px' }}>{tenant.user?.email || 'No email'}</div>
+                      <div style={{ color: 'var(--text-color)', marginTop: '4px' }}>{tenant.user?.phone || 'No phone'}</div>
                     </td>
                     <td style={tdStyle}>
                       <div>{tenant.property?.title || 'Untitled property'}</div>
-                      <div style={{ color: '#9f9587', marginTop: '4px' }}>{tenant.property?.location || 'No location'}</div>
+                      <div style={{ color: 'var(--text-color)', marginTop: '4px' }}>{tenant.property?.location || 'No location'}</div>
                     </td>
                     <td style={tdStyle}>
                       <div>{formatDate(tenant.contract?.start_date)} to {formatDate(tenant.contract?.end_date)}</div>

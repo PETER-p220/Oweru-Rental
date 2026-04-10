@@ -96,7 +96,7 @@ const ReceiptsPage = () => {
                   <tr key={receipt.id}>
                     <td style={tdStyle}>
                       <div>{receipt.tenant?.user?.first_name} {receipt.tenant?.user?.last_name}</div>
-                      <div style={{ color: '#9f9587', marginTop: '4px' }}>{receipt.tenant?.user?.email || 'No email'}</div>
+                      <div style={{ color: 'var(--secondary-text-color)', marginTop: '4px' }}>{receipt.tenant?.user?.email || 'No email'}</div>
                     </td>
                     <td style={tdStyle}>{receipt.property?.title || 'Untitled property'}</td>
                     <td style={tdStyle}>{receipt.type || 'payment'}</td>

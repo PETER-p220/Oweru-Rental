@@ -142,12 +142,12 @@ const MessagesPage = () => {
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginTop: '22px' }}>
-          <div style={{ padding: '18px', borderRadius: '18px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Messages</div>
+          <div style={{ padding: '18px', borderRadius: '18px', background: `rgba(var(--primary-color-rgb), 0.025)`, border: `1px solid rgba(var(--primary-color-rgb), 0.06)` }}>
+            <div style={{ color: 'var(--text-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Messages</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{messages.length}</div>
           </div>
-          <div style={{ padding: '18px', borderRadius: '18px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Unread</div>
+          <div style={{ padding: '18px', borderRadius: '18px', background: `rgba(var(--primary-color-rgb), 0.025)`, border: `1px solid rgba(var(--primary-color-rgb), 0.06)` }}>
+            <div style={{ color: 'var(--text-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Unread</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{unreadCount}</div>
           </div>
         </div>

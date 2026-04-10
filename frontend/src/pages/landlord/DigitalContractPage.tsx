@@ -251,14 +251,14 @@ const DigitalContractPage = () => {
       {/* Contracts List */}
       <section style={{ ...panelStyle }}>
         {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#f87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.18)', borderRadius: '12px', padding: '14px 18px', marginBottom: '20px', fontSize: '14px' }}>
-            <AlertCircle size={16} style={{ color: '#f87171' }} /> {error}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--error)', background: 'var(--error-bg)', border: '1px solid var(--error-border)', borderRadius: '12px', padding: '14px 18px', marginBottom: '20px', fontSize: '14px' }}>
+            <AlertCircle size={16} style={{ color: 'var(--error)' }} /> {error}
           </div>
         )}
 
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.muted, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${palette.amber}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--muted)', padding: '40px 0' }}>
+            <div style={{ width: 16, height: 16, border: `2px solid var(--accent-color)`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             Loading contracts...
           </div>
         ) : contracts.length === 0 ? (

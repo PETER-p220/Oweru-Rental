@@ -254,8 +254,8 @@ const AddListing: React.FC = () => {
 
         :root {
           --gold: #c9a84c;
-          --gold-light: rgba(201,168,76,0.1);
-          --gold-border: rgba(201,168,76,0.25);
+          --gold-light: rgba(37,99,235,0.1);
+          --gold-border: rgba(37,99,235,0.25);
           --success: #70c490;
           --success-light: rgba(112,196,144,0.1);
           --success-border: rgba(112,196,144,0.25);
@@ -264,7 +264,7 @@ const AddListing: React.FC = () => {
           --error-border: rgba(224,112,112,0.25);
           --dark: #0a0a0a;
           --dark-secondary: #111;
-          --border: rgba(201,168,76,0.12);
+          --border: rgba(37,99,235,0.12);
           --text-primary: #f5f0e8;
           --text-secondary: #8a8070;
         }
@@ -386,7 +386,7 @@ const AddListing: React.FC = () => {
         .al-select:focus {
           outline: none;
           border-color: var(--gold);
-          background: rgba(201,168,76,0.02);
+          background: rgba(37,99,235,0.02);
         }
 
         .al-textarea {
@@ -800,7 +800,7 @@ const AddListing: React.FC = () => {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = 'var(--gold)';
-                e.currentTarget.style.background = 'rgba(201,168,76,0.02)';
+                e.currentTarget.style.background = 'rgba(37,99,235,0.02)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = 'var(--border)';

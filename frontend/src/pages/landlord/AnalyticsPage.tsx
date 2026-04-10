@@ -67,45 +67,45 @@ const AnalyticsPage = () => {
       </section>
 
       <section style={panelStyle}>
-        {error && <div style={{ marginBottom: '16px', color: '#e07070' }}>{error}</div>}
+        {error && <div style={{ marginBottom: '16px', color: 'var(--error-color)' }}>{error}</div>}
         {loading ? (
-          <div style={{ color: '#9f9587' }}>Loading analytics...</div>
+          <div style={{ color: 'var(--loading-color)' }}>Loading analytics...</div>
         ) : (
           <div style={metricGridStyle}>
             <div style={metricCardStyle}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total properties</div>
+              <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total properties</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{property.total_properties ?? 0}</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Occupied</div>
+              <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Occupied</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{property.occupied_properties ?? 0}</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Available</div>
+              <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Available</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{property.available_properties ?? 0}</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Average rent</div>
+              <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Average rent</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{formatCurrency(property.avg_rent)}</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Occupancy rate</div>
+              <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Occupancy rate</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{Number(property.occupancy_rate ?? 0).toFixed(1)}%</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total revenue</div>
+              <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total revenue</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{formatCurrency(financial.total_revenue)}</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Monthly revenue</div>
+              <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Monthly revenue</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{formatCurrency(financial.monthly_revenue)}</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total tenants</div>
+              <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total tenants</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{tenant.total_tenants ?? 0}</div>
             </div>
             <div style={metricCardStyle}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>New tenants this month</div>
+              <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>New tenants this month</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{tenant.new_tenants_this_month ?? 0}</div>
             </div>
           </div>

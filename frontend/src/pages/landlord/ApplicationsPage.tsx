@@ -115,8 +115,8 @@ const ApplicationsPage = () => {
             ['Approved', stats.approved],
             ['Rejected', stats.rejected],
           ].map(([label, value]) => (
-            <div key={String(label)} style={{ padding: '18px', borderRadius: '18px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ color: '#9f9587', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{label}</div>
+            <div key={String(label)} style={{ padding: '18px', borderRadius: '18px', background: 'var(--background-card)', border: '1px solid var(--border-card)' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{label}</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{value}</div>
             </div>
           ))}
