@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, Menu, X, User, LogOut, Home, Building, FileText, MessageSquare, Bell, Settings, ChevronDown, ChevronRight, Heart, Star, Users, BarChart3, DollarSign, Package, Calendar, Phone, Mail, MapPin, Eye, Edit, Trash2, Plus, Filter, TrendingUp } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Menu, X, ChevronRight, Phone, Mail, MapPin } from 'lucide-react';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import ThemeToggle from './ThemeToggle';
+
+// ─── Oweru Brand Tokens ───────────────────────────────────────────────────────
+// Source: Oweru Brand Book & Guidelines
+// Navy #0F172A | Gold #C89128 | Gold-light #D4A84B | Off-white #F8F8F9
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,7 +19,6 @@ const Header = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => { setIsMenuOpen(false); }, [location]);
 
   const navLinks = [
@@ -29,32 +32,47 @@ const Header = () => {
     to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
 
   return (
-    <header style={{ fontFamily: "'DM Sans', sans-serif", position: 'sticky', top: 0, zIndex: 100 }}>
+    <header style={{ fontFamily: "'Futura PT', 'DM Sans', sans-serif", position: 'sticky', top: 0, zIndex: 100 }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Cormorant+Garamond:wght@300;400&display=swap');
 
+        /* ── Oweru Brand Design Tokens ── */
         :root {
-          --gold: #c9a84c;
-          --gold-light: #e8c97a;
-          --dark: var(--bg-primary);
-          --dark-2: var(--bg-secondary);
-          --dark-3: var(--bg-tertiary);
-          --cream: var(--text-primary);
-          --muted: var(--text-secondary);
-          --border: var(--border-color);
+          --oweru-navy:       #0F172A;
+          --oweru-navy-800:   #141F35;
+          --oweru-navy-700:   #1A2A47;
+          --oweru-navy-400:   #3D5E96;
+          --oweru-gold:       #C89128;
+          --oweru-gold-light: #D4A84B;
+          --oweru-gold-pale:  #E8CC8A;
+          --oweru-gold-faint: rgba(200, 145, 40, 0.10);
+          --oweru-off-white:  #F8F8F9;
+          --oweru-white:      #FFFFFF;
+
+          /* Map to theme vars */
+          --gold:       var(--oweru-gold);
+          --gold-light: var(--oweru-gold-light);
+          --dark:       var(--bg-primary, var(--oweru-navy));
+          --dark-2:     var(--bg-secondary, var(--oweru-navy-800));
+          --dark-3:     var(--bg-tertiary, var(--oweru-navy-700));
+          --cream:      var(--text-primary, var(--oweru-off-white));
+          --muted:      var(--text-secondary, #6888BC);
+          --border:     var(--border-color, rgba(200, 145, 40, 0.15));
         }
 
         /* ── Contact strip ── */
         .hdr-strip {
-          background: var(--bg-tertiary);
-          border-bottom: 1px solid var(--border-color);
+          background: var(--bg-tertiary, var(--oweru-navy-800));
+          border-bottom: 1px solid var(--border, rgba(200, 145, 40, 0.12));
           padding: 7px 40px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          transition: all 0.3s ease;
+          transition: all 0.35s ease;
           overflow: hidden;
+          max-height: 40px;
+          opacity: 1;
         }
 
         .hdr-strip.hidden-strip {
@@ -76,21 +94,20 @@ const Header = () => {
           align-items: center;
           gap: 7px;
           font-size: 11px;
-          font-weight: 300;
+          font-weight: 400;
           letter-spacing: 0.06em;
-          color: rgba(138,128,112,0.7);
+          color: var(--muted);
           text-decoration: none;
           transition: color 0.2s;
         }
 
-        .strip-item:hover { color: var(--gold); }
-
-        .strip-item svg { color: var(--gold); flex-shrink: 0; }
+        .strip-item:hover { color: var(--oweru-gold); }
+        .strip-item svg   { color: var(--oweru-gold); flex-shrink: 0; }
 
         .strip-divider {
           width: 1px;
           height: 14px;
-          background: rgba(37,99,235,0.15);
+          background: rgba(200, 145, 40, 0.20);
         }
 
         .strip-location {
@@ -98,18 +115,19 @@ const Header = () => {
           align-items: center;
           gap: 6px;
           font-size: 10px;
-          font-weight: 400;
+          font-weight: 500;
           letter-spacing: 0.15em;
           text-transform: uppercase;
-          color: rgba(138,128,112,0.45);
+          color: rgba(104, 136, 188, 0.55);
         }
 
         .strip-dot {
           width: 5px;
           height: 5px;
           border-radius: 50%;
-          background: var(--gold);
+          background: var(--oweru-gold);
           animation: hdr-pulse 2.5s infinite;
+          flex-shrink: 0;
         }
 
         @keyframes hdr-pulse {
@@ -119,75 +137,56 @@ const Header = () => {
 
         /* ── Main nav ── */
         .hdr-nav {
-          background: var(--bg-primary);
+          background: var(--bg-primary, var(--oweru-navy));
           backdrop-filter: blur(24px);
           -webkit-backdrop-filter: blur(24px);
-          border-bottom: 1px solid var(--border-color);
+          border-bottom: 1px solid var(--border, rgba(200, 145, 40, 0.12));
           transition: border-color 0.3s, box-shadow 0.3s;
         }
 
         .hdr-nav.scrolled {
-          box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-          border-bottom-color: rgba(37,99,235,0.2);
+          box-shadow: 0 8px 40px rgba(15, 23, 42, 0.70);
+          border-bottom-color: rgba(200, 145, 40, 0.25);
         }
 
         .hdr-nav-inner {
           max-width: 1200px;
           margin: 0 auto;
           padding: 0 40px;
-          height: 64px;
+          height: 68px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 32px;
         }
 
-        /* Logo */
+        /* ── Logo ── */
         .hdr-logo {
           display: flex;
-          align-items: baseline;
+          align-items: center;
           gap: 1px;
           text-decoration: none;
           flex-shrink: 0;
         }
 
-        .hdr-logo-text {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: 22px;
-          font-weight: 300;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--cream);
-          line-height: 1;
-          transition: color 0.2s;
-        }
-
-        .hdr-logo:hover .hdr-logo-text { color: var(--gold-light); }
-
-        .hdr-logo-dot {
-          font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: 22px;
-          font-weight: 300;
-          color: var(--gold);
-          line-height: 1;
-        }
-
-        /* Desktop links */
+        /* ── Desktop links ── */
         .hdr-links {
           display: flex;
           align-items: center;
           gap: 4px;
           list-style: none;
+          margin: 0;
+          padding: 0;
         }
 
         .hdr-link {
           position: relative;
           padding: 8px 14px;
           font-size: 12px;
-          font-weight: 400;
-          letter-spacing: 0.1em;
+          font-weight: 500;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: rgba(138,128,112,0.9);
+          color: var(--muted);
           text-decoration: none;
           transition: color 0.2s;
         }
@@ -198,8 +197,8 @@ const Header = () => {
           bottom: 4px;
           left: 14px;
           right: 14px;
-          height: 1px;
-          background: var(--gold);
+          height: 1.5px;
+          background: var(--oweru-gold);
           transform: scaleX(0);
           transform-origin: left;
           transition: transform 0.3s ease;
@@ -211,66 +210,71 @@ const Header = () => {
         .hdr-link:hover::after,
         .hdr-link.active::after { transform: scaleX(1); }
 
-        .hdr-link.active { color: var(--gold-light); }
+        .hdr-link.active { color: var(--oweru-gold-light); }
 
-        /* CTA buttons */
+        /* ── CTA buttons ── */
         .hdr-actions {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           flex-shrink: 0;
         }
 
         .hdr-btn-ghost {
           padding: 8px 18px;
           font-size: 12px;
-          font-weight: 400;
-          letter-spacing: 0.1em;
+          font-weight: 500;
+          letter-spacing: 0.10em;
           text-transform: uppercase;
-          color: rgba(138,128,112,0.9);
+          color: var(--muted);
           text-decoration: none;
-          border: 1px solid rgba(37,99,235,0.18);
+          border: 1.5px solid rgba(200, 145, 40, 0.20);
+          border-radius: 4px;
           transition: all 0.2s;
           white-space: nowrap;
         }
 
         .hdr-btn-ghost:hover {
           color: var(--cream);
-          border-color: rgba(37,99,235,0.45);
-          background: rgba(37,99,235,0.05);
+          border-color: rgba(200, 145, 40, 0.50);
+          background: var(--oweru-gold-faint);
         }
 
         .hdr-btn-primary {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 18px;
+          padding: 9px 20px;
           font-size: 12px;
-          font-weight: 500;
-          letter-spacing: 0.1em;
+          font-weight: 700;
+          letter-spacing: 0.10em;
           text-transform: uppercase;
-          color: #0a0a0a;
-          background: var(--gold);
+          color: var(--oweru-navy);
+          background: var(--oweru-gold);
           text-decoration: none;
-          border: 1px solid var(--gold);
+          border: 1px solid var(--oweru-gold);
+          border-radius: 4px;
           transition: all 0.2s;
           white-space: nowrap;
+          box-shadow: 0 2px 10px rgba(200, 145, 40, 0.30);
           clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
         }
 
         .hdr-btn-primary:hover {
-          background: var(--gold-light);
-          border-color: var(--gold-light);
+          background: var(--oweru-gold-light);
+          border-color: var(--oweru-gold-light);
+          box-shadow: 0 4px 16px rgba(200, 145, 40, 0.40);
         }
 
-        /* Hamburger */
+        /* ── Hamburger ── */
         .hdr-hamburger {
           display: none;
-          width: 36px;
-          height: 36px;
+          width: 38px;
+          height: 38px;
           align-items: center;
           justify-content: center;
-          border: 1px solid rgba(37,99,235,0.2);
+          border: 1.5px solid rgba(200, 145, 40, 0.22);
+          border-radius: 4px;
           background: transparent;
           color: var(--cream);
           cursor: pointer;
@@ -279,18 +283,18 @@ const Header = () => {
         }
 
         .hdr-hamburger:hover {
-          border-color: rgba(37,99,235,0.5);
-          color: var(--gold);
-          background: rgba(37,99,235,0.05);
+          border-color: var(--oweru-gold);
+          color: var(--oweru-gold);
+          background: var(--oweru-gold-faint);
         }
 
-        /* Mobile drawer */
+        /* ── Mobile drawer ── */
         .hdr-mobile {
           position: fixed;
           top: 0; right: 0; bottom: 0;
           width: min(320px, 85vw);
-          background: var(--bg-primary);
-          border-left: 1px solid var(--border-color);
+          background: var(--bg-primary, var(--oweru-navy));
+          border-left: 1px solid rgba(200, 145, 40, 0.15);
           z-index: 200;
           display: flex;
           flex-direction: column;
@@ -304,7 +308,7 @@ const Header = () => {
         .hdr-mobile-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0,0,0,0.7);
+          background: rgba(15, 23, 42, 0.80);
           z-index: 199;
           opacity: 0;
           pointer-events: none;
@@ -322,28 +326,33 @@ const Header = () => {
           align-items: center;
           justify-content: space-between;
           padding: 20px 24px;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 1px solid rgba(200, 145, 40, 0.12);
           flex-shrink: 0;
         }
 
         .mobile-close {
-          width: 32px;
-          height: 32px;
+          width: 34px;
+          height: 34px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid rgba(37,99,235,0.2);
+          border: 1.5px solid rgba(200, 145, 40, 0.20);
+          border-radius: 4px;
           background: transparent;
           color: var(--muted);
           cursor: pointer;
           transition: all 0.2s;
         }
 
-        .mobile-close:hover { color: var(--gold); border-color: rgba(37,99,235,0.5); }
+        .mobile-close:hover {
+          color: var(--oweru-gold);
+          border-color: var(--oweru-gold);
+          background: var(--oweru-gold-faint);
+        }
 
         .mobile-links {
           flex: 1;
-          padding: 24px 0;
+          padding: 20px 0;
         }
 
         .mobile-link {
@@ -351,69 +360,81 @@ const Header = () => {
           align-items: center;
           justify-content: space-between;
           padding: 14px 24px;
-          font-size: 13px;
-          font-weight: 400;
-          letter-spacing: 0.1em;
+          font-size: 12px;
+          font-weight: 500;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: rgba(138,128,112,0.85);
+          color: var(--muted);
           text-decoration: none;
-          border-bottom: 1px solid rgba(37,99,235,0.06);
+          border-bottom: 1px solid rgba(200, 145, 40, 0.07);
           transition: all 0.2s;
         }
 
         .mobile-link:hover,
         .mobile-link.active {
           color: var(--cream);
-          background: rgba(37,99,235,0.04);
+          background: var(--oweru-gold-faint);
           padding-left: 28px;
         }
 
-        .mobile-link.active { color: var(--gold-light); }
-        .mobile-link svg { color: var(--gold); opacity: 0.5; }
-        .mobile-link:hover svg, .mobile-link.active svg { opacity: 1; }
+        .mobile-link.active { color: var(--oweru-gold-light); }
+        .mobile-link svg    { color: var(--oweru-gold); opacity: 0.5; }
+        .mobile-link:hover svg,
+        .mobile-link.active svg { opacity: 1; }
 
         .mobile-actions {
-          padding: 24px;
+          padding: 20px 24px;
           display: flex;
           flex-direction: column;
           gap: 10px;
-          border-top: 1px solid var(--border);
+          border-top: 1px solid rgba(200, 145, 40, 0.10);
           flex-shrink: 0;
         }
 
         .mobile-btn-ghost {
           padding: 12px;
           font-size: 12px;
-          font-weight: 400;
-          letter-spacing: 0.1em;
+          font-weight: 500;
+          letter-spacing: 0.10em;
           text-transform: uppercase;
           color: var(--muted);
           text-decoration: none;
-          border: 1px solid rgba(37,99,235,0.18);
+          border: 1.5px solid rgba(200, 145, 40, 0.20);
+          border-radius: 4px;
           text-align: center;
           transition: all 0.2s;
         }
 
-        .mobile-btn-ghost:hover { color: var(--cream); border-color: rgba(37,99,235,0.4); }
+        .mobile-btn-ghost:hover {
+          color: var(--cream);
+          border-color: rgba(200, 145, 40, 0.50);
+          background: var(--oweru-gold-faint);
+        }
 
         .mobile-btn-primary {
           padding: 12px;
           font-size: 12px;
-          font-weight: 500;
-          letter-spacing: 0.1em;
+          font-weight: 700;
+          letter-spacing: 0.10em;
           text-transform: uppercase;
-          color: #0a0a0a;
-          background: var(--gold);
+          color: var(--oweru-navy);
+          background: var(--oweru-gold);
           text-decoration: none;
+          border: 1px solid var(--oweru-gold);
+          border-radius: 4px;
           text-align: center;
           transition: background 0.2s;
+          box-shadow: 0 2px 10px rgba(200, 145, 40, 0.28);
         }
 
-        .mobile-btn-primary:hover { background: var(--gold-light); }
+        .mobile-btn-primary:hover {
+          background: var(--oweru-gold-light);
+          border-color: var(--oweru-gold-light);
+        }
 
         .mobile-contact {
-          padding: 20px 24px;
-          border-top: 1px solid rgba(37,99,235,0.06);
+          padding: 18px 24px;
+          border-top: 1px solid rgba(200, 145, 40, 0.07);
           display: flex;
           flex-direction: column;
           gap: 10px;
@@ -425,14 +446,16 @@ const Header = () => {
           align-items: center;
           gap: 10px;
           font-size: 12px;
-          font-weight: 300;
-          color: rgba(138,128,112,0.6);
+          font-weight: 400;
+          color: var(--muted);
           text-decoration: none;
+          transition: color 0.2s;
         }
 
-        .mobile-contact-item svg { color: var(--gold); flex-shrink: 0; }
+        .mobile-contact-item:hover { color: var(--oweru-gold); }
+        .mobile-contact-item svg   { color: var(--oweru-gold); flex-shrink: 0; }
 
-        /* Responsive breakpoint */
+        /* ── Responsive ── */
         @media (max-width: 900px) {
           .hdr-links,
           .hdr-actions { display: none; }
@@ -462,7 +485,7 @@ const Header = () => {
         </div>
         <div className="strip-location">
           <div className="strip-dot" />
-          <MapPin size={11} style={{ color: 'var(--gold)' }} />
+          <MapPin size={11} style={{ color: '#C89128' }} />
           Tancot House, Dar es Salaam
         </div>
       </div>
@@ -473,7 +496,7 @@ const Header = () => {
 
           {/* Logo */}
           <Link to="/" className="hdr-logo">
-            <img src={LOGO} alt="OWERU" style={{ height: '32px', width: 'auto' }} />
+            <img src={LOGO} alt="OWERU" style={{ height: '34px', width: 'auto' }} />
           </Link>
 
           {/* Desktop links */}
@@ -521,7 +544,7 @@ const Header = () => {
       <div className={`hdr-mobile${isMenuOpen ? ' open' : ''}`}>
         <div className="mobile-header">
           <Link to="/" className="hdr-logo" style={{ textDecoration: 'none' }}>
-            <img src={LOGO} alt="OWERU" style={{ height: '32px', width: 'auto' }} />
+            <img src={LOGO} alt="OWERU" style={{ height: '34px', width: 'auto' }} />
           </Link>
           <button className="mobile-close" onClick={() => setIsMenuOpen(false)}>
             <X size={16} />

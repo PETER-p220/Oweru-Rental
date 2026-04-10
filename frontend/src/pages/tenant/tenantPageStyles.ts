@@ -1,35 +1,53 @@
 import type { CSSProperties } from 'react';
 
-// Color palette for consistent theming
+// ─── Oweru Brand Color Palette ────────────────────────────────────────────────
+// Source: Oweru Brand Book & Guidelines
 export const palette = {
-  blue600:    '#2563eb',
-  blue500:    '#3b82f6',
-  blue400:    '#60a5fa',
-  blue300:    '#93c5fd',
-  blue200:    '#bfdbfe',
-  blue100:    '#dbeafe',
-  blue50:     '#eff6ff',
-  blueDim:    'rgba(37,99,235,0.25)',
-  white:      '#ffffff',
-  gray900:    '#0f172a',
-  gray800:    '#1e293b',
-  gray700:    '#334155',
-  gray600:    '#475569',
-  gray500:    '#64748b',
-  gray400:    '#94a3b8',
-  gray300:    '#cbd5e1',
-  gray200:    '#e2e8f0',
-  gray100:    '#f1f5f9',
-  gray50:     '#f8fafc',
-  borderSoft: 'rgba(15,45,110,0.10)',
-  borderFaint:'rgba(15,45,110,0.06)',
+  // Primary Navy
+  navy900:    '#0F172A',   // HEX #0F172A — primary dark background
+  navy800:    '#141F35',
+  navy700:    '#1A2A47',
+  navy600:    '#1E3358',
+  navy500:    '#2A4472',
+  navy400:    '#3D5E96',
+  navy300:    '#6888BC',
+  navy200:    '#A0B4D8',
+  navy100:    '#D0DAEE',
+  navy50:     '#EEF2F8',
+
+  // Brand Gold
+  gold:       '#C89128',   // HEX #C89128 — primary brand gold
+  goldLight:  '#D4A84B',   // lighter gold tint
+  goldPale:   '#E8CC8A',
+  goldFaint:  '#F5EDD4',
+
+  // Neutrals
+  offWhite:   '#F8F8F9',   // HEX #F8F8F9 — background off-white
+  white:      '#FFFFFF',
+  gray100:    '#F1F3F6',
+  gray200:    '#E4E8EF',
+  gray300:    '#C9D1DF',
+  gray400:    '#9AAABF',
+  gray500:    '#6B7E99',
+  gray600:    '#4A5C73',
+  gray700:    '#2E3D52',
+  gray800:    '#1A2433',
+  gray900:    '#0D1520',
+
+  // Semantic
+  borderSoft:  'rgba(15, 23, 42, 0.10)',
+  borderFaint: 'rgba(15, 23, 42, 0.06)',
+  goldBorder:  'rgba(200, 145, 40, 0.25)',
+  goldGlow:    'rgba(200, 145, 40, 0.12)',
 };
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
 
 export const pageStyle: CSSProperties = {
   display: 'grid',
   gap: '24px',
-  color: palette.gray800,
-  backgroundColor: palette.gray50,
+  color: palette.navy900,
+  backgroundColor: palette.offWhite,
   padding: '16px',
   minHeight: '100vh',
 };
@@ -39,15 +57,17 @@ export const panelStyle: CSSProperties = {
   border: `1px solid ${palette.gray200}`,
   borderRadius: '16px',
   padding: '24px',
-  boxShadow: '0 1px 3px rgba(15,45,110,0.08), 0 1px 2px rgba(15,45,110,0.06)',
+  boxShadow: '0 1px 4px rgba(15, 23, 42, 0.07), 0 4px 16px rgba(15, 23, 42, 0.05)',
 };
 
+// ─── Typography ───────────────────────────────────────────────────────────────
+
 export const sectionTitleStyle: CSSProperties = {
-  color: palette.blue600,
+  color: palette.gold,
   fontSize: '11px',
   textTransform: 'uppercase',
-  letterSpacing: '0.14em',
-  fontWeight: 600,
+  letterSpacing: '0.18em',
+  fontWeight: 700,
   marginBottom: '10px',
 };
 
@@ -55,7 +75,7 @@ export const headingStyle: CSSProperties = {
   fontSize: 'clamp(22px, 5vw, 32px)',
   lineHeight: 1.15,
   margin: 0,
-  color: palette.gray900,
+  color: palette.navy900,
   fontWeight: 700,
   letterSpacing: '-0.02em',
 };
@@ -66,6 +86,8 @@ export const descriptionStyle: CSSProperties = {
   lineHeight: 1.7,
   maxWidth: '70ch',
 };
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
 
 export const statGridStyle: CSSProperties = {
   display: 'grid',
@@ -78,24 +100,26 @@ export const statCardStyle = (accent: string): CSSProperties => ({
   borderRadius: '12px',
   background: palette.white,
   border: `1.5px solid ${accent}22`,
-  boxShadow: '0 1px 3px rgba(15,45,110,0.06)',
+  boxShadow: `0 2px 8px rgba(15, 23, 42, 0.06)`,
 });
 
 export const statLabelStyle: CSSProperties = {
   color: palette.gray400,
   fontSize: '11px',
-  fontWeight: 600,
+  fontWeight: 700,
   textTransform: 'uppercase',
-  letterSpacing: '0.1em',
+  letterSpacing: '0.12em',
 };
 
 export const statValueStyle: CSSProperties = {
   fontSize: 'clamp(22px, 4vw, 28px)',
   marginTop: '8px',
   fontWeight: 700,
-  color: palette.blue600,
+  color: palette.navy900,
   letterSpacing: '-0.02em',
 };
+
+// ─── Table ────────────────────────────────────────────────────────────────────
 
 export const tableWrapStyle: CSSProperties = {
   overflowX: 'auto',
@@ -113,11 +137,11 @@ export const thStyle: CSSProperties = {
   padding: '12px 16px',
   fontSize: '11px',
   color: palette.gray500,
-  fontWeight: 600,
+  fontWeight: 700,
   textTransform: 'uppercase',
-  letterSpacing: '0.08em',
+  letterSpacing: '0.10em',
   borderBottom: `1px solid ${palette.gray200}`,
-  background: palette.gray50,
+  background: palette.offWhite,
 };
 
 export const tdStyle: CSSProperties = {
@@ -128,13 +152,15 @@ export const tdStyle: CSSProperties = {
   color: palette.gray700,
 };
 
+// ─── Forms ────────────────────────────────────────────────────────────────────
+
 export const inputStyle: CSSProperties = {
   width: '100%',
   padding: '11px 14px',
-  background: palette.gray50,
+  background: palette.offWhite,
   border: `1.5px solid ${palette.gray200}`,
   borderRadius: '8px',
-  color: palette.gray800,
+  color: palette.navy900,
   outline: 'none',
   fontSize: '14px',
 };
@@ -149,12 +175,17 @@ export const selectStyle: CSSProperties = {
   ...inputStyle,
 };
 
-export const buttonStyle = (variant: 'primary' | 'ghost' | 'secondary' | 'danger' = 'primary'): CSSProperties => {
-  const variants = {
+// ─── Buttons ──────────────────────────────────────────────────────────────────
+
+export const buttonStyle = (
+  variant: 'primary' | 'ghost' | 'secondary' | 'danger' = 'primary'
+): CSSProperties => {
+  const variants: Record<string, Partial<CSSProperties>> = {
     primary: {
-      border: `1px solid transparent`,
-      background: palette.blue600,
+      border: `1px solid ${palette.gold}`,
+      background: palette.gold,
       color: palette.white,
+      boxShadow: `0 2px 8px ${palette.goldGlow}`,
     },
     ghost: {
       border: `1.5px solid ${palette.gray200}`,
@@ -162,37 +193,31 @@ export const buttonStyle = (variant: 'primary' | 'ghost' | 'secondary' | 'danger
       color: palette.gray700,
     },
     secondary: {
-      border: `1.5px solid ${palette.blue200}`,
-      background: palette.blue50,
-      color: palette.blue600,
+      border: `1.5px solid ${palette.goldBorder}`,
+      background: palette.goldFaint,
+      color: palette.navy900,
     },
     danger: {
-      border: `1px solid rgba(239,68,68,0.3)`,
+      border: `1px solid rgba(239, 68, 68, 0.3)`,
       background: '#ef4444',
       color: palette.white,
     },
   };
 
-  const style = variants[variant] || variants.primary;
-
   return {
     padding: '10px 16px',
     borderRadius: '8px',
-    border: style.border,
-    background: style.background,
-    color: style.color,
     cursor: 'pointer',
     fontWeight: 600,
     fontSize: '13px',
     whiteSpace: 'nowrap',
-    boxShadow: variant === 'primary' ? '0 1px 3px rgba(37,99,235,0.25)' : 'none',
+    ...variants[variant],
   };
 };
 
-// Mobile-specific styles
-export const mobileTableContainer: CSSProperties = {
-  display: 'none',
-};
+// ─── Mobile Cards ─────────────────────────────────────────────────────────────
+
+export const mobileTableContainer: CSSProperties = { display: 'none' };
 
 export const mobileCard: CSSProperties = {
   background: palette.white,
@@ -200,7 +225,7 @@ export const mobileCard: CSSProperties = {
   borderRadius: '12px',
   padding: '16px',
   marginBottom: '10px',
-  boxShadow: '0 1px 3px rgba(15,45,110,0.06)',
+  boxShadow: '0 1px 4px rgba(15, 23, 42, 0.06)',
 };
 
 export const mobileCardHeader: CSSProperties = {
@@ -215,7 +240,7 @@ export const mobileCardHeader: CSSProperties = {
 export const mobileCardTitle: CSSProperties = {
   fontSize: '15px',
   fontWeight: 600,
-  color: palette.gray900,
+  color: palette.navy900,
   margin: 0,
 };
 
@@ -228,14 +253,12 @@ export const mobileCardStatus: CSSProperties = {
   letterSpacing: '0.04em',
 };
 
-export const mobileCardSection: CSSProperties = {
-  marginBottom: '10px',
-};
+export const mobileCardSection: CSSProperties = { marginBottom: '10px' };
 
 export const mobileCardLabel: CSSProperties = {
   fontSize: '11px',
   color: palette.gray400,
-  fontWeight: 600,
+  fontWeight: 700,
   textTransform: 'uppercase',
   letterSpacing: '0.08em',
   marginBottom: '3px',
@@ -252,33 +275,31 @@ export const mobileCardActions: CSSProperties = {
   flexWrap: 'wrap',
 };
 
-// Media query helper
 export const mobileMediaQuery = '@media (max-width: 768px)';
 
-// Status color helper for payments and applications
+// ─── Status ───────────────────────────────────────────────────────────────────
+
 export const getStatusColor = (status?: string | null | undefined): string => {
   if (!status) return palette.gray400;
-
   switch (status.toLowerCase()) {
     case 'completed':
     case 'approved':
     case 'active':
-      return '#16a34a';   // green-600
+      return '#16a34a';
     case 'pending':
     case 'processing':
-      return '#d97706';   // amber-600
+      return '#b45309';  // amber that reads well on white
     case 'failed':
     case 'rejected':
     case 'cancelled':
-      return '#dc2626';   // red-600
+      return '#dc2626';
     case 'refunded':
-      return '#7c3aed';   // violet-600
+      return '#7c3aed';
     default:
       return palette.gray400;
   }
 };
 
-// Status pill style helper
 export const statusPillStyle = (color: string): CSSProperties => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -286,7 +307,7 @@ export const statusPillStyle = (color: string): CSSProperties => ({
   padding: '3px 10px',
   borderRadius: '100px',
   fontSize: '11px',
-  fontWeight: 600,
+  fontWeight: 700,
   textTransform: 'uppercase',
   letterSpacing: '0.04em',
   background: `${color}14`,
@@ -294,11 +315,19 @@ export const statusPillStyle = (color: string): CSSProperties => ({
   color: color,
 });
 
+// ─── Formatters ───────────────────────────────────────────────────────────────
+
 export const formatCurrency = (value: number | string | null | undefined) =>
-  new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(Number(value || 0));
+  new Intl.NumberFormat('en-TZ', {
+    style: 'currency',
+    currency: 'TZS',
+    minimumFractionDigits: 0,
+  }).format(Number(value || 0));
 
 export const formatDate = (value?: string | null) => {
   if (!value) return 'N/A';
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? 'N/A' : parsed.toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
+  return Number.isNaN(parsed.getTime())
+    ? 'N/A'
+    : parsed.toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
 };
