@@ -84,16 +84,16 @@ const Contact = () => {
         .ct-hero-bg {
           position: absolute; inset: 0;
           background:
-            radial-gradient(ellipse 55% 70% at 75% 40%, rgba(201,168,76,0.07) 0%, transparent 55%),
-            radial-gradient(ellipse 35% 50% at 5% 90%,  rgba(201,168,76,0.04) 0%, transparent 50%),
+            radial-gradient(ellipse 55% 70% at 75% 40%, rgba(37,99,235,0.07) 0%, transparent 55%),
+            radial-gradient(ellipse 35% 50% at 5% 90%,  rgba(37,99,235,0.04) 0%, transparent 50%),
             linear-gradient(150deg, #0e0e0b 0%, #0a0a0a 100%);
         }
 
         .ct-hero-grid {
           position: absolute; inset: 0;
           background-image:
-            linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+            linear-gradient(rgba(37,99,235,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(37,99,235,0.03) 1px, transparent 1px);
           background-size: 64px 64px;
           mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%);
         }
@@ -105,7 +105,7 @@ const Contact = () => {
           font-size: clamp(100px, 16vw, 200px);
           font-weight: 700;
           color: transparent;
-          -webkit-text-stroke: 1px rgba(201,168,76,0.05);
+          -webkit-text-stroke: 1px rgba(37,99,235,0.05);
           line-height: 1;
           user-select: none;
           letter-spacing: -0.05em;
@@ -160,7 +160,7 @@ const Contact = () => {
 
         /* response promise card */
         .ct-promise {
-          background: rgba(201,168,76,0.04);
+          background: rgba(37,99,235,0.04);
           border: 1px solid var(--border);
           padding: 36px 32px;
           position: relative;
@@ -250,8 +250,8 @@ const Contact = () => {
 
         .ct-info-icon {
           width: 36px; height: 36px;
-          background: rgba(201,168,76,0.08);
-          border: 1px solid rgba(201,168,76,0.15);
+          background: rgba(37,99,235,0.08);
+          border: 1px solid rgba(37,99,235,0.15);
           display: flex; align-items: center; justify-content: center;
           color: var(--gold);
           flex-shrink: 0;
@@ -368,7 +368,7 @@ const Contact = () => {
         }
 
         .ct-input::placeholder { color: rgba(138,128,112,0.4); }
-        .ct-field:focus-within { background: rgba(201,168,76,0.03); }
+        .ct-field:focus-within { background: rgba(37,99,235,0.03); }
         .ct-input:focus { outline: none; }
 
         .ct-select {
@@ -444,8 +444,8 @@ const Contact = () => {
         .ct-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .ct-success {
-          background: rgba(201,168,76,0.06);
-          border: 1px solid rgba(201,168,76,0.25);
+          background: rgba(37,99,235,0.06);
+          border: 1px solid rgba(37,99,235,0.25);
           padding: 20px 24px;
           display: flex;
           align-items: center;
@@ -501,8 +501,8 @@ const Contact = () => {
 
         .ct-panel-icon {
           width: 30px; height: 30px;
-          background: rgba(201,168,76,0.08);
-          border: 1px solid rgba(201,168,76,0.15);
+          background: rgba(37,99,235,0.08);
+          border: 1px solid rgba(37,99,235,0.15);
           display: flex; align-items: center; justify-content: center;
           color: var(--gold);
           flex-shrink: 0;
@@ -524,7 +524,7 @@ const Contact = () => {
           align-items: center;
           justify-content: space-between;
           padding: 14px 24px;
-          border-bottom: 1px solid rgba(201,168,76,0.05);
+          border-bottom: 1px solid rgba(37,99,235,0.05);
         }
 
         .ct-hours-row:last-child { border-bottom: none; }
@@ -553,7 +553,7 @@ const Contact = () => {
 
         /* FAQ accordion */
         .ct-faq-item {
-          border-bottom: 1px solid rgba(201,168,76,0.06);
+          border-bottom: 1px solid rgba(37,99,235,0.06);
         }
 
         .ct-faq-item:last-child { border-bottom: none; }
@@ -572,7 +572,7 @@ const Contact = () => {
           transition: background 0.2s;
         }
 
-        .ct-faq-btn:hover { background: rgba(201,168,76,0.03); }
+        .ct-faq-btn:hover { background: rgba(37,99,235,0.03); }
 
         .ct-faq-q {
           font-family: 'DM Sans', sans-serif;
@@ -656,7 +656,7 @@ const Contact = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(201,168,76,0.02);
+          background: rgba(37,99,235,0.02);
           position: relative;
           overflow: hidden;
         }
@@ -665,8 +665,8 @@ const Contact = () => {
           content: '';
           position: absolute; inset: 0;
           background-image:
-            linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px);
+            linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
           background-size: 32px 32px;
         }
 
@@ -681,8 +681,8 @@ const Contact = () => {
 
         .ct-map-pin-icon {
           width: 56px; height: 56px;
-          background: rgba(201,168,76,0.1);
-          border: 1px solid rgba(201,168,76,0.25);
+          background: rgba(37,99,235,0.1);
+          border: 1px solid rgba(37,99,235,0.25);
           display: flex; align-items: center; justify-content: center;
           color: var(--gold);
         }

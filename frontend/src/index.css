@@ -33,9 +33,9 @@ body {
   --text-primary: #f5f0e8;
   --text-secondary: #8a8070;
   --text-muted: rgba(138, 128, 112, 0.6);
-  --border-color: rgba(201, 168, 76, 0.15);
-  --accent-color: #c9a84c;
-  --accent-light: #e8c97a;
+  --border-color: rgba(37, 99, 235, 0.15);
+  --accent-color: #2563eb;
+  --accent-light: #3b82f6;
   --shadow: rgba(0, 0, 0, 0.3);
 }
 
@@ -46,9 +46,9 @@ body {
   --text-primary: #1a1a1a;
   --text-secondary: #6c757d;
   --text-muted: rgba(108, 117, 125, 0.6);
-  --border-color: rgba(0, 0, 0, 0.1);
-  --accent-color: #D4AF37;
-  --accent-light: #e6c35a;
+  --border-color: rgba(37, 99, 235, 0.1);
+  --accent-color: #2563eb;
+  --accent-light: #60a5fa;
   --shadow: rgba(0, 0, 0, 0.1);
 }
 

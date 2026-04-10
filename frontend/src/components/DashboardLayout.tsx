@@ -105,7 +105,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
   const roleConfig: Record<UserRole, { label: string; accent: string; sidebarBg: string; border: string }> = {
     tenant:   { label: 'Tenant',   accent: '#70c490', sidebarBg: 'linear-gradient(160deg,#0c1610 0%,#111a14 100%)', border: 'rgba(112,196,144,0.12)' },
-    landlord: { label: 'Landlord', accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1507 0%,#1f1a0b 100%)', border: 'rgba(201,168,76,0.12)' },
+    landlord: { label: 'Landlord', accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1507 0%,#1f1a0b 100%)', border: 'rgba(37,99,235,0.12)' },
     agent:    { label: 'Dalali',   accent: '#38bdf8', sidebarBg: 'linear-gradient(160deg,#05101a 0%,#0c1824 100%)', border: 'rgba(56,189,248,0.12)' },
     admin:    { label: 'Admin',    accent: '#f87171', sidebarBg: 'linear-gradient(160deg,#1a0505 0%,#1f0c0c 100%)', border: 'rgba(248,113,113,0.12)' },
     bnb_owner: { label: 'BNB Owner', accent: '#f472b6', sidebarBg: 'linear-gradient(160deg,#2a0f1a 0%,#3f1425 100%)', border: 'rgba(244,114,182,0.12)' },
@@ -364,8 +364,8 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
         .dl-avatar {
           width: 38px; height: 38px;
-          background: rgba(201,168,76,0.08);
-          border: 1px solid rgba(201,168,76,0.22);
+          background: rgba(37,99,235,0.08);
+          border: 1px solid rgba(37,99,235,0.22);
           border-radius: 2px;
           display: flex; align-items: center; justify-content: center;
           font-family: 'Cormorant Garamond', serif;
@@ -445,12 +445,12 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         .dl-nav-link:hover {
           color: var(--nav-color, var(--cream));
           background: var(--nav-hover-bg, rgba(255,255,255,0.03));
-          border-left-color: var(--nav-color, rgba(201,168,76,0.3));
+          border-left-color: var(--nav-color, rgba(37,99,235,0.3));
         }
 
         .dl-nav-link.active {
           color: var(--nav-color, var(--gold));
-          background: var(--nav-active-bg, rgba(201,168,76,0.07));
+          background: var(--nav-active-bg, rgba(37,99,235,0.07));
           border-left-color: var(--nav-color, var(--gold));
         }
 

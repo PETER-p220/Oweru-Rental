@@ -129,9 +129,9 @@ const Register = () => {
         }
         .rg-right { flex: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 48px; overflow-y: auto; }
         .rg-left { width: 40%; min-height: 100vh; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 48px; border-right: 1px solid var(--border); flex-shrink: 0; }
-        .rg-left-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 30% 30%, rgba(201,168,76,0.08) 0%, transparent 55%), radial-gradient(ellipse 50% 60% at 80% 80%, rgba(201,168,76,0.05) 0%, transparent 50%), linear-gradient(160deg, #1e293b 0%, #334155 100%); }
-        .rg-left-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(201,168,76,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.035) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 10%, transparent 100%); }
-        .rg-left-watermark { position: absolute; top: -4%; left: -3%; font-size: clamp(100px, 14vw, 180px); font-weight: 700; color: transparent; -webkit-text-stroke: 1px rgba(201,168,76,0.055); line-height: 1; user-select: none; letter-spacing: -0.05em; }
+        .rg-left-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 30% 30%, rgba(37,99,235,0.08) 0%, transparent 55%), radial-gradient(ellipse 50% 60% at 80% 80%, rgba(37,99,235,0.05) 0%, transparent 50%), linear-gradient(160deg, #1e293b 0%, #334155 100%); }
+        .rg-left-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(37,99,235,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.035) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 10%, transparent 100%); }
+        .rg-left-watermark { position: absolute; top: -4%; left: -3%; font-size: clamp(100px, 14vw, 180px); font-weight: 700; color: transparent; -webkit-text-stroke: 1px rgba(37,99,235,0.055); line-height: 1; user-select: none; letter-spacing: -0.05em; }
         .rg-left-content { position: relative; z-index: 2; }
         .rg-left-eyebrow { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 500; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
         .rg-left-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--gold); }
@@ -139,7 +139,7 @@ const Register = () => {
         .rg-left-title em { font-style: italic; color: var(--gold-light); }
         .rg-left-desc { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300; line-height: 1.75; color: var(--muted); margin-bottom: 36px; }
         .rg-benefits { display: flex; flex-direction: column; gap: 0; }
-        .rg-benefit { display: flex; align-items: flex-start; gap: 16px; padding: 16px 0; border-bottom: 1px solid rgba(201,168,76,0.07); }
+        .rg-benefit { display: flex; align-items: flex-start; gap: 16px; padding: 16px 0; border-bottom: 1px solid rgba(37,99,235,0.07); }
         .rg-benefit:last-child { border-bottom: none; }
         .rg-benefit-num { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 500; color: var(--gold); letter-spacing: 0.1em; padding-top: 2px; flex-shrink: 0; width: 24px; }
         .rg-benefit-title { font-size: 15px; font-weight: 400; color: var(--cream); margin-bottom: 3px; letter-spacing: -0.01em; }
@@ -150,7 +150,7 @@ const Register = () => {
         .rg-logo-dot { color: var(--gold); font-size: 24px; font-family: 'Cormorant Garamond', serif; }
         .rg-progress { display: flex; align-items: center; gap: 0; margin-bottom: 36px; }
         .rg-step { display: flex; align-items: center; gap: 10px; flex: 1; }
-        .rg-step-circle { width: 28px; height: 28px; border: 1px solid rgba(201,168,76,0.2); background: var(--dark-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; color: var(--muted); transition: all 0.3s; }
+        .rg-step-circle { width: 28px; height: 28px; border: 1px solid rgba(37,99,235,0.2); background: var(--dark-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; color: var(--muted); transition: all 0.3s; }
         .rg-step-circle.active { background: var(--gold); border-color: var(--gold); color: #0a0a0a; }
         .rg-step-circle.done { background: rgba(112,196,144,0.15); border-color: rgba(112,196,144,0.4); color: var(--success); }
         .rg-step-info { flex: 1; }
@@ -158,7 +158,7 @@ const Register = () => {
         .rg-step-label.active { color: var(--gold); }
         .rg-step-name { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; color: rgba(138,128,112,0.6); margin-top: 2px; }
         .rg-step-name.active { color: var(--cream); }
-        .rg-step-connector { width: 32px; height: 1px; background: rgba(201,168,76,0.15); flex-shrink: 0; margin: 0 8px; position: relative; overflow: hidden; }
+        .rg-step-connector { width: 32px; height: 1px; background: rgba(37,99,235,0.15); flex-shrink: 0; margin: 0 8px; position: relative; overflow: hidden; }
         .rg-step-connector::after { content: ''; position: absolute; inset: 0; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.5s ease; }
         .rg-step-connector.filled::after { transform: scaleX(1); }
         .rg-title { font-size: clamp(28px, 3vw, 40px); font-weight: 300; line-height: 1.08; letter-spacing: -0.025em; color: var(--cream); margin-bottom: 6px; }
@@ -166,7 +166,7 @@ const Register = () => {
         .rg-subtitle { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300; color: var(--muted); margin-bottom: 32px; }
         .rg-user-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 28px; }
         .rg-user-type { background: var(--dark-3); padding: 14px 12px; cursor: pointer; transition: all 0.2s; border: none; text-align: left; position: relative; overflow: hidden; }
-        .rg-user-type.active { background: rgba(201,168,76,0.08); }
+        .rg-user-type.active { background: rgba(37,99,235,0.08); }
         .rg-user-type::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }
         .rg-user-type.active::after { transform: scaleX(1); }
         .rg-user-type-label { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.06em; display: block; margin-bottom: 3px; }
@@ -176,18 +176,18 @@ const Register = () => {
         .rg-error-row { display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 300; color: var(--error); }
         .rg-form { display: flex; flex-direction: column; gap: 0; }
         .rg-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
-        .rg-field { background: var(--dark-2); border: 1px solid rgba(201,168,76,0.12); border-bottom: none; position: relative; transition: background 0.2s, border-color 0.2s; }
-        .rg-field.last { border-bottom: 1px solid rgba(201,168,76,0.12); }
-        .rg-field:focus-within { background: rgba(201,168,76,0.03); border-color: rgba(201,168,76,0.35); z-index: 1; }
+        .rg-field { background: var(--dark-2); border: 1px solid rgba(37,99,235,0.12); border-bottom: none; position: relative; transition: background 0.2s, border-color 0.2s; }
+        .rg-field.last { border-bottom: 1px solid rgba(37,99,235,0.12); }
+        .rg-field:focus-within { background: rgba(37,99,235,0.03); border-color: rgba(37,99,235,0.35); z-index: 1; }
         .rg-field-label { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); padding: 12px 16px 0 44px; }
         .rg-field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(138,128,112,0.45); display: flex; align-items: center; pointer-events: none; }
         .rg-input { width: 100%; background: transparent; border: none; outline: none; color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300; padding: 4px 16px 12px 44px; }
         .rg-input::placeholder { color: rgba(138,128,112,0.4); }
         .rg-eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--muted); display: flex; align-items: center; padding: 4px; transition: color 0.2s; }
         .rg-eye-btn:hover { color: var(--gold); }
-        .rg-pw-strength { background: var(--dark-3); border: 1px solid rgba(201,168,76,0.08); border-top: none; padding: 16px; }
+        .rg-pw-strength { background: var(--dark-3); border: 1px solid rgba(37,99,235,0.08); border-top: none; padding: 16px; }
         .rg-strength-bar { display: flex; gap: 3px; margin-bottom: 12px; }
-        .rg-strength-seg { flex: 1; height: 2px; background: rgba(201,168,76,0.1); transition: background 0.3s; }
+        .rg-strength-seg { flex: 1; height: 2px; background: rgba(37,99,235,0.1); transition: background 0.3s; }
         .rg-strength-seg.lit-1 { background: #e07070; }
         .rg-strength-seg.lit-2 { background: #e0a870; }
         .rg-strength-seg.lit-3 { background: #c9a84c; }
@@ -197,16 +197,16 @@ const Register = () => {
         .rg-pw-req.met { color: var(--success); }
         .rg-pw-req-dot { width: 5px; height: 5px; border-radius: 50%; border: 1px solid rgba(138,128,112,0.3); flex-shrink: 0; transition: all 0.2s; }
         .rg-pw-req.met .rg-pw-req-dot { background: var(--success); border-color: var(--success); }
-        .rg-terms { background: var(--dark-2); border: 1px solid rgba(201,168,76,0.12); border-top: none; padding: 16px; display: flex; align-items: flex-start; gap: 12px; margin-bottom: 24px; }
-        .rg-checkbox { width: 14px; height: 14px; border: 1px solid rgba(201,168,76,0.22); background: rgba(201,168,76,0.04); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; margin-top: 2px; transition: all 0.2s; }
-        .rg-checkbox.checked { background: rgba(201,168,76,0.15); border-color: var(--gold); }
+        .rg-terms { background: var(--dark-2); border: 1px solid rgba(37,99,235,0.12); border-top: none; padding: 16px; display: flex; align-items: flex-start; gap: 12px; margin-bottom: 24px; }
+        .rg-checkbox { width: 14px; height: 14px; border: 1px solid rgba(37,99,235,0.22); background: rgba(37,99,235,0.04); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; margin-top: 2px; transition: all 0.2s; }
+        .rg-checkbox.checked { background: rgba(37,99,235,0.15); border-color: var(--gold); }
         .rg-checkbox.checked::after { content: ''; width: 6px; height: 6px; background: var(--gold); }
         .rg-terms-text { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 300; line-height: 1.6; color: var(--muted); }
         .rg-terms-text a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
         .rg-terms-text a:hover { color: var(--gold-light); }
         .rg-btn-row { display: flex; gap: 10px; }
-        .rg-btn-back { display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid rgba(201,168,76,0.2); color: var(--muted); padding: 13px 20px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
-        .rg-btn-back:hover { color: var(--cream); border-color: rgba(201,168,76,0.45); }
+        .rg-btn-back { display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid rgba(37,99,235,0.2); color: var(--muted); padding: 13px 20px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+        .rg-btn-back:hover { color: var(--cream); border-color: rgba(37,99,235,0.45); }
         .rg-btn-primary { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--gold); color: #0a0a0a; padding: 13px 24px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.25s; clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px)); }
         .rg-btn-primary:hover:not(:disabled) { background: var(--gold-light); gap: 14px; }
         .rg-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -321,7 +321,7 @@ const Register = () => {
                     <input className="rg-input" type="text" name="firstName"
                       value={formData.firstName} onChange={handleChange} placeholder="First" required />
                   </div>
-                  <div className="rg-field" style={{ borderLeft: '1px solid rgba(201,168,76,0.12)' }}>
+                  <div className="rg-field" style={{ borderLeft: '1px solid rgba(37,99,235,0.12)' }}>
                     <div className="rg-field-icon"><User size={13} /></div>
                     <div className="rg-field-label">Last Name</div>
                     <input className="rg-input" type="text" name="lastName"

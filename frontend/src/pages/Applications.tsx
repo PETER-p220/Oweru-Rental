@@ -14,7 +14,7 @@ interface StatusConfig {
 }
 
 const statusConfig: Record<ApplicationStatus, StatusConfig> = {
-  pending:  { label: 'Pending',  color: '#c9a84c', bg: 'rgba(201,168,76,0.08)',  border: 'rgba(201,168,76,0.25)',  icon: Calendar },
+  pending:  { label: 'Pending',  color: '#c9a84c', bg: 'rgba(37,99,235,0.08)',  border: 'rgba(37,99,235,0.25)',  icon: Calendar },
   approved: { label: 'Approved', color: '#70c490', bg: 'rgba(112,196,144,0.08)', border: 'rgba(112,196,144,0.25)', icon: CheckCircle },
   rejected: { label: 'Rejected', color: '#e07070', bg: 'rgba(224,112,112,0.08)', border: 'rgba(224,112,112,0.25)', icon: X },
   viewed:   { label: 'Viewed',   color: '#8a8070', bg: 'rgba(138,128,112,0.06)', border: 'rgba(138,128,112,0.2)',  icon: FileText },
@@ -210,7 +210,7 @@ const Applications = () => {
       <>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320 }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 32, height: 32, border: '1px solid rgba(201,168,76,0.3)', borderTop: '1px solid #c9a84c', borderRadius: '50%', animation: 'ap-spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+            <div style={{ width: 32, height: 32, border: '1px solid rgba(37,99,235,0.3)', borderTop: '1px solid #c9a84c', borderRadius: '50%', animation: 'ap-spin 0.8s linear infinite', margin: '0 auto 16px' }} />
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#8a8070', fontWeight: 300 }}>Loading applications…</p>
           </div>
         </div>
@@ -223,7 +223,7 @@ const Applications = () => {
       <>
         <div style={{ textAlign: 'center', padding: 64 }}>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#e07070', marginBottom: 20 }}>{error}</p>
-          <button onClick={loadApplications} style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.25)', color: '#c9a84c', padding: '10px 20px', fontFamily: "'DM Sans', sans-serif", fontSize: 12, cursor: 'pointer', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <button onClick={loadApplications} style={{ background: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.25)', color: '#c9a84c', padding: '10px 20px', fontFamily: "'DM Sans', sans-serif", fontSize: 12, cursor: 'pointer', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             Retry
           </button>
         </div>
@@ -243,7 +243,7 @@ const Applications = () => {
           color: #c9a84c; margin-bottom: 20px;
           display: flex; align-items: center; gap: 8px;
         }
-        .ap-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(201,168,76,0.15); }
+        .ap-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(37,99,235,0.15); }
 
         /* Toolbar */
         .ap-toolbar {
@@ -254,11 +254,11 @@ const Applications = () => {
         .ap-search {
           display: flex; align-items: center; gap: 0;
           background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(201,168,76,0.12);
+          border: 1px solid rgba(37,99,235,0.12);
           flex: 1; min-width: 200px;
           transition: border-color 0.2s;
         }
-        .ap-search:focus-within { border-color: rgba(201,168,76,0.35); }
+        .ap-search:focus-within { border-color: rgba(37,99,235,0.35); }
 
         .ap-search-icon {
           padding: 0 12px; color: #8a8070;
@@ -276,7 +276,7 @@ const Applications = () => {
         /* Filter tabs */
         .ap-filters {
           display: flex; gap: 0;
-          border: 1px solid rgba(201,168,76,0.12);
+          border: 1px solid rgba(37,99,235,0.12);
           overflow: hidden;
         }
 
@@ -288,26 +288,26 @@ const Applications = () => {
           font-size: 11px; font-weight: 400;
           letter-spacing: 0.1em; text-transform: uppercase;
           color: #8a8070; cursor: pointer;
-          border-right: 1px solid rgba(201,168,76,0.12);
+          border-right: 1px solid rgba(37,99,235,0.12);
           transition: all 0.2s; white-space: nowrap;
         }
 
         .ap-filter-btn:last-child { border-right: none; }
-        .ap-filter-btn:hover:not(.active) { color: #f5f0e8; background: rgba(201,168,76,0.04); }
-        .ap-filter-btn.active { background: rgba(201,168,76,0.1); color: #c9a84c; }
+        .ap-filter-btn:hover:not(.active) { color: #f5f0e8; background: rgba(37,99,235,0.04); }
+        .ap-filter-btn.active { background: rgba(37,99,235,0.1); color: #c9a84c; }
 
         .ap-filter-count {
-          background: rgba(201,168,76,0.15); color: #c9a84c;
+          background: rgba(37,99,235,0.15); color: #c9a84c;
           font-size: 9px; font-weight: 500;
           padding: 2px 5px; min-width: 16px; text-align: center;
         }
 
         .ap-filter-btn.active .ap-filter-count {
-          background: rgba(201,168,76,0.25);
+          background: rgba(37,99,235,0.25);
         }
 
         /* Cards */
-        .ap-list { display: flex; flex-direction: column; gap: 1px; background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.12); }
+        .ap-list { display: flex; flex-direction: column; gap: 1px; background: rgba(37,99,235,0.12); border: 1px solid rgba(37,99,235,0.12); }
 
         .ap-card {
           background: #111;
@@ -338,8 +338,8 @@ const Applications = () => {
         /* property thumbnail */
         .ap-prop-thumb {
           width: 72px; height: 52px;
-          background: rgba(201,168,76,0.05);
-          border: 1px solid rgba(201,168,76,0.1);
+          background: rgba(37,99,235,0.05);
+          border: 1px solid rgba(37,99,235,0.1);
           object-fit: cover;
           filter: brightness(0.8) saturate(0.7);
           flex-shrink: 0;
@@ -366,7 +366,7 @@ const Applications = () => {
 
         /* divider */
         .ap-col-div {
-          width: 1px; background: rgba(201,168,76,0.08);
+          width: 1px; background: rgba(37,99,235,0.08);
           align-self: stretch;
         }
 
@@ -375,8 +375,8 @@ const Applications = () => {
 
         .ap-avatar {
           width: 32px; height: 32px;
-          background: rgba(201,168,76,0.08);
-          border: 1px solid rgba(201,168,76,0.2);
+          background: rgba(37,99,235,0.08);
+          border: 1px solid rgba(37,99,235,0.2);
           display: flex; align-items: center; justify-content: center;
           font-family: 'DM Sans', sans-serif;
           font-size: 11px; font-weight: 500;
@@ -401,7 +401,7 @@ const Applications = () => {
           display: flex; align-items: center;
           justify-content: space-between; gap: 12px;
           padding-top: 14px;
-          border-top: 1px solid rgba(201,168,76,0.06);
+          border-top: 1px solid rgba(37,99,235,0.06);
           flex-wrap: wrap;
         }
 
@@ -435,10 +435,10 @@ const Applications = () => {
 
         .ap-btn.ghost {
           background: transparent;
-          border: 1px solid rgba(201,168,76,0.15);
+          border: 1px solid rgba(37,99,235,0.15);
           color: #8a8070;
         }
-        .ap-btn.ghost:hover { border-color: rgba(201,168,76,0.4); color: #f5f0e8; }
+        .ap-btn.ghost:hover { border-color: rgba(37,99,235,0.4); color: #f5f0e8; }
 
         .ap-btn.approve {
           background: rgba(112,196,144,0.1);
@@ -458,8 +458,8 @@ const Applications = () => {
         .ap-message {
           margin-top: 14px;
           padding: 12px 14px;
-          background: rgba(201,168,76,0.03);
-          border-left: 2px solid rgba(201,168,76,0.2);
+          background: rgba(37,99,235,0.03);
+          border-left: 2px solid rgba(37,99,235,0.2);
           font-family: 'DM Sans', sans-serif;
           font-size: 12px; font-weight: 300;
           color: rgba(138,128,112,0.8);
@@ -474,14 +474,14 @@ const Applications = () => {
 
         /* Empty */
         .ap-empty {
-          background: #111; border: 1px solid rgba(201,168,76,0.1);
+          background: #111; border: 1px solid rgba(37,99,235,0.1);
           padding: 72px 24px; text-align: center;
         }
 
         .ap-empty-icon {
           width: 52px; height: 52px;
-          background: rgba(201,168,76,0.06);
-          border: 1px solid rgba(201,168,76,0.15);
+          background: rgba(37,99,235,0.06);
+          border: 1px solid rgba(37,99,235,0.15);
           display: flex; align-items: center; justify-content: center;
           color: #c9a84c; margin: 0 auto 20px;
         }

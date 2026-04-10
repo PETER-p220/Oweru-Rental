@@ -113,8 +113,8 @@ const Login = () => {
           position: absolute;
           inset: 0;
           background:
-            radial-gradient(ellipse 80% 60% at 60% 30%, rgba(201,168,76,0.09) 0%, transparent 55%),
-            radial-gradient(ellipse 50% 70% at 20% 80%, rgba(201,168,76,0.05) 0%, transparent 50%),
+            radial-gradient(ellipse 80% 60% at 60% 30%, rgba(37,99,235,0.09) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 70% at 20% 80%, rgba(37,99,235,0.05) 0%, transparent 50%),
             linear-gradient(160deg, #0e0e0b 0%, #0a0a0a 100%);
         }
 
@@ -122,8 +122,8 @@ const Login = () => {
           position: absolute;
           inset: 0;
           background-image:
-            linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px);
+            linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
           background-size: 48px 48px;
           mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%);
         }
@@ -135,7 +135,7 @@ const Login = () => {
           font-size: clamp(120px, 16vw, 200px);
           font-weight: 700;
           color: transparent;
-          -webkit-text-stroke: 1px rgba(201,168,76,0.06);
+          -webkit-text-stroke: 1px rgba(37,99,235,0.06);
           line-height: 1;
           user-select: none;
           letter-spacing: -0.05em;
@@ -149,13 +149,13 @@ const Login = () => {
           font-weight: 500;
           letter-spacing: 0.25em;
           text-transform: uppercase;
-          color: var(--gold);
+          color: var(--accent-color);
           margin-bottom: 20px;
           display: flex;
           align-items: center;
           gap: 8px;
         }
-        .lg-right-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--gold); }
+        .lg-right-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--accent-color); }
 
         .lg-right-title {
           font-size: clamp(36px, 4vw, 56px);
@@ -194,7 +194,7 @@ const Login = () => {
         .lg-right-stat-num {
           font-size: 22px;
           font-weight: 300;
-          color: var(--gold);
+          color: var(--accent-color);
           letter-spacing: -0.02em;
           margin-bottom: 3px;
         }
@@ -225,7 +225,7 @@ const Login = () => {
           text-transform: uppercase;
           color: var(--cream);
         }
-        .lg-logo-dot { color: var(--gold); font-size: 24px; font-family: 'Cormorant Garamond', serif; }
+        .lg-logo-dot { color: var(--accent-color); font-size: 24px; font-family: 'Cormorant Garamond', serif; }
 
         .lg-title {
           font-size: clamp(32px, 3.5vw, 44px);
@@ -271,13 +271,13 @@ const Login = () => {
           position: relative;
         }
         .lg-tab:last-child { border-right: none; }
-        .lg-tab.active { background: rgba(201,168,76,0.1); color: var(--gold); }
+        .lg-tab.active { background: rgba(37,99,235,0.1); color: var(--accent-color); }
         .lg-tab.active::after {
           content: '';
           position: absolute;
           bottom: 0; left: 0; right: 0;
           height: 2px;
-          background: var(--gold);
+          background: var(--accent-color);
         }
         .lg-tab:hover:not(.active) { color: var(--cream); background: rgba(255,255,255,0.03); }
 
@@ -304,8 +304,8 @@ const Login = () => {
           position: relative;
           transition: background 0.2s, border-color 0.2s;
         }
-        .lg-field:last-of-type { border-bottom: 1px solid rgba(201,168,76,0.12); }
-        .lg-field:focus-within { background: rgba(201,168,76,0.03); border-color: rgba(201,168,76,0.35); z-index: 1; }
+        .lg-field:last-of-type { border-bottom: 1px solid rgba(37,99,235,0.12); }
+        .lg-field:focus-within { background: rgba(37,99,235,0.03); border-color: rgba(37,99,235,0.35); z-index: 1; }
 
         .lg-field-label {
           font-family: 'DM Sans', sans-serif;
@@ -313,7 +313,7 @@ const Login = () => {
           font-weight: 500;
           letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: var(--gold);
+          color: var(--accent-color);
           padding: 12px 16px 0 44px;
         }
 
@@ -355,7 +355,7 @@ const Login = () => {
           padding: 4px;
           transition: color 0.2s;
         }
-        .lg-eye-btn:hover { color: var(--gold); }
+        .lg-eye-btn:hover { color: var(--accent-color); }
 
         .lg-options {
           display: flex;
@@ -375,7 +375,7 @@ const Login = () => {
           flex-shrink: 0; cursor: pointer; transition: all 0.2s;
         }
         .lg-checkbox.checked { background: rgba(201,168,76,0.15); border-color: rgba(201,168,76,0.5); }
-        .lg-checkbox.checked::after { content: ''; width: 6px; height: 6px; background: var(--gold); display: block; }
+        .lg-checkbox.checked::after { content: ''; width: 6px; height: 6px; background: var(--accent-color); display: block; }
 
         .lg-remember-label {
           font-family: 'DM Sans', sans-serif;
@@ -387,12 +387,12 @@ const Login = () => {
           font-size: 12px; font-weight: 400; color: var(--muted);
           text-decoration: none; transition: color 0.2s; white-space: nowrap;
         }
-        .lg-forgot:hover { color: var(--gold); }
+        .lg-forgot:hover { color: var(--accent-color); }
 
         .lg-submit {
           width: 100%;
           display: flex; align-items: center; justify-content: center; gap: 10px;
-          background: var(--gold);
+          background: var(--accent-color);
           color: #0a0a0a;
           padding: 14px 24px;
           font-family: 'DM Sans', sans-serif;
@@ -444,7 +444,7 @@ const Login = () => {
           font-size: 13px; font-weight: 300;
           color: var(--muted); text-align: center;
         }
-        .lg-footer a { color: var(--gold); text-decoration: none; font-weight: 400; transition: color 0.2s; }
+        .lg-footer a { color: var(--accent-color); text-decoration: none; font-weight: 400; transition: color 0.2s; }
         .lg-footer a:hover { color: var(--gold-light); }
 
         @media (max-width: 900px) {

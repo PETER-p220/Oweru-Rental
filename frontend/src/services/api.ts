@@ -554,7 +554,7 @@ class Api {
   }
 
   // ── Public Save/Unsave (works without auth for demo) ──────────────────────────────
-  static async publicSaveProperty(propertyId: number) {
+  static async publicSaveProperty(_propertyId: number) {
     // For demo purposes, just return success
     return Promise.resolve({ success: true });
   }
@@ -584,7 +584,7 @@ class Api {
     return this.request<any>(`notifications/${notificationId}/read`, { method: 'PATCH' });
   }
 
-  static async publicUnsaveProperty(propertyId: number) {
+  static async publicUnsaveProperty(_propertyId: number) {
     // For demo purposes, just return success  
     return Promise.resolve({ success: true });
   }
@@ -808,7 +808,7 @@ class Api {
 
   // Digital Contract APIs for Landlords
   static async createDigitalContract(data: any) { return this.request<any>('owner/digital-contracts', { method: 'POST', body: JSON.stringify(data) }); }
-  static async uploadContractFile(formData: FormData) { return this.request<any>('owner/digital-contracts/upload', { method: 'POST', body: formData, headers: {} }); }
+  static async uploadContractFile(formData: FormData) { return this.request<any>('owner/digital-contracts/upload-file', { method: 'POST', body: formData, headers: {} }); }
   static async sendContractToTenant(contractId: number) { return this.request<any>(`owner/digital-contracts/${contractId}/send`, { method: 'POST' }); }
   static async downloadLandlordDigitalContract(id: number) { return this.request(`owner/digital-contracts/${id}/download`); }
 

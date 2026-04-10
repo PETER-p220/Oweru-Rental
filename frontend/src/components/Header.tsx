@@ -90,7 +90,7 @@ const Header = () => {
         .strip-divider {
           width: 1px;
           height: 14px;
-          background: rgba(201,168,76,0.15);
+          background: rgba(37,99,235,0.15);
         }
 
         .strip-location {
@@ -128,7 +128,7 @@ const Header = () => {
 
         .hdr-nav.scrolled {
           box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-          border-bottom-color: rgba(201,168,76,0.2);
+          border-bottom-color: rgba(37,99,235,0.2);
         }
 
         .hdr-nav-inner {
@@ -229,15 +229,15 @@ const Header = () => {
           text-transform: uppercase;
           color: rgba(138,128,112,0.9);
           text-decoration: none;
-          border: 1px solid rgba(201,168,76,0.18);
+          border: 1px solid rgba(37,99,235,0.18);
           transition: all 0.2s;
           white-space: nowrap;
         }
 
         .hdr-btn-ghost:hover {
           color: var(--cream);
-          border-color: rgba(201,168,76,0.45);
-          background: rgba(201,168,76,0.05);
+          border-color: rgba(37,99,235,0.45);
+          background: rgba(37,99,235,0.05);
         }
 
         .hdr-btn-primary {
@@ -270,7 +270,7 @@ const Header = () => {
           height: 36px;
           align-items: center;
           justify-content: center;
-          border: 1px solid rgba(201,168,76,0.2);
+          border: 1px solid rgba(37,99,235,0.2);
           background: transparent;
           color: var(--cream);
           cursor: pointer;
@@ -279,9 +279,9 @@ const Header = () => {
         }
 
         .hdr-hamburger:hover {
-          border-color: rgba(201,168,76,0.5);
+          border-color: rgba(37,99,235,0.5);
           color: var(--gold);
-          background: rgba(201,168,76,0.05);
+          background: rgba(37,99,235,0.05);
         }
 
         /* Mobile drawer */
@@ -332,14 +332,14 @@ const Header = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid rgba(201,168,76,0.2);
+          border: 1px solid rgba(37,99,235,0.2);
           background: transparent;
           color: var(--muted);
           cursor: pointer;
           transition: all 0.2s;
         }
 
-        .mobile-close:hover { color: var(--gold); border-color: rgba(201,168,76,0.5); }
+        .mobile-close:hover { color: var(--gold); border-color: rgba(37,99,235,0.5); }
 
         .mobile-links {
           flex: 1;
@@ -357,14 +357,14 @@ const Header = () => {
           text-transform: uppercase;
           color: rgba(138,128,112,0.85);
           text-decoration: none;
-          border-bottom: 1px solid rgba(201,168,76,0.06);
+          border-bottom: 1px solid rgba(37,99,235,0.06);
           transition: all 0.2s;
         }
 
         .mobile-link:hover,
         .mobile-link.active {
           color: var(--cream);
-          background: rgba(201,168,76,0.04);
+          background: rgba(37,99,235,0.04);
           padding-left: 28px;
         }
 
@@ -389,12 +389,12 @@ const Header = () => {
           text-transform: uppercase;
           color: var(--muted);
           text-decoration: none;
-          border: 1px solid rgba(201,168,76,0.18);
+          border: 1px solid rgba(37,99,235,0.18);
           text-align: center;
           transition: all 0.2s;
         }
 
-        .mobile-btn-ghost:hover { color: var(--cream); border-color: rgba(201,168,76,0.4); }
+        .mobile-btn-ghost:hover { color: var(--cream); border-color: rgba(37,99,235,0.4); }
 
         .mobile-btn-primary {
           padding: 12px;
@@ -413,7 +413,7 @@ const Header = () => {
 
         .mobile-contact {
           padding: 20px 24px;
-          border-top: 1px solid rgba(201,168,76,0.06);
+          border-top: 1px solid rgba(37,99,235,0.06);
           display: flex;
           flex-direction: column;
           gap: 10px;
