@@ -58,6 +58,7 @@ import BnbProperties from './pages/bnb/BnbProperties';
 import BnbBookings from './pages/bnb/BnbBookings';
 import BnbReviews from './pages/bnb/BnbReviews';
 import BnbAnalytics from './pages/bnb/BnbAnalytics';
+import BnbMessages from './pages/bnb/BnbMessages';
 import SystemSettings from './pages/admin/SystemSettings';
 
 // Agent pages
@@ -202,7 +203,7 @@ const BnbOwnerRoutes = () => (
         <Route path="bnb-bookings" element={<BnbBookings />} />
         <Route path="bnb-reviews" element={<BnbReviews />} />
         <Route path="bnb-analytics" element={<BnbAnalytics />} />
-        <Route path="messages" element={<Messages />} />
+        <Route path="messages" element={<BnbMessages />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

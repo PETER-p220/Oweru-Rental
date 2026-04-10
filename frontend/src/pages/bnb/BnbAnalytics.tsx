@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Users, Calendar, Star, BarChart3, PieChart } from 'lucide-react';
 import Api from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
 
 interface AnalyticsData {
   totalRevenue: number;
@@ -20,7 +19,6 @@ interface AnalyticsData {
 }
 
 const BnbAnalytics = () => {
-  const { user } = useAuth();
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30d');
@@ -32,10 +30,8 @@ const BnbAnalytics = () => {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      // Use different API method based on user role
-      const response = user?.userType === 'admin' 
-        ? await Api.getAdminBnbAnalytics(timeRange)
-        : await Api.getBnbAnalytics();
+      // Use existing API methods as fallback
+      const response = await Api.getAnalytics(); // Using existing analytics API
       setAnalytics(response.data);
     } catch (error) {
       console.error('Failed to load analytics:', error);
@@ -123,8 +119,8 @@ const BnbAnalytics = () => {
     return (
       <div style={{
         fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-        background: 'var(--color-background)',
-        color: 'var(--color-text)',
+        background: '#080808',
+        color: '#e8e4dc',
         minHeight: '100vh',
         padding: '20px',
         display: 'flex',
@@ -139,15 +135,13 @@ const BnbAnalytics = () => {
   return (
     <div style={{
       fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-      background: 'var(--color-background)',
-      color: 'var(--color-text)',
+      background: '#080808',
+      color: '#e8e4dc',
       minHeight: '100vh',
       padding: '20px',
     }}>
       <style>{`
         :root {
-          --color-background: #080808;
-          --color-text: #e8e4dc;
           --color-blue: #2563eb;
           --color-green: #10b981;
           --color-red: #ef4444;
