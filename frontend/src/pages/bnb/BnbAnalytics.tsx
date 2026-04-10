@@ -81,8 +81,8 @@ const BnbAnalytics = () => {
     color: string;
   }) => (
     <div style={{
-      background: 'rgba(255,255,255,0.05)',
-      border: '1px solid rgba(255,255,255,0.1)',
+      background: `rgba(var(--color-${color}), 0.05)`,
+      border: `1px solid rgba(var(--color-${color}), 0.1)`,
       borderRadius: '12px',
       padding: '20px',
       flex: 1,
@@ -92,12 +92,12 @@ const BnbAnalytics = () => {
           width: '40px',
           height: '40px',
           borderRadius: '8px',
-          background: `${color}20`,
+          background: `rgba(var(--color-${color}), 0.2)`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <Icon size={20} color={color} />
+          <Icon size={20} color={`var(--color-${color})`} />
         </div>
         <div>
           <div style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '4px' }}>{title}</div>
@@ -110,7 +110,7 @@ const BnbAnalytics = () => {
           alignItems: 'center',
           gap: '4px',
           fontSize: '12px',
-          color: change.isPositive ? '#10b981' : '#ef4444',
+          color: change.isPositive ? 'var(--color-green)' : 'var(--color-red)',
         }}>
           {change.isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
           {change.value}% from last period
@@ -123,8 +123,8 @@ const BnbAnalytics = () => {
     return (
       <div style={{
         fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-        background: '#080808',
-        color: '#e8e4dc',
+        background: 'var(--color-background)',
+        color: 'var(--color-text)',
         minHeight: '100vh',
         padding: '20px',
         display: 'flex',
@@ -139,12 +139,19 @@ const BnbAnalytics = () => {
   return (
     <div style={{
       fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-      background: '#080808',
-      color: '#e8e4dc',
+      background: 'var(--color-background)',
+      color: 'var(--color-text)',
       minHeight: '100vh',
       padding: '20px',
     }}>
       <style>{`
+        :root {
+          --color-background: #080808;
+          --color-text: #e8e4dc;
+          --color-blue: #2563eb;
+          --color-green: #10b981;
+          --color-red: #ef4444;
+        }
         .analytics-header {
           display: flex;
           justify-content: space-between;
@@ -154,15 +161,15 @@ const BnbAnalytics = () => {
         .analytics-title {
           font-size: 24px;
           font-weight: 600;
-          color: #e8e4dc;
+          color: var(--color-text);
           margin: 0;
         }
         .time-range-selector {
           padding: 8px 16px;
-          border: 1px solid rgba(255,255,255,0.1);
+          border: 1px solid rgba(var(--color-blue), 0.1);
           border-radius: 8px;
-          background: rgba(255,255,255,0.05);
-          color: #e8e4dc;
+          background: rgba(var(--color-blue), 0.05);
+          color: var(--color-text);
           font-size: 14px;
         }
         .metrics-grid {
@@ -172,37 +179,37 @@ const BnbAnalytics = () => {
           margin-bottom: 32px;
         }
         .chart-section {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: '12px',
-          padding: '24px',
-          marginBottom: '24px',
+          background: rgba(var(--color-blue), 0.05);
+          border: 1px solid rgba(var(--color-blue), 0.1);
+          border-radius: 12px;
+          padding: 24px;
+          margin-bottom: 24px;
         }
         .section-title {
-          font-size: '18px',
-          fontWeight: '600',
-          color: '#e8e4dc',
-          marginBottom: '16px',
+          font-size: 18px;
+          font-weight: 600;
+          color: var(--color-text);
+          margin-bottom: 16px;
         }
         .properties-table {
-          width: '100%',
-          borderCollapse: 'collapse',
+          width: 100%;
+          border-collapse: collapse;
         }
         .properties-table th {
-          textAlign: 'left',
-          padding: '12px',
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-          color: '#9ca3af',
-          fontSize: '12px',
-          fontWeight: '500',
+          text-align: left;
+          padding: 12px;
+          border-bottom: 1px solid rgba(var(--color-blue), 0.1);
+          color: #9ca3af;
+          font-size: 12px;
+          font-weight: 500;
         }
         .properties-table td {
-          padding: '12px',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
-          color: '#e8e4dc',
+          padding: 12px;
+          border-bottom: 1px solid rgba(var(--color-blue), 0.05);
+          color: var(--color-text);
         }
         .properties-table tr:hover {
-          background: 'rgba(255,255,255,0.02)',
+          background: rgba(var(--color-blue), 0.02);
         }
       `}</style>
 
@@ -226,34 +233,34 @@ const BnbAnalytics = () => {
           value={formatCurrency(analytics?.totalRevenue || 0)}
           change={{ value: 12.5, isPositive: true }}
           icon={DollarSign}
-          color="#10b981"
+          color="blue"
         />
         <MetricCard
           title="Total Bookings"
           value={formatNumber(analytics?.totalBookings || 0)}
           change={{ value: 8.2, isPositive: true }}
           icon={Calendar}
-          color="#3b82f6"
+          color="blue"
         />
         <MetricCard
           title="Average Rating"
           value={(analytics?.averageRating || 0).toFixed(1)}
           change={{ value: 2.1, isPositive: true }}
           icon={Star}
-          color="#f59e0b"
+          color="blue"
         />
         <MetricCard
           title="Occupancy Rate"
           value={`${analytics?.occupancyRate || 0}%`}
           change={{ value: 3.4, isPositive: true }}
           icon={Users}
-          color="#8b5cf6"
+          color="blue"
         />
       </div>
 
       <div style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'rgba(var(--color-blue), 0.05)',
+        border: '1px solid rgba(var(--color-blue), 0.1)',
         borderRadius: '12px',
         padding: '24px',
         marginBottom: '24px',
@@ -270,7 +277,7 @@ const BnbAnalytics = () => {
               key={index}
               style={{
                 flex: 1,
-                background: '#c9a84c',
+                background: 'var(--color-blue)',
                 borderRadius: '4px',
                 height: `${(revenue / Math.max(...(analytics?.monthlyRevenue || [1]))) * 100}%`,
                 position: 'relative',
@@ -282,8 +289,8 @@ const BnbAnalytics = () => {
       </div>
 
       <div style={{
-        background: 'rgba(255,255,255,0.05)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'rgba(var(--color-blue), 0.05)',
+        border: '1px solid rgba(var(--color-blue), 0.1)',
         borderRadius: '12px',
         padding: '24px',
       }}>

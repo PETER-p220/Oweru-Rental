@@ -22,7 +22,7 @@ const t = {
   dark3:   '#141414',
   cream:   '#e8e4dc',
   muted:   '#7a7060',
-  border:  'rgba(201,168,76,0.12)',
+  border:  'rgba(37,99,235,0.12)',
   green:   '#10b981',
   red:     '#ef4444',
   blue:    '#38bdf8',
@@ -39,8 +39,8 @@ const card: React.CSSProperties = {
 };
 
 const metaBox: React.CSSProperties = {
-  backgroundColor: 'rgba(201,168,76,0.03)',
-  border: `1px solid rgba(201,168,76,0.09)`,
+  backgroundColor: 'rgba(37,99,235,0.03)',
+  border: `1px solid rgba(37,99,235,0.09)`,
   borderRadius: 8,
   padding: '14px 16px',
   marginBottom: 14,
@@ -99,7 +99,7 @@ const solidBtn: React.CSSProperties = {
   fontWeight: 700,
   cursor: 'pointer',
   letterSpacing: '0.04em',
-  boxShadow: `0 4px 20px rgba(201,168,76,0.3)`,
+  boxShadow: `0 4px 20px rgba(37,99,235,0.3)`,
 };
 
 /* ── Save button styles ── */
@@ -108,8 +108,8 @@ const saveBtn = (saved: boolean): React.CSSProperties => ({
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
   width: '100%',
   padding: '12px 20px',
-  backgroundColor: saved ? `rgba(201,168,76,0.15)` : 'rgba(201,168,76,0.06)',
-  border: saved ? `1px solid rgba(201,168,76,0.5)` : `1px solid rgba(201,168,76,0.2)`,
+  backgroundColor: saved ? `rgba(37,99,235,0.15)` : 'rgba(37,99,235,0.06)',
+  border: saved ? `1px solid rgba(37,99,235,0.5)` : `1px solid rgba(37,99,235,0.2)`,
   color: saved ? t.gold : t.muted,
   borderRadius: 8,
   fontSize: 13,
@@ -273,18 +273,18 @@ const PropertyDetail = () => {
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.15); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb { background: rgba(37,99,235,0.15); border-radius: 2px; }
         .pd-thumb { opacity: .45; transition: opacity .2s; cursor: pointer; }
         .pd-thumb:hover { opacity: .75; }
         .pd-thumb.active { opacity: 1; outline: 1.5px solid #c9a84c; }
-        .pd-icon-btn { background: rgba(14,14,14,0.7); border: 1px solid rgba(201,168,76,0.15); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: all .2s; }
-        .pd-icon-btn:hover { background: rgba(14,14,14,0.9); border-color: rgba(201,168,76,0.4); }
+        .pd-icon-btn { background: rgba(14,14,14,0.7); border: 1px solid rgba(37,99,235,0.15); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: all .2s; }
+        .pd-icon-btn:hover { background: rgba(14,14,14,0.9); border-color: rgba(37,99,235,0.4); }
         .pd-action-btn { transition: filter .15s, transform .15s; }
         .pd-action-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .pd-action-btn:active { transform: scale(.98); }
         .pd-contact-link { transition: color .18s; }
         .pd-contact-link:hover { color: #c9a84c !important; }
-        .pd-feature-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(201,168,76,0.05); font-size: 13px; color: #c8c0b0; }
+        .pd-feature-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(37,99,235,0.05); font-size: 13px; color: #c8c0b0; }
         .pd-feature-row:last-child { border-bottom: none; }
 
         /* Save button hover */
@@ -471,7 +471,7 @@ const PropertyDetail = () => {
                     { k: 'Furnished', v: property?.furnished ? 'Yes' : 'No',      mono: false },
                     { k: 'Listed',    v: property?.createdAt ? new Date(property.createdAt).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A', mono: true },
                   ].map(({ k, v, mono, highlight }) => (
-                    <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: `1px solid rgba(201,168,76,0.06)` }}>
+                    <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: `1px solid rgba(37,99,235,0.06)` }}>
                       <span style={{ ...body, fontSize: 12, color: t.muted }}>{k}</span>
                       <span style={{ ...body, fontSize: 12.5, fontWeight: 500, color: highlight ?? t.cream, fontFamily: mono ? 'monospace' : undefined, textTransform: 'capitalize' }}>{v}</span>
                     </div>
@@ -485,7 +485,7 @@ const PropertyDetail = () => {
                     <span style={{ ...serif, fontSize: 15, fontWeight: 500, color: t.cream }}>Property Owner</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(201,168,76,0.08)', border: `1px solid rgba(201,168,76,0.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(37,99,235,0.08)', border: `1px solid rgba(37,99,235,0.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ ...serif, fontSize: 16, color: t.gold }}>{property?.owner?.name?.charAt(0) || 'O'}</span>
                     </div>
                     <div>
@@ -579,7 +579,7 @@ const PropertyDetail = () => {
                   <button onClick={() => setShowSignInModal(false)} style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: t.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, borderRadius: 4, transition: 'color .2s' }} onMouseEnter={e => (e.currentTarget.style.color = t.cream)} onMouseLeave={e => (e.currentTarget.style.color = t.muted)}>
                     <X size={18} />
                   </button>
-                  <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(201,168,76,0.08)', border: `1px solid rgba(201,168,76,0.25)`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 0 30px rgba(201,168,76,0.1)' }}>
+                  <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'rgba(37,99,235,0.08)', border: `1px solid rgba(37,99,235,0.25)`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 0 30px rgba(37,99,235,0.1)' }}>
                     <Shield size={26} style={{ color: t.gold }} />
                   </div>
                   <h3 style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream, margin: '0 0 10px', letterSpacing: '-0.01em' }}>Sign In Required</h3>

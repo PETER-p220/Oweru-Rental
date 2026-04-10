@@ -56,12 +56,12 @@ const BnbBookings = () => {
 
   const statusBg = (status: string) => {
     const colors = {
-      pending: 'rgba(245, 158, 11, 0.1)',
-      confirmed: 'rgba(16, 185, 129, 0.1)',
-      cancelled: 'rgba(239, 68, 68, 0.1)',
-      completed: 'rgba(34, 197, 94, 0.1)',
+      pending: 'var(--pending-bg)',
+      confirmed: 'var(--confirmed-bg)',
+      cancelled: 'var(--cancelled-bg)',
+      completed: 'var(--completed-bg)',
     };
-    return colors[status as keyof typeof colors] || 'rgba(107, 114, 128, 0.1)';
+    return colors[status as keyof typeof colors] || 'var(--default-bg)';
   };
 
   const formatDate = (dateString: string) => {

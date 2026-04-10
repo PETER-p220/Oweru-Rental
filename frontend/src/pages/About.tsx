@@ -112,7 +112,7 @@ const About = () => {
           top: -10%;
           width: 55%;
           height: 80%;
-          background: radial-gradient(ellipse, rgba(96,165,250,0.15) 0%, transparent 65%);
+          background: radial-gradient(ellipse, rgba(var(--blue-500), 0.15) 0%, transparent 65%);
           pointer-events: none;
         }
 

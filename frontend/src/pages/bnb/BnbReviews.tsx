@@ -147,7 +147,7 @@ const BnbReviews = () => {
         }
         .review-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          box-shadow: 0 4px 12px rgba(37,99,235,0.15);
         }
         .review-header {
           display: flex;
@@ -157,12 +157,12 @@ const BnbReviews = () => {
         }
         .review-property {
           font-weight: 600;
-          color: #c9a84c;
+          color: var(--secondary-color);
           margin-bottom: 4px;
         }
         .review-guest {
           font-size: 14px;
-          color: #9ca3af;
+          color: var(--text-color);
         }
         .review-rating {
           display: flex;
@@ -170,16 +170,16 @@ const BnbReviews = () => {
           gap: 8px;
         }
         .review-comment {
-          color: #e8e4dc;
+          color: var(--text-color);
           lineHeight: 1.5;
           margin-bottom: 12px;
         }
         .review-response {
           background: rgba(16,185,129,0.1);
-          border-left: 3px solid #10b981;
+          border-left: 3px solid var(--secondary-color);
           padding: 12px;
           border-radius: 4px;
-          color: #9ca3af;
+          color: var(--text-color);
           fontSize: 13px;
         }
       `}</style>
@@ -230,7 +230,7 @@ const BnbReviews = () => {
                 </div>
                 <div className="review-rating">
                   {renderStars(review.rating)}
-                  <span style={{ color: '#9ca3af', fontSize: '14px' }}>
+                  <span style={{ color: 'var(--text-color)', fontSize: '14px' }}>
                     {review.rating}.0
                   </span>
                 </div>
@@ -250,7 +250,7 @@ const BnbReviews = () => {
                 alignItems: 'center',
                 marginTop: '12px',
                 fontSize: '12px',
-                color: '#6b7280',
+                color: 'var(--text-color)',
               }}>
                 <span>{formatDate(review.created_at)}</span>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -259,7 +259,7 @@ const BnbReviews = () => {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#9ca3af',
+                      color: 'var(--text-color)',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -283,7 +283,7 @@ const BnbReviews = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
+          background: 'rgba(37,99,235,0.8)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
