@@ -4,240 +4,195 @@ import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
 const Footer = () => {
   return (
-    <footer style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", background: 'var(--bg-primary)', color: 'var(--text-primary)', borderTop: '1px solid var(--border-color)' }}>
+    <footer style={{ fontFamily: "'Jost', 'Futura PT', sans-serif", background: '#0F172A', color: '#F8F8F9', borderTop: '1px solid rgba(200,145,40,0.18)' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
 
-        .footer-sans { font-family: 'DM Sans', sans-serif; }
+        :root {
+          --navy-900: #0F172A;
+          --navy-800: #162035;
+          --navy-700: #1E2D4A;
+          --gold:     #C89128;
+          --gold-lt:  #D4A843;
+          --gold-dim: rgba(200,145,40,0.12);
+          --cream:    #F8F8F9;
+          --slate:    #94A3B8;
+          --border:   rgba(200,145,40,0.18);
+        }
 
-        .footer-top-bar {
+        .ft-top-bar {
+          border-bottom: 1px solid var(--border);
+          background: var(--navy-800);
+        }
+
+        .ft-top-inner {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 28px 48px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 32px 40px;
-          border-bottom: 1px solid rgba(201,168,76,0.1);
-          max-width: 1200px;
-          margin: 0 auto;
           gap: 24px;
           flex-wrap: wrap;
         }
 
-        .footer-brand {
-          display: flex;
-          align-items: baseline;
-          gap: 2px;
-        }
-
-        .footer-logo-text {
-          font-size: 26px;
-          font-weight: 300;
-          letter-spacing: 0.08em;
-          color: var(--text-primary);
-          text-transform: uppercase;
-        }
-
-        .footer-logo-dot {
-          color: var(--accent-color);
-          font-size: 26px;
-        }
-
-        .footer-tagline {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 11px;
-          font-weight: 400;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--text-secondary);
-          padding-left: 16px;
-          border-left: 1px solid var(--border-color);
-        }
-
-        .footer-socials {
-          display: flex;
-          gap: 4px;
-        }
-
-        .social-btn {
-          width: 36px;
-          height: 36px;
+        .ft-brand {
           display: flex;
           align-items: center;
-          justify-content: center;
-          border: 1px solid rgba(201,168,76,0.15);
-          color: rgba(138,128,112,0.7);
+          gap: 20px;
+        }
+
+        .ft-divider-line {
+          width: 1px;
+          height: 22px;
+          background: var(--border);
+        }
+
+        .ft-tagline {
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: var(--slate);
+        }
+
+        .ft-socials { display: flex; gap: 4px; }
+
+        .social-btn {
+          width: 36px; height: 36px;
+          display: flex; align-items: center; justify-content: center;
+          border: 1px solid var(--border);
+          background: transparent;
+          color: var(--slate);
           cursor: pointer;
           text-decoration: none;
           transition: all 0.2s;
         }
 
         .social-btn:hover {
-          border-color: rgba(201,168,76,0.5);
-          color: #c9a84c;
-          background: rgba(201,168,76,0.06);
+          border-color: rgba(200,145,40,0.5);
+          color: var(--gold);
+          background: var(--gold-dim);
         }
 
-        .footer-main {
+        /* Main grid */
+        .ft-main {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 56px 40px 48px;
+          padding: 56px 48px 48px;
           display: grid;
           grid-template-columns: 1.8fr 1fr 1fr 1.4fr;
           gap: 48px;
         }
 
-        .footer-about-text {
-          font-family: 'DM Sans', sans-serif;
+        .ft-about-text {
           font-size: 14px;
           font-weight: 300;
           line-height: 1.75;
-          color: rgba(138,128,112,0.85);
-          margin-bottom: 28px;
+          color: rgba(148,163,184,0.8);
+          margin-bottom: 24px;
           max-width: 300px;
         }
 
-        .footer-cert {
+        .ft-cert {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          border: 1px solid rgba(201,168,76,0.15);
-          padding: 8px 14px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-          color: #c9a84c;
-        }
-
-        .footer-cert::before {
-          content: '';
-          width: 6px;
-          height: 6px;
-          background: #c9a84c;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-
-        .footer-col-label {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 10px;
-          font-weight: 500;
+          border: 1px solid var(--border);
+          padding: 7px 14px;
+          font-size: 9px;
+          font-weight: 600;
           letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: #c9a84c;
-          margin-bottom: 24px;
+          color: var(--gold);
+          background: var(--gold-dim);
+        }
+
+        .ft-cert::before {
+          content: '';
+          width: 6px; height: 6px;
+          background: var(--gold);
+          border-radius: 50%;
+          flex-shrink: 0;
+          animation: blink 2s infinite;
+        }
+
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .ft-col-lbl {
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.26em;
+          text-transform: uppercase;
+          color: var(--gold);
+          margin-bottom: 22px;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
         }
 
-        .footer-col-label::after {
-          content: '';
-          flex: 1;
-          height: 1px;
-          background: rgba(201,168,76,0.12);
-        }
+        .ft-col-lbl::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-        .footer-links {
-          list-style: none;
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
+        .ft-links { list-style: none; display: flex; flex-direction: column; gap: 2px; }
 
-        .footer-links a {
-          font-family: 'DM Sans', sans-serif;
+        .ft-links a {
           font-size: 14px;
           font-weight: 300;
-          color: rgba(138,128,112,0.8);
+          color: rgba(148,163,184,0.8);
           text-decoration: none;
           padding: 6px 0;
           display: flex;
           align-items: center;
           gap: 6px;
           transition: all 0.2s;
-          border-bottom: 1px solid transparent;
         }
 
-        .footer-links a:hover {
-          color: #f5f0e8;
-          padding-left: 8px;
-        }
+        .ft-links a:hover { color: var(--cream); padding-left: 6px; }
 
-        .footer-links a .link-arrow {
-          opacity: 0;
-          transition: opacity 0.2s;
-          color: #c9a84c;
+        .lk-arrow { opacity: 0; transition: opacity 0.2s; color: var(--gold); flex-shrink: 0; }
+        .ft-links a:hover .lk-arrow { opacity: 1; }
+
+        .ft-contacts { display: flex; flex-direction: column; gap: 18px; }
+
+        .ft-contact-item { display: flex; align-items: flex-start; gap: 14px; }
+
+        .ft-contact-icon {
+          width: 30px; height: 30px;
+          background: var(--gold-dim);
+          border: 1px solid var(--border);
+          display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
-        }
-
-        .footer-links a:hover .link-arrow { opacity: 1; }
-
-        .footer-contact-list {
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
-        }
-
-        .contact-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 14px;
-        }
-
-        .contact-item:root {
-          --gold: #c9a84c;
-          --gold-light: #e8c97a;
-          --dark: var(--bg-primary);
-          --dark-2: var(--bg-secondary);
-          --dark-3: var(--bg-tertiary);
-          --cream: var(--text-primary);
-          --muted: var(--text-secondary);
-          --border: var(--border-color);
-        }
-
-        .contact-icon {
-          width: 30px;
-          height: 30px;
-          background: rgba(201,168,76,0.08);
-          border: 1px solid rgba(201,168,76,0.15);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          color: #c9a84c;
+          color: var(--gold);
           margin-top: 1px;
         }
 
-        .contact-text {
-          font-family: 'DM Sans', sans-serif;
+        .ft-contact-text {
           font-size: 13px;
           font-weight: 300;
           line-height: 1.65;
-          color: rgba(138,128,112,0.85);
+          color: rgba(148,163,184,0.85);
         }
 
-        .contact-text a {
-          color: rgba(138,128,112,0.85);
+        .ft-contact-text a {
+          color: rgba(148,163,184,0.85);
           text-decoration: none;
           transition: color 0.2s;
         }
 
-        .contact-text a:hover { color: #c9a84c; }
+        .ft-contact-text a:hover { color: var(--gold); }
 
-        .footer-divider {
+        /* Bottom */
+        .ft-divide {
           max-width: 1200px;
-          margin: 0 auto;
+          margin: 0 48px;
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(201,168,76,0.15) 20%, rgba(201,168,76,0.15) 80%, transparent);
-          margin-left: 40px;
-          margin-right: 40px;
+          background: var(--border);
         }
 
-        .footer-bottom {
+        .ft-bottom {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 24px 40px;
+          padding: 24px 48px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -245,128 +200,113 @@ const Footer = () => {
           gap: 16px;
         }
 
-        .footer-copy {
-          font-family: 'DM Sans', sans-serif;
+        .ft-copy {
           font-size: 12px;
           font-weight: 300;
-          color: rgba(138,128,112,0.45);
-          letter-spacing: 0.04em;
+          color: rgba(148,163,184,0.4);
         }
 
-        .footer-legal {
-          display: flex;
-          gap: 0;
-        }
+        .ft-legal { display: flex; gap: 0; }
 
-        .footer-legal a {
-          font-family: 'DM Sans', sans-serif;
+        .ft-legal a {
           font-size: 11px;
-          font-weight: 400;
+          font-weight: 500;
           letter-spacing: 0.08em;
-          color: rgba(138,128,112,0.5);
+          color: rgba(148,163,184,0.45);
           text-decoration: none;
           padding: 0 16px;
-          border-right: 1px solid rgba(201,168,76,0.1);
+          border-right: 1px solid var(--border);
           transition: color 0.2s;
-        }
-
-        .footer-legal a:first-child { padding-left: 0; }
-        .footer-legal a:last-child { border-right: none; }
-        .footer-legal a:hover { color: #c9a84c; }
-
-        .footer-location-badge {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 11px;
-          font-weight: 400;
-          letter-spacing: 0.1em;
-          color: rgba(138,128,112,0.4);
           text-transform: uppercase;
         }
 
-        .location-dot {
-          width: 5px;
-          height: 5px;
-          background: #c9a84c;
-          border-radius: 50%;
-          animation: pulse 2s infinite;
+        .ft-legal a:first-child { padding-left: 0; }
+        .ft-legal a:last-child  { border-right: none; }
+        .ft-legal a:hover { color: var(--gold); }
+
+        .ft-location {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          color: rgba(148,163,184,0.4);
+          text-transform: uppercase;
         }
 
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
+        .loc-dot {
+          width: 5px; height: 5px;
+          background: var(--gold);
+          border-radius: 50%;
+          animation: blink 2s infinite;
         }
 
         @media (max-width: 900px) {
-          .footer-top-bar { padding: 24px; }
-          .footer-main {
-            grid-template-columns: 1fr 1fr;
-            gap: 36px;
-            padding: 40px 24px;
-          }
-          .footer-bottom { padding: 20px 24px; flex-direction: column; align-items: flex-start; gap: 12px; }
-          .footer-divider { margin-left: 24px; margin-right: 24px; }
+          .ft-top-inner { padding: 20px 24px; }
+          .ft-main { grid-template-columns: 1fr 1fr; gap: 36px; padding: 40px 24px; }
+          .ft-bottom { padding: 20px 24px; flex-direction: column; align-items: flex-start; gap: 12px; }
+          .ft-divide { margin: 0 24px; }
         }
 
         @media (max-width: 560px) {
-          .footer-main { grid-template-columns: 1fr; }
-          .footer-tagline { display: none; }
-          .footer-legal { flex-wrap: wrap; gap: 8px; }
-          .footer-legal a { border-right: none; padding: 0; }
+          .ft-main { grid-template-columns: 1fr; }
+          .ft-tagline { display: none; }
+          .ft-legal { flex-wrap: wrap; gap: 8px; }
+          .ft-legal a { border-right: none; padding: 0; }
         }
       `}</style>
 
       {/* Top identity bar */}
-      <div className="footer-top-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div className="footer-brand">
-            <img src={LOGO} alt="OWERU" style={{ height: '24px', width: 'auto' }} />
+      <div className="ft-top-bar">
+        <div className="ft-top-inner">
+          <div className="ft-brand">
+            <img src={LOGO} alt="OWERU" style={{ height: '28px', width: 'auto' }} />
+            <div className="ft-divider-line" />
+            <span className="ft-tagline">Tanzania Property Rentals</span>
           </div>
-          <span className="footer-tagline">Tanzania Property Rentals</span>
-        </div>
 
-        <div className="footer-socials">
-          {[
-            { icon: <Facebook size={15} />, href: '#' },
-            { icon: <Twitter size={15} />,  href: '#' },
-            { icon: <Instagram size={15} />, href: '#' },
-            { icon: <Globe size={15} />,     href: '#' },
-          ].map((s, i) => (
-            <a key={i} href={s.href} className="social-btn">{s.icon}</a>
-          ))}
+          <div className="ft-socials">
+            {[
+              { icon: <Facebook size={14} />,  href: '#' },
+              { icon: <Twitter size={14} />,   href: '#' },
+              { icon: <Instagram size={14} />, href: '#' },
+              { icon: <Globe size={14} />,     href: '#' },
+            ].map((s, i) => (
+              <a key={i} href={s.href} className="social-btn">{s.icon}</a>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Main grid */}
-      <div className="footer-main">
+      <div className="ft-main">
 
         {/* About */}
         <div>
-          <div className="footer-col-label">About</div>
-          <p className="footer-about-text">
-            Your trusted partner in property rental management across Tanzania. 
-            We connect landlords, agents, and tenants through a transparent, 
-            secure, and seamless platform.
+          <div className="ft-col-lbl">About Oweru</div>
+          <p className="ft-about-text">
+            Your trusted partner in property rental management across Tanzania.
+            We connect landlords, agents, and tenants through a transparent,
+            secure, and seamless platform powered by technology.
           </p>
-          <div className="footer-cert">Verified Platform · Tanzania</div>
+          <div className="ft-cert">Verified Platform · Tanzania</div>
         </div>
 
-        {/* Quick Links */}
+        {/* Navigate */}
         <div>
-          <div className="footer-col-label">Navigate</div>
-          <ul className="footer-links">
+          <div className="ft-col-lbl">Navigate</div>
+          <ul className="ft-links">
             {[
-              { label: 'About Us',    to: '/about' },
+              { label: 'About Us',     to: '/about' },
               { label: 'How It Works', to: '/how-it-works' },
               { label: 'For Landlords', to: '/landlords' },
-              { label: 'For Agents',  to: '/agents' },
-              { label: 'For Tenants', to: '/tenants' },
-            ].map((l) => (
+              { label: 'For Agents',   to: '/agents' },
+              { label: 'For Tenants',  to: '/tenants' },
+            ].map(l => (
               <li key={l.label}>
                 <Link to={l.to}>
-                  <ArrowUpRight size={11} className="link-arrow" />
+                  <ArrowUpRight size={11} className="lk-arrow" />
                   {l.label}
                 </Link>
               </li>
@@ -376,18 +316,12 @@ const Footer = () => {
 
         {/* Services */}
         <div>
-          <div className="footer-col-label">Services</div>
-          <ul className="footer-links">
-            {[
-              'Property Listing',
-              'Tenant Screening',
-              'Payment Processing',
-              'Maintenance Services',
-              'Legal Support',
-            ].map((s) => (
+          <div className="ft-col-lbl">Services</div>
+          <ul className="ft-links">
+            {['Property Listing', 'Tenant Screening', 'Payment Processing', 'Maintenance Services', 'Legal Support'].map(s => (
               <li key={s}>
                 <a href="#">
-                  <ArrowUpRight size={11} className="link-arrow" />
+                  <ArrowUpRight size={11} className="lk-arrow" />
                   {s}
                 </a>
               </li>
@@ -397,31 +331,31 @@ const Footer = () => {
 
         {/* Contact */}
         <div>
-          <div className="footer-col-label">Contact</div>
-          <div className="footer-contact-list">
-            <div className="contact-item">
-              <div className="contact-icon"><Phone size={13} /></div>
-              <div className="contact-text">
+          <div className="ft-col-lbl">Contact</div>
+          <div className="ft-contacts">
+            <div className="ft-contact-item">
+              <div className="ft-contact-icon"><Phone size={13} /></div>
+              <div className="ft-contact-text">
                 <a href="tel:+255711890764">+255 711 890 764</a>
               </div>
             </div>
-            <div className="contact-item">
-              <div className="contact-icon"><Mail size={13} /></div>
-              <div className="contact-text">
+            <div className="ft-contact-item">
+              <div className="ft-contact-icon"><Mail size={13} /></div>
+              <div className="ft-contact-text">
                 <a href="mailto:info@oweru.com">info@oweru.com</a>
               </div>
             </div>
-            <div className="contact-item">
-              <div className="contact-icon"><MapPin size={13} /></div>
-              <div className="contact-text">
+            <div className="ft-contact-item">
+              <div className="ft-contact-icon"><MapPin size={13} /></div>
+              <div className="ft-contact-text">
                 Tancot House, Posta<br />
                 Dar es Salaam, Tanzania<br />
                 P.O. Box 7563
               </div>
             </div>
-            <div className="contact-item">
-              <div className="contact-icon"><Globe size={13} /></div>
-              <div className="contact-text">
+            <div className="ft-contact-item">
+              <div className="ft-contact-icon"><Globe size={13} /></div>
+              <div className="ft-contact-text">
                 <a href="https://www.oweru.com" target="_blank" rel="noreferrer">www.oweru.com</a>
               </div>
             </div>
@@ -431,21 +365,21 @@ const Footer = () => {
       </div>
 
       {/* Divider */}
-      <div className="footer-divider" />
+      <div className="ft-divide" />
 
-      {/* Bottom bar */}
-      <div className="footer-bottom">
-        <p className="footer-copy">© 2025 Oweru Rental System. All rights reserved.</p>
+      {/* Bottom */}
+      <div className="ft-bottom">
+        <p className="ft-copy">© 2025 Oweru Investment Ltd. All rights reserved.</p>
 
-        <div className="footer-legal">
+        <div className="ft-legal">
           <Link to="/privacy">Privacy Policy</Link>
           <Link to="/terms">Terms of Service</Link>
           <Link to="/cookies">Cookie Policy</Link>
         </div>
 
-        <div className="footer-location-badge">
-          <span className="location-dot" />
-          Dar es Salaam, TZ
+        <div className="ft-location">
+          <span className="loc-dot" />
+          Dar es Salaam, Tanzania
         </div>
       </div>
     </footer>

@@ -85,9 +85,9 @@ const TenantDashboard = () => {
       <style>{`
         .td-wrap { max-width: 1100px; margin: 0 auto; }
         .td-eyebrow { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #c9a84c; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
-        .td-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(201,168,76,0.15); }
+        .td-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(37,99,235,0.15); }
         .td-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 40px; }
-        .td-stat, .td-item { background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%); border: 1px solid rgba(201,168,76,0.14); border-radius: 22px; padding: 22px; color: #e8e4dc; }
+        .td-stat, .td-item { background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%); border: 1px solid rgba(37,99,235,0.14); border-radius: 22px; padding: 22px; color: #e8e4dc; }
         .td-label { color: #9f9587; font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; }
         .td-value { font-size: 32px; margin-top: 8px; }
         .td-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 32px; }
@@ -99,11 +99,11 @@ const TenantDashboard = () => {
         .td-title { font-size:18px; margin-bottom:6px; }
         .td-meta { color:#9f9587; font-size:14px; line-height:1.6; }
         .td-price { font-size:22px; color:#c9a84c; white-space:nowrap; }
-        .td-contract { background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%); border: 1px solid rgba(201,168,76,0.14); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .td-contract { background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%); border: 1px solid rgba(37,99,235,0.14); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
         .td-contract-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .td-contract-title { font-size: 16px; font-weight: 600; color: #e8e4dc; }
         .td-contract-status { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-        .td-contract-status.pending { background: rgba(201,168,76,0.2); color: #c9a84c; }
+        .td-contract-status.pending { background: rgba(37,99,235,0.2); color: #c9a84c; }
         .td-contract-status.active { background: rgba(76,201,76,0.2); color: #4cc94c; }
         .td-contract-status.signed { background: rgba(76,168,201,0.2); color: #4ca8c9; }
         .td-contract-meta { font-size: 13px; color: #9f9587; line-height: 1.4; }

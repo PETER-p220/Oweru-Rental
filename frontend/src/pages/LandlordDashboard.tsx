@@ -120,7 +120,7 @@ const LandlordDashboard = () => {
           align-items: center;
           gap: 8px;
         }
-        .ld-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(201,168,76,0.15); }
+        .ld-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(37,99,235,0.15); }
         .ld-stats {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -129,7 +129,7 @@ const LandlordDashboard = () => {
         }
         .ld-stat {
           background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%);
-          border: 1px solid rgba(201,168,76,0.14);
+          border: 1px solid rgba(37,99,235,0.14);
           border-radius: 22px;
           padding: 24px;
           color: #e8e4dc;
@@ -140,7 +140,7 @@ const LandlordDashboard = () => {
           border-radius: 14px;
           display: grid;
           place-items: center;
-          background: rgba(201,168,76,0.12);
+          background: rgba(37,99,235,0.12);
           color: #c9a84c;
           margin-bottom: 16px;
         }
@@ -193,7 +193,7 @@ const LandlordDashboard = () => {
           gap: 18px;
           align-items: center;
           background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%);
-          border: 1px solid rgba(201,168,76,0.14);
+          border: 1px solid rgba(37,99,235,0.14);
           border-radius: 22px;
           padding: 18px;
           color: #e8e4dc;
