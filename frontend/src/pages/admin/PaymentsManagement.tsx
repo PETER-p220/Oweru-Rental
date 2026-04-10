@@ -18,7 +18,7 @@ const t = {
   dark3:   '#141414',
   cream:   '#e8e4dc',
   muted:   '#7a7060',
-  border:  'rgba(201,168,76,0.12)',
+  border:  'rgba(37,99,235,0.12)',
   green:   '#10b981',
   red:     '#ef4444',
   blue:    '#38bdf8',

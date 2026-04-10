@@ -58,7 +58,7 @@ const tk = {
   dark3:  '#141414',
   cream:  '#e8e4dc',
   muted:  '#7a7060',
-  border: 'rgba(201,168,76,0.12)',
+  border: 'rgba(37,99,235,0.12)',
   green:  '#10b981',
   amber:  '#f59e0b',
   blue:   '#3b82f6',
@@ -77,14 +77,14 @@ const card: React.CSSProperties = {
 
 const innerRow: React.CSSProperties = {
   backgroundColor: 'transparent',
-  border: 'rgba(201,168,76,0.07) solid 1px',
+  border: 'rgba(37,99,235,0.07) solid 1px',
   borderRadius: 8,
   padding: 20,
 };
 
 const metaBox: React.CSSProperties = {
-  backgroundColor: 'rgba(201,168,76,0.03)',
-  border: '1px solid rgba(201,168,76,0.08)',
+  backgroundColor: 'rgba(37,99,235,0.03)',
+  border: '1px solid rgba(37,99,235,0.08)',
   borderRadius: 6,
   padding: '10px 14px',
 };
@@ -128,7 +128,7 @@ const solidBtn: React.CSSProperties = {
   border: 'none', color: '#111',
   borderRadius: 6, fontSize: 13, fontWeight: 700,
   cursor: 'pointer', letterSpacing: '0.03em',
-  boxShadow: `0 3px 14px rgba(201,168,76,0.28)`,
+  boxShadow: `0 3px 14px rgba(37,99,235,0.28)`,
 };
 
 const selectStyle: React.CSSProperties = {
@@ -253,7 +253,7 @@ const CommissionControl = () => {
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: 40, height: 40,
-            border: '3px solid rgba(201,168,76,0.15)',
+            border: '3px solid rgba(37,99,235,0.15)',
             borderTop: `3px solid ${tk.gold}`,
             borderRadius: '50%',
             animation: 'spin 0.9s linear infinite',
@@ -274,7 +274,7 @@ const CommissionControl = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
         * { box-sizing: border-box; }
-        .cc-row:hover { border-color: rgba(201,168,76,0.15) !important; background: rgba(201,168,76,0.015) !important; }
+        .cc-row:hover { border-color: rgba(37,99,235,0.15) !important; background: rgba(37,99,235,0.015) !important; }
         .cc-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .cc-btn:active { transform: scale(.97); }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -321,7 +321,7 @@ const CommissionControl = () => {
             style={{
               flex: 1, padding: '8px 14px',
               backgroundColor: activeTab === tab ? tk.gold : 'transparent',
-              border: `1px solid ${activeTab === tab ? tk.gold : 'rgba(201,168,76,0.15)'}`,
+              border: `1px solid ${activeTab === tab ? tk.gold : 'rgba(37,99,235,0.15)'}`,
               color: activeTab === tab ? '#111' : tk.muted,
               borderRadius: 6, ...body, fontSize: 13, fontWeight: 600,
               cursor: 'pointer', transition: 'all 0.2s',
@@ -533,14 +533,14 @@ const CommissionControl = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 20 }}>
 
             {/* Top performers */}
-            <div style={{ border: '1px solid rgba(201,168,76,0.08)', borderRadius: 8, padding: 20 }}>
+            <div style={{ border: '1px solid rgba(37,99,235,0.08)', borderRadius: 8, padding: 20 }}>
               <h4 style={{ ...body, fontSize: 14, fontWeight: 600, color: tk.cream, margin: '0 0 16px' }}>Top Performer</h4>
               {stats && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{
                     width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
-                    backgroundColor: 'rgba(201,168,76,0.12)',
-                    border: '1px solid rgba(201,168,76,0.28)',
+                    backgroundColor: 'rgba(37,99,235,0.12)',
+                    border: '1px solid rgba(37,99,235,0.28)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     <Trophy size={18} style={{ color: tk.gold }} />
@@ -556,7 +556,7 @@ const CommissionControl = () => {
             </div>
 
             {/* Monthly summary */}
-            <div style={{ border: '1px solid rgba(201,168,76,0.08)', borderRadius: 8, padding: 20 }}>
+            <div style={{ border: '1px solid rgba(37,99,235,0.08)', borderRadius: 8, padding: 20 }}>
               <h4 style={{ ...body, fontSize: 14, fontWeight: 600, color: tk.cream, margin: '0 0 16px' }}>This Month</h4>
               {stats && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -565,7 +565,7 @@ const CommissionControl = () => {
                     { label: 'Paid',              value: fmt(stats.thisMonth.paid),   color: tk.green },
                     { label: 'Pending',           value: fmt(stats.thisMonth.pending),color: tk.amber },
                   ].map(({ label, value, color }) => (
-                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid rgba(201,168,76,0.06)' }}>
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid rgba(37,99,235,0.06)' }}>
                       <span style={{ ...body, fontSize: 12, color: tk.muted }}>{label}</span>
                       <span style={{ ...body, fontSize: 13, fontWeight: 600, color }}>{value}</span>
                     </div>
@@ -575,7 +575,7 @@ const CommissionControl = () => {
             </div>
 
             {/* Status breakdown */}
-            <div style={{ border: '1px solid rgba(201,168,76,0.08)', borderRadius: 8, padding: 20 }}>
+            <div style={{ border: '1px solid rgba(37,99,235,0.08)', borderRadius: 8, padding: 20 }}>
               <h4 style={{ ...body, fontSize: 14, fontWeight: 600, color: tk.cream, margin: '0 0 16px' }}>Status Breakdown</h4>
               {stats && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -584,7 +584,7 @@ const CommissionControl = () => {
                     { label: 'Approved', value: stats.approvedCommissions,   color: tk.blue  },
                     { label: 'Pending',  value: stats.pendingCommissions,    color: tk.amber },
                   ].map(({ label, value, color }) => (
-                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid rgba(201,168,76,0.06)' }}>
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid rgba(37,99,235,0.06)' }}>
                       <span style={{ ...body, fontSize: 12, color: tk.muted, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />
                         {label}
@@ -643,7 +643,7 @@ const CommissionControl = () => {
             ].filter(Boolean).map(({ label, value }: any) => (
               <div key={label} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16,
-                padding: '9px 0', borderBottom: '1px solid rgba(201,168,76,0.07)',
+                padding: '9px 0', borderBottom: '1px solid rgba(37,99,235,0.07)',
               }}>
                 <span style={{ ...labelStyle, marginBottom: 0, whiteSpace: 'nowrap' }}>{label}</span>
                 <span style={{ ...body, fontSize: 12.5, color: tk.cream, textAlign: 'right' }}>{value}</span>

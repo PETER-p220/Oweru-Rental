@@ -258,8 +258,8 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   return (
     <div style={{
       fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-      background: '#080808',
-      color: '#e8e4dc',
+      background: 'var(--bg-primary)',
+      color: 'var(--text-primary)',
       minHeight: '100vh',
       display: 'flex',
     }}>
@@ -269,13 +269,13 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --gold:    #c9a84c;
-          --gold-lt: #e8c97a;
-          --dark:    #080808;
-          --dark-2:  #0e0e0e;
-          --dark-3:  #141414;
-          --cream:   #e8e4dc;
-          --muted:   #7a7060;
+          --gold:    var(--accent-color);
+          --gold-lt: var(--accent-light);
+          --dark:    var(--bg-primary);
+          --dark-2:  var(--bg-secondary);
+          --dark-3:  var(--bg-tertiary);
+          --cream:   var(--text-primary);
+          --muted:   var(--text-secondary);
           --accent:  ${cfg.accent};
           --border:  ${cfg.border};
         }
