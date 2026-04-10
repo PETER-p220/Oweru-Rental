@@ -1,17 +1,22 @@
 import type { CSSProperties } from 'react';
 
 export const palette = {
-  gold: '#2563eb',
+  gold: 'var(--accent-color)',
   green: '#16a34a',
   red: '#dc2626',
-  blue: '#3b82f6',
-  amber: '#f59e0b',
-  cream: '#ffffff',
-  muted: '#64748b',
+  blue: 'var(--accent-color)',
+  blue600: 'var(--accent-color)',
+  blue500: 'var(--accent-light)',
+  gray400: 'var(--text-secondary)',
+  gray800: 'var(--bg-secondary)',
+  white: 'var(--text-primary)',
+  amber: 'var(--accent-color)',
+  cream: 'var(--text-primary)',
+  muted: 'var(--text-secondary)',
   panel: 'rgba(15,23,42,0.96)',
   panelAlt: 'rgba(255,255,255,0.025)',
-  border: 'rgba(59,130,246,0.14)',
-  borderSoft: 'rgba(59,130,246,0.10)',
+  border: 'var(--border-color)',
+  borderSoft: 'rgba(37,99,235,0.10)',
 } as const;
 
 export const pageStyle: CSSProperties = {
@@ -94,7 +99,7 @@ export const tdStyle: CSSProperties = {
 
 export const buttonStyle = (tone: 'primary' | 'secondary' | 'danger' = 'secondary'): CSSProperties => {
   const map = {
-    primary: { color: palette.gold, bg: 'rgba(201,168,76,0.12)', border: 'rgba(201,168,76,0.22)' },
+    primary: { color: palette.gold, bg: 'rgba(37,99,235,0.12)', border: 'rgba(37,99,235,0.22)' },
     secondary: { color: palette.cream, bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' },
     danger: { color: palette.red, bg: 'rgba(224,112,112,0.12)', border: 'rgba(224,112,112,0.22)' },
   } as const;
@@ -177,7 +182,7 @@ export const getStatusColor = (status?: string | null) => {
     case 'completed':
       return palette.green;
     case 'pending':
-      return palette.blue600;
+      return palette.blue;
     case 'rejected':
     case 'failed':
     case 'cancelled':

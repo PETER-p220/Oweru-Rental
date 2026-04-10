@@ -142,12 +142,12 @@ const MessagesPage = () => {
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginTop: '22px' }}>
-          <div style={{ padding: '18px', borderRadius: '18px', background: `rgba(var(--primary-color-rgb), 0.025)`, border: `1px solid rgba(var(--primary-color-rgb), 0.06)` }}>
-            <div style={{ color: 'var(--text-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Messages</div>
+          <div style={{ padding: '18px', borderRadius: '18px', background: `rgba(var(--accent-color-rgb), 0.025)`, border: `1px solid rgba(var(--accent-color-rgb), 0.06)` }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Messages</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{messages.length}</div>
           </div>
-          <div style={{ padding: '18px', borderRadius: '18px', background: `rgba(var(--primary-color-rgb), 0.025)`, border: `1px solid rgba(var(--primary-color-rgb), 0.06)` }}>
-            <div style={{ color: 'var(--text-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Unread</div>
+          <div style={{ padding: '18px', borderRadius: '18px', background: `rgba(var(--accent-color-rgb), 0.025)`, border: `1px solid rgba(var(--accent-color-rgb), 0.06)` }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Unread</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{unreadCount}</div>
           </div>
         </div>
@@ -155,11 +155,11 @@ const MessagesPage = () => {
 
       <section style={{ ...panelStyle, display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) minmax(320px, 0.9fr)', gap: '22px' }}>
         <div>
-          {error && <div style={{ marginBottom: '16px', color: '#e07070' }}>{error}</div>}
+          {error && <div style={{ marginBottom: '16px', color: 'var(--accent-color)' }}>{error}</div>}
           {loading ? (
-            <div style={{ color: '#9f9587' }}>Loading messages...</div>
+            <div style={{ color: 'var(--text-secondary)' }}>Loading messages...</div>
           ) : messages.length === 0 ? (
-            <div style={{ color: '#9f9587' }}>No messages yet.</div>
+            <div style={{ color: 'var(--text-secondary)' }}>No messages yet.</div>
           ) : (
             <div style={tableWrapStyle}>
               <table style={tableStyle}>
@@ -179,16 +179,16 @@ const MessagesPage = () => {
                       <td style={tdStyle}>{message.sender?.id === user?.id ? 'Sent' : 'Received'}</td>
                       <td style={tdStyle}>
                         <div>{message.sender?.first_name} {message.sender?.last_name}</div>
-                        <div style={{ color: '#9f9587', marginTop: '4px' }}>{message.sender?.email || 'No email'}</div>
+                        <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{message.sender?.email || 'No email'}</div>
                       </td>
                       <td style={tdStyle}>
                         <div>{message.recipient?.first_name} {message.recipient?.last_name}</div>
-                        <div style={{ color: '#9f9587', marginTop: '4px' }}>{message.recipient?.email || 'No email'}</div>
+                        <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{message.recipient?.email || 'No email'}</div>
                       </td>
                       <td style={tdStyle}>{message.property?.title || 'General'}</td>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 600, marginBottom: '6px' }}>{message.subject || 'No subject'}</div>
-                        <div style={{ color: '#9f9587', lineHeight: 1.6 }}>{message.body || ''}</div>
+                        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{message.body || ''}</div>
                       </td>
                       <td style={tdStyle}>{formatDate(message.created_at)}</td>
                     </tr>
@@ -202,7 +202,7 @@ const MessagesPage = () => {
         <form onSubmit={handleSend} style={{ display: 'grid', gap: '12px', alignContent: 'start' }}>
           {success && <div style={{ color: '#70c490' }}>{success}</div>}
           <div style={{ fontSize: '18px' }}>Compose message</div>
-          <div style={{ color: '#9f9587', fontSize: '14px', lineHeight: 1.5 }}>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5 }}>
             {selectedTenant
               ? `Sending to ${(selectedTenant.user?.first_name || '').trim()} ${(selectedTenant.user?.last_name || '').trim()}${selectedTenant.property?.title ? ` about ${selectedTenant.property.title}` : ''}.`
               : 'Select a tenant to see exactly who will receive this message.'}

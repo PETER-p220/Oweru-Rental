@@ -71,12 +71,12 @@ const ReceiptsPage = () => {
       </section>
 
       <section style={panelStyle}>
-        {error && <div style={{ marginBottom: '16px', color: '#e07070' }}>{error}</div>}
-        {info && <div style={{ marginBottom: '16px', color: '#c9a84c' }}>{info}</div>}
+        {error && <div style={{ marginBottom: '16px', color: 'var(--accent-color)' }}>{error}</div>}
+        {info && <div style={{ marginBottom: '16px', color: 'var(--accent-color)' }}>{info}</div>}
         {loading ? (
-          <div style={{ color: '#9f9587' }}>Loading receipts...</div>
+          <div style={{ color: 'var(--text-secondary)' }}>Loading receipts...</div>
         ) : receipts.length === 0 ? (
-          <div style={{ color: '#9f9587' }}>No completed receipts found.</div>
+          <div style={{ color: 'var(--text-secondary)' }}>No completed receipts found.</div>
         ) : (
           <div style={tableWrapStyle}>
             <table style={tableStyle}>
@@ -96,7 +96,7 @@ const ReceiptsPage = () => {
                   <tr key={receipt.id}>
                     <td style={tdStyle}>
                       <div>{receipt.tenant?.user?.first_name} {receipt.tenant?.user?.last_name}</div>
-                      <div style={{ color: 'var(--secondary-text-color)', marginTop: '4px' }}>{receipt.tenant?.user?.email || 'No email'}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{receipt.tenant?.user?.email || 'No email'}</div>
                     </td>
                     <td style={tdStyle}>{receipt.property?.title || 'Untitled property'}</td>
                     <td style={tdStyle}>{receipt.type || 'payment'}</td>

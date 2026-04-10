@@ -73,30 +73,30 @@ const RentCollectionPage = () => {
 
         <div style={{ ...metricGridStyle, marginTop: '22px' }}>
           <div style={metricCardStyle}>
-            <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total collected</div>
+            <div style={{ color: 'var(--accent-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total collected</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{formatCurrency(stats.total_collected)}</div>
           </div>
           <div style={metricCardStyle}>
-            <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>This month</div>
+            <div style={{ color: 'var(--accent-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>This month</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{formatCurrency(stats.this_month)}</div>
           </div>
           <div style={metricCardStyle}>
-            <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Pending payments</div>
+            <div style={{ color: 'var(--accent-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Pending payments</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{stats.pending_payments ?? 0}</div>
           </div>
           <div style={metricCardStyle}>
-            <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Collection rate</div>
+            <div style={{ color: 'var(--accent-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Collection rate</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{Number(stats.collection_rate ?? 0).toFixed(1)}%</div>
           </div>
         </div>
       </section>
 
       <section style={panelStyle}>
-        {error && <div style={{ marginBottom: '16px', color: 'var(--error-color)' }}>{error}</div>}
+        {error && <div style={{ marginBottom: '16px', color: 'var(--accent-color)' }}>{error}</div>}
         {loading ? (
-          <div style={{ color: 'var(--text-color)' }}>Loading rent collection data...</div>
+          <div style={{ color: 'var(--text-secondary)' }}>Loading rent collection data...</div>
         ) : payments.length === 0 ? (
-          <div style={{ color: 'var(--text-color)' }}>No rent payments found yet.</div>
+          <div style={{ color: 'var(--text-secondary)' }}>No rent payments found yet.</div>
         ) : (
           <div style={tableWrapStyle}>
             <table style={tableStyle}>
@@ -115,11 +115,11 @@ const RentCollectionPage = () => {
                   <tr key={payment.id}>
                     <td style={tdStyle}>
                       <div>{payment.tenant?.user?.first_name} {payment.tenant?.user?.last_name}</div>
-                      <div style={{ color: 'var(--text-color)', marginTop: '4px' }}>{payment.tenant?.user?.email || 'No email'}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{payment.tenant?.user?.email || 'No email'}</div>
                     </td>
                     <td style={tdStyle}>
                       <div>{payment.property?.title || 'Untitled property'}</div>
-                      <div style={{ color: 'var(--text-color)', marginTop: '4px' }}>{payment.property?.location || 'No location'}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{payment.property?.location || 'No location'}</div>
                     </td>
                     <td style={tdStyle}>{formatCurrency(payment.amount)}</td>
                     <td style={tdStyle}>{formatDate(payment.due_date)}</td>

@@ -115,7 +115,7 @@ const ApplicationsPage = () => {
             ['Approved', stats.approved],
             ['Rejected', stats.rejected],
           ].map(([label, value]) => (
-            <div key={String(label)} style={{ padding: '18px', borderRadius: '18px', background: 'var(--background-card)', border: '1px solid var(--border-card)' }}>
+            <div key={String(label)} style={{ padding: '18px', borderRadius: '18px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
               <div style={{ color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{label}</div>
               <div style={{ fontSize: '30px', marginTop: '8px' }}>{value}</div>
             </div>
@@ -124,11 +124,11 @@ const ApplicationsPage = () => {
       </section>
 
       <section style={panelStyle}>
-        {error && <div style={{ marginBottom: '16px', color: '#e07070' }}>{error}</div>}
+        {error && <div style={{ marginBottom: '16px', color: 'var(--accent-color)' }}>{error}</div>}
         {loading ? (
-          <div style={{ color: '#9f9587' }}>Loading applications...</div>
+          <div style={{ color: 'var(--text-secondary)' }}>Loading applications...</div>
         ) : applications.length === 0 ? (
-          <div style={{ color: '#9f9587' }}>No applications found for your properties yet.</div>
+          <div style={{ color: 'var(--text-secondary)' }}>No applications found for your properties yet.</div>
         ) : (
           <div style={tableWrapStyle}>
             <table style={tableStyle}>
@@ -146,23 +146,23 @@ const ApplicationsPage = () => {
                   <tr key={application.id}>
                     <td style={tdStyle}>
                       <div>{application.user?.first_name} {application.user?.last_name}</div>
-                      <div style={{ color: '#9f9587', marginTop: '4px' }}>{application.user?.email || 'No email'}</div>
-                      <div style={{ color: '#9f9587', marginTop: '4px' }}>{application.user?.phone || 'No phone'}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{application.user?.email || 'No email'}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{application.user?.phone || 'No phone'}</div>
                     </td>
                     <td style={tdStyle}>
                       <div>{application.property?.title || 'Untitled property'}</div>
-                      <div style={{ color: '#9f9587', marginTop: '4px' }}>{application.property?.location || 'No location'}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{application.property?.location || 'No location'}</div>
                       <div style={{ color: '#c9a84c', marginTop: '4px' }}>{formatCurrency(application.property?.price)}</div>
-                      <div style={{ color: '#9f9587', marginTop: '4px' }}>Applied {formatDate(application.created_at)}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>Applied {formatDate(application.created_at)}</div>
                     </td>
                     <td style={tdStyle}>
                       <span style={statusPillStyle(getStatusColor(application.status))}>{application.status || 'unknown'}</span>
                       {application.rejection_reason && (
-                        <div style={{ color: '#e07070', marginTop: '8px', maxWidth: '220px' }}>{application.rejection_reason}</div>
+                        <div style={{ color: 'var(--accent-color)', marginTop: '8px', maxWidth: '220px' }}>{application.rejection_reason}</div>
                       )}
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ maxWidth: '280px', color: '#9f9587', lineHeight: 1.6 }}>
+                      <div style={{ maxWidth: '280px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                         {application.message || 'No application message provided.'}
                       </div>
                     </td>
@@ -184,7 +184,7 @@ const ApplicationsPage = () => {
                             </button>
                           </>
                         ) : (
-                          <div style={{ color: '#9f9587' }}>No further action needed.</div>
+                          <div style={{ color: 'var(--text-secondary)' }}>No further action needed.</div>
                         )}
                       </div>
                     </td>

@@ -62,22 +62,22 @@ const CommissionReportsPage = () => {
 
         <div style={{ ...metricGridStyle, marginTop: '22px' }}>
           <div style={metricCardStyle}>
-            <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Commission records</div>
+            <div style={{ color: 'var(--accent-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Commission records</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{commissions.length}</div>
           </div>
           <div style={metricCardStyle}>
-            <div style={{ color: 'var(--primary-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total commissions</div>
+            <div style={{ color: 'var(--accent-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Total commissions</div>
             <div style={{ fontSize: '30px', marginTop: '8px' }}>{formatCurrency(total)}</div>
           </div>
         </div>
       </section>
 
       <section style={panelStyle}>
-        {error && <div style={{ marginBottom: '16px', color: 'var(--error-color)' }}>{error}</div>}
+        {error && <div style={{ marginBottom: '16px', color: 'var(--text-primary)' }}>{error}</div>}
         {loading ? (
-          <div style={{ color: 'var(--text-color)' }}>Loading commission reports...</div>
+          <div style={{ color: 'var(--text-secondary)' }}>Loading commission reports...</div>
         ) : commissions.length === 0 ? (
-          <div style={{ color: 'var(--text-color)' }}>No commission records found.</div>
+          <div style={{ color: 'var(--text-secondary)' }}>No commission records found.</div>
         ) : (
           <div style={tableWrapStyle}>
             <table style={tableStyle}>
@@ -95,7 +95,7 @@ const CommissionReportsPage = () => {
                   <tr key={item.id}>
                     <td style={tdStyle}>
                       <div>{item.agent?.first_name} {item.agent?.last_name}</div>
-                      <div style={{ color: 'var(--text-color)', marginTop: '4px' }}>{item.agent?.email || 'No email'}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{item.agent?.email || 'No email'}</div>
                     </td>
                     <td style={tdStyle}>{item.property?.title || 'Untitled property'}</td>
                     <td style={tdStyle}>{formatCurrency(item.amount)}</td>
