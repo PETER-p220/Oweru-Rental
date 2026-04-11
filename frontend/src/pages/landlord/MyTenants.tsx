@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Users, RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import Api from '../../services/api';
 import {
-  buttonStyle,
   descriptionStyle,
   formatCurrency,
   formatDate,
@@ -13,7 +12,6 @@ import {
   metricGridStyle,
   pageStyle,
   panelStyle,
-  palette,
   sectionTitleStyle,
   statusPillStyle,
   tableStyle,
@@ -43,50 +41,44 @@ interface TenantItem {
 }
 
 const MyTenants = () => {
-  const [tenants, setTenants]     = useState<TenantItem[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState('');
-  const [search, setSearch]       = useState('');
-  const [refreshing, setRefreshing] = useState(false);
+  const [tenants, setTenants] = useState<TenantItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
 
-  const loadData = async (silent = false) => {
+  const loadData = async () => {
     try {
-      if (!silent) setLoading(true);
-      else setRefreshing(true);
+      setLoading(true);
       setError('');
       const response = await Api.getMyTenants();
+      console.log('Tenants API Response:', response);
+      console.log('Tenants Data:', response.data);
       setTenants(Array.isArray(response.data) ? response.data : []);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Unable to load tenants.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+        console.error('Tenants API Error:', err);
+        setError(err?.response?.data?.message || 'Unable to load tenants.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Initial load
-  useEffect(() => { loadData(); }, []);
-
-  // Re-fetch whenever the browser tab regains focus — this fires when the
-  // user navigates here from ApplicationsPage after approving a tenant.
   useEffect(() => {
-    const onFocus = () => loadData(true);
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    loadData();
   }, []);
 
-  // Also re-fetch on the visibilitychange event (covers tab switches / router navigation)
+  // Auto-refresh every 30 seconds to get latest tenant data
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') loadData(true);
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    const interval = setInterval(() => {
+      loadData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return tenants;
+
     return tenants.filter((tenant) => {
       const haystack = [
         tenant.user?.first_name,
@@ -94,159 +86,92 @@ const MyTenants = () => {
         tenant.user?.email,
         tenant.property?.title,
         tenant.property?.location,
-      ].filter(Boolean).join(' ').toLowerCase();
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
       return haystack.includes(term);
     });
   }, [search, tenants]);
 
   return (
     <div style={pageStyle}>
-
-      {/* ── Header ── */}
-      <section style={{ ...panelStyle, position: 'relative' }}>
-        <div style={{
-          position: 'absolute', top: 0, left: 28, right: 28, height: '2px',
-          background: `linear-gradient(90deg, transparent, ${palette.gold}, transparent)`,
-        }} />
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-          <div>
-            <div style={sectionTitleStyle}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.gold, display: 'inline-block' }} />
-              Landlord Workspace
-            </div>
-            <h1 style={headingStyle}>My Tenants</h1>
-            <p style={{ ...descriptionStyle, marginTop: 6 }}>
-              Active tenant records with contract dates and rent amounts from your live system.
-            </p>
-          </div>
-
-          {/* Manual refresh — does NOT hard-reload the page */}
+      <section style={panelStyle}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={sectionTitleStyle}>Landlord Workspace</div>
           <button
-            onClick={() => loadData(true)}
-            disabled={refreshing}
+            onClick={() => window.location.reload()}
             style={{
-              ...buttonStyle('secondary'),
-              alignSelf: 'flex-start',
-              padding: '9px 16px',
-              gap: '8px',
+              background: 'var(--accent-color)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
           >
-            <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
-            {refreshing ? 'Refreshing…' : 'Refresh'}
+            <RefreshCw size={16} />
+            Refresh
           </button>
         </div>
+        <h1 style={headingStyle}>My Tenants</h1>
+        <p style={descriptionStyle}>
+          Active tenant records loaded from the owner tenants endpoint, with contract dates and rent amounts connected to your live system data.
+        </p>
 
-        {/* Metrics + search */}
         <div style={{ ...metricGridStyle, marginTop: '22px' }}>
           <div style={metricCardStyle}>
-            <div style={{ color: palette.gold, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 700 }}>
-              Active tenants
-            </div>
-            <div style={{ fontSize: '30px', marginTop: '8px', fontWeight: 700, color: palette.offWhite, letterSpacing: '-0.02em' }}>
-              {tenants.length}
-            </div>
+            <div style={{ color: 'var(--accent-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Active tenants</div>
+            <div style={{ fontSize: '30px', marginTop: '8px' }}>{tenants.length}</div>
           </div>
-
           <div style={metricCardStyle}>
-            <div style={{ color: palette.gold, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 700, marginBottom: '8px' }}>
-              Search
-            </div>
-            <input
-              style={inputStyle}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search tenants or properties…"
-            />
+            <div style={{ color: 'var(--accent-color)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Search</div>
+            <input style={{ ...inputStyle, marginTop: '8px' }} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search tenants or properties" />
           </div>
         </div>
       </section>
 
-      {/* ── Table ── */}
-      <section style={{ ...panelStyle }}>
-        {error && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '10px',
-            color: palette.red, background: 'rgba(220,38,38,0.06)',
-            border: '1px solid rgba(220,38,38,0.18)',
-            borderRadius: '10px', padding: '14px 18px', marginBottom: '20px', fontSize: '14px',
-          }}>
-            <AlertCircle size={16} /> {error}
-          </div>
-        )}
-
+      <section style={panelStyle}>
+        {error && <div style={{ marginBottom: '16px', color: 'var(--accent-color)' }}>{error}</div>}
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${palette.gold}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            Loading tenants…
-          </div>
+          <div style={{ color: 'var(--text-secondary)' }}>Loading tenants...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.gray400 }}>
-            <Users size={48} style={{ opacity: 0.2, margin: '0 auto 12px', display: 'block' }} />
-            <div style={{ fontSize: '16px', fontWeight: 600 }}>
-              {search ? 'No tenants matched your search.' : 'No tenants yet.'}
-            </div>
-            {!search && (
-              <div style={{ fontSize: '13px', opacity: 0.7, marginTop: 4 }}>
-                Approve an application to create a tenant record.
-              </div>
-            )}
-          </div>
+          <div style={{ color: 'var(--text-secondary)' }}>No tenants matched your search.</div>
         ) : (
           <div style={tableWrapStyle}>
             <table style={tableStyle}>
               <thead>
                 <tr>
-                  {['Tenant', 'Property', 'Contract', 'Rent', 'Status'].map(h => (
-                    <th key={h} style={thStyle}>{h}</th>
-                  ))}
+                  <th style={thStyle}>Tenant</th>
+                  <th style={thStyle}>Property</th>
+                  <th style={thStyle}>Contract</th>
+                  <th style={thStyle}>Rent</th>
+                  <th style={thStyle}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((tenant) => (
-                  <tr
-                    key={tenant.id}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,145,40,0.04)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {/* Tenant */}
+                  <tr key={tenant.id}>
                     <td style={tdStyle}>
-                      <div style={{ fontWeight: 600, color: palette.offWhite }}>
-                        {tenant.user?.first_name} {tenant.user?.last_name}
-                      </div>
-                      <div style={{ color: palette.gray400, marginTop: '4px', fontSize: '13px' }}>
-                        {tenant.user?.email || 'No email'}
-                      </div>
-                      <div style={{ color: palette.gray400, marginTop: '2px', fontSize: '13px' }}>
-                        {tenant.user?.phone || 'No phone'}
-                      </div>
+                      <div>{tenant.user?.first_name} {tenant.user?.last_name}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{tenant.user?.email || 'No email'}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{tenant.user?.phone || 'No phone'}</div>
                     </td>
-
-                    {/* Property */}
                     <td style={tdStyle}>
-                      <div style={{ fontWeight: 500 }}>{tenant.property?.title || 'Untitled property'}</div>
-                      <div style={{ color: palette.gray400, marginTop: '4px', fontSize: '13px' }}>
-                        {tenant.property?.location || 'No location'}
-                      </div>
+                      <div>{tenant.property?.title || 'Untitled property'}</div>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{tenant.property?.location || 'No location'}</div>
                     </td>
-
-                    {/* Contract dates */}
                     <td style={tdStyle}>
-                      <div style={{ fontSize: '13px' }}>
-                        {formatDate(tenant.contract?.start_date)} → {formatDate(tenant.contract?.end_date)}
-                      </div>
+                      <div>{formatDate(tenant.contract?.start_date)} to {formatDate(tenant.contract?.end_date)}</div>
                     </td>
-
-                    {/* Rent */}
-                    <td style={{ ...tdStyle, color: palette.gold, fontWeight: 600 }}>
-                      {formatCurrency(tenant.contract?.rent_amount)}
-                    </td>
-
-                    {/* Status */}
+                    <td style={tdStyle}>{formatCurrency(tenant.contract?.rent_amount)}</td>
                     <td style={tdStyle}>
-                      <span style={statusPillStyle(getStatusColor(tenant.contract?.status))}>
-                        {tenant.contract?.status || 'unknown'}
-                      </span>
+                      <span style={statusPillStyle(getStatusColor(tenant.contract?.status))}>{tenant.contract?.status || 'unknown'}</span>
                     </td>
                   </tr>
                 ))}
@@ -255,8 +180,6 @@ const MyTenants = () => {
           </div>
         )}
       </section>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
