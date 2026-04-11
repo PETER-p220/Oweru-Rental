@@ -19,7 +19,7 @@ export const palette = {
   gold:       '#C89128',   // HEX #C89128 — primary brand gold
   goldLight:  '#D4A84B',   // lighter gold tint
   goldPale:   '#E8CC8A',
-  goldFaint:  '#F5EDD4',
+  goldFaint:  'rgba(200, 145, 40, 0.10)',  // rgba keeps transparency for use as bg tint
 
   // Neutrals
   offWhite:   '#F8F8F9',   // HEX #F8F8F9 — background off-white
@@ -34,7 +34,13 @@ export const palette = {
   gray800:    '#1A2433',
   gray900:    '#0D1520',
 
-  // Semantic
+  // Semantic status
+  green:       '#16a34a',
+  red:         '#dc2626',
+  amber:       '#b45309',
+  violet:      '#7c3aed',
+
+  // Border helpers
   borderSoft:  'rgba(15, 23, 42, 0.10)',
   borderFaint: 'rgba(15, 23, 42, 0.06)',
   goldBorder:  'rgba(200, 145, 40, 0.25)',
@@ -58,6 +64,7 @@ export const panelStyle: CSSProperties = {
   borderRadius: '16px',
   padding: '24px',
   boxShadow: '0 1px 4px rgba(15, 23, 42, 0.07), 0 4px 16px rgba(15, 23, 42, 0.05)',
+  position: 'relative',   // required for absolute gold accent bar in page headers
 };
 
 // ─── Typography ───────────────────────────────────────────────────────────────
@@ -69,6 +76,9 @@ export const sectionTitleStyle: CSSProperties = {
   letterSpacing: '0.18em',
   fontWeight: 700,
   marginBottom: '10px',
+  display: 'flex',        // allows dot + text pattern used across pages
+  alignItems: 'center',
+  gap: '6px',
 };
 
 export const headingStyle: CSSProperties = {
@@ -85,6 +95,7 @@ export const descriptionStyle: CSSProperties = {
   fontSize: 'clamp(14px, 3vw, 15px)',
   lineHeight: 1.7,
   maxWidth: '70ch',
+  marginTop: '6px',
 };
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
@@ -142,6 +153,7 @@ export const thStyle: CSSProperties = {
   letterSpacing: '0.10em',
   borderBottom: `1px solid ${palette.gray200}`,
   background: palette.offWhite,
+  whiteSpace: 'nowrap',
 };
 
 export const tdStyle: CSSProperties = {
@@ -198,19 +210,24 @@ export const buttonStyle = (
       color: palette.navy900,
     },
     danger: {
-      border: `1px solid rgba(239, 68, 68, 0.3)`,
-      background: '#ef4444',
-      color: palette.white,
+      border:     `1px solid rgba(220, 38, 38, 0.30)`,
+      background: 'rgba(220, 38, 38, 0.08)',   // soft tint — consistent with other pages
+      color:      palette.red,
     },
   };
 
   return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
     padding: '10px 16px',
     borderRadius: '8px',
     cursor: 'pointer',
     fontWeight: 600,
     fontSize: '13px',
     whiteSpace: 'nowrap',
+    letterSpacing: '0.02em',
     ...variants[variant],
   };
 };
@@ -249,7 +266,7 @@ export const mobileCardStatus: CSSProperties = {
   borderRadius: '100px',
   fontSize: '11px',
   textTransform: 'uppercase',
-  fontWeight: 600,
+  fontWeight: 700,
   letterSpacing: '0.04em',
 };
 
@@ -285,16 +302,18 @@ export const getStatusColor = (status?: string | null | undefined): string => {
     case 'completed':
     case 'approved':
     case 'active':
-      return '#16a34a';
+      return palette.green;
     case 'pending':
     case 'processing':
-      return '#b45309';  // amber that reads well on white
+      return palette.amber;
     case 'failed':
     case 'rejected':
     case 'cancelled':
-      return '#dc2626';
+      return palette.red;
+    case 'signed':
+      return palette.gold;
     case 'refunded':
-      return '#7c3aed';
+      return palette.violet;
     default:
       return palette.gray400;
   }
