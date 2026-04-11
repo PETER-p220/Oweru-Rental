@@ -708,6 +708,7 @@ class Api {
   static async getOwnerProperties()       { return this.request<any[]>('owner/my-properties'); }
   static async getOwnerApplications()     { return this.request<any[]>('owner/applications'); }
   static async getMyTenants()             { return this.request<any[]>('owner/tenants'); }
+  static async createTenantFromApprovedApplication() { return this.request<any>('owner/tenants/create-from-approved', { method: 'POST' }); }
   static async getOwnerContracts()        { return this.request<any[]>('owner/contracts'); }
   static async getRentCollection()        { return this.request<any[]>('owner/rent-collection'); }
   static async getRentCollectionStats()   { return this.request<any>('owner/rent-collection-stats'); }

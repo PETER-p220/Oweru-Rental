@@ -178,6 +178,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Tenants
         Route::get('/owner/tenants', [OwnerController::class, 'getMyTenants']);
+        Route::post('/owner/tenants/create-from-approved', [OwnerController::class, 'createTenantFromApprovedApplication']);
 
         // Contracts
         Route::get('/owner/contracts',  [OwnerController::class, 'getContracts']);

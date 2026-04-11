@@ -334,6 +334,70 @@ class OwnerController extends Controller
         return response()->json($response);
     }
 
+    // Manual method to create tenant from existing approved application
+    public function createTenantFromApprovedApplication(): JsonResponse
+    {
+        \Log::info('=== CREATING TENANT FROM APPROVED APPLICATION ===');
+        
+        $user = Auth::user();
+        
+        // Find approved applications that don't have tenant records yet
+        $approvedApplications = \App\Models\Application::with(['user', 'property'])
+            ->where('status', 'approved')
+            ->whereHas('property', function ($query) use ($user) {
+                $query->where('owner_id', $user->id);
+            })
+            ->whereDoesntHave('user.tenants', function ($query) use ($user) {
+                $query->whereHas('property', function ($q) use ($user) {
+                    $q->where('owner_id', $user->id);
+                });
+            })
+            ->get();
+
+        \Log::info('Found ' . $approvedApplications->count() . ' approved applications without tenant records');
+
+        $createdTenants = [];
+        
+        foreach ($approvedApplications as $application) {
+            try {
+                // Create tenant record
+                $tenant = \App\Models\Tenant::create([
+                    'user_id' => $application->user_id,
+                    'property_id' => $application->property_id,
+                    'move_in_date' => now(),
+                    'status' => 'active',
+                ]);
+
+                // Create contract record
+                \App\Models\Contract::create([
+                    'tenant_id' => $tenant->id,
+                    'property_id' => $application->property_id,
+                    'start_date' => now(),
+                    'end_date' => null,
+                    'rent_amount' => $application->property->price,
+                    'status' => 'active',
+                    'terms' => 'Standard rental agreement created from approved application',
+                ]);
+
+                $createdTenants[] = [
+                    'tenant_id' => $tenant->id,
+                    'user_name' => $application->user->first_name . ' ' . $application->user->last_name,
+                    'property_title' => $application->property->title,
+                ];
+                
+                \Log::info('Created tenant for application ' . $application->id);
+                
+            } catch (\Exception $e) {
+                \Log::error('Failed to create tenant for application ' . $application->id . ': ' . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'message' => 'Created ' . count($createdTenants) . ' tenant records from approved applications',
+            'tenants_created' => $createdTenants
+        ]);
+    }
+
     // Contracts Management
     public function getContracts(): JsonResponse
     {

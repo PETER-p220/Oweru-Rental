@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, AlertCircle, UserPlus } from 'lucide-react';
 import Api from '../../services/api';
 import {
   descriptionStyle,
@@ -12,6 +12,7 @@ import {
   metricGridStyle,
   pageStyle,
   panelStyle,
+  palette,
   sectionTitleStyle,
   statusPillStyle,
   tableStyle,
@@ -116,23 +117,56 @@ const MyTenants = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={sectionTitleStyle}>Landlord Workspace</div>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => loadData(true)}
+            disabled={refreshing}
             style={{
-              background: 'var(--accent-color)',
-              color: 'white',
-              border: 'none',
+              background: 'rgba(255, 255, 255, 0.1)',
+              color: '#fff',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: '8px',
-              padding: '8px 16px',
-              fontSize: '14px',
-              cursor: 'pointer',
+              padding: '9px 16px',
+              cursor: refreshing ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '8px',
+              alignSelf: 'flex-start',
             }}
           >
-            <RefreshCw size={16} />
-            Refresh
+            <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
+
+          {/* Create tenants from approved applications button */}
+          {tenants.length === 0 && (
+            <button
+              onClick={async () => {
+                try {
+                  const response = await Api.createTenantFromApprovedApplication();
+                  console.log('Created tenants:', response);
+                  alert(`Created ${response.data.tenants_created?.length || 0} tenant records from approved applications!`);
+                  loadData();
+                } catch (err: any) {
+                  console.error('Failed to create tenants:', err);
+                  alert('Failed to create tenants: ' + (err?.response?.data?.message || 'Unknown error'));
+                }
+              }}
+              style={{
+                background: 'var(--accent-color)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '9px 16px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                alignSelf: 'flex-start',
+              }}
+            >
+              <UserPlus size={14} />
+              Create Tenants from Approved Apps
+            </button>
+          )}
         </div>
         <h1 style={headingStyle}>My Tenants</h1>
         <p style={descriptionStyle}>
