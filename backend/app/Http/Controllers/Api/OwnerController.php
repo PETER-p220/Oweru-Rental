@@ -347,10 +347,16 @@ class OwnerController extends Controller
             ->whereHas('property', function ($query) use ($user) {
                 $query->where('owner_id', $user->id);
             })
-            ->whereDoesntHave('user.tenants', function ($query) use ($user) {
-                $query->whereHas('property', function ($q) use ($user) {
-                    $q->where('owner_id', $user->id);
-                });
+            ->whereNotIn('id', function ($query) use ($user) {
+                $query->select('applications.id')
+                    ->from('applications')
+                    ->join('tenants', function ($join) {
+                        $join->on('tenants.user_id', '=', 'applications.user_id')
+                             ->on('tenants.property_id', '=', 'applications.property_id');
+                    })
+                    ->join('properties', 'properties.id', '=', 'tenants.property_id')
+                    ->where('applications.status', 'approved')
+                    ->where('properties.owner_id', $user->id);
             })
             ->get();
 
