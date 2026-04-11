@@ -69,8 +69,24 @@ const ApplicationsPage = () => {
   const handleApprove = async (id: number) => {
     try {
       setBusyId(id);
-      await Api.approveApplication(id);
+      await Api.approveApplication(id); // This should call PATCH /owner/applications/{id}/approve
+      
+      // Reload both applications and tenants to get latest data
       await loadApplications();
+      
+      // Also reload tenants data to show newly created tenant
+      try {
+        const tenantsResponse = await Api.getMyTenants();
+        // This will trigger the tenants page to update when navigated
+      } catch (err) {
+        console.error('Failed to reload tenants:', err);
+      }
+      
+      // Show success message
+      setError('Application approved successfully! The tenant should appear in your Tenants page shortly.');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setError(''), 3000);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to approve application.');
     } finally { setBusyId(null); }

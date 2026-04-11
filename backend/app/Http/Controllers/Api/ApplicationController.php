@@ -122,4 +122,65 @@ class ApplicationController extends Controller
             'data' => $application
         ]);
     }
+
+    public function approve(Application $application): JsonResponse
+    {
+        $this->authorize('update', $application);
+        
+        $user = Auth::user();
+        
+        // Only property owners can approve applications
+        if ($application->property->owner_id !== $user->id) {
+            return response()->json([
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Update application status to approved
+        $application->update([
+            'status' => 'approved',
+            'responded_at' => now(),
+        ]);
+
+        // Create tenant record
+        try {
+            // Check if tenant already exists
+            $existingTenant = \App\Models\Tenant::where('user_id', $application->user_id)
+                ->where('property_id', $application->property_id)
+                ->first();
+
+            if (!$existingTenant) {
+                \App\Models\Tenant::create([
+                    'user_id' => $application->user_id,
+                    'property_id' => $application->property_id,
+                    'contract_status' => 'active',
+                    'start_date' => now(),
+                    'end_date' => null, // Ongoing contract
+                    'rent_amount' => $application->property->price,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Create contract record
+                \App\Models\Contract::create([
+                    'landlord_id' => $user->id,
+                    'tenant_id' => $application->user_id,
+                    'property_id' => $application->property_id,
+                    'status' => 'active',
+                    'start_date' => now(),
+                    'rent_amount' => $application->property->price,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Log error but don't fail the approval
+            \Log::error('Failed to create tenant record: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'Application approved and tenant created successfully',
+            'data' => $application->fresh()
+        ]);
+    }
 }

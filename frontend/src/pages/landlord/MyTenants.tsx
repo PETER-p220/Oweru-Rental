@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import Api from '../../services/api';
 import {
   descriptionStyle,
@@ -45,21 +46,30 @@ const MyTenants = () => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const response = await Api.getMyTenants();
-        setTenants(Array.isArray(response.data) ? response.data : []);
-      } catch (err: any) {
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await Api.getMyTenants();
+      setTenants(Array.isArray(response.data) ? response.data : []);
+    } catch (err: any) {
         setError(err?.response?.data?.message || 'Unable to load tenants.');
       } finally {
         setLoading(false);
       }
     };
 
+  useEffect(() => {
     loadData();
+  }, []);
+
+  // Auto-refresh every 30 seconds to get latest tenant data
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const filtered = useMemo(() => {
@@ -85,10 +95,30 @@ const MyTenants = () => {
   return (
     <div style={pageStyle}>
       <section style={panelStyle}>
-        <div style={sectionTitleStyle}>Landlord Workspace</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={sectionTitleStyle}>Landlord Workspace</div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: 'var(--accent-color)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
         <h1 style={headingStyle}>My Tenants</h1>
         <p style={descriptionStyle}>
-          Active tenant records loaded from the owner tenants endpoint, with contract dates and rent amounts connected to your live Laravel data.
+          Active tenant records loaded from the owner tenants endpoint, with contract dates and rent amounts connected to your live system data.
         </p>
 
         <div style={{ ...metricGridStyle, marginTop: '22px' }}>
