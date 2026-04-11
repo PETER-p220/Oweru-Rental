@@ -291,11 +291,16 @@ class OwnerController extends Controller
     // Tenants Management
     public function getMyTenants(): JsonResponse
     {
+        \Log::info('=== GET MY TENANTS CALLED ===');
+        
         if (! $this->tenantTablesAvailable()) {
+            \Log::info('Tenant tables not available, returning empty response');
             return $this->emptyPaginatedResponse();
         }
 
         $user = Auth::user();
+        \Log::info('User ID: ' . $user->id . ' (Owner ID)');
+        
         $tenants = Tenant::with(['user', 'property', 'contract'])
             ->whereHas('property', function ($query) use ($user) {
                 $query->where('owner_id', $user->id);
@@ -305,7 +310,15 @@ class OwnerController extends Controller
             })
             ->paginate(20);
 
-        return response()->json([
+        \Log::info('Tenants query result count: ' . $tenants->total());
+        \Log::info('Tenants items count: ' . count($tenants->items()));
+        
+        // Log the first tenant if exists
+        if ($tenants->count() > 0) {
+            \Log::info('First tenant data: ', $tenants->first()->toArray());
+        }
+
+        $response = [
             'data' => $tenants->items(),
             'pagination' => [
                 'current_page' => $tenants->currentPage(),
@@ -313,7 +326,12 @@ class OwnerController extends Controller
                 'per_page' => $tenants->perPage(),
                 'total' => $tenants->total(),
             ]
-        ]);
+        ];
+        
+        \Log::info('Returning response: ', $response);
+        \Log::info('=== END GET MY TENANTS ===');
+
+        return response()->json($response);
     }
 
     // Contracts Management

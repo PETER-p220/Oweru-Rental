@@ -45,22 +45,37 @@ const MyTenants = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      else setRefreshing(true);
       setError('');
       const response = await Api.getMyTenants();
-      console.log('Tenants API Response:', response);
-      console.log('Tenants Data:', response.data);
+      
+      // Debug: Log the entire response
+      console.log('=== TENANTS API RESPONSE ===');
+      console.log('Full response:', response);
+      console.log('Response data:', response.data);
+      console.log('Data type:', typeof response.data);
+      console.log('Is array?', Array.isArray(response.data));
+      console.log('Data length:', response.data?.length);
+      console.log('===============================');
+      
       setTenants(Array.isArray(response.data) ? response.data : []);
     } catch (err: any) {
-        console.error('Tenants API Error:', err);
-        setError(err?.response?.data?.message || 'Unable to load tenants.');
-      } finally {
-        setLoading(false);
-      }
-    };
+      console.error('=== TENANTS API ERROR ===');
+      console.error('Error:', err);
+      console.error('Response:', err?.response);
+      console.error('Response data:', err?.response?.data);
+      console.error('========================');
+      setError(err?.response?.data?.message || 'Unable to load tenants.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     loadData();
