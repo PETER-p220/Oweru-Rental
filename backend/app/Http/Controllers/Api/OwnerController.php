@@ -341,26 +341,45 @@ class OwnerController extends Controller
         
         $user = Auth::user();
         
-        // Find approved applications that don't have tenant records yet
-        $approvedApplications = \App\Models\Application::with(['user', 'property'])
+        // First, let's see ALL approved applications for this landlord
+        $allApprovedApps = \App\Models\Application::with(['user', 'property'])
             ->where('status', 'approved')
             ->whereHas('property', function ($query) use ($user) {
                 $query->where('owner_id', $user->id);
             })
-            ->whereNotIn('id', function ($query) use ($user) {
-                $query->select('applications.id')
-                    ->from('applications')
-                    ->join('tenants', function ($join) {
-                        $join->on('tenants.user_id', '=', 'applications.user_id')
-                             ->on('tenants.property_id', '=', 'applications.property_id');
-                    })
-                    ->join('properties', 'properties.id', '=', 'tenants.property_id')
-                    ->where('applications.status', 'approved')
-                    ->where('properties.owner_id', $user->id);
-            })
             ->get();
 
-        \Log::info('Found ' . $approvedApplications->count() . ' approved applications without tenant records');
+        \Log::info('All approved applications for landlord ' . $user->id . ': ' . $allApprovedApps->count());
+        foreach ($allApprovedApps as $app) {
+            \Log::info('Approved app ID: ' . $app->id . ', User: ' . $app->user_id . ', Property: ' . $app->property_id);
+        }
+
+        // Now check if there are any existing tenants for these applications
+        $existingTenants = \App\Models\Tenant::whereIn('user_id', $allApprovedApps->pluck('user_id'))
+            ->whereIn('property_id', $allApprovedApps->pluck('property_id'))
+            ->get();
+
+        \Log::info('Existing tenants for these applications: ' . $existingTenants->count());
+        foreach ($existingTenants as $tenant) {
+            \Log::info('Existing tenant - User: ' . $tenant->user_id . ', Property: ' . $tenant->property_id);
+        }
+
+        // Simple approach: just get approved applications and check manually
+        $approvedApplications = [];
+        foreach ($allApprovedApps as $app) {
+            $hasTenant = \App\Models\Tenant::where('user_id', $app->user_id)
+                ->where('property_id', $app->property_id)
+                ->exists();
+            
+            if (!$hasTenant) {
+                $approvedApplications[] = $app;
+                \Log::info('Application ' . $app->id . ' needs tenant record created');
+            } else {
+                \Log::info('Application ' . $app->id . ' already has tenant record');
+            }
+        }
+
+        \Log::info('Final count of applications needing tenant records: ' . count($approvedApplications));
 
         $createdTenants = [];
         
