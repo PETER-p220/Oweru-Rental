@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, CheckCircle, XCircle, Users } from 'lucide-react';
 import Api from '../../services/api';
 import {
   buttonStyle,
@@ -10,6 +11,7 @@ import {
   inputStyle,
   pageStyle,
   panelStyle,
+  palette,
   sectionTitleStyle,
   statusPillStyle,
   tableStyle,
@@ -39,34 +41,29 @@ interface OwnerApplication {
 }
 
 const ApplicationsPage = () => {
-  const [applications, setApplications] = useState<OwnerApplication[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [busyId, setBusyId] = useState<number | null>(null);
+  const [applications, setApplications]       = useState<OwnerApplication[]>([]);
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState('');
+  const [busyId, setBusyId]                   = useState<number | null>(null);
   const [rejectionReasons, setRejectionReasons] = useState<Record<number, string>>({});
 
   const loadApplications = async () => {
     try {
-      setLoading(true);
-      setError('');
+      setLoading(true); setError('');
       const response = await Api.getOwnerApplications();
       setApplications(Array.isArray(response.data) ? response.data : []);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to load applications.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    loadApplications();
-  }, []);
+  useEffect(() => { loadApplications(); }, []);
 
   const stats = useMemo(() => ({
-    total: applications.length,
-    pending: applications.filter((item) => item.status === 'pending').length,
-    approved: applications.filter((item) => item.status === 'approved').length,
-    rejected: applications.filter((item) => item.status === 'rejected').length,
+    total:    applications.length,
+    pending:  applications.filter((a) => a.status === 'pending').length,
+    approved: applications.filter((a) => a.status === 'approved').length,
+    rejected: applications.filter((a) => a.status === 'rejected').length,
   }), [applications]);
 
   const handleApprove = async (id: number) => {
@@ -76,115 +73,185 @@ const ApplicationsPage = () => {
       await loadApplications();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to approve application.');
-    } finally {
-      setBusyId(null);
-    }
+    } finally { setBusyId(null); }
   };
 
   const handleReject = async (id: number) => {
     const reason = rejectionReasons[id]?.trim();
-    if (!reason) {
-      setError('Add a rejection reason before rejecting an application.');
-      return;
-    }
-
+    if (!reason) { setError('Add a rejection reason before rejecting an application.'); return; }
     try {
       setBusyId(id);
       await Api.rejectApplication(id, reason);
       await loadApplications();
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to reject application.');
-    } finally {
-      setBusyId(null);
-    }
+    } finally { setBusyId(null); }
   };
+
+  // ── stat card accent colours ──────────────────────────────────────────────
+  const statCards = [
+    { label: 'Total',    value: stats.total,    accent: palette.gold,    icon: <Users size={16} /> },
+    { label: 'Pending',  value: stats.pending,  accent: palette.amber,   icon: null },
+    { label: 'Approved', value: stats.approved, accent: palette.green,   icon: <CheckCircle size={16} /> },
+    { label: 'Rejected', value: stats.rejected, accent: palette.red,     icon: <XCircle size={16} /> },
+  ];
 
   return (
     <div style={pageStyle}>
-      <section style={panelStyle}>
-        <div style={sectionTitleStyle}>Landlord Workspace</div>
+
+      {/* ── Header ── */}
+      <section style={{ ...panelStyle, position: 'relative' }}>
+        {/* Gold accent bar */}
+        <div style={{
+          position: 'absolute', top: 0, left: 28, right: 28, height: '2px',
+          background: `linear-gradient(90deg, transparent, ${palette.gold}, transparent)`,
+        }} />
+
+        <div style={sectionTitleStyle}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.gold, display: 'inline-block', marginRight: 6 }} />
+          Landlord Workspace
+        </div>
         <h1 style={headingStyle}>Applications</h1>
-        <p style={descriptionStyle}>
-          Review live property applications from the Laravel owner API and take approve or reject actions without leaving the landlord dashboard.
+        <p style={{ ...descriptionStyle, marginTop: 6 }}>
+          Review live property applications and take approve or reject actions directly from your landlord dashboard.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px', marginTop: '22px' }}>
-          {[
-            ['Total', stats.total],
-            ['Pending', stats.pending],
-            ['Approved', stats.approved],
-            ['Rejected', stats.rejected],
-          ].map(([label, value]) => (
-            <div key={String(label)} style={{ padding: '18px', borderRadius: '18px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.14em' }}>{label}</div>
-              <div style={{ fontSize: '30px', marginTop: '8px' }}>{value}</div>
+        {/* Stat cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '14px', marginTop: '24px' }}>
+          {statCards.map(({ label, value, accent }) => (
+            <div key={label} style={{
+              padding: '18px 20px',
+              borderRadius: '12px',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: `1px solid ${accent}25`,
+              display: 'flex', flexDirection: 'column', gap: '6px',
+            }}>
+              <div style={{ color: palette.gray400, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 700 }}>
+                {label}
+              </div>
+              <div style={{ fontSize: '28px', fontWeight: 700, color: accent, letterSpacing: '-0.02em' }}>
+                {value}
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section style={panelStyle}>
-        {error && <div style={{ marginBottom: '16px', color: 'var(--accent-color)' }}>{error}</div>}
+      {/* ── Table ── */}
+      <section style={{ ...panelStyle }}>
+        {error && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            color: palette.red, background: 'rgba(220,38,38,0.06)',
+            border: '1px solid rgba(220,38,38,0.18)',
+            borderRadius: '10px', padding: '14px 18px', marginBottom: '20px', fontSize: '14px',
+          }}>
+            <AlertCircle size={16} /> {error}
+          </div>
+        )}
+
         {loading ? (
-          <div style={{ color: 'var(--text-secondary)' }}>Loading applications...</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
+            <div style={{ width: 16, height: 16, border: `2px solid ${palette.gold}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            Loading applications…
+          </div>
         ) : applications.length === 0 ? (
-          <div style={{ color: 'var(--text-secondary)' }}>No applications found for your properties yet.</div>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.gray400 }}>
+            <Users size={48} style={{ opacity: 0.2, margin: '0 auto 12px', display: 'block' }} />
+            <div style={{ fontSize: '16px', fontWeight: 600 }}>No applications yet</div>
+            <div style={{ fontSize: '13px', opacity: 0.7, marginTop: 4 }}>Applications from tenants will appear here.</div>
+          </div>
         ) : (
           <div style={tableWrapStyle}>
             <table style={tableStyle}>
               <thead>
                 <tr>
-                  <th style={thStyle}>Applicant</th>
-                  <th style={thStyle}>Property</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Message</th>
-                  <th style={thStyle}>Actions</th>
+                  {['Applicant', 'Property', 'Status', 'Message', 'Actions'].map(h => (
+                    <th key={h} style={thStyle}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {applications.map((application) => (
-                  <tr key={application.id}>
+                  <tr
+                    key={application.id}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,145,40,0.04)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    {/* Applicant */}
                     <td style={tdStyle}>
-                      <div>{application.user?.first_name} {application.user?.last_name}</div>
-                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{application.user?.email || 'No email'}</div>
-                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{application.user?.phone || 'No phone'}</div>
+                      <div style={{ fontWeight: 600, color: palette.offWhite }}>
+                        {application.user?.first_name} {application.user?.last_name}
+                      </div>
+                      <div style={{ color: palette.gray400, marginTop: '4px', fontSize: '13px' }}>
+                        {application.user?.email || 'No email'}
+                      </div>
+                      <div style={{ color: palette.gray400, marginTop: '2px', fontSize: '13px' }}>
+                        {application.user?.phone || 'No phone'}
+                      </div>
                     </td>
+
+                    {/* Property */}
                     <td style={tdStyle}>
-                      <div>{application.property?.title || 'Untitled property'}</div>
-                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>{application.property?.location || 'No location'}</div>
-                      <div style={{ color: '#c9a84c', marginTop: '4px' }}>{formatCurrency(application.property?.price)}</div>
-                      <div style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>Applied {formatDate(application.created_at)}</div>
+                      <div style={{ fontWeight: 500 }}>{application.property?.title || 'Untitled property'}</div>
+                      <div style={{ color: palette.gray400, marginTop: '4px', fontSize: '13px' }}>
+                        {application.property?.location || 'No location'}
+                      </div>
+                      <div style={{ color: palette.gold, marginTop: '4px', fontSize: '13px', fontWeight: 600 }}>
+                        {formatCurrency(application.property?.price)}
+                      </div>
+                      <div style={{ color: palette.gray500, marginTop: '4px', fontSize: '12px' }}>
+                        Applied {formatDate(application.created_at)}
+                      </div>
                     </td>
+
+                    {/* Status */}
                     <td style={tdStyle}>
-                      <span style={statusPillStyle(getStatusColor(application.status))}>{application.status || 'unknown'}</span>
+                      <span style={statusPillStyle(getStatusColor(application.status))}>
+                        {application.status || 'unknown'}
+                      </span>
                       {application.rejection_reason && (
-                        <div style={{ color: 'var(--accent-color)', marginTop: '8px', maxWidth: '220px' }}>{application.rejection_reason}</div>
+                        <div style={{ color: palette.red, marginTop: '8px', maxWidth: '220px', fontSize: '13px', lineHeight: 1.5 }}>
+                          {application.rejection_reason}
+                        </div>
                       )}
                     </td>
+
+                    {/* Message */}
                     <td style={tdStyle}>
-                      <div style={{ maxWidth: '280px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      <div style={{ maxWidth: '280px', color: palette.gray400, lineHeight: 1.6, fontSize: '13px' }}>
                         {application.message || 'No application message provided.'}
                       </div>
                     </td>
+
+                    {/* Actions */}
                     <td style={tdStyle}>
-                      <div style={{ display: 'grid', gap: '10px', minWidth: '220px' }}>
+                      <div style={{ display: 'grid', gap: '8px', minWidth: '220px' }}>
                         {application.status === 'pending' ? (
                           <>
-                            <button style={buttonStyle('primary')} disabled={busyId === application.id} onClick={() => handleApprove(application.id)}>
-                              {busyId === application.id ? 'Working...' : 'Approve'}
+                            <button
+                              style={buttonStyle('primary')}
+                              disabled={busyId === application.id}
+                              onClick={() => handleApprove(application.id)}
+                            >
+                              {busyId === application.id ? 'Working…' : '✓ Approve'}
                             </button>
                             <input
                               style={inputStyle}
-                              placeholder="Rejection reason"
+                              placeholder="Rejection reason…"
                               value={rejectionReasons[application.id] || ''}
-                              onChange={(event) => setRejectionReasons((current) => ({ ...current, [application.id]: event.target.value }))}
+                              onChange={(e) => setRejectionReasons(c => ({ ...c, [application.id]: e.target.value }))}
                             />
-                            <button style={buttonStyle('danger')} disabled={busyId === application.id} onClick={() => handleReject(application.id)}>
-                              {busyId === application.id ? 'Working...' : 'Reject'}
+                            <button
+                              style={buttonStyle('danger')}
+                              disabled={busyId === application.id}
+                              onClick={() => handleReject(application.id)}
+                            >
+                              {busyId === application.id ? 'Working…' : '✕ Reject'}
                             </button>
                           </>
                         ) : (
-                          <div style={{ color: 'var(--text-secondary)' }}>No further action needed.</div>
+                          <div style={{ color: palette.gray500, fontSize: '13px' }}>No further action needed.</div>
                         )}
                       </div>
                     </td>
@@ -195,6 +262,8 @@ const ApplicationsPage = () => {
           </div>
         )}
       </section>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };

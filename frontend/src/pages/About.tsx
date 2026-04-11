@@ -1,91 +1,44 @@
-import { Shield, Users, TrendingUp, Award, Clock, MapPin, ArrowRight, ChevronRight } from 'lucide-react';
+import { Shield, Users, TrendingUp, Clock, MapPin, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const About = () => {
   const stats = [
-    { label: 'Active Users',       value: '10,000+', suffix: 'users' },
-    { label: 'Properties Listed',  value: '5,000+',  suffix: 'listings' },
-    { label: 'Verified Listings',  value: '95%',     suffix: 'accuracy' },
-    { label: 'Success Rate',       value: '98%',     suffix: 'satisfaction' },
+    { label: 'Active Users',      value: '10,000+', suffix: 'users'        },
+    { label: 'Properties Listed', value: '5,000+',  suffix: 'listings'     },
+    { label: 'Verified Listings', value: '95%',     suffix: 'accuracy'     },
+    { label: 'Success Rate',      value: '98%',     suffix: 'satisfaction' },
   ];
 
   const values = [
-    {
-      icon: Shield,
-      num: '01',
-      title: 'Trust & Security',
-      description: 'We verify all properties and users to ensure a safe rental experience for every party involved.',
-    },
-    {
-      icon: Users,
-      num: '02',
-      title: 'Community First',
-      description: 'Building a trusted community of landlords, agents, and tenants across Tanzania.',
-    },
-    {
-      icon: TrendingUp,
-      num: '03',
-      title: 'Innovation',
-      description: 'Using technology to simplify the rental process and deliver better everyday experiences.',
-    },
-    {
-      icon: Clock,
-      num: '04',
-      title: 'Efficiency',
-      description: 'Streamlined processes that save time and reduce complexity for all users.',
-    },
+    { icon: Shield,     num: '01', title: 'Trust & Security', description: 'We verify all properties and users to ensure a safe rental experience for every party involved.' },
+    { icon: Users,      num: '02', title: 'Community First',  description: 'Building a trusted community of landlords, agents, and tenants across Tanzania.' },
+    { icon: TrendingUp, num: '03', title: 'Innovation',       description: 'Using technology to simplify the rental process and deliver better everyday experiences.' },
+    { icon: Clock,      num: '04', title: 'Efficiency',       description: 'Streamlined processes that save time and reduce complexity for all users.' },
   ];
 
   const mission = [
-    {
-      title: 'For Landlords',
-      desc: 'Find reliable tenants quickly, manage properties efficiently, and receive payments securely.',
-      icon: MapPin,
-    },
-    {
-      title: 'For Agents',
-      desc: 'Track leads and commissions, build your reputation, and grow your business with our tools.',
-      icon: TrendingUp,
-    },
-    {
-      title: 'For Tenants',
-      desc: 'Browse verified properties, apply online, and enjoy a fully secure rental experience.',
-      icon: Shield,
-    },
+    { title: 'For Landlords', desc: 'Find reliable tenants quickly, manage properties efficiently, and receive payments securely.', icon: MapPin    },
+    { title: 'For Agents',    desc: 'Track leads and commissions, build your reputation, and grow your business with our tools.',  icon: TrendingUp },
+    { title: 'For Tenants',   desc: 'Browse verified properties, apply online, and enjoy a fully secure rental experience.',       icon: Shield    },
   ];
 
   return (
-    <div style={{ fontFamily: "'Inter', 'DM Sans', system-ui, sans-serif", background: '#f8fafc', color: '#1e293b', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Jost', 'Futura PT', sans-serif", background: '#0F172A', color: '#F8F8F9', minHeight: '100vh' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
+        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800&display=swap');
         * { box-sizing: border-box; }
 
         :root {
-          --blue-900: #0f2d6e;
-          --blue-800: #1a3f8f;
-          --blue-700: #1d4ed8;
-          --blue-600: #2563eb;
-          --blue-500: #3b82f6;
-          --blue-400: #60a5fa;
-          --blue-300: #93c5fd;
-          --blue-200: #bfdbfe;
-          --blue-100: #dbeafe;
-          --blue-50:  #eff6ff;
-          --white:    #ffffff;
-          --gray-50:  #f8fafc;
-          --gray-100: #f1f5f9;
-          --gray-200: #e2e8f0;
-          --gray-300: #cbd5e1;
-          --gray-400: #94a3b8;
-          --gray-500: #64748b;
-          --gray-600: #475569;
-          --gray-700: #334155;
-          --gray-800: #1e293b;
-          --gray-900: #0f172a;
-          --shadow-sm: 0 1px 3px rgba(15,45,110,0.08), 0 1px 2px rgba(15,45,110,0.06);
-          --shadow-md: 0 4px 12px rgba(15,45,110,0.10), 0 2px 4px rgba(15,45,110,0.06);
-          --shadow-lg: 0 10px 30px rgba(15,45,110,0.12), 0 4px 8px rgba(15,45,110,0.06);
+          --navy-900: #0F172A;
+          --navy-800: #162035;
+          --navy-700: #1E2D4A;
+          --gold:     #C89128;
+          --gold-lt:  #D4A843;
+          --gold-dim: rgba(200,145,40,0.12);
+          --cream:    #F8F8F9;
+          --slate:    #94A3B8;
+          --border:   rgba(200,145,40,0.18);
+          --border-f: rgba(200,145,40,0.08);
         }
 
         /* ── Hero ── */
@@ -95,46 +48,43 @@ const About = () => {
           min-height: 72vh;
           display: flex;
           align-items: center;
-          background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-800) 45%, var(--blue-700) 100%);
+          background: var(--navy-900);
+          border-bottom: 1px solid var(--border);
         }
 
-        .ab-hero-pattern {
-          position: absolute;
-          inset: 0;
-          background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0);
-          background-size: 32px 32px;
+        .ab-hero-geo {
+          position: absolute; inset: 0;
+          background-image:
+            repeating-linear-gradient(60deg, transparent, transparent 30px, rgba(200,145,40,0.025) 30px, rgba(200,145,40,0.025) 31px),
+            repeating-linear-gradient(-60deg, transparent, transparent 30px, rgba(200,145,40,0.025) 30px, rgba(200,145,40,0.025) 31px);
           pointer-events: none;
         }
 
         .ab-hero-glow {
           position: absolute;
-          right: -5%;
-          top: -10%;
-          width: 55%;
-          height: 80%;
-          background: radial-gradient(ellipse, rgba(var(--blue-500), 0.15) 0%, transparent 65%);
+          right: -8%; top: -15%;
+          width: 55%; height: 80%;
+          background: radial-gradient(ellipse, rgba(200,145,40,0.06) 0%, transparent 65%);
           pointer-events: none;
         }
 
-        .ab-hero-watermark {
+        .ab-hero-wm {
           position: absolute;
-          right: 4%;
-          bottom: -4%;
+          right: 4%; bottom: -4%;
           font-size: clamp(120px, 18vw, 240px);
-          font-weight: 700;
+          font-weight: 800;
           color: transparent;
-          -webkit-text-stroke: 1px rgba(255,255,255,0.06);
+          -webkit-text-stroke: 1px rgba(200,145,40,0.05);
           line-height: 1;
           user-select: none;
           letter-spacing: -0.05em;
         }
 
         .ab-hero-inner {
-          position: relative;
-          z-index: 2;
+          position: relative; z-index: 2;
           max-width: 1200px;
           margin: 0 auto;
-          padding: 120px 48px 80px;
+          padding: 130px 48px 90px;
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 80px;
@@ -142,173 +92,150 @@ const About = () => {
           width: 100%;
         }
 
-        .ab-eyebrow {
+        .ab-tag {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          background: rgba(255,255,255,0.12);
-          border: 1px solid rgba(255,255,255,0.2);
-          color: var(--blue-200);
-          padding: 5px 14px;
-          border-radius: 100px;
-          font-size: 11px;
+          gap: 10px;
+          font-size: 10px;
           font-weight: 600;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.28em;
           text-transform: uppercase;
-          margin-bottom: 24px;
-        }
-
-        .ab-eyebrow-dot {
-          width: 6px;
-          height: 6px;
-          background: #4ade80;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-
-        .ab-hero-title {
-          font-size: clamp(44px, 5.5vw, 72px);
-          font-weight: 700;
-          line-height: 1.06;
-          letter-spacing: -0.03em;
-          color: var(--white);
+          color: var(--gold);
           margin-bottom: 20px;
         }
 
-        .ab-hero-title span { color: var(--blue-300); }
+        .ab-tag::before { content: ''; width: 28px; height: 2px; background: var(--gold); }
 
-        .ab-hero-text {
+        .ab-hero-h1 {
+          font-size: clamp(44px, 5.5vw, 72px);
+          font-weight: 300;
+          line-height: 1.02;
+          letter-spacing: -0.025em;
+          color: var(--cream);
+          margin-bottom: 20px;
+        }
+
+        .ab-hero-h1 b { font-weight: 800; color: var(--gold); display: block; }
+
+        .ab-hero-p {
           font-size: 16px;
-          font-weight: 400;
-          line-height: 1.7;
-          color: rgba(255,255,255,0.7);
-          max-width: 420px;
+          font-weight: 300;
+          line-height: 1.75;
+          color: var(--slate);
+          max-width: 400px;
         }
 
         /* founding card */
-        .ab-founding-card {
-          background: var(--white);
-          border-radius: 16px;
+        .ab-founding {
+          background: var(--navy-800);
+          border: 1px solid var(--border);
           padding: 40px;
-          box-shadow: var(--shadow-lg);
           position: relative;
           overflow: hidden;
         }
 
-        .ab-founding-card::before {
+        .ab-founding::before {
           content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          height: 4px;
-          background: linear-gradient(90deg, var(--blue-600), var(--blue-400));
-          border-radius: 4px 4px 0 0;
+          position: absolute; top: 0; left: 0; right: 0;
+          height: 3px;
+          background: var(--gold);
         }
 
-        .founding-year {
-          font-size: clamp(64px, 9vw, 104px);
-          font-weight: 700;
+        .founding-yr {
+          font-size: clamp(64px, 9vw, 96px);
+          font-weight: 800;
           line-height: 1;
-          letter-spacing: -0.04em;
-          color: var(--blue-600);
-          opacity: 0.15;
-          margin-bottom: 8px;
+          letter-spacing: -0.05em;
+          color: transparent;
+          -webkit-text-stroke: 1px rgba(200,145,40,0.25);
+          margin-bottom: 10px;
         }
 
-        .founding-label {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 11px;
+        .founding-lbl {
+          font-size: 10px;
           font-weight: 600;
-          letter-spacing: 0.1em;
+          letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: var(--blue-600);
+          color: var(--gold);
           margin-bottom: 14px;
-          background: var(--blue-50);
-          padding: 4px 12px;
-          border-radius: 100px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
+
+        .founding-lbl::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
         .founding-desc {
           font-size: 14px;
-          font-weight: 400;
-          line-height: 1.7;
-          color: var(--gray-500);
+          font-weight: 300;
+          line-height: 1.75;
+          color: var(--slate);
         }
 
         /* ── Stats bar ── */
-        .ab-stats {
-          background: var(--white);
-          border-bottom: 1px solid var(--gray-200);
-          box-shadow: var(--shadow-sm);
-        }
+        .ab-stats { background: var(--navy-800); border-bottom: 1px solid var(--border); }
 
         .ab-stats-inner {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 0 48px;
           display: grid;
           grid-template-columns: repeat(4, 1fr);
+          border-left: 1px solid var(--border);
         }
 
         .ab-stat {
-          padding: 36px 28px;
-          border-right: 1px solid var(--gray-200);
+          padding: 36px 32px;
+          border-right: 1px solid var(--border);
           position: relative;
           transition: background 0.25s;
         }
 
         .ab-stat:last-child { border-right: none; }
-        .ab-stat:hover { background: var(--blue-50); }
+        .ab-stat:hover { background: rgba(200,145,40,0.04); }
 
         .ab-stat::after {
           content: '';
           position: absolute;
           bottom: 0; left: 0; right: 0;
           height: 2px;
-          background: linear-gradient(90deg, var(--blue-500), var(--blue-300));
+          background: var(--gold);
           transform: scaleX(0);
           transform-origin: left;
           transition: transform 0.35s ease;
-          border-radius: 2px;
         }
 
         .ab-stat:hover::after { transform: scaleX(1); }
 
         .ab-stat-num {
           font-size: 36px;
-          font-weight: 700;
+          font-weight: 800;
           letter-spacing: -0.03em;
-          color: var(--blue-600);
+          color: var(--gold);
           line-height: 1;
           margin-bottom: 6px;
         }
 
         .ab-stat-label {
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 600;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: var(--gray-700);
+          color: var(--cream);
           margin-bottom: 3px;
         }
 
         .ab-stat-suffix {
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 400;
-          letter-spacing: 0.06em;
-          color: var(--gray-400);
+          letter-spacing: 0.08em;
+          color: var(--slate);
           text-transform: uppercase;
         }
 
         /* ── Shared section ── */
-        .ab-section {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 88px 48px;
-        }
+        .ab-section { max-width: 1200px; margin: 0 auto; padding: 88px 48px; }
 
-        .ab-section-header {
+        .ab-section-hdr {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 60px;
@@ -316,284 +243,182 @@ const About = () => {
           margin-bottom: 56px;
         }
 
-        .ab-section-eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: var(--blue-600);
-          margin-bottom: 14px;
-          background: var(--blue-50);
-          padding: 4px 12px;
-          border-radius: 100px;
-        }
-
-        .ab-section-title {
-          font-size: clamp(30px, 3.2vw, 46px);
-          font-weight: 700;
-          line-height: 1.1;
-          letter-spacing: -0.025em;
-          color: var(--gray-900);
-        }
-
-        .ab-section-title span { color: var(--blue-600); }
-
-        .ab-section-desc {
-          font-size: 15px;
-          font-weight: 400;
-          line-height: 1.75;
-          color: var(--gray-500);
-          align-self: end;
-        }
+        .ab-section-title { font-size: clamp(30px, 3.2vw, 46px); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; color: var(--cream); }
+        .ab-section-title span { color: var(--gold); }
+        .ab-section-desc { font-size: 15px; font-weight: 300; line-height: 1.75; color: var(--slate); }
 
         /* ── Story ── */
-        .ab-story-bg {
-          background: var(--white);
-          border-top: 1px solid var(--gray-200);
-          border-bottom: 1px solid var(--gray-200);
-        }
+        .ab-story-bg { background: var(--navy-800); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 
-        .ab-story-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 72px;
-          align-items: start;
-        }
+        .ab-story-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: start; }
 
-        .ab-story-body {
-          font-size: 15px;
-          font-weight: 400;
-          line-height: 1.8;
-          color: var(--gray-500);
-        }
-
+        .ab-story-body { font-size: 15px; font-weight: 300; line-height: 1.8; color: var(--slate); }
         .ab-story-body p { margin-bottom: 18px; }
         .ab-story-body p:last-child { margin-bottom: 0; }
 
-        .ab-story-highlight {
+        .ab-story-pull {
           font-size: 18px;
           font-weight: 500;
-          font-style: italic;
           line-height: 1.55;
-          color: var(--blue-700);
-          border-left: 3px solid var(--blue-500);
+          color: var(--cream);
+          border-left: 3px solid var(--gold);
           padding: 14px 0 14px 22px;
           margin: 28px 0;
-          background: var(--blue-50);
-          border-radius: 0 8px 8px 0;
+          background: rgba(200,145,40,0.05);
         }
 
-        .ab-timeline {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
+        .ab-timeline { display: flex; flex-direction: column; gap: 1px; }
 
-        .ab-timeline-item {
-          background: var(--gray-50);
-          border: 1px solid var(--gray-200);
-          border-radius: 10px;
+        .ab-tl-item {
+          background: var(--navy-900);
+          border: 1px solid var(--border-f);
           padding: 20px 24px;
           display: grid;
-          grid-template-columns: 64px 1fr;
+          grid-template-columns: 60px 1fr;
           gap: 16px;
           align-items: start;
           transition: all 0.2s;
+          position: relative;
+          overflow: hidden;
         }
 
-        .ab-timeline-item:hover {
-          background: var(--blue-50);
-          border-color: var(--blue-200);
-          transform: translateX(4px);
+        .ab-tl-item::before {
+          content: '';
+          position: absolute; left: 0; top: 0; bottom: 0;
+          width: 2px;
+          background: var(--gold);
+          transform: scaleY(0);
+          transform-origin: top;
+          transition: transform 0.3s;
         }
 
-        .ab-tl-year {
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--blue-600);
-          letter-spacing: 0.06em;
-          padding-top: 3px;
-          text-transform: uppercase;
-        }
+        .ab-tl-item:hover { background: rgba(200,145,40,0.04); border-color: rgba(200,145,40,0.25); }
+        .ab-tl-item:hover::before { transform: scaleY(1); }
 
-        .ab-tl-title {
-          font-size: 15px;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin-bottom: 5px;
-        }
+        .ab-tl-yr { font-size: 10px; font-weight: 700; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; padding-top: 3px; }
+        .ab-tl-title { font-size: 15px; font-weight: 600; color: var(--cream); margin-bottom: 5px; }
+        .ab-tl-desc { font-size: 13px; font-weight: 300; line-height: 1.6; color: var(--slate); }
 
-        .ab-tl-desc {
-          font-size: 13px;
-          font-weight: 400;
-          line-height: 1.6;
-          color: var(--gray-500);
-        }
-
-        /* ── Values grid ── */
+        /* ── Values ── */
         .ab-values-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
+          gap: 1px;
+          background: var(--border);
+          border: 1px solid var(--border);
         }
 
         .ab-value-card {
-          background: var(--white);
-          border: 1px solid var(--gray-200);
-          border-radius: 12px;
-          padding: 32px 28px;
+          background: var(--navy-800);
+          padding: 36px 28px;
           position: relative;
           overflow: hidden;
-          transition: all 0.3s;
-          box-shadow: var(--shadow-sm);
+          transition: background 0.3s;
         }
 
         .ab-value-card::before {
           content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          height: 3px;
-          background: linear-gradient(90deg, var(--blue-500), var(--blue-300));
+          position: absolute; top: 0; left: 0; right: 0;
+          height: 2px;
+          background: var(--gold);
           transform: scaleX(0);
           transform-origin: left;
-          transition: transform 0.35s ease;
-          border-radius: 3px 3px 0 0;
+          transition: transform 0.35s;
         }
 
-        .ab-value-card:hover {
-          border-color: var(--blue-200);
-          box-shadow: var(--shadow-md);
-          transform: translateY(-3px);
-        }
-
+        .ab-value-card:hover { background: rgba(200,145,40,0.04); }
         .ab-value-card:hover::before { transform: scaleX(1); }
 
-        .ab-value-num {
-          position: absolute;
-          top: 14px;
-          right: 18px;
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--blue-200);
-          letter-spacing: 0.08em;
-        }
+        .ab-value-num { position: absolute; top: 16px; right: 20px; font-size: 11px; font-weight: 700; color: rgba(200,145,40,0.2); letter-spacing: 0.1em; }
 
         .ab-value-icon {
-          width: 46px;
-          height: 46px;
-          background: var(--blue-50);
-          border: 1.5px solid var(--blue-100);
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--blue-600);
+          width: 44px; height: 44px;
+          background: var(--gold-dim);
+          border: 1px solid var(--border);
+          display: flex; align-items: center; justify-content: center;
+          color: var(--gold);
           margin-bottom: 20px;
         }
 
-        .ab-value-title {
-          font-size: 17px;
-          font-weight: 600;
-          color: var(--gray-900);
-          margin-bottom: 10px;
-          letter-spacing: -0.01em;
-        }
-
-        .ab-value-desc {
-          font-size: 13px;
-          font-weight: 400;
-          line-height: 1.7;
-          color: var(--gray-500);
-        }
+        .ab-value-title { font-size: 17px; font-weight: 600; color: var(--cream); margin-bottom: 10px; }
+        .ab-value-desc { font-size: 14px; font-weight: 300; line-height: 1.7; color: var(--slate); }
 
         /* ── Mission ── */
-        .ab-mission-bg {
-          background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-800) 50%, var(--blue-700) 100%);
-          position: relative;
-          overflow: hidden;
-        }
+        .ab-mission-bg { background: var(--navy-800); border-top: 1px solid var(--border); position: relative; overflow: hidden; }
 
-        .ab-mission-pattern {
+        .ab-mission-bg::before {
+          content: '';
           position: absolute;
-          inset: 0;
-          background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
-          background-size: 40px 40px;
+          width: 600px; height: 600px;
+          background: radial-gradient(circle, rgba(200,145,40,0.06) 0%, transparent 60%);
+          bottom: -200px; right: -100px;
           pointer-events: none;
         }
 
-        .ab-mission-inner {
-          position: relative;
-          z-index: 1;
-        }
+        .ab-mission-inner { position: relative; z-index: 1; }
 
-        .ab-mission-statement {
-          font-size: clamp(19px, 2.4vw, 28px);
-          font-weight: 500;
-          line-height: 1.5;
-          letter-spacing: -0.015em;
-          color: var(--white);
-          border-left: 3px solid var(--blue-400);
+        .ab-mission-stmt {
+          font-size: clamp(18px, 2.4vw, 28px);
+          font-weight: 300;
+          line-height: 1.55;
+          letter-spacing: -0.01em;
+          color: var(--cream);
+          border-left: 3px solid var(--gold);
           padding: 18px 0 18px 28px;
           margin-bottom: 56px;
-          max-width: 760px;
+          max-width: 720px;
         }
 
-        .ab-mission-statement span { color: var(--blue-300); font-style: italic; }
+        .ab-mission-stmt b { font-weight: 700; color: var(--gold); }
 
         .ab-mission-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
+          gap: 1px;
+          background: var(--border);
+          border: 1px solid var(--border);
         }
 
         .ab-mission-card {
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.14);
-          border-radius: 14px;
+          background: var(--navy-900);
           padding: 36px 30px;
           position: relative;
           overflow: hidden;
-          transition: all 0.3s;
-          backdrop-filter: blur(8px);
+          transition: background 0.3s;
         }
 
-        .ab-mission-card:hover {
-          background: rgba(255,255,255,0.14);
-          border-color: rgba(255,255,255,0.28);
-          transform: translateY(-3px);
+        .ab-mission-card::before {
+          content: '';
+          position: absolute; top: 0; left: 0; right: 0;
+          height: 2px;
+          background: var(--gold);
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform 0.35s;
         }
+
+        .ab-mission-card:hover { background: rgba(200,145,40,0.04); }
+        .ab-mission-card:hover::before { transform: scaleX(1); }
 
         .ab-mission-icon {
-          width: 42px;
-          height: 42px;
-          background: rgba(255,255,255,0.12);
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--blue-300);
+          width: 42px; height: 42px;
+          background: var(--gold-dim);
+          border: 1px solid var(--border);
+          display: flex; align-items: center; justify-content: center;
+          color: var(--gold);
           margin-bottom: 18px;
         }
 
-        .ab-mission-title {
-          font-size: 18px;
-          font-weight: 600;
-          color: var(--white);
-          margin-bottom: 10px;
-        }
+        .ab-mission-title { font-size: 18px; font-weight: 700; color: var(--cream); margin-bottom: 10px; }
+        .ab-mission-desc { font-size: 14px; font-weight: 300; line-height: 1.7; color: var(--slate); }
 
-        .ab-mission-desc {
-          font-size: 14px;
-          font-weight: 400;
-          line-height: 1.7;
-          color: rgba(255,255,255,0.65);
-        }
-
-        /* ── CTA strip ── */
+        /* ── CTA ── */
         .ab-cta {
+          background: var(--navy-900);
+          border-top: 1px solid var(--border);
+        }
+
+        .ab-cta-inner {
           max-width: 1200px;
           margin: 0 auto;
           padding: 80px 48px;
@@ -605,40 +430,35 @@ const About = () => {
         }
 
         .ab-cta-text {
-          font-size: clamp(26px, 2.8vw, 40px);
-          font-weight: 700;
+          font-size: clamp(26px, 2.8vw, 42px);
+          font-weight: 300;
           letter-spacing: -0.02em;
-          color: var(--gray-900);
+          color: var(--cream);
           line-height: 1.2;
         }
 
-        .ab-cta-text span { color: var(--blue-600); }
+        .ab-cta-text b { font-weight: 800; color: var(--gold); }
 
-        .ab-btn-primary {
+        .ab-btn-gold {
           display: inline-flex;
           align-items: center;
           gap: 10px;
-          background: var(--blue-600);
-          color: var(--white);
-          padding: 14px 28px;
-          font-size: 14px;
-          font-weight: 600;
-          letter-spacing: 0.02em;
+          background: var(--gold);
+          color: var(--navy-900);
+          padding: 15px 30px;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
           text-decoration: none;
           border: none;
           cursor: pointer;
-          border-radius: 8px;
-          transition: all 0.2s ease;
           white-space: nowrap;
           flex-shrink: 0;
-          box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+          transition: all 0.2s;
         }
 
-        .ab-btn-primary:hover {
-          background: var(--blue-700);
-          gap: 14px;
-          box-shadow: 0 4px 16px rgba(37,99,235,0.4);
-        }
+        .ab-btn-gold:hover { background: var(--gold-lt); gap: 14px; }
 
         /* Responsive */
         @media (max-width: 1024px) {
@@ -648,44 +468,37 @@ const About = () => {
 
         @media (max-width: 860px) {
           .ab-hero-inner { grid-template-columns: 1fr; gap: 40px; padding: 100px 24px 60px; }
-          .ab-hero-watermark { display: none; }
+          .ab-hero-wm { display: none; }
           .ab-stats-inner { grid-template-columns: 1fr 1fr; }
           .ab-section { padding: 60px 24px; }
-          .ab-section-header { grid-template-columns: 1fr; gap: 16px; }
+          .ab-section-hdr { grid-template-columns: 1fr; gap: 16px; }
           .ab-story-grid { grid-template-columns: 1fr; gap: 40px; }
           .ab-values-grid { grid-template-columns: 1fr; }
-          .ab-cta { padding: 60px 24px; flex-direction: column; align-items: flex-start; }
+          .ab-cta-inner { padding: 60px 24px; flex-direction: column; align-items: flex-start; }
         }
       `}</style>
 
       {/* ── Hero ── */}
       <section className="ab-hero">
-        <div className="ab-hero-pattern" />
+        <div className="ab-hero-geo" />
         <div className="ab-hero-glow" />
-        <div className="ab-hero-watermark">2024</div>
-
+        <div className="ab-hero-wm">2024</div>
         <div className="ab-hero-inner">
           <div>
-            <div className="ab-eyebrow">
-              <span className="ab-eyebrow-dot" />
-              Our Story
-            </div>
-            <h1 className="ab-hero-title">
-              About<br /><span>Oweru</span>
-            </h1>
-            <p className="ab-hero-text">
+            <div className="ab-tag">Our Story</div>
+            <h1 className="ab-hero-h1">About<br /><b>Oweru</b></h1>
+            <p className="ab-hero-p">
               Transforming Tanzania's rental market with technology, trust, and
-              transparency. We're making property rental simple, secure, and
-              accessible for everyone — everywhere.
+              transparency — making property rental simple, secure, and accessible for everyone.
             </p>
           </div>
-
-          <div className="ab-founding-card">
-            <div className="founding-year">2024</div>
-            <div className="founding-label">Founded</div>
+          <div className="ab-founding">
+            <div className="founding-yr">2024</div>
+            <div className="founding-lbl">Founded</div>
             <p className="founding-desc">
               Born from a simple observation: Tanzania's rental market was
-              fragmented, inefficient, and lacked trust. We set out to fix that.
+              fragmented, inefficient, and lacked trust. We set out to fix that
+              with technology and transparency.
             </p>
           </div>
         </div>
@@ -704,60 +517,47 @@ const About = () => {
         </div>
       </div>
 
-      {/* ── Our Story ── */}
+      {/* ── Story ── */}
       <div className="ab-story-bg">
         <div className="ab-section">
-          <div className="ab-section-header">
+          <div className="ab-section-hdr">
             <div>
-              <div className="ab-section-eyebrow">Background</div>
-              <h2 className="ab-section-title">
-                Our <span>Story</span>
-              </h2>
+              <div className="ab-tag" style={{ marginBottom: 14 }}>Background</div>
+              <h2 className="ab-section-title">Our <span>Story</span></h2>
             </div>
             <p className="ab-section-desc">
-              From a fragmented market to Tanzania's fastest-growing rental platform —
-              here's how we got here.
+              From a fragmented market to Tanzania's fastest-growing rental platform — here's how we got here.
             </p>
           </div>
-
           <div className="ab-story-grid">
             <div>
               <div className="ab-story-body">
                 <p>
-                  Founded in 2024, Oweru was born from a simple observation: Tanzania's
-                  rental market was fragmented, inefficient, and lacked trust. Landlords
-                  struggled to find reliable tenants, agents lacked proper tools to track
-                  their performance, and tenants faced uncertainty in their search for
-                  quality housing.
+                  Founded in 2024, Oweru was born from a simple observation: Tanzania's rental market
+                  was fragmented, inefficient, and lacked trust. Landlords struggled to find reliable
+                  tenants, agents lacked proper tools to track their performance, and tenants faced
+                  uncertainty in their search for quality housing.
                 </p>
-
-                <div className="ab-story-highlight">
-                  "We set out to bring transparency, efficiency, and security to
-                  every corner of the rental process."
+                <div className="ab-story-pull">
+                  "We set out to bring transparency, efficiency, and security to every corner of the rental process."
                 </div>
-
                 <p>
-                  Our smart tracking system ensures agents get credited for their
-                  work, our verification process builds trust, and our streamlined
-                  application process makes renting simple for everyone.
-                </p>
-                <p>
-                  Today, Oweru is Tanzania's fastest-growing rental platform,
-                  connecting thousands of landlords, agents, and tenants across the country.
+                  Our smart tracking system ensures agents get credited for their work, our verification
+                  process builds trust, and our streamlined application process makes renting simple for
+                  everyone. Today, Oweru is Tanzania's fastest-growing rental platform.
                 </p>
               </div>
             </div>
-
             <div className="ab-timeline">
               {[
-                { year: 'Q1 2024', title: 'Platform Founded',     desc: "Oweru launched with a mission to fix Tanzania's fragmented rental market." },
-                { year: 'Q2 2024', title: 'First 1,000 Listings', desc: 'Reached our first milestone with verified properties across Dar es Salaam.' },
-                { year: 'Q3 2024', title: 'Agent Dashboard Live', desc: 'Launched our agent tracking system, helping professionals grow their business.' },
-                { year: 'Q4 2024', title: '10,000 Active Users',  desc: 'Crossed the milestone with landlords, agents, and tenants on board nationwide.' },
-                { year: '2025',    title: 'National Expansion',   desc: 'Expanding to Arusha, Mwanza, Dodoma, and beyond across Tanzania.' },
-              ].map((t) => (
-                <div key={t.year} className="ab-timeline-item">
-                  <div className="ab-tl-year">{t.year}</div>
+                { yr: 'Q1 2024', title: 'Platform Founded',     desc: "Oweru launched with a mission to fix Tanzania's fragmented rental market." },
+                { yr: 'Q2 2024', title: 'First 1,000 Listings', desc: 'Reached our first milestone with verified properties across Dar es Salaam.' },
+                { yr: 'Q3 2024', title: 'Agent Dashboard Live', desc: 'Launched our agent tracking system, helping professionals grow their business.' },
+                { yr: 'Q4 2024', title: '10,000 Active Users',  desc: 'Crossed the milestone with landlords, agents, and tenants on board nationwide.' },
+                { yr: '2025',    title: 'National Expansion',   desc: 'Expanding to Arusha, Mwanza, Dodoma, and beyond across Tanzania.' },
+              ].map(t => (
+                <div key={t.yr} className="ab-tl-item">
+                  <div className="ab-tl-yr">{t.yr}</div>
                   <div>
                     <div className="ab-tl-title">{t.title}</div>
                     <div className="ab-tl-desc">{t.desc}</div>
@@ -770,23 +570,19 @@ const About = () => {
       </div>
 
       {/* ── Values ── */}
-      <section style={{ background: 'var(--gray-50)', borderTop: '1px solid var(--gray-200)' }}>
+      <section style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)' }}>
         <div className="ab-section">
-          <div className="ab-section-header">
+          <div className="ab-section-hdr">
             <div>
-              <div className="ab-section-eyebrow">What Drives Us</div>
-              <h2 className="ab-section-title">
-                Our <span>Values</span>
-              </h2>
+              <div className="ab-tag" style={{ marginBottom: 14 }}>What Drives Us</div>
+              <h2 className="ab-section-title">Our <span>Values</span></h2>
             </div>
             <p className="ab-section-desc">
-              The principles that guide every decision we make at Oweru —
-              from product design to customer support.
+              The principles that guide every decision we make at Oweru — from product design to customer support.
             </p>
           </div>
-
           <div className="ab-values-grid">
-            {values.map((v) => (
+            {values.map(v => (
               <div key={v.title} className="ab-value-card">
                 <div className="ab-value-num">{v.num}</div>
                 <div className="ab-value-icon"><v.icon size={18} /></div>
@@ -800,18 +596,16 @@ const About = () => {
 
       {/* ── Mission ── */}
       <section className="ab-mission-bg">
-        <div className="ab-mission-pattern" />
         <div className="ab-mission-inner">
           <div className="ab-section">
-            <div className="ab-section-eyebrow" style={{ marginBottom: 28, background: 'rgba(255,255,255,0.12)', color: 'var(--blue-200)' }}>Why We Exist</div>
-            <div className="ab-mission-statement">
-              To make <span>quality housing</span> accessible to everyone in Tanzania, while creating a
+            <div className="ab-tag" style={{ marginBottom: 28 }}>Why We Exist</div>
+            <div className="ab-mission-stmt">
+              To make <b>quality housing</b> accessible to everyone in Tanzania, while creating a
               transparent, efficient, and trustworthy rental ecosystem that benefits
-              landlords, agents, and tenants <span>alike.</span>
+              landlords, agents, and tenants <b>alike.</b>
             </div>
-
             <div className="ab-mission-grid">
-              {mission.map((m) => (
+              {mission.map(m => (
                 <div key={m.title} className="ab-mission-card">
                   <div className="ab-mission-icon"><m.icon size={18} /></div>
                   <div className="ab-mission-title">{m.title}</div>
@@ -824,14 +618,13 @@ const About = () => {
       </section>
 
       {/* ── CTA ── */}
-      <section style={{ background: 'var(--white)', borderTop: '1px solid var(--gray-200)' }}>
-        <div className="ab-cta">
+      <section className="ab-cta">
+        <div className="ab-cta-inner">
           <div className="ab-cta-text">
-            Ready to experience<br /><span>Oweru?</span>
+            Ready to experience<br /><b>Oweru?</b>
           </div>
-          <Link to="/properties" className="ab-btn-primary">
-            Browse Properties
-            <ArrowRight size={16} />
+          <Link to="/properties" className="ab-btn-gold">
+            Browse Properties <ArrowRight size={16} />
           </Link>
         </div>
       </section>
