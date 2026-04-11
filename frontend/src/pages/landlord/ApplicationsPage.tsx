@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle, XCircle, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Api from '../../services/api';
 import {
   buttonStyle,
@@ -41,10 +42,13 @@ interface OwnerApplication {
 }
 
 const ApplicationsPage = () => {
-  const [applications, setApplications]       = useState<OwnerApplication[]>([]);
-  const [loading, setLoading]                 = useState(true);
-  const [error, setError]                     = useState('');
-  const [busyId, setBusyId]                   = useState<number | null>(null);
+  const navigate = useNavigate();
+
+  const [applications, setApplications]         = useState<OwnerApplication[]>([]);
+  const [loading, setLoading]                   = useState(true);
+  const [error, setError]                       = useState('');
+  const [success, setSuccess]                   = useState('');   // ← separate success state
+  const [busyId, setBusyId]                     = useState<number | null>(null);
   const [rejectionReasons, setRejectionReasons] = useState<Record<number, string>>({});
 
   const loadApplications = async () => {
@@ -69,24 +73,19 @@ const ApplicationsPage = () => {
   const handleApprove = async (id: number) => {
     try {
       setBusyId(id);
-      await Api.approveApplication(id); // This should call PATCH /owner/applications/{id}/approve
-      
-      // Reload both applications and tenants to get latest data
+      setError(''); setSuccess('');
+
+      await Api.approveApplication(id);
+
+      // Reload the applications list so the status updates in the table
       await loadApplications();
-      
-      // Also reload tenants data to show newly created tenant
-      try {
-        const tenantsResponse = await Api.getMyTenants();
-        // This will trigger the tenants page to update when navigated
-      } catch (err) {
-        console.error('Failed to reload tenants:', err);
-      }
-      
-      // Show success message
-      setError('Application approved successfully! The tenant should appear in your Tenants page shortly.');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setError(''), 3000);
+
+      // Show a proper success message — NOT using setError for this
+      setSuccess('Application approved. The tenant record has been created.');
+
+      // After 1.8 s navigate to the tenants page so the user can see the new tenant
+      setTimeout(() => navigate('/landlord/tenants'), 1800);
+
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to approve application.');
     } finally { setBusyId(null); }
@@ -94,22 +93,27 @@ const ApplicationsPage = () => {
 
   const handleReject = async (id: number) => {
     const reason = rejectionReasons[id]?.trim();
-    if (!reason) { setError('Add a rejection reason before rejecting an application.'); return; }
+    if (!reason) {
+      setError('Add a rejection reason before rejecting an application.');
+      return;
+    }
     try {
       setBusyId(id);
+      setError(''); setSuccess('');
       await Api.rejectApplication(id, reason);
       await loadApplications();
+      setSuccess('Application rejected successfully.');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to reject application.');
     } finally { setBusyId(null); }
   };
 
-  // ── stat card accent colours ──────────────────────────────────────────────
   const statCards = [
-    { label: 'Total',    value: stats.total,    accent: palette.gold,    icon: <Users size={16} /> },
-    { label: 'Pending',  value: stats.pending,  accent: palette.amber,   icon: null },
-    { label: 'Approved', value: stats.approved, accent: palette.green,   icon: <CheckCircle size={16} /> },
-    { label: 'Rejected', value: stats.rejected, accent: palette.red,     icon: <XCircle size={16} /> },
+    { label: 'Total',    value: stats.total,    accent: palette.gold  },
+    { label: 'Pending',  value: stats.pending,  accent: palette.amber },
+    { label: 'Approved', value: stats.approved, accent: palette.green },
+    { label: 'Rejected', value: stats.rejected, accent: palette.red   },
   ];
 
   return (
@@ -117,14 +121,13 @@ const ApplicationsPage = () => {
 
       {/* ── Header ── */}
       <section style={{ ...panelStyle, position: 'relative' }}>
-        {/* Gold accent bar */}
         <div style={{
           position: 'absolute', top: 0, left: 28, right: 28, height: '2px',
           background: `linear-gradient(90deg, transparent, ${palette.gold}, transparent)`,
         }} />
 
         <div style={sectionTitleStyle}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.gold, display: 'inline-block', marginRight: 6 }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.gold, display: 'inline-block' }} />
           Landlord Workspace
         </div>
         <h1 style={headingStyle}>Applications</h1>
@@ -136,8 +139,7 @@ const ApplicationsPage = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '14px', marginTop: '24px' }}>
           {statCards.map(({ label, value, accent }) => (
             <div key={label} style={{
-              padding: '18px 20px',
-              borderRadius: '12px',
+              padding: '18px 20px', borderRadius: '12px',
               background: 'rgba(255, 255, 255, 0.03)',
               border: `1px solid ${accent}25`,
               display: 'flex', flexDirection: 'column', gap: '6px',
@@ -155,14 +157,40 @@ const ApplicationsPage = () => {
 
       {/* ── Table ── */}
       <section style={{ ...panelStyle }}>
+
+        {/* Error alert — red, for actual errors only */}
         {error && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px',
-            color: palette.red, background: 'rgba(220,38,38,0.06)',
-            border: '1px solid rgba(220,38,38,0.18)',
+            color: palette.red,
+            background: 'rgba(220, 38, 38, 0.06)',
+            border: '1px solid rgba(220, 38, 38, 0.18)',
             borderRadius: '10px', padding: '14px 18px', marginBottom: '20px', fontSize: '14px',
           }}>
             <AlertCircle size={16} /> {error}
+          </div>
+        )}
+
+        {/* Success alert — green, for approve / reject confirmations */}
+        {success && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            color: palette.green,
+            background: 'rgba(22, 163, 74, 0.08)',
+            border: '1px solid rgba(22, 163, 74, 0.22)',
+            borderRadius: '10px', padding: '14px 18px', marginBottom: '20px', fontSize: '14px',
+          }}>
+            <CheckCircle size={16} />
+            <span style={{ flex: 1 }}>{success}</span>
+            {/* Quick-nav button so user doesn't have to wait for the auto-redirect */}
+            {success.includes('created') && (
+              <button
+                style={{ ...buttonStyle('secondary'), padding: '4px 14px', fontSize: '12px' }}
+                onClick={() => navigate('/landlord/tenants')}
+              >
+                View Tenants →
+              </button>
+            )}
           </div>
         )}
 
