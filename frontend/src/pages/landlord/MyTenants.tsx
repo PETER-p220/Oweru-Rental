@@ -51,8 +51,11 @@ const MyTenants = () => {
       setLoading(true);
       setError('');
       const response = await Api.getMyTenants();
+      console.log('Tenants API Response:', response);
+      console.log('Tenants Data:', response.data);
       setTenants(Array.isArray(response.data) ? response.data : []);
     } catch (err: any) {
+        console.error('Tenants API Error:', err);
         setError(err?.response?.data?.message || 'Unable to load tenants.');
       } finally {
         setLoading(false);

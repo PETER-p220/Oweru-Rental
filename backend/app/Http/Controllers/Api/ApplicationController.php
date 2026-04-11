@@ -150,27 +150,23 @@ class ApplicationController extends Controller
                 ->first();
 
             if (!$existingTenant) {
-                \App\Models\Tenant::create([
+                // Create tenant record with correct schema
+                $tenant = \App\Models\Tenant::create([
                     'user_id' => $application->user_id,
                     'property_id' => $application->property_id,
-                    'contract_status' => 'active',
+                    'move_in_date' => now(),
+                    'status' => 'active',
+                ]);
+
+                // Create contract record with correct schema
+                \App\Models\Contract::create([
+                    'tenant_id' => $tenant->id,
+                    'property_id' => $application->property_id,
                     'start_date' => now(),
                     'end_date' => null, // Ongoing contract
                     'rent_amount' => $application->property->price,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                // Create contract record
-                \App\Models\Contract::create([
-                    'landlord_id' => $user->id,
-                    'tenant_id' => $application->user_id,
-                    'property_id' => $application->property_id,
                     'status' => 'active',
-                    'start_date' => now(),
-                    'rent_amount' => $application->property->price,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'terms' => 'Standard rental agreement created from approved application',
                 ]);
             }
         } catch (\Exception $e) {
