@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users, Building, DollarSign, TrendingUp, AlertCircle,
   CheckCircle, Clock, Activity, MapPin,
@@ -6,9 +6,9 @@ import {
 } from 'lucide-react';
 import Api from '../../services/api';
 
-/* ─────────────────────────────────────────────────────────────
+/* 
    ADMIN DASHBOARD STYLE TOKENS
-───────────────────────────────────────────────────────────── */
+*/
 const t = {
   gold:    '#c9a84c',
   goldLt:  '#e8c97a',
@@ -19,47 +19,24 @@ const t = {
   muted:   '#7a7060',
   border:  'rgba(37,99,235,0.12)',
   green:   '#10b981',
-  red:     '#ef4444',
-  blue:    '#38bdf8',
-} as const;
+  red:     '#ef4444'
+};
 
-const body: React.CSSProperties = { fontFamily: 'DM Sans, sans-serif' };
-const serif: React.CSSProperties = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
+const serif = {
+  fontFamily: "'Playfair Display', 'Georgia', serif",
+};
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-TZ', {
-    style: 'currency', currency: 'TZS',
-    minimumFractionDigits: 0, maximumFractionDigits: 0,
-  }).format(amount);
+const body = {
+  fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+};
 
-const card: React.CSSProperties = {
-  backgroundColor: t.dark2,
+const card = {
+  background: t.dark2,
   border: `1px solid ${t.border}`,
   borderRadius: 12,
-  padding: '20px',
+  padding: 24,
 };
 
-const statCard: React.CSSProperties = {
-  ...card,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 16,
-  padding: '24px',
-};
-
-const iconWrapper: React.CSSProperties = {
-  width: 48,
-  height: 48,
-  borderRadius: 10,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexShrink: 0,
-};
-
-/* ─────────────────────────────────────────────────────────────
-   ADMIN DASHBOARD COMPONENT
-───────────────────────────────────────────────────────────── */
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -72,6 +49,15 @@ const AdminDashboard = () => {
 
   const [oweruProperties, setOweruProperties] = useState<any[]>([]);
   const [loadingOweru, setLoadingOweru] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [quickForm, setQuickForm] = useState({
+    title: '',
+    location: '',
+    price: '',
+    description: '',
+    bedrooms: '',
+    bathrooms: ''
+  });
 
   const [recentActivity, setRecentActivity] = useState<Array<{
     id: string;
@@ -80,14 +66,118 @@ const AdminDashboard = () => {
     time: string;
     status: string;
   }>>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Oweru Properties management functions
+  const [loading, setLoading] = useState(true);
+  const [transactions, setTransactions] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadDashboardData();
+    loadOweruProperties();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load users
+      const usersResponse = await Api.getUsers();
+      const users = usersResponse?.data || [];
+      
+      // Load properties
+      const propertiesResponse = await Api.getProperties();
+      const properties = propertiesResponse?.data || [];
+      
+      // Load transactions
+      const transactionsResponse = await Api.getAdminTransactions();
+      const transactions = transactionsResponse?.data || [];
+
+      // Calculate stats
+      setStats({
+        totalUsers: users.length,
+        totalProperties: properties.length,
+        totalRevenue: transactions.reduce((sum: number, transaction: any) => {
+          const amount = typeof transaction.amount === 'number' && !isNaN(transaction.amount) ? transaction.amount : 0;
+          return sum + amount;
+        }, 0),
+        activeListings: properties.filter((p: any) => p.available).length,
+        pendingApplications: 0,
+        systemHealth: 'good'
+      });
+
+      setTransactions(transactions);
+
+      // Generate recent activity
+      const recentUsers = users
+        .filter((user: any) => {
+          const createdAt = new Date(user.created_at || user.createdAt);
+          const daysAgo = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+          return daysAgo <= 7;
+        })
+        .slice(0, 3)
+        .map((user: any) => ({
+          id: `user-${user.id}`,
+          type: 'user',
+          message: `New user registered: ${user.name}`,
+          time: formatTimeAgo(user.created_at || user.createdAt),
+          status: 'success'
+        }));
+
+      // Add recent properties
+      const recentProperties = properties
+        .filter((property: any) => {
+          const createdAt = new Date(property.created_at || property.createdAt);
+          const daysAgo = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+          return daysAgo <= 7;
+        })
+        .slice(0, 3)
+        .map((property: any) => ({
+          id: `property-${property.id}`,
+          type: 'property',
+          message: `New property listed: ${property.title}`,
+          time: formatTimeAgo(property.created_at || property.createdAt),
+          status: 'success'
+        }));
+
+      // Add recent transactions
+      const recentTransactions = transactions
+        .filter((transaction: any) => {
+          const createdAt = new Date(transaction.created_at || transaction.createdAt);
+          const daysAgo = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+          return daysAgo <= 7;
+        })
+        .slice(0, 2)
+        .map((transaction: any) => ({
+          id: `payment-${transaction.id}`,
+          type: 'payment',
+          message: `Payment processed: ${formatCurrency(transaction.amount || 0)}`,
+          time: formatTimeAgo(transaction.created_at || transaction.createdAt),
+          status: 'success'
+        }));
+
+      // Combine and sort by time (most recent first)
+      const allActivity = [...recentUsers, ...recentProperties, ...recentTransactions]
+        .sort((a, b) => {
+          const timeA = parseTimeAgo(a.time);
+          const timeB = parseTimeAgo(b.time);
+          return timeA - timeB;
+        })
+        .slice(0, 8);
+
+      setRecentActivity(allActivity);
+
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadOweruProperties = async () => {
     try {
       setLoadingOweru(true);
       const response = await Api.getAdminProperties();
-      setOweruProperties(Array.isArray(response.data) ? response.data : []);
+      const oweruProperties = response?.data?.filter((p: any) => p.type === 'oweru_rental') || [];
+      setOweruProperties(oweruProperties);
     } catch (error) {
       console.error('Failed to load Oweru properties:', error);
     } finally {
@@ -97,148 +187,23 @@ const AdminDashboard = () => {
 
   const addOweruProperty = async (propertyData: any) => {
     try {
-      const response = await Api.createAdminProperty(propertyData);
-      if (response.data) {
-        setOweruProperties(prev => [response.data, ...prev]);
-        alert('Oweru property added successfully!');
-      }
+      await Api.createAdminProperty(propertyData);
+      await loadOweruProperties();
     } catch (error) {
       console.error('Failed to add Oweru property:', error);
-      alert('Failed to add Oweru property');
+      alert('Failed to add property. Please try again.');
     }
   };
 
-  const deleteOweruProperty = async (propertyId: number) => {
+  const deleteOweruProperty = async (id: string) => {
     try {
-      await Api.deleteAdminProperty(propertyId);
-      setOweruProperties(prev => prev.filter(p => p.id !== propertyId));
-      alert('Oweru property deleted successfully!');
+      await Api.deleteAdminProperty(parseInt(id));
+      await loadOweruProperties();
     } catch (error) {
       console.error('Failed to delete Oweru property:', error);
-      alert('Failed to delete Oweru property');
+      alert('Failed to delete property. Please try again.');
     }
   };
-
-  useEffect(() => {
-    // Load Oweru properties
-    loadOweruProperties();
-    
-    // Load real dashboard data
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch real stats from API
-        const [
-          usersResponse,
-          propertiesResponse,
-          transactionsResponse
-        ] = await Promise.all([
-          Api.getUsers().catch(() => ({ data: [] })),
-          Api.getAdminProperties().catch(() => ({ data: [] })),
-          Api.getAdminTransactions().catch(() => ({ data: [] }))
-        ]);
-
-        const users = Array.isArray(usersResponse?.data) ? usersResponse.data : [];
-        const properties = Array.isArray(propertiesResponse?.data) ? propertiesResponse.data : [];
-        const transactions = Array.isArray(transactionsResponse?.data) ? transactionsResponse.data : [];
-
-        // Calculate real stats
-        const totalRevenue = transactions.reduce((sum: number, transaction: any) => {
-          const amount = typeof transaction.amount === 'number' && !isNaN(transaction.amount) ? transaction.amount : 0;
-          return sum + amount;
-        }, 0);
-
-        // For now, set pending applications to 0 since we don't have applications data
-        const pendingApplications = 0;
-        const activeListings = properties.filter((property: any) => 
-          property.available !== false && property.status !== 'rented'
-        ).length;
-
-        setStats({
-          totalUsers: users.length || 0,
-          totalProperties: properties.length || 0,
-          totalRevenue: totalRevenue || 0,
-          activeListings: activeListings || 0,
-          pendingApplications: pendingApplications || 0,
-          systemHealth: 'good'
-        });
-
-        // Create real recent activity from actual data
-        const activity = [];
-        
-        // Add recent user registrations
-        const recentUsers = users
-          .filter((user: any) => {
-            const createdAt = new Date(user.created_at || user.createdAt);
-            const daysAgo = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-            return daysAgo <= 7;
-          })
-          .slice(0, 3)
-          .map((user: any) => ({
-            id: `user-${user.id}`,
-            type: 'user',
-            message: `New ${user.userType || 'user'} registered: ${user.first_name || user.name || 'Unknown'}`,
-            time: formatTimeAgo(user.created_at || user.createdAt),
-            status: 'success'
-          }));
-
-        // Add recent property listings
-        const recentProperties = properties
-          .filter((property: any) => {
-            const createdAt = new Date(property.created_at || property.createdAt);
-            const daysAgo = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-            return daysAgo <= 7;
-          })
-          .slice(0, 3)
-          .map((property: any) => ({
-            id: `property-${property.id}`,
-            type: 'property',
-            message: `New property listed: ${property.title}`,
-            time: formatTimeAgo(property.created_at || property.createdAt),
-            status: 'success'
-          }));
-
-        // Add recent transactions
-        const recentTransactions = transactions
-          .filter((transaction: any) => {
-            const createdAt = new Date(transaction.created_at || transaction.createdAt);
-            const daysAgo = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-            return daysAgo <= 7;
-          })
-          .slice(0, 2)
-          .map((transaction: any) => ({
-            id: `payment-${transaction.id}`,
-            type: 'payment',
-            message: `Payment processed: ${formatCurrency(transaction.amount || 0)}`,
-            time: formatTimeAgo(transaction.created_at || transaction.createdAt),
-            status: 'success'
-          }));
-
-        // Combine and sort by time (most recent first)
-        const allActivity = [...recentUsers, ...recentProperties, ...recentTransactions]
-          .sort((a, b) => {
-            const timeA = parseTimeAgo(a.time);
-            const timeB = parseTimeAgo(b.time);
-            return timeA - timeB;
-          })
-          .slice(0, 8);
-
-        setRecentActivity(allActivity);
-
-      } catch (error) {
-        console.error('Failed to load dashboard data:', error);
-        // Set fallback data
-        setRecentActivity([
-          { id: 'fallback-1', type: 'system', message: 'System initialized', time: 'Just now', status: 'success' }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboardData();
-  }, []);
 
   // Helper function to format time ago
   const formatTimeAgo = (dateString: string) => {
@@ -306,6 +271,24 @@ const AdminDashboard = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        color: t.cream,
+        ...body
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 18, marginBottom: 16 }}>Loading Admin Dashboard...</div>
+          <div style={{ fontSize: 14, color: t.muted }}>Please wait</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header */}
@@ -318,97 +301,102 @@ const AdminDashboard = () => {
         </p>
       </div>
 
-      {loading ? (
-        /* Loading State */
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          padding: '60px 20px',
-          backgroundColor: t.dark2,
-          borderRadius: 12,
-          border: `1px solid ${t.border}`
-        }}>
-          <div style={{
-            width: 40,
-            height: 40,
-            border: `3px solid ${t.border}`,
-            borderTop: `3px solid ${t.gold}`,
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            marginBottom: 16
-          }} />
-          <p style={{ ...body, fontSize: 16, color: t.muted }}>
-            Loading dashboard data...
-          </p>
-        </div>
-      ) : (
-        /* Dashboard Content */
-        <>
-          {/* Stats Grid */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-            gap: 20, 
-            marginBottom: 32 
-          }}>
-        {/* Total Users */}
-        <div style={statCard}>
-          <div style={{ ...iconWrapper, background: `${t.blue}20` }}>
-            <Users size={24} style={{ color: t.blue }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Total Users</div>
-            <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
-              {(stats.totalUsers || 0).toLocaleString()}
+      {/* Stats Grid */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+        gap: 20, 
+        marginBottom: 32 
+      }}>
+        <div style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ 
+              width: 48, 
+              height: 48, 
+              borderRadius: 8, 
+              background: t.gold, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <Users size={24} style={{ color: t.dark }} />
             </div>
-            <div style={{ ...body, fontSize: 12, color: t.green, marginTop: 4 }}>
-              <TrendingUp size={12} style={{ marginRight: 4 }} />
-              +12% this month
+            <div style={{ flex: 1 }}>
+              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Total Users</div>
+              <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
+                {stats.totalUsers}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Total Properties */}
-        <div style={statCard}>
-          <div style={{ ...iconWrapper, background: `${t.gold}20` }}>
-            <Building size={24} style={{ color: t.gold }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Total Properties</div>
-            <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
-              {(stats.totalProperties || 0).toLocaleString()}
+        <div style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ 
+              width: 48, 
+              height: 48, 
+              borderRadius: 8, 
+              background: t.green, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <Building size={24} style={{ color: t.dark }} />
             </div>
-            <div style={{ ...body, fontSize: 12, color: t.green, marginTop: 4 }}>
-              <TrendingUp size={12} style={{ marginRight: 4 }} />
-              +8% this month
-            </div>
-          </div>
-        </div>
-
-        {/* Total Revenue */}
-        <div style={statCard}>
-          <div style={{ ...iconWrapper, background: `${t.green}20` }}>
-            <DollarSign size={24} style={{ color: t.green }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Total Revenue</div>
-            <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
-              {formatCurrency(stats.totalRevenue || 0)}
-            </div>
-            <div style={{ ...body, fontSize: 12, color: t.green, marginTop: 4 }}>
-              <TrendingUp size={12} style={{ marginRight: 4 }} />
-              +23% this month
+            <div style={{ flex: 1 }}>
+              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Total Properties</div>
+              <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
+                {stats.totalProperties}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Pending Applications */}
-        <div style={statCard}>
-          <div style={{ ...iconWrapper, background: `${t.gold}20` }}>
-            <Clock size={24} style={{ color: t.gold }} />
+        <div style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ 
+              width: 48, 
+              height: 48, 
+              borderRadius: 8, 
+              background: '#2563eb', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <DollarSign size={24} style={{ color: t.dark }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Total Revenue</div>
+              <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
+                {formatCurrency(stats.totalRevenue)}
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ 
+              width: 48, 
+              height: 48, 
+              borderRadius: 8, 
+              background: '#10b981', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <TrendingUp size={24} style={{ color: t.dark }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Active Listings</div>
+              <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
+                {stats.activeListings}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={card}>
           <div style={{ flex: 1 }}>
             <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Pending Applications</div>
             <div style={{ ...serif, fontSize: 28, fontWeight: 600, color: t.cream }}>
@@ -430,28 +418,11 @@ const AdminDashboard = () => {
               Oweru Rental Properties
             </h2>
             <p style={{ ...body, fontSize: 14, color: t.muted, margin: 0 }}>
-              Manage properties that appear on the homepage
+              Manage properties that appear on homepage
             </p>
           </div>
           <button
-            onClick={() => {
-              const title = prompt('Enter property title:');
-              const location = prompt('Enter property location:');
-              const price = prompt('Enter property price (TZS):');
-              const description = prompt('Enter property description:');
-              
-              if (title && location && price && description) {
-                addOweruProperty({
-                  title,
-                  location,
-                  price: parseFloat(price),
-                  description,
-                  type: 'oweru_rental',
-                  featured: true,
-                  available: true
-                });
-              }
-            }}
+            onClick={() => setShowAddForm(!showAddForm)}
             style={{
               background: t.gold,
               color: t.dark,
@@ -467,9 +438,243 @@ const AdminDashboard = () => {
             }}
           >
             <Building size={16} />
-            Add Oweru Property
+            {showAddForm ? 'Cancel' : 'Add Oweru Property'}
           </button>
         </div>
+
+        {/* Inline Add Form */}
+        {showAddForm && (
+          <div style={{
+            background: t.dark3,
+            border: `1px solid ${t.border}`,
+            borderRadius: 8,
+            padding: '20px',
+            marginTop: '20px'
+          }}>
+            <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.cream, margin: '0 0 16px' }}>
+              Add New Oweru Property
+            </h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: t.muted, marginBottom: '4px' }}>
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  autoComplete="off"
+                  required
+                  value={quickForm.title}
+                  onChange={(e) => setQuickForm({ ...quickForm, title: e.target.value })}
+                  placeholder="Enter property title"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: t.dark2,
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 6,
+                    color: t.cream,
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: t.muted, marginBottom: '4px' }}>
+                  Location *
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  autoComplete="off"
+                  required
+                  value={quickForm.location}
+                  onChange={(e) => setQuickForm({ ...quickForm, location: e.target.value })}
+                  placeholder="e.g., Dar es Salaam, Arusha"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: t.dark2,
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 6,
+                    color: t.cream,
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: t.muted, marginBottom: '4px' }}>
+                Description *
+              </label>
+              <textarea
+                name="description"
+                required
+                value={quickForm.description}
+                onChange={(e) => setQuickForm({ ...quickForm, description: e.target.value })}
+                rows={3}
+                placeholder="Describe the property features, amenities, and location..."
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  background: t.dark2,
+                  border: `1px solid ${t.border}`,
+                  borderRadius: 6,
+                  color: t.cream,
+                  fontSize: '14px',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: t.muted, marginBottom: '4px' }}>
+                  Price (TZS) *
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  autoComplete="off"
+                  required
+                  min="0"
+                  step="1000"
+                  value={quickForm.price}
+                  onChange={(e) => setQuickForm({ ...quickForm, price: e.target.value })}
+                  placeholder="e.g., 500000"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: t.dark2,
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 6,
+                    color: t.cream,
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: t.muted, marginBottom: '4px' }}>
+                  Bedrooms
+                </label>
+                <input
+                  type="number"
+                  name="bedrooms"
+                  min="0"
+                  value={quickForm.bedrooms}
+                  onChange={(e) => setQuickForm({ ...quickForm, bedrooms: e.target.value })}
+                  placeholder="3"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: t.dark2,
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 6,
+                    color: t.cream,
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: t.muted, marginBottom: '4px' }}>
+                  Bathrooms
+                </label>
+                <input
+                  type="number"
+                  name="bathrooms"
+                  min="0"
+                  value={quickForm.bathrooms}
+                  onChange={(e) => setQuickForm({ ...quickForm, bathrooms: e.target.value })}
+                  placeholder="2"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: t.dark2,
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 6,
+                    color: t.cream,
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuickForm({
+                    title: '',
+                    location: '',
+                    price: '',
+                    description: '',
+                    bedrooms: '',
+                    bathrooms: ''
+                  });
+                  setShowAddForm(false);
+                }}
+                style={{
+                  background: 'transparent',
+                  color: t.muted,
+                  border: `1px solid ${t.border}`,
+                  borderRadius: 6,
+                  padding: '8px 16px',
+                  fontSize: 14,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (quickForm.title && quickForm.location && quickForm.price && quickForm.description) {
+                    await addOweruProperty({
+                      title: quickForm.title,
+                      location: quickForm.location,
+                      price: parseFloat(quickForm.price),
+                      description: quickForm.description,
+                      type: 'oweru_rental',
+                      featured: true,
+                      available: true,
+                      bedrooms: parseInt(quickForm.bedrooms) || undefined,
+                      bathrooms: parseInt(quickForm.bathrooms) || undefined
+                    });
+                    
+                    // Reset form
+                    setQuickForm({
+                      title: '',
+                      location: '',
+                      price: '',
+                      description: '',
+                      bedrooms: '',
+                      bathrooms: ''
+                    });
+                    setShowAddForm(false);
+                  } else {
+                    alert('Please fill in all required fields: Title, Location, Price, and Description');
+                  }
+                }}
+                style={{
+                  background: t.gold,
+                  color: t.dark,
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '8px 16px',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Add Property
+              </button>
+            </div>
+          </div>
+        )}
 
         {loadingOweru ? (
           <div style={{ textAlign: 'center', padding: '40px', color: t.muted }}>
@@ -479,7 +684,7 @@ const AdminDashboard = () => {
           <div style={{ textAlign: 'center', padding: '40px', color: t.muted }}>
             <Building size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
             <div style={{ fontSize: 16, marginBottom: 8 }}>No Oweru properties yet</div>
-            <div style={{ fontSize: 14 }}>Add properties to feature on the homepage</div>
+            <div style={{ fontSize: 14 }}>Add properties to feature on homepage</div>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
@@ -488,64 +693,99 @@ const AdminDashboard = () => {
                 background: t.dark3,
                 border: `1px solid ${t.border}`,
                 borderRadius: 8,
-                padding: 16,
-                position: 'relative'
+                overflow: 'hidden'
               }}>
                 <div style={{
-                  position: 'absolute',
-                  top: 8,
-                  right: 8,
-                  background: t.gold,
-                  color: t.dark,
-                  padding: '4px 8px',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  borderRadius: 4,
-                  textTransform: 'uppercase'
+                  height: 200,
+                  background: `linear-gradient(135deg, ${t.dark2}, ${t.dark3})`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: t.muted
                 }}>
-                  Oweru Rental
+                  <Building size={48} style={{ opacity: 0.3 }} />
                 </div>
                 
-                <div style={{ marginBottom: 12 }}>
-                  <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.cream, margin: '0 0 8px' }}>
-                    {property.title}
-                  </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.muted, fontSize: 13 }}>
-                    <MapPin size={12} />
-                    {property.location}
+                <div style={{ padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.cream, margin: 0 }}>
+                      {property.title}
+                    </h3>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <span style={{
+                        background: t.gold,
+                        color: t.dark,
+                        padding: '4px 8px',
+                        borderRadius: 4,
+                        fontSize: 12,
+                        fontWeight: 600
+                      }}>
+                        Oweru Rental
+                      </span>
+                      {property.featured && (
+                        <span style={{
+                          background: t.green,
+                          color: t.dark,
+                          padding: '4px 8px',
+                          borderRadius: 4,
+                          fontSize: 12,
+                          fontWeight: 600
+                        }}>
+                          Featured
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: t.gold }}>
-                    {formatCurrency(property.price)}
-                    <span style={{ fontSize: 12, color: t.muted, fontWeight: 400, marginLeft: 4 }}>/month</span>
+                  
+                  <p style={{ 
+                    ...body, 
+                    fontSize: 14, 
+                    color: t.muted, 
+                    margin: '0 0 12px',
+                    lineHeight: 1.5 
+                  }}>
+                    {property.description}
+                  </p>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <MapPin size={14} style={{ color: t.gold }} />
+                        <span style={{ ...body, fontSize: 14, color: t.cream }}>
+                          {property.location}
+                        </span>
+                      </div>
+                      {property.bedrooms && (
+                        <span style={{ ...body, fontSize: 14, color: t.cream }}>
+                          {property.bedrooms} bed
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.gold }}>
+                      {formatCurrency(property.price)}
+                    </div>
                   </div>
-                </div>
-                
-                <p style={{ ...body, fontSize: 13, color: t.muted, marginBottom: 12, lineHeight: 1.5 }}>
-                  {property.description}
-                </p>
-                
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => {
-                      if (confirm('Are you sure you want to delete this Oweru property?')) {
-                        deleteOweruProperty(property.id);
-                      }
-                    }}
-                    style={{
-                      background: 'transparent',
-                      color: t.red,
-                      border: `1px solid ${t.red}`,
-                      borderRadius: 6,
-                      padding: '6px 12px',
-                      fontSize: 12,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Delete
-                  </button>
+                  
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this Oweru property?')) {
+                          deleteOweruProperty(property.id);
+                        }
+                      }}
+                      style={{
+                        background: 'transparent',
+                        color: t.red,
+                        border: `1px solid ${t.red}`,
+                        borderRadius: 6,
+                        padding: '6px 12px',
+                        fontSize: 12,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -575,32 +815,17 @@ const AdminDashboard = () => {
                 borderRadius: 8,
                 border: `1px solid ${t.border}`
               }}>
-                <div style={{ 
-                  width: 32, 
-                  height: 32, 
-                  borderRadius: 8,
-                  background: `${getStatusColor(activity.status)}20`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: getStatusColor(activity.status)
-                }}>
+                <div style={{ color: getStatusColor(activity.status) }}>
                   {getActivityIcon(activity.type)}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ ...body, fontSize: 14, color: t.cream, marginBottom: 2 }}>
+                  <div style={{ ...body, fontSize: 14, color: t.cream, fontWeight: 600 }}>
                     {activity.message}
                   </div>
                   <div style={{ ...body, fontSize: 12, color: t.muted }}>
                     {activity.time}
                   </div>
                 </div>
-                <div style={{ 
-                  width: 8, 
-                  height: 8, 
-                  borderRadius: '50%',
-                  backgroundColor: getStatusColor(activity.status)
-                }} />
               </div>
             ))}
           </div>
@@ -616,36 +841,6 @@ const AdminDashboard = () => {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              borderRadius: 8
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckCircle size={16} style={{ color: t.green }} />
-                <span style={{ ...body, fontSize: 14, color: t.cream }}>API Status</span>
-              </div>
-              <span style={{ ...body, fontSize: 12, color: t.green, fontWeight: 600 }}>Operational</span>
-            </div>
-
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              borderRadius: 8
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckCircle size={16} style={{ color: t.green }} />
-                <span style={{ ...body, fontSize: 14, color: t.cream }}>Database</span>
-              </div>
-              <span style={{ ...body, fontSize: 12, color: t.green, fontWeight: 600 }}>Healthy</span>
-            </div>
-
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -678,8 +873,6 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
-        </>
-      )}
     </div>
   );
 };

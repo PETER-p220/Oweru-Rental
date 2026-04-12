@@ -558,9 +558,12 @@ const OweruProperties = () => {
                 </label>
                 <input
                   type="text"
+                  name="title"
+                  autoComplete="off"
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter property title"
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -578,10 +581,12 @@ const OweruProperties = () => {
                   Description *
                 </label>
                 <textarea
+                  name="description"
                   required
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
+                  placeholder="Describe the property features, amenities, and location..."
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -601,9 +606,12 @@ const OweruProperties = () => {
                 </label>
                 <input
                   type="text"
+                  name="location"
+                  autoComplete="off"
                   required
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="e.g., Dar es Salaam, Arusha, Mwanza"
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -622,8 +630,11 @@ const OweruProperties = () => {
                 </label>
                 <input
                   type="text"
+                  name="address"
+                  autoComplete="street-address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Enter full address or street name"
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -642,10 +653,14 @@ const OweruProperties = () => {
                 </label>
                 <input
                   type="number"
+                  name="price"
+                  autoComplete="off"
                   required
                   min="0"
+                  step="1000"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="e.g., 500000"
                   style={{
                     width: '100%',
                     padding: '8px 12px',
