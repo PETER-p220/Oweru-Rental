@@ -45,12 +45,14 @@ import LandlordMessagesPage from './pages/landlord/MessagesPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import PropertiesManagement from './pages/admin/PropertiesManagement';
+import OweruProperties from './pages/admin/OweruProperties';
 import TransactionsManagement from './pages/admin/TransactionsManagement';
 import CommissionControl from './pages/admin/CommissionControl';
 import PaymentsManagement from './pages/admin/PaymentsManagement';
 import ContractsManagement from './pages/admin/ContractsManagement';
 import VerificationManagement from './pages/admin/VerificationManagement';
 import AlertsManagement from './pages/admin/AlertsManagement';
+import SystemSettings from './pages/admin/SystemSettings';
 
 // BNB Owner pages
 import BnbDashboard from './pages/bnb/BnbDashboard';
@@ -59,7 +61,6 @@ import BnbBookings from './pages/bnb/BnbBookings';
 import BnbReviews from './pages/bnb/BnbReviews';
 import BnbAnalytics from './pages/bnb/BnbAnalytics';
 import BnbMessages from './pages/bnb/BnbMessages';
-import SystemSettings from './pages/admin/SystemSettings';
 
 // Agent pages
 import AgentDashboard from './pages/agent/AgentDashboard';
@@ -177,8 +178,7 @@ const AdminRoutes = () => (
         <Route path="" element={<AdminDashboard />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="properties" element={<PropertiesManagement />} />
-        <Route path="bnb-properties" element={<BnbProperties />} />
-        <Route path="bnb-analytics" element={<BnbAnalytics />} />
+        <Route path="oweru-properties" element={<OweruProperties />} />
         <Route path="transactions" element={<TransactionsManagement />} />
         <Route path="commission" element={<CommissionControl />} />
         <Route path="payments" element={<PaymentsManagement />} />
