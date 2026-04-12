@@ -215,6 +215,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Properties
         Route::get('/admin/properties',       [AdminController::class, 'getProperties']);
+        Route::post('/admin/properties',      [AdminController::class, 'createProperty']);
+        Route::put('/admin/properties/{property}', [AdminController::class, 'updateProperty']);
+        Route::delete('/admin/properties/{property}', [AdminController::class, 'deleteProperty']);
         Route::get('/admin/properties/stats', [AdminController::class, 'getPropertyStats']);
 
         // Transactions

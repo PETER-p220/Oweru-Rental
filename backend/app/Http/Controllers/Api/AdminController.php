@@ -240,6 +240,125 @@ class AdminController extends Controller
         ]);
     }
 
+    public function createProperty(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'location' => 'required|string|max:255',
+            'address' => 'nullable|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'type' => 'required|string|in:apartment,house,studio,villa,oweru_rental',
+            'bedrooms' => 'nullable|integer|min:0',
+            'bathrooms' => 'nullable|integer|min:0',
+            'area' => 'nullable|numeric|min:0',
+            'featured' => 'boolean',
+            'available' => 'boolean',
+            'images' => 'nullable|array',
+            'images.*' => 'string',
+            'amenities' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $property = Property::create([
+                'title' => $request->title,
+                'description' => $request->description,
+                'location' => $request->location,
+                'address' => $request->address,
+                'price' => $request->price,
+                'type' => $request->type,
+                'bedrooms' => $request->bedrooms,
+                'bathrooms' => $request->bathrooms,
+                'area' => $request->area,
+                'featured' => $request->boolean('featured', true),
+                'available' => $request->boolean('available', true),
+                'images' => $request->images ?? [],
+                'amenities' => $request->amenities,
+                'owner_id' => null, // Admin properties don't have an owner
+                'agent_id' => null, // Admin properties don't have an agent
+                'dalali' => 'Oweru Rental',
+                'dalali_phone' => null,
+            ]);
+
+            return response()->json([
+                'message' => 'Property created successfully',
+                'data' => $property
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create property',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateProperty(Request $request, Property $property): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'title' => 'sometimes|string|max:255',
+            'description' => 'sometimes|string',
+            'location' => 'sometimes|string|max:255',
+            'address' => 'sometimes|string|max:255',
+            'price' => 'sometimes|numeric|min:0',
+            'type' => 'sometimes|string|in:apartment,house,studio,villa,oweru_rental',
+            'bedrooms' => 'sometimes|integer|min:0',
+            'bathrooms' => 'sometimes|integer|min:0',
+            'area' => 'sometimes|numeric|min:0',
+            'featured' => 'sometimes|boolean',
+            'available' => 'sometimes|boolean',
+            'images' => 'sometimes|array',
+            'images.*' => 'string',
+            'amenities' => 'sometimes|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $property->update($request->all());
+
+            return response()->json([
+                'message' => 'Property updated successfully',
+                'data' => $property
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update property',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteProperty(Property $property): JsonResponse
+    {
+        try {
+            $property->delete();
+
+            return response()->json([
+                'message' => 'Property deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete property',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getPropertyStats(): JsonResponse
     {
         $rentedCount = $this->hasTables(['contracts'])

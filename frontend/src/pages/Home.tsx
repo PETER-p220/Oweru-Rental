@@ -28,8 +28,10 @@ const Home = () => {
   const navigate = useNavigate();
   const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
   const [bnbProperties,      setBnbProperties]      = useState<any[]>([]);
+  const [oweruProperties,    setOweruProperties]    = useState<any[]>([]);
   const [loading,            setLoading]            = useState(true);
   const [bnbLoading,         setBnbLoading]         = useState(true);
+  const [oweruLoading,       setOweruLoading]       = useState(true);
   const [showBookingModal,   setShowBookingModal]   = useState(false);
   const [selectedProperty,   setSelectedProperty]   = useState<any>(null);
   const [savedProperties,    setSavedProperties]    = useState<Set<number>>(new Set());
@@ -39,8 +41,23 @@ const Home = () => {
   useEffect(() => {
     loadFeaturedProperties();
     loadBnbProperties();
+    loadOweruProperties();
     loadSavedProperties();
   }, []);
+
+  const loadOweruProperties = async () => {
+    try {
+      setOweruLoading(true);
+      const res = await fetch(`${API_BASE}/api/public/properties?oweru_rental=true`, { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const list: any[] = json.data?.data ?? json.data ?? json ?? [];
+      // Filter for Oweru rental properties
+      const oweruList = Array.isArray(list) ? list.filter(p => p.type === 'oweru_rental' || p.oweru_rental === true).slice(0, 6) : [];
+      setOweruProperties(oweruList);
+    } catch { setOweruProperties([]); }
+    finally { setOweruLoading(false); }
+  };
 
   const loadFeaturedProperties = async () => {
     try {

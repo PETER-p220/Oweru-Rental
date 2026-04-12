@@ -258,6 +258,9 @@ class Api {
     const params = new URLSearchParams(filters as any).toString();
     return this.request<any[]>(`admin/properties${params ? `?${params}` : ''}`);
   }
+  static async createAdminProperty(data: any) { return this.request<any>('admin/properties', { method: 'POST', body: JSON.stringify(data) }); }
+  static async updateAdminProperty(id: number, data: any) { return this.request<any>(`admin/properties/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  static async deleteAdminProperty(id: number) { return this.request<any>(`admin/properties/${id}`, { method: 'DELETE' }); }
 
   static async getAdminPropertyStats() {
     return this.request<any>('admin/properties/stats');

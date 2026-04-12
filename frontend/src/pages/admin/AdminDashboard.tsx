@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Users, Building, DollarSign, TrendingUp, AlertCircle,
-  CheckCircle, Clock, Activity,
+  CheckCircle, Clock, Activity, MapPin,
   UserCheck, CreditCard, Shield
 } from 'lucide-react';
 import Api from '../../services/api';
@@ -25,6 +25,12 @@ const t = {
 
 const body: React.CSSProperties = { fontFamily: 'DM Sans, sans-serif' };
 const serif: React.CSSProperties = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('en-TZ', {
+    style: 'currency', currency: 'TZS',
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
+  }).format(amount);
 
 const card: React.CSSProperties = {
   backgroundColor: t.dark2,
@@ -64,6 +70,9 @@ const AdminDashboard = () => {
     systemHealth: 'good'
   });
 
+  const [oweruProperties, setOweruProperties] = useState<any[]>([]);
+  const [loadingOweru, setLoadingOweru] = useState(false);
+
   const [recentActivity, setRecentActivity] = useState<Array<{
     id: string;
     type: string;
@@ -73,7 +82,47 @@ const AdminDashboard = () => {
   }>>([]);
   const [loading, setLoading] = useState(true);
 
+  // Oweru Properties management functions
+  const loadOweruProperties = async () => {
+    try {
+      setLoadingOweru(true);
+      const response = await Api.getAdminProperties();
+      setOweruProperties(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Failed to load Oweru properties:', error);
+    } finally {
+      setLoadingOweru(false);
+    }
+  };
+
+  const addOweruProperty = async (propertyData: any) => {
+    try {
+      const response = await Api.createAdminProperty(propertyData);
+      if (response.data) {
+        setOweruProperties(prev => [response.data, ...prev]);
+        alert('Oweru property added successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to add Oweru property:', error);
+      alert('Failed to add Oweru property');
+    }
+  };
+
+  const deleteOweruProperty = async (propertyId: number) => {
+    try {
+      await Api.deleteAdminProperty(propertyId);
+      setOweruProperties(prev => prev.filter(p => p.id !== propertyId));
+      alert('Oweru property deleted successfully!');
+    } catch (error) {
+      console.error('Failed to delete Oweru property:', error);
+      alert('Failed to delete Oweru property');
+    }
+  };
+
   useEffect(() => {
+    // Load Oweru properties
+    loadOweruProperties();
+    
     // Load real dashboard data
     const loadDashboardData = async () => {
       try {
@@ -102,7 +151,6 @@ const AdminDashboard = () => {
 
         // For now, set pending applications to 0 since we don't have applications data
         const pendingApplications = 0;
-
         const activeListings = properties.filter((property: any) => 
           property.available !== false && property.status !== 'rented'
         ).length;
@@ -372,6 +420,137 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Oweru Rental Properties Section */}
+      <div style={card}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <h2 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.cream, margin: '0 0 4px' }}>
+              Oweru Rental Properties
+            </h2>
+            <p style={{ ...body, fontSize: 14, color: t.muted, margin: 0 }}>
+              Manage properties that appear on the homepage
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              const title = prompt('Enter property title:');
+              const location = prompt('Enter property location:');
+              const price = prompt('Enter property price (TZS):');
+              const description = prompt('Enter property description:');
+              
+              if (title && location && price && description) {
+                addOweruProperty({
+                  title,
+                  location,
+                  price: parseFloat(price),
+                  description,
+                  type: 'oweru_rental',
+                  featured: true,
+                  available: true
+                });
+              }
+            }}
+            style={{
+              background: t.gold,
+              color: t.dark,
+              border: 'none',
+              borderRadius: 8,
+              padding: '10px 16px',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            <Building size={16} />
+            Add Oweru Property
+          </button>
+        </div>
+
+        {loadingOweru ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: t.muted }}>
+            Loading Oweru properties...
+          </div>
+        ) : oweruProperties.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: t.muted }}>
+            <Building size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
+            <div style={{ fontSize: 16, marginBottom: 8 }}>No Oweru properties yet</div>
+            <div style={{ fontSize: 14 }}>Add properties to feature on the homepage</div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+            {oweruProperties.map((property) => (
+              <div key={property.id} style={{
+                background: t.dark3,
+                border: `1px solid ${t.border}`,
+                borderRadius: 8,
+                padding: 16,
+                position: 'relative'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  background: t.gold,
+                  color: t.dark,
+                  padding: '4px 8px',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  borderRadius: 4,
+                  textTransform: 'uppercase'
+                }}>
+                  Oweru Rental
+                </div>
+                
+                <div style={{ marginBottom: 12 }}>
+                  <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.cream, margin: '0 0 8px' }}>
+                    {property.title}
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.muted, fontSize: 13 }}>
+                    <MapPin size={12} />
+                    {property.location}
+                  </div>
+                </div>
+                
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: t.gold }}>
+                    {formatCurrency(property.price)}
+                    <span style={{ fontSize: 12, color: t.muted, fontWeight: 400, marginLeft: 4 }}>/month</span>
+                  </div>
+                </div>
+                
+                <p style={{ ...body, fontSize: 13, color: t.muted, marginBottom: 12, lineHeight: 1.5 }}>
+                  {property.description}
+                </p>
+                
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => {
+                      if (confirm('Are you sure you want to delete this Oweru property?')) {
+                        deleteOweruProperty(property.id);
+                      }
+                    }}
+                    style={{
+                      background: 'transparent',
+                      color: t.red,
+                      border: `1px solid ${t.red}`,
+                      borderRadius: 6,
+                      padding: '6px 12px',
+                      fontSize: 12,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Two Column Layout */}
