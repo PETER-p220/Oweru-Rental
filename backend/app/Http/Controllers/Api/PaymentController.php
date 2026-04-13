@@ -140,15 +140,15 @@ class PaymentController extends Controller
             // ── Request body ──────────────────────────────────────────────────────
             // Fields must include everything in signableParams plus extra fields.
             // Do NOT add extra fields to the digest — only the ones in Signed-Fields.
-            $body = [
-                'transid' => $transid,
-                'amount'  => $amount,
-                'msisdn'  => $phone,
-                'vendor'  => $vendorId,
-                'name'    => $validated['customer_name'],
-                'channel' => $channel,
-                'order_id' => $validated['order_id'], // Selcom requires this field
-            ];
+                $body = [
+            'transid'  => $transid,
+            'amount'   => $amount,
+            'msisdn'   => $phone,
+            'vendor'   => $vendorId,
+            'name'     => $validated['customer_name'],
+            'channel'  => $channel,
+            'order_id' => $transid,
+        ];
 
             Log::info('Selcom USSD push request', [
                 'body'          => $body,
