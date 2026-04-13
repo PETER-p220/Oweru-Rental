@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('price', 10, 2);
             $table->string('location');
             $table->string('address');
-            $table->enum('type', ['apartment', 'house', 'studio', 'villa', 'commercial']);
+            $table->enum('type', ['apartment', 'house', 'studio', 'villa', 'commercial', 'oweru_rental']);
             $table->integer('bedrooms');
             $table->integer('bathrooms');
             $table->decimal('area', 8, 2); // in square meters
