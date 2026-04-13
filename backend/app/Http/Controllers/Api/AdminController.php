@@ -240,6 +240,43 @@ class AdminController extends Controller
         ]);
     }
 
+    public function uploadImages(Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'images.*' => 'required|file|image|mimes:jpeg,jpg,png,gif|max:5120',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $uploadedImages = [];
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                    $image->move(public_path('storage/properties'), $imageName);
+                    $uploadedImages[] = 'storage/properties/' . $imageName;
+                }
+            }
+
+            return response()->json([
+                'message' => 'Images uploaded successfully',
+                'images' => $uploadedImages
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to upload images',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function createProperty(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [

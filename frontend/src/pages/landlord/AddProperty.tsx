@@ -190,6 +190,41 @@ const AddProperty = () => {
         // Debug: Log user object to check available fields
         console.log('User object:', user);
         console.log('User ID:', user?.id);
+        console.log('Images to upload:', formData.images);
+        
+        // For admin users, we need to handle images separately
+        let uploadedImages: string[] = [];
+        
+        // Upload images first if any
+        if (formData.images.length > 0) {
+          console.log('Uploading images for admin property...');
+          const imageFormData = new FormData();
+          
+          formData.images.forEach((imageFile, index) => {
+            imageFormData.append(`images[${index}]`, imageFile.file);
+          });
+          
+          try {
+            const imageResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/properties/upload-images`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Accept': 'application/json',
+              },
+              body: imageFormData,
+            });
+            
+            if (imageResponse.ok) {
+              const imageResult = await imageResponse.json();
+              uploadedImages = imageResult.images || [];
+              console.log('Images uploaded successfully:', uploadedImages);
+            } else {
+              console.error('Image upload failed:', imageResponse.statusText);
+            }
+          } catch (error) {
+            console.error('Error uploading images:', error);
+          }
+        }
         
         // Admin uses admin API (JSON format)
         const propertyData = {
@@ -209,7 +244,7 @@ const AddProperty = () => {
           owner_id: user?.id || 1, // Add admin user ID as owner, fallback to 1 if undefined
           landlord_name: 'Oweru Rental', // Set default landlord name for Oweru properties
           landlord_phone: '+255 712 345 678', // Set default phone for Oweru properties
-          // Note: Images would need separate handling for admin API
+          images: uploadedImages, // Use uploaded image URLs
         };
         
         console.log('Property data being sent:', propertyData);
