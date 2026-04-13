@@ -16,8 +16,8 @@ class PaymentController extends Controller
      */
     private function computeSelcomHeaders(array $params, string $apiKey, string $apiSecret): array
     {
-        // Timestamp in Selcom format - YYYY-DD-MM HH:MM:SS
-        $timestamp = date('Y-d-m H:i:s'); // yyyy-dd-mm H:i:s as per Selcom docs
+        // Timestamp in Selcom format - YYYY-MM-DD HH:MM:SS
+        $timestamp = date('Y-m-d H:i:s'); // yyyy-mm-dd H:i:s correct Selcom format
 
         // Fields to sign (must match what we put in Signed-Fields header below)
         $signedFields = 'transid,amount,msisdn,vendor';
