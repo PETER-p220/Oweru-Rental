@@ -283,8 +283,6 @@ class AdminController extends Controller
                 'amenities' => $request->amenities,
                 'owner_id' => null, // Admin properties don't have an owner
                 'agent_id' => null, // Admin properties don't have an agent
-                'dalali' => 'Oweru Rental',
-                'dalali_phone' => null,
             ]);
 
             return response()->json([
