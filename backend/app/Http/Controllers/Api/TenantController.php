@@ -109,37 +109,52 @@ class TenantController extends Controller
     public function createApplication(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'property_id' => 'required|exists:properties,id',
-            'message' => 'required|string|max:1000',
-            'proposed_rent' => 'sometimes|numeric|min:0',
-            'move_in_date' => 'sometimes|date|after:today',
+            'property_id'    => 'required|exists:properties,id',
+            'message'        => 'nullable|string|max:1000',
+            'proposed_rent'   => 'sometimes|numeric|min:0',
+            'move_in_date'   => 'sometimes|date|after:today',
+            // payment fields — all nullable so both flows work
+            'owner_id'       => 'nullable|integer',
+            'service_fee'    => 'nullable|numeric',
+            'payment_status' => 'nullable|string',
+            'payment_method' => 'nullable|string',
+            'transaction_id' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
-        $user = Auth::user();
-        
-        // Check if user already applied
-        $existing = Application::where('user_id', $user->id)
-            ->where('property_id', $request->property_id)
+        $user     = Auth::user();
+        $property = Property::findOrFail($request->property_id);
+
+        // Check for duplicate — but allow re-apply if previous was withdrawn
+        $existingApplication = Application::where('user_id', $user->id)
+            ->where('property_id', $property->id)
+            ->whereNotIn('status', ['withdrawn', 'rejected'])
             ->first();
 
-        if ($existing) {
-            return response()->json(['message' => 'You have already applied for this property'], 422);
+        if ($existingApplication) {
+            return response()->json([
+                'message' => 'You have already applied for this property',
+                'data'    => $existingApplication
+            ], 409);
         }
 
         $application = Application::create([
-            'user_id' => $user->id,
-            'property_id' => $request->property_id,
-            'message' => $request->message,
-            'proposed_rent' => $request->proposed_rent,
-            'move_in_date' => $request->move_in_date,
-            'status' => 'pending',
+            'user_id'        => $user->id,
+            'property_id'    => $property->id,
+            'owner_id'       => $request->owner_id,
+            'message'        => $request->message ?? "Site visit request for {$property->title}",
+            'proposed_rent'   => $request->proposed_rent,
+            'service_fee'    => $request->service_fee,
+            'payment_status' => $request->payment_status,
+            'payment_method' => $request->payment_method,
+            'transaction_id' => $request->transaction_id,
+            'applied_at'     => now(),
         ]);
 
         return response()->json([
