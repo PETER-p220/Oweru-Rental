@@ -85,7 +85,7 @@ class PaymentController extends Controller
             ]);
 
             $vendorId  = env('SELCOM_VENDOR_ID');
-            $apiKey    = env('OWERU_APP_KEY');  // Use Oweru app key as API key
+            $apiKey    = env('SELCOM_API_KEY');  // Use correct Selcom API key
             $apiSecret = env('SELCOM_API_SECRET');
             $baseUrl   = env('SELCOM_BASE_URL', 'https://apigw.selcommobile.com/v1');
 
@@ -122,7 +122,8 @@ class PaymentController extends Controller
             $response = Http::withHeaders(array_merge([
                 'Content-Type' => 'application/json',
                 'Accept'       => 'application/json',
-            ], $headers))->post($baseUrl . '/checkout/wallet-payment', $body);
+                'X-Oweru-App-Key' => env('OWERU_APP_KEY'), // Add Oweru app key as header
+            ], $headers))->post($baseUrl . '/payments/mobilemoney', $body);
 
             Log::info('Selcom response', [
                 'status' => $response->status(),
