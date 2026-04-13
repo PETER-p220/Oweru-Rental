@@ -142,7 +142,6 @@ class PaymentController extends Controller
             // Do NOT add extra fields to the digest — only the ones in Signed-Fields.
                 $body = [
             'transid'  => $transid,
-            'amount'   => $amount,
             'msisdn'   => $phone,
             'vendor'   => $vendorId,
             'name'     => $validated['customer_name'],
