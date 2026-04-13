@@ -16,8 +16,8 @@ class PaymentController extends Controller
      */
     private function computeSelcomHeaders(array $params, string $apiKey, string $apiSecret): array
     {
-        // Timestamp in ISO 8601 format — exactly what Selcom expects
-        $timestamp = date('Y-d-m H:i:s'); // yyyy-dd-mm H:i:s as per their docs
+        // Timestamp in ISO 8601 format - exactly what Selcom expects
+        $timestamp = date('Y-m-d\TH:i:s\Z'); // ISO 8601 UTC format
 
         // Fields to sign (must match what we put in Signed-Fields header below)
         $signedFields = 'transid,amount,msisdn,vendor';
@@ -85,7 +85,7 @@ class PaymentController extends Controller
             ]);
 
             $vendorId  = env('SELCOM_VENDOR_ID');
-            $apiKey    = env('SELCOM_API_KEY');
+            $apiKey    = env('OWERU_APP_KEY');  // Use Oweru app key as API key
             $apiSecret = env('SELCOM_API_SECRET');
             $baseUrl   = env('SELCOM_BASE_URL', 'https://apigw.selcommobile.com/v1');
 
@@ -111,7 +111,13 @@ class PaymentController extends Controller
                 'channel'  => $provider,
             ]);
 
-            Log::info('Selcom USSD push request', ['body' => $body, 'headers_debug' => $headers]);
+            Log::info('Selcom USSD push request', [
+                'body' => $body, 
+                'headers_debug' => $headers,
+                'vendor_id' => $vendorId,
+                'api_key_used' => $apiKey,
+                'base_url' => $baseUrl
+            ]);
 
             $response = Http::withHeaders(array_merge([
                 'Content-Type' => 'application/json',
@@ -121,6 +127,8 @@ class PaymentController extends Controller
             Log::info('Selcom response', [
                 'status' => $response->status(),
                 'body'   => $response->body(),
+                'successful' => $response->successful(),
+                'headers' => $response->headers(),
             ]);
 
             if ($response->successful()) {
