@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Home, MapPin, DollarSign, Bed, Bath, Square, 
-  Check, X, Plus, Trash2, AlertCircle,
-  ArrowLeft, ArrowRight, Building, Warehouse, Store, Upload
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  Home, MapPin, Square, Bed, Bath, DollarSign, Camera,
+  ChevronLeft, ChevronRight, Check, X, Plus, Trash2,
+  Wifi, Car, Waves, Dumbbell, Coffee, Shield, Trees, ArrowLeft, ArrowRight, AlertCircle, Building, Store, Upload
 } from 'lucide-react';
 import Api from '../../services/api';
 
@@ -14,6 +15,7 @@ interface ImageFile {
 
 const AddProperty = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -146,6 +148,12 @@ const AddProperty = () => {
     setErrors([]);
 
     try {
+      // Check if this is an Oweru property request from admin
+      const isOweruProperty = window.location.pathname === '/dashboard/admin/add-oweru-property';
+      
+      // Check if current user is admin
+      const isAdmin = user?.userType === 'admin' || user?.user_type === 'admin' || user?.role === 'admin';
+      
       // Create FormData for file upload
       const formDataToSend = new FormData();
       
@@ -155,7 +163,7 @@ const AddProperty = () => {
       formDataToSend.append('price', formData.price);
       formDataToSend.append('location', formData.location);
       formDataToSend.append('address', formData.address);
-      formDataToSend.append('type', formData.type);
+      formDataToSend.append('type', isOweruProperty ? 'oweru_rental' : formData.type);
       formDataToSend.append('bedrooms', formData.bedrooms.toString());
       formDataToSend.append('bathrooms', formData.bathrooms.toString());
       formDataToSend.append('area', formData.area);
@@ -176,12 +184,43 @@ const AddProperty = () => {
         formDataToSend.append(`images[${index}]`, imageFile.file);
       });
 
-      const response = await Api.createOwnerProperty(formDataToSend);
+      // Use different API endpoints based on user role
+      let response;
+      if (isAdmin) {
+        // Admin uses admin API (JSON format)
+        const propertyData = {
+          title: formData.title,
+          description: formData.description,
+          price: formData.price,
+          location: formData.location,
+          address: formData.address,
+          type: isOweruProperty ? 'oweru_rental' : formData.type,
+          bedrooms: formData.bedrooms,
+          bathrooms: formData.bathrooms,
+          area: formData.area,
+          featured: formData.featured,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          amenities: formData.amenities,
+          // Note: Images would need separate handling for admin API
+        };
+        response = await Api.createAdminProperty(propertyData);
+      } else {
+        // Landlord uses owner API (FormData format)
+        response = await Api.createOwnerProperty(formDataToSend);
+      }
       
       if (response.data) {
-        navigate('/dashboard/landlord/my-properties', { 
-          state: { success: 'Property added successfully!' } 
-        });
+        // Navigate based on user role
+        if (isAdmin) {
+          navigate('/dashboard/admin/properties', { 
+            state: { success: 'Oweru property added successfully!' } 
+          });
+        } else {
+          navigate('/dashboard/landlord/my-properties', { 
+            state: { success: 'Property added successfully!' } 
+          });
+        }
       } else {
         throw new Error('Failed to create property');
       }
