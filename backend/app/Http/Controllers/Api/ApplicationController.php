@@ -44,48 +44,60 @@ class ApplicationController extends Controller
     }
 
     public function store(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'property_id' => 'required|exists:properties,id',
-            'message' => 'nullable|string|max:1000',
-            'offered_rent' => 'nullable|numeric|min:0',
-        ]);
+{
+    $validator = Validator::make($request->all(), [
+        'property_id'    => 'required|exists:properties,id',
+        'message'        => 'nullable|string|max:1000',
+        'offered_rent'   => 'nullable|numeric|min:0',
+        // payment fields — all nullable so both flows work
+        'owner_id'       => 'nullable|integer',
+        'service_fee'    => 'nullable|numeric',
+        'payment_status' => 'nullable|string',
+        'payment_method' => 'nullable|string',
+        'transaction_id' => 'nullable|string',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $user = Auth::user();
-        $property = Property::findOrFail($request->property_id);
-
-        // Check if user already applied
-        $existingApplication = Application::where('user_id', $user->id)
-            ->where('property_id', $property->id)
-            ->first();
-
-        if ($existingApplication) {
-            return response()->json([
-                'message' => 'You have already applied for this property'
-            ], 409);
-        }
-
-        $application = Application::create([
-            'user_id' => $user->id,
-            'property_id' => $property->id,
-            'message' => $request->message,
-            'offered_rent' => $request->offered_rent,
-            'applied_at' => now(),
-        ]);
-
+    if ($validator->fails()) {
         return response()->json([
-            'message' => 'Application submitted successfully',
-            'data' => $application
-        ], 201);
+            'message' => 'Validation failed',
+            'errors'  => $validator->errors()
+        ], 422);
     }
 
+    $user     = Auth::user();
+    $property = Property::findOrFail($request->property_id);
+
+    // Check for duplicate — but allow re-apply if previous was withdrawn
+    $existingApplication = Application::where('user_id', $user->id)
+        ->where('property_id', $property->id)
+        ->whereNotIn('status', ['withdrawn', 'rejected'])
+        ->first();
+
+    if ($existingApplication) {
+        return response()->json([
+            'message' => 'You have already applied for this property',
+            'data'    => $existingApplication
+        ], 409);
+    }
+
+    $application = Application::create([
+        'user_id'        => $user->id,
+        'property_id'    => $property->id,
+        'owner_id'       => $request->owner_id,
+        'message'        => $request->message ?? "Site visit request for {$property->title}",
+        'offered_rent'   => $request->offered_rent,
+        'service_fee'    => $request->service_fee,
+        'payment_status' => $request->payment_status,
+        'payment_method' => $request->payment_method,
+        'transaction_id' => $request->transaction_id,
+        'applied_at'     => now(),
+    ]);
+
+    return response()->json([
+        'message' => 'Application submitted successfully',
+        'data'    => $application
+    ], 201);
+}
     public function update(Request $request, Application $application): JsonResponse
     {
         $this->authorize('update', $application);

@@ -19,6 +19,13 @@ class Application extends Model
         'landlord_notes',
         'applied_at',
         'responded_at',
+        'owner_id',
+        'service_fee',
+        'payment_status',
+        'payment_method',
+        'transaction_id',
+        'applied_at',
+
     ];
 
     protected $casts = [
