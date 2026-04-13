@@ -56,7 +56,8 @@ const AdminDashboard = () => {
     price: '',
     description: '',
     bedrooms: '',
-    bathrooms: ''
+    bathrooms: '',
+    area: ''
   });
 
   const [recentActivity, setRecentActivity] = useState<Array<{
@@ -529,7 +530,7 @@ const AdminDashboard = () => {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: t.muted, marginBottom: '4px' }}>
                   Price (TZS) *
@@ -601,6 +602,32 @@ const AdminDashboard = () => {
                   }}
                 />
               </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: t.muted, marginBottom: '4px' }}>
+                  Size (sq meters) *
+                </label>
+                <input
+                  type="number"
+                  name="area"
+                  autoComplete="off"
+                  required
+                  min="0"
+                  step="0.1"
+                  value={quickForm.area}
+                  onChange={(e) => setQuickForm({ ...quickForm, area: e.target.value })}
+                  placeholder="e.g., 85"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: t.dark2,
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 6,
+                    color: t.cream,
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
@@ -613,7 +640,8 @@ const AdminDashboard = () => {
                     price: '',
                     description: '',
                     bedrooms: '',
-                    bathrooms: ''
+                    bathrooms: '',
+                    area: ''
                   });
                   setShowAddForm(false);
                 }}
@@ -632,7 +660,7 @@ const AdminDashboard = () => {
               <button
                 type="button"
                 onClick={async () => {
-                  if (quickForm.title && quickForm.location && quickForm.price && quickForm.description) {
+                  if (quickForm.title && quickForm.location && quickForm.price && quickForm.description && quickForm.area) {
                     await addOweruProperty({
                       title: quickForm.title,
                       location: quickForm.location,
@@ -642,7 +670,8 @@ const AdminDashboard = () => {
                       featured: true,
                       available: true,
                       bedrooms: parseInt(quickForm.bedrooms) || undefined,
-                      bathrooms: parseInt(quickForm.bathrooms) || undefined
+                      bathrooms: parseInt(quickForm.bathrooms) || undefined,
+                      area: parseFloat(quickForm.area)
                     });
                     
                     // Reset form
@@ -652,11 +681,12 @@ const AdminDashboard = () => {
                       price: '',
                       description: '',
                       bedrooms: '',
-                      bathrooms: ''
+                      bathrooms: '',
+                      area: ''
                     });
                     setShowAddForm(false);
                   } else {
-                    alert('Please fill in all required fields: Title, Location, Price, and Description');
+                    alert('Please fill in all required fields: Title, Location, Price, Description, and Area');
                   }
                 }}
                 style={{

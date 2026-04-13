@@ -276,13 +276,15 @@ class AdminController extends Controller
                 'type' => $request->type,
                 'bedrooms' => $request->bedrooms,
                 'bathrooms' => $request->bathrooms,
-                'area' => $request->area,
+                'area' => $request->area ?: null,
                 'featured' => $request->boolean('featured', true),
                 'available' => $request->boolean('available', true),
                 'images' => $request->images ?? [],
                 'amenities' => $request->amenities,
                 'owner_id' => null, // Admin properties don't have an owner
                 'agent_id' => null, // Admin properties don't have an agent
+                'landlord_name' => 'Oweru Rental', // Admin properties belong to Oweru Rental
+                'landlord_phone' => null, // No specific phone for admin properties
             ]);
 
             return response()->json([
