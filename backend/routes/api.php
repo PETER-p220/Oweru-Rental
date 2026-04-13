@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Contracts
         Route::get('/tenant/contract',                           [TenantController::class, 'getMyContract']);
+        Route::post('/tenant/contract',                          [TenantController::class, 'createContract']);
         Route::get('/tenant/contracts/{contract}/download',      [TenantController::class, 'downloadContract']);
 
         // Payments
