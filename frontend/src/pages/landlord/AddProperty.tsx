@@ -201,7 +201,7 @@ const AddProperty = () => {
           featured: formData.featured,
           latitude: formData.latitude,
           longitude: formData.longitude,
-          amenities: formData.amenities,
+          amenities: formData.amenities.join(', '), // Convert array to string for admin API
           // Note: Images would need separate handling for admin API
         };
         response = await Api.createAdminProperty(propertyData);
