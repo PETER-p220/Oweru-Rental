@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Building, Search, Plus, Edit, Trash2, Eye,
   MapPin, Home, Calendar, DollarSign, Users,
@@ -338,13 +339,37 @@ const PropertiesManagement = () => {
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <Building size={22} style={{ color: tk.gold }} />
-          <h1 style={{ ...serif, fontSize: 26, fontWeight: 600, color: tk.cream, margin: 0, letterSpacing: '-0.02em' }}>
-            Properties Management
-          </h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Building size={22} style={{ color: tk.gold }} />
+            <h1 style={{ ...serif, fontSize: 26, fontWeight: 600, color: tk.cream, margin: 0, letterSpacing: '-0.02em' }}>
+              Properties Management
+            </h1>
+          </div>
+          <Link
+            to="/landlord/add-property"
+            style={{
+              background: tk.gold,
+              color: '#0a0a0a',
+              border: 'none',
+              borderRadius: 8,
+              padding: '10px 16px',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.2s',
+              fontFamily: 'DM Sans, sans-serif'
+            }}
+          >
+            <Plus size={14} />
+            Add Oweru Property
+          </Link>
         </div>
         <p style={{ color: tk.muted, ...body, fontSize: 13, margin: 0 }}>
           Manage and monitor all property listings across the platform.
