@@ -16,8 +16,8 @@ class PaymentController extends Controller
      */
     private function computeSelcomHeaders(array $params, string $apiKey, string $apiSecret): array
     {
-        // Timestamp in ISO 8601 format - exactly what Selcom expects
-        $timestamp = date('Y-m-d\TH:i:s\Z'); // ISO 8601 UTC format
+        // Timestamp in Selcom format - YYYY-DD-MM HH:MM:SS
+        $timestamp = date('Y-d-m H:i:s'); // yyyy-dd-mm H:i:s as per Selcom docs
 
         // Fields to sign (must match what we put in Signed-Fields header below)
         $signedFields = 'transid,amount,msisdn,vendor';
@@ -105,20 +105,11 @@ class PaymentController extends Controller
             $headers = $this->computeSelcomHeaders($signableParams, $apiKey, $apiSecret);
 
             // Full request body for checkout/wallet-payment endpoint
-            $body = [
-                'transid'     => $transid,
-                'amount'      => $amount,
-                'currency'    => 'TZS',
-                'vendor_id'   => $vendorId,
-                'order_id'    => $validated['order_id'],
-                'phone_number'=> $phone,
-                'provider'    => $provider,
-                'customer_email' => $validated['customer_email'],
-                'customer_name'  => $validated['customer_name'],
-                'webhook_url' => url('/api/payment/webhook'),
-                'redirect_url' => url('/payment/success'),
-                'payment_type' => $validated['payment_type'] ?? 'RENTAL'
-            ];
+            $body = array_merge($signableParams, [
+                'name'     => $validated['customer_name'],
+                'msisdn'   => $phone,
+                'channel'  => $provider,
+            ]);
 
             Log::info('Selcom USSD push request', [
                 'body' => $body, 
