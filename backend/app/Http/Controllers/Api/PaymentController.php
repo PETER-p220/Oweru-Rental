@@ -104,12 +104,21 @@ class PaymentController extends Controller
 
             $headers = $this->computeSelcomHeaders($signableParams, $apiKey, $apiSecret);
 
-            // Full request body (more fields than just the signed ones)
-            $body = array_merge($signableParams, [
-                'name'     => $validated['customer_name'],
-                'msisdn'   => $phone,
-                'channel'  => $provider,
-            ]);
+            // Full request body for checkout/wallet-payment endpoint
+            $body = [
+                'transid'     => $transid,
+                'amount'      => $amount,
+                'currency'    => 'TZS',
+                'vendor_id'   => $vendorId,
+                'order_id'    => $validated['order_id'],
+                'phone_number'=> $phone,
+                'provider'    => $provider,
+                'customer_email' => $validated['customer_email'],
+                'customer_name'  => $validated['customer_name'],
+                'webhook_url' => url('/api/payment/webhook'),
+                'redirect_url' => url('/payment/success'),
+                'payment_type' => $validated['payment_type'] ?? 'RENTAL'
+            ];
 
             Log::info('Selcom USSD push request', [
                 'body' => $body, 
@@ -123,7 +132,7 @@ class PaymentController extends Controller
                 'Content-Type' => 'application/json',
                 'Accept'       => 'application/json',
                 'X-Oweru-App-Key' => env('OWERU_APP_KEY'), // Add Oweru app key as header
-            ], $headers))->post($baseUrl . '/payments/mobilemoney', $body);
+            ], $headers))->post($baseUrl . '/checkout/wallet-payment', $body);
 
             Log::info('Selcom response', [
                 'status' => $response->status(),
