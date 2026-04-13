@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   MapPin, Bed, Bath, Square, Phone, Mail,
-  Shield, CheckCircle, Heart, Share2, QrCode,
+  Shield, CheckCircle, AlertCircle, Heart, Share2, QrCode,
   Download, ArrowLeft, X, Wifi, Zap,
   Building, Star, ChevronRight, Bookmark,
 } from 'lucide-react';
@@ -140,6 +140,7 @@ const PropertyDetail = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
   const [showSignInModal, setShowSignInModal] = useState(false);
+  const [showTenantOnlyModal, setShowTenantOnlyModal] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [property, setProperty] = useState<any>(null);
@@ -253,7 +254,7 @@ const PropertyDetail = () => {
     if (!isAuthenticated) { setShowSignInModal(true); return; }
     if (!property) return;
     if (user?.userType !== 'tenant') {
-      alert('Only tenants can apply for properties. Please switch to a tenant account or register as a tenant.');
+      setShowTenantOnlyModal(true);
       return;
     }
     navigate(`/tenant/apply/${property.id}`);
@@ -628,10 +629,77 @@ const PropertyDetail = () => {
                 </div>
               </div>
             )}
+
+            {/* Tenant Only Modal */}
+            {showTenantOnlyModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000
+              }}>
+                <div style={{
+                  backgroundColor: t.dark2,
+                  border: `1px solid ${t.border}`,
+                  borderRadius: 12,
+                  padding: '32px',
+                  maxWidth: '400px',
+                  width: '90%',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                    <AlertCircle size={48} style={{ color: '#f59e0b', marginBottom: '16px' }} />
+                    <h3 style={{ ...serif, fontSize: 20, fontWeight: 600, color: t.cream, margin: 0, textAlign: 'center' }}>
+                      Tenant Access Required
+                    </h3>
+                  </div>
+                  
+                  <div style={{ ...body, fontSize: 14, color: t.muted, textAlign: 'center', marginBottom: '24px', lineHeight: 1.6 }}>
+                    Only tenants can apply for rental properties. This feature is currently restricted to tenant accounts to ensure proper application processing and verification.
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                    <button
+                      onClick={() => setShowTenantOnlyModal(false)}
+                      style={{
+                        ...solidBtn(t.gold),
+                        padding: '12px 24px',
+                        fontSize: 14,
+                        flex: 1
+                      }}
+                    >
+                      Got it
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setShowTenantOnlyModal(false);
+                        setShowSignInModal(true);
+                      }}
+                      style={{
+                        ...ghostBtn(t.muted),
+                        padding: '12px 24px',
+                        fontSize: 14,
+                        flex: 1
+                      }}
+                    >
+                      Switch to Tenant Account
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
     </div>
+
   );
 };
 
