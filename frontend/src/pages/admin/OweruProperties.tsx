@@ -165,7 +165,7 @@ const OweruProperties = () => {
             </p>
           </div>
           <Link
-            to="/landlord/add-property"
+            to="/dashboard/landlord/add-property"
             style={{
               background: 'var(--color-primary)',
               color: 'var(--color-background)',
