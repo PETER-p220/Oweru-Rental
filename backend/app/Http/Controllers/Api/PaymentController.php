@@ -29,7 +29,7 @@ class PaymentController extends Controller
         // Build sign string: "timestamp={ts}&transid={v}&amount={v}&msisdn={v}&vendor={v}"
         $signData = "timestamp={$timestamp}";
         foreach (explode(',', $signedFields) as $field) {
-            $signData .= "&{$field}=" . $params[$field];
+            $signData .= "&{$field}=" . urlencode($params[$field]);
         }
 
         // HMAC-SHA256 → raw binary → Base64
