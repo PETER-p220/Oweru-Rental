@@ -257,6 +257,9 @@ class AdminController extends Controller
             'images' => 'nullable|array',
             'images.*' => 'string',
             'amenities' => 'nullable|string',
+            'owner_id' => 'nullable|integer|exists:users,id',
+            'landlord_name' => 'nullable|string|max:255',
+            'landlord_phone' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -281,10 +284,10 @@ class AdminController extends Controller
                 'available' => $request->boolean('available', true),
                 'images' => $request->images ?? [],
                 'amenities' => $request->amenities,
-                'owner_id' => null, // Admin properties don't have an owner
+                'owner_id' => $request->owner_id, // Use owner_id from request
                 'agent_id' => null, // Admin properties don't have an agent
-                'landlord_name' => 'Oweru Rental', // Admin properties belong to Oweru Rental
-                'landlord_phone' => null, // No specific phone for admin properties
+                'landlord_name' => $request->landlord_name ?? 'Oweru Rental', // Use from request or default
+                'landlord_phone' => $request->landlord_phone, // Use from request
             ]);
 
             return response()->json([
