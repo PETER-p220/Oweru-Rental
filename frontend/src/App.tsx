@@ -179,6 +179,7 @@ const AdminRoutes = () => (
         <Route path="users" element={<UserManagement />} />
         <Route path="properties" element={<PropertiesManagement />} />
         <Route path="oweru-properties" element={<OweruProperties />} />
+        <Route path="add-oweru-property" element={<AddProperty />} />
         <Route path="transactions" element={<TransactionsManagement />} />
         <Route path="commission" element={<CommissionControl />} />
         <Route path="payments" element={<PaymentsManagement />} />

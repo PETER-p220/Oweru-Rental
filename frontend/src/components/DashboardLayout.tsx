@@ -81,7 +81,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
       { name: 'Users',              icon: Users,         href: 'users',               color: '#60a5fa' },
       { name: 'Properties',         icon: Building,      href: 'properties',          color: '#f59e0b' },
-      { name: 'Add Oweru Properties', icon: Plus,          href: '/dashboard/landlord/add-property', color: '#c9a84c' },
+      { name: 'Add Oweru Properties', icon: Plus,        href: 'add-oweru-property', color: '#c9a84c' },
       { name: 'BNB Properties',     icon: Hotel,         href: 'bnb-properties',      color: '#f472b6' },
       { name: 'Transactions',       icon: RefreshCw,     href: 'transactions',        color: '#6ee7b7' },
       { name: 'Commission',         icon: PieChart,      href: 'commission',          color: '#10b981' },

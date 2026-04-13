@@ -349,7 +349,7 @@ const PropertiesManagement = () => {
             </h1>
           </div>
           <Link
-            to="/dashboard/landlord/add-property"
+            to="/dashboard/admin/add-oweru-property"
             style={{
               background: tk.gold,
               color: '#0a0a0a',
