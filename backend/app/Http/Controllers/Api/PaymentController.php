@@ -147,6 +147,7 @@ class PaymentController extends Controller
                 'vendor'  => $vendorId,
                 'name'    => $validated['customer_name'],
                 'channel' => $channel,
+                'order_id' => $validated['order_id'], // Selcom requires this field
             ];
 
             Log::info('Selcom USSD push request', [
