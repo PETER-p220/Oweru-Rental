@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, MapPin, Bed, Bath, Square, ArrowRight, ChevronRight,
-  Heart, Users, Home as HomeIcon, Shield, TrendingUp, Building,
+  Heart, Users, Home as HomeIcon, Shield, TrendingUp, Building, Star,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Api from '../services/api';
@@ -65,15 +65,36 @@ const Home = () => {
   const loadOweruProperties = async () => {
     try {
       setOweruLoading(true);
-      const res = await fetch(`${API_BASE}/api/public/properties?oweru_rental=true`, { headers: { Accept: 'application/json' } });
+      
+      // Try different API endpoints to find Oweru properties
+      console.log('Loading Oweru properties...');
+      
+      // First try: Regular properties endpoint
+      let res = await fetch(`${API_BASE}/api/public/properties`, { headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
       const json = await res.json();
+      console.log('API Response:', json);
+      
       const list: any[] = json.data?.data ?? json.data ?? json ?? [];
-      // Filter for Oweru rental properties
-      const oweruList = Array.isArray(list) ? list.filter(p => p.type === 'oweru_rental' || p.oweru_rental === true).slice(0, 6) : [];
+      console.log('All properties list:', list);
+      
+      // Filter for Oweru rental properties (admin-created)
+      const oweruList = Array.isArray(list) ? 
+        list.filter(p => {
+          console.log('Checking property:', p.title, 'type:', p.type);
+          return p.type === 'oweru_rental';
+        }).slice(0, 6) : [];
+      
+      console.log('Filtered Oweru properties:', oweruList);
       setOweruProperties(oweruList);
-    } catch { setOweruProperties([]); }
-    finally { setOweruLoading(false); }
+      
+    } catch (error) {
+      console.error('Error loading Oweru properties:', error);
+      setOweruProperties([]);
+    } finally { 
+      setOweruLoading(false); 
+    }
   };
 
   const loadFeaturedProperties = async () => {
