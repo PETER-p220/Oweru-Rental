@@ -11,10 +11,27 @@ const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
 const API_BASE     = import.meta.env.VITE_API_URL ?? '';
 
 const getImage = (property: any): string => {
-  if (property.images?.length) {
+  // Debug: Log the property object to see what we're working with
+  console.log('Property object for getImage:', property);
+  console.log('Property images:', property.images);
+  
+  if (property.images && property.images.length > 0) {
     const i = property.images[0];
-    return i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`;
+    console.log('First image URL:', i);
+    
+    // Handle different image URL formats
+    if (typeof i === 'string') {
+      if (i.startsWith('http')) {
+        return i; // Full HTTP URL
+      } else if (i.startsWith('/')) {
+        return `${VITE_STORAGE}${i}`; // Relative path starting with /
+      } else {
+        return `${VITE_STORAGE}/storage/${i}`; // Relative path without leading /
+      }
+    }
   }
+  
+  // Fallback to default image
   return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
 };
 
@@ -867,6 +884,196 @@ const Home = () => {
                         onMouseLeave={e => (e.currentTarget.style.background = 'var(--gold)')}
                       >
                         Book Now
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Oweru Special Packages */}
+      <section style={{ background: 'linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%', borderTop: '1px solid var(--border)' }}>
+        <div className="section">
+          <div className="section-hdr">
+            <div>
+              <div className="section-tag">Exclusive Offers</div>
+              <h2 className="section-title">Oweru <span>Special Packages</span></h2>
+            </div>
+            <p className="section-desc">Premium rental properties handpicked by Oweru for exceptional living experiences.</p>
+          </div>
+
+          {oweruLoading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
+              {[0,1,2].map(i => <div key={i} className="skeleton" style={{ height: 340, border: '1px solid var(--border)' }} />)}
+            </div>
+          ) : oweruProperties.length === 0 ? (
+            <EmptyState icon={<Building size={40} />} title="No Oweru packages yet" desc="Check back later for exclusive rental offers." />
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
+              {oweruProperties.map((p: any) => (
+                <div key={p.id} className="property-card" style={{ 
+                  background: 'var(--navy-700)', 
+                  border: '1px solid var(--border)', 
+                  borderRadius: 12, 
+                  overflow: 'hidden',
+                  transition: 'all 0.3s',
+                  cursor: 'pointer'
+                }}
+                  onClick={() => navigate(`/properties/${p.id}`)}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={{ position: 'relative', height: 200 }}>
+                    <img
+                      src={getImage(p)}
+                      alt={p.title}
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover', 
+                        display: 'block' 
+                      }}
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'linear-gradient(to top, rgba(15,23,42,0.8) 0%, transparent 60%)'
+                    }} />
+                    {p.featured && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 12,
+                        left: 12,
+                        background: 'var(--gold)',
+                        color: 'var(--navy-900)',
+                        padding: '4px 8px',
+                        borderRadius: 4,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em'
+                      }}>
+                        Featured
+                      </div>
+                    )}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 12,
+                      left: 12,
+                      color: 'var(--cream)',
+                      fontSize: 16,
+                      fontWeight: 700
+                    }}>
+                      {formatPrice(p.price)}
+                      <span style={{ fontSize: 12, color: 'var(--slate)', fontWeight: 400, marginLeft: 4 }}>/month</span>
+                    </div>
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    <h3 style={{ 
+                      fontSize: 16, 
+                      fontWeight: 600, 
+                      color: 'var(--cream)', 
+                      margin: '0 0 8px',
+                      lineHeight: 1.3
+                    }}>
+                      {p.title}
+                    </h3>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 8, 
+                      marginBottom: 12,
+                      fontSize: 13,
+                      color: 'var(--slate)'
+                    }}>
+                      <MapPin size={14} style={{ color: 'var(--gold)' }} />
+                      {p.location}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                      {(p.bedrooms || 0) > 0 && (
+                        <span style={{ 
+                          background: 'var(--navy-600)', 
+                          color: 'var(--cream)', 
+                          padding: '4px 8px', 
+                          borderRadius: 4, 
+                          fontSize: 11 
+                        }}>
+                          {p.bedrooms} bed{p.bedrooms !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {(p.bathrooms || 0) > 0 && (
+                        <span style={{ 
+                          background: 'var(--navy-600)', 
+                          color: 'var(--cream)', 
+                          padding: '4px 8px', 
+                          borderRadius: 4, 
+                          fontSize: 11 
+                        }}>
+                          {p.bathrooms} bath{p.bathrooms !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      <span style={{ 
+                        background: 'var(--navy-600)', 
+                        color: 'var(--cream)', 
+                        padding: '4px 8px', 
+                        borderRadius: 4, 
+                        fontSize: 11 
+                      }}>
+                        {p.area || 0} m²
+                      </span>
+                    </div>
+                    <p style={{ 
+                      fontSize: 13, 
+                      color: 'var(--slate)', 
+                      margin: '0 0 16px',
+                      lineHeight: 1.4,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {p.description}
+                    </p>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center' 
+                    }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 6,
+                        fontSize: 12,
+                        color: 'var(--gold)',
+                        fontWeight: 600
+                      }}>
+                        <Star size={14} fill="currentColor" />
+                        Oweru Special
+                      </div>
+                      <button
+                        style={{
+                          background: 'var(--gold)',
+                          color: 'var(--navy-900)',
+                          border: 'none',
+                          padding: '8px 16px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          cursor: 'pointer',
+                          fontFamily: 'Jost, sans-serif',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--gold-lt)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'var(--gold)'}
+                      >
+                        View Details
                       </button>
                     </div>
                   </div>
