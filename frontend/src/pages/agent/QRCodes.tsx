@@ -59,7 +59,7 @@ const QRCodes = () => {
       
       // Generate QR code data URL with slate-800 theme
       const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
-        color: { dark: 'var(--slate-50)', light: 'var(--slate-800)' }, // slate-50 on slate-800
+        color: { dark: '#f8fafc', light: '#1e293b' }, // slate-50 on slate-800
         width: 200,
         margin: 1,
       });
