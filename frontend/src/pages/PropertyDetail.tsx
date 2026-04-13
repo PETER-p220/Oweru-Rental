@@ -250,14 +250,24 @@ const PropertyDetail = () => {
     }
   };
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!isAuthenticated) { setShowSignInModal(true); return; }
     if (!property) return;
     if (user?.userType !== 'tenant') {
       setShowTenantOnlyModal(true);
       return;
     }
-    navigate(`/tenant/apply/${property.id}`);
+    
+    try {
+      await Api.createApplication({
+        property_id: property.id,
+        message: `I am interested in applying for this property at ${property.address || property.location}. Please contact me for further details.`
+      });
+      alert('Application submitted successfully! The property owner will be notified.');
+    } catch (error: any) {
+      console.error('Application error:', error);
+      alert(error?.response?.data?.message || 'Failed to submit application. Please try again.');
+    }
   };
 
   const trackingUrl = property
@@ -668,7 +678,7 @@ const PropertyDetail = () => {
                     <button
                       onClick={() => setShowTenantOnlyModal(false)}
                       style={{
-                        ...solidBtn(t.gold),
+                        ...solidBtn,
                         padding: '12px 24px',
                         fontSize: 14,
                         flex: 1
