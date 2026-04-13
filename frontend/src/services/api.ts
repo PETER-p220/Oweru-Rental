@@ -533,9 +533,9 @@ class Api {
   static async getSavedProperties()      { return this.request<Property[]>('tenant/saved-properties'); }
   static async getTenantApplications()   { return this.request<any[]>('tenant/applications'); }
   static async getMyContract()           { return this.request<any>('tenant/contract'); }
-  static async createContract(data: any)  { return this.request<any>('tenant/contracts', { method: 'POST', body: JSON.stringify(data) }); }
-  static async updateContract(id: number, data: any) { return this.request<any>(`tenant/contracts/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
-  static async signContract(id: number) { return this.request<any>(`tenant/contracts/${id}/sign`, { method: 'POST' }); }
+  static async createContract(data: any)  { return this.request<any>('tenant/contract', { method: 'POST', body: JSON.stringify(data) }); }
+  static async updateContract(id: number, data: any) { return this.request<any>(`tenant/contract/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  static async signContract(id: number) { return this.request<any>(`tenant/contract/${id}/sign`, { method: 'POST' }); }
   
   // Digital Contract APIs
   static async getTenantDigitalContracts() { return this.request<any[]>('tenant/digital-contracts'); }

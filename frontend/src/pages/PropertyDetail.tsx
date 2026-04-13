@@ -270,6 +270,10 @@ const PropertyDetail = () => {
     }
   };
 
+  const showPaymentSuccess = () => {
+    alert('Payment initiated successfully! Please complete the payment on your phone.');
+  };
+
   const trackingUrl = property
     ? `https://oweru.co/p/${property.id}?ref=${property.dalali?.code ?? 'DIRECT'}_OWERU`
     : 'https://oweru.co';
