@@ -187,6 +187,10 @@ const AddProperty = () => {
       // Use different API endpoints based on user role
       let response;
       if (isAdmin) {
+        // Debug: Log user object to check available fields
+        console.log('User object:', user);
+        console.log('User ID:', user?.id);
+        
         // Admin uses admin API (JSON format)
         const propertyData = {
           title: formData.title,
@@ -202,11 +206,13 @@ const AddProperty = () => {
           latitude: formData.latitude,
           longitude: formData.longitude,
           amenities: formData.amenities.join(', '), // Convert array to string for admin API
-          owner_id: user?.id, // Add admin user ID as owner for admin-created properties
+          owner_id: user?.id || 1, // Add admin user ID as owner, fallback to 1 if undefined
           landlord_name: 'Oweru Rental', // Set default landlord name for Oweru properties
           landlord_phone: '+255 712 345 678', // Set default phone for Oweru properties
           // Note: Images would need separate handling for admin API
         };
+        
+        console.log('Property data being sent:', propertyData);
         response = await Api.createAdminProperty(propertyData);
       } else {
         // Landlord uses owner API (FormData format)
