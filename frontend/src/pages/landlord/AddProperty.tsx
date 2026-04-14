@@ -370,16 +370,44 @@ const AddProperty = () => {
           padding: 32px;
           margin-bottom: 24px;
         }
+
+        @media (max-width: 768px) {
+          .ap-form-section {
+            padding: 24px;
+            margin-bottom: 20px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .ap-form-section {
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+          }
+        }
         
         .ap-section-title {
-          font-size: 24px;
+          font-size: clamp(20px, 4vw, 24px);
           font-weight: 300;
-          margin-bottom: 24px;
+          margin-bottom: 20px;
           color: var(--text-primary);
+        }
+
+        @media (max-width: 480px) {
+          .ap-section-title {
+            font-size: clamp(18px, 5vw, 20px);
+            margin-bottom: 16px;
+          }
         }
         
         .ap-form-group {
-          margin-bottom: 24px;
+          margin-bottom: 20px;
+        }
+
+        @media (max-width: 480px) {
+          .ap-form-group {
+            margin-bottom: 16px;
+          }
         }
         
         .ap-label {
@@ -592,12 +620,20 @@ const AddProperty = () => {
           padding: 12px 24px;
           border: none;
           border-radius: 8px;
-          font-weight: 500;
+          font-size: 14px;
+          font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
           display: flex;
           align-items: center;
           gap: 8px;
+        }
+
+        @media (max-width: 480px) {
+          .ap-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+          }
         }
         
         .ap-btn-primary {

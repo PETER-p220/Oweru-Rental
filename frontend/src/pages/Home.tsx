@@ -180,6 +180,13 @@ const Home = () => {
           background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 60%, #1a2840 100%);
         }
 
+        @media (max-width: 768px) {
+          .hero {
+            min-height: auto;
+            padding: 0;
+          }
+        }
+
         .hero-geo {
           position: absolute; inset: 0;
           background-image:
@@ -200,12 +207,19 @@ const Home = () => {
           position: relative; z-index: 2;
           max-width: 1200px;
           margin: 0 auto;
-          padding: 120px 48px 80px;
+          padding: 60px 24px 40px;
           display: grid;
-          grid-template-columns: 1.1fr 1fr;
-          gap: 80px;
+          grid-template-columns: 1fr;
+          gap: 40px;
           align-items: center;
           width: 100%;
+        }
+
+        @media (max-width: 480px) {
+          .hero-content {
+            padding: 40px 16px 30px;
+            gap: 30px;
+          }
         }
 
         .hero-badge {
@@ -226,23 +240,36 @@ const Home = () => {
         .hero-badge-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; flex-shrink: 0; }
 
         .hero-title {
-          font-size: clamp(40px, 4.5vw, 64px);
+          font-size: clamp(32px, 6vw, 48px);
           font-weight: 300;
-          line-height: 1.06;
+          line-height: 1.1;
           letter-spacing: -0.025em;
           color: var(--cream);
-          margin-bottom: 20px;
+          margin-bottom: 16px;
+        }
+
+        @media (max-width: 480px) {
+          .hero-title {
+            font-size: clamp(28px, 8vw, 36px);
+          }
         }
 
         .hero-title strong { font-weight: 800; color: var(--gold); display: block; }
 
         .hero-sub {
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 300;
-          line-height: 1.7;
+          line-height: 1.6;
           color: var(--slate);
-          margin-bottom: 40px;
-          max-width: 440px;
+          margin-bottom: 30px;
+          max-width: 100%;
+        }
+
+        @media (max-width: 480px) {
+          .hero-sub {
+            font-size: 13px;
+            margin-bottom: 24px;
+          }
         }
 
         .hero-actions { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
@@ -289,9 +316,23 @@ const Home = () => {
         .search-card {
           background: var(--navy-800);
           border: 1px solid var(--border);
-          padding: 32px;
+          padding: 24px;
           position: relative;
           overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+          .search-card {
+            padding: 20px;
+            margin: 0 16px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .search-card {
+            padding: 16px;
+            margin: 0 12px;
+          }
         }
 
         .search-card::before {
@@ -305,7 +346,14 @@ const Home = () => {
           display: flex;
           align-items: center;
           gap: 12px;
-          margin-bottom: 24px;
+          margin-bottom: 20px;
+        }
+
+        @media (max-width: 480px) {
+          .search-card-hdr {
+            margin-bottom: 16px;
+            gap: 10px;
+          }
         }
 
         .search-card-icon {
@@ -324,7 +372,7 @@ const Home = () => {
           background: var(--navy-900);
           border: 1px solid var(--border);
           color: var(--cream);
-          padding: 11px 14px;
+          padding: 10px 14px;
           font-size: 14px;
           font-weight: 400;
           margin-bottom: 12px;
@@ -333,10 +381,24 @@ const Home = () => {
           transition: border-color 0.2s;
         }
 
+        @media (max-width: 480px) {
+          .search-input {
+            padding: 8px 12px;
+            font-size: 16px;
+          }
+        }
+
         .search-input::placeholder { color: rgba(148,163,184,0.4); }
         .search-input:focus { border-color: var(--gold); }
 
         .search-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+
+        @media (max-width: 480px) {
+          .search-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+        }
 
         .search-select {
           width: 100%;
@@ -440,7 +502,33 @@ const Home = () => {
         .section-title { font-size: clamp(26px, 3vw, 40px); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; color: var(--cream); }
         .section-title span { color: var(--gold); }
 
-        .section-desc { font-size: 14px; font-weight: 300; line-height: 1.7; color: var(--slate); max-width: 320px; text-align: right; }
+        .section-desc { font-size: 14px; font-weight: 300; line-height: 1.7; color: var(--slate); max-width: 100%; text-align: right; }
+
+        @media (max-width: 768px) {
+          .section-desc {
+            text-align: left;
+            max-width: 100%;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .section-desc {
+            font-size: 13px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .section-desc {
+            text-align: left;
+            max-width: 100%;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .section-desc {
+            font-size: 13px;
+          }
+        }
 
         .btn-ghost {
           display: inline-flex;
@@ -469,6 +557,18 @@ const Home = () => {
           transition: all 0.3s;
         }
 
+        @media (max-width: 768px) {
+          .prop-card {
+            margin-bottom: 16px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .prop-card {
+            margin-bottom: 12px;
+          }
+        }
+
         .prop-card:hover { border-color: rgba(200,145,40,0.5); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,23,42,0.6); }
 
         .bnb-card {
@@ -481,7 +581,25 @@ const Home = () => {
         .bnb-card:hover { border-color: rgba(200,145,40,0.5); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,23,42,0.6); }
 
         /* features */
-        .features-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+        .features-grid { 
+          display: grid; 
+          grid-template-columns: repeat(4, 1fr); 
+          gap: 1px; 
+          background: var(--border); 
+          border: 1px solid var(--border); 
+        }
+
+        @media (max-width: 768px) {
+          .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 480px) {
+          .features-grid {
+            grid-template-columns: 1fr;
+          }
+        }
 
         .feat-card {
           background: var(--navy-800);
@@ -933,9 +1051,9 @@ const Home = () => {
           ) : oweruProperties.length === 0 ? (
             <EmptyState icon={<Building size={40} />} title="No Oweru packages yet" desc="Check back later for exclusive rental offers." />
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }} className="oweru-packages-grid">
               {oweruProperties.map((p: any) => (
-                <div key={p.id} className="property-card" style={{ 
+                <div key={p.id} className="property-card oweru-card" style={{ 
                   background: 'var(--navy-700)', 
                   border: '1px solid var(--border)', 
                   borderRadius: 12, 
@@ -997,7 +1115,7 @@ const Home = () => {
                   </div>
                   <div style={{ padding: 16 }}>
                     <h3 style={{ 
-                      fontSize: 16, 
+                      fontSize:16, 
                       fontWeight: 600, 
                       color: 'var(--cream)', 
                       margin: '0 0 8px',
@@ -1104,6 +1222,45 @@ const Home = () => {
           )}
         </div>
       </section>
+
+      {/* Mobile responsiveness styles for Oweru packages */}
+      <style>{`
+        .oweru-packages-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+          .oweru-packages-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+          }
+          
+          .oweru-card {
+            margin-bottom: 0;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .oweru-packages-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+          
+          .oweru-card {
+            border-radius: 8px;
+          }
+          
+          .oweru-card h3 {
+            font-size: 14px;
+          }
+          
+          .oweru-card p {
+            font-size: 12px;
+          }
+        }
+      `}</style>
 
       {/* ── Features ── */}
       <section style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)' }}>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, AlertCircle, ArrowRight, ChevronRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 import Api, { TOKEN_KEY } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
@@ -67,7 +67,6 @@ const Login = () => {
 
         /* ── Layout ── */
         .lg-wrap { display: flex; min-height: 100vh; width: 100%; }
-
         .lg-left {
           flex: 1;
           display: flex;
@@ -78,7 +77,6 @@ const Login = () => {
           position: relative;
           overflow: hidden;
         }
-
         .lg-left::before {
           content: '';
           position: absolute;
@@ -87,7 +85,6 @@ const Login = () => {
           top: -100px; right: -100px;
           pointer-events: none;
         }
-
         .lg-right {
           width: 46%;
           min-height: 100vh;
@@ -99,6 +96,35 @@ const Login = () => {
           padding: 56px 52px;
           position: relative;
           overflow: hidden;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+          .lg-wrap {
+            flex-direction: column;
+          }
+          
+          .lg-left {
+            flex: none;
+            padding: 32px 24px;
+          }
+          
+          .lg-right {
+            width: 100%;
+            min-height: auto;
+            border-left: none;
+            border-top: 1px solid var(--border);
+          }
+        }
+
+        @media (max-width: 480px) {
+          .lg-left {
+            padding: 24px 16px;
+          }
+          
+          .lg-right {
+            padding: 20px;
+          }
         }
 
         .lg-right-geo {

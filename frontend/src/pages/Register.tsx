@@ -165,6 +165,13 @@ const Register = () => {
         .rg-title em { font-style: italic; color: var(--gold-light); }
         .rg-subtitle { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300; color: var(--muted); margin-bottom: 32px; }
         .rg-user-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 28px; }
+
+        @media (max-width: 480px) {
+          .rg-user-types {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+        }
         .rg-user-type { background: var(--dark-3); padding: 14px 12px; cursor: pointer; transition: all 0.2s; border: none; text-align: left; position: relative; overflow: hidden; }
         .rg-user-type.active { background: rgba(37,99,235,0.08); }
         .rg-user-type::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }

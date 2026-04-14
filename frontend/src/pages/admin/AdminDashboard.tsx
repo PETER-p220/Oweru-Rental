@@ -37,6 +37,39 @@ const card = {
   padding: 24,
 };
 
+/* Mobile Responsiveness */
+const mobileStyles = `
+  @media (max-width: 768px) {
+    .admin-dashboard {
+      padding: 16px;
+    }
+    
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    
+    .card {
+      padding: 20px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .admin-dashboard {
+      padding: 12px;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    
+    .card {
+      padding: 16px;
+    }
+  }
+`;
+
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -292,6 +325,7 @@ const AdminDashboard = () => {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+      <style>{mobileStyles}</style>
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.cream, margin: '0 0 8px' }}>
