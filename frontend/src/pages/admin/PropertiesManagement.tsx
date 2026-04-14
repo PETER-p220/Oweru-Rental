@@ -15,7 +15,7 @@ const t = {
   cream:   '#e8e4dc',
   muted:   '#7a7060',
   border:  'rgba(37,99,235,0.12)',
-  green:   '#10b981',
+  green:   '#34C759', // Added missing green color property
   red:     '#ef4444',
   blue:    '#2563eb',
   amber:   '#f59e0b',
@@ -61,6 +61,30 @@ interface Property {
   created_at?: string;
   createdAt?: string;
 }
+
+const statusColor = (s: string | undefined): string =>
+  ({ available: t.green, rented: t.blue, maintenance: t.amber, unavailable: t.red }[s ?? 'available'] ?? t.muted);
+
+const pill = (color: string): React.CSSProperties => ({
+  ...body,
+  display: 'inline-flex', alignItems: 'center', gap: 4,
+  padding: '3px 9px',
+  backgroundColor: `${color}18`,
+  border: `1px solid ${color}30`,
+  color, borderRadius: 999,
+  fontSize: 10, fontWeight: 600,
+  letterSpacing: '0.06em', textTransform: 'uppercase',
+  whiteSpace: 'nowrap',
+});
+
+// Currency formatter for prices
+const fmt = (n: number | null | undefined): string => {
+  const num = typeof n === 'number' && !isNaN(n) ? n : 0;
+  if (num === 0) return 'TZS 0';
+  return new Intl.NumberFormat('en-TZ', {
+    style: 'currency', currency: 'TZS', minimumFractionDigits: 0,
+  }).format(num);
+};
 
 const PropertiesManagement = () => {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -339,8 +363,73 @@ const PropertiesManagement = () => {
                 borderRadius: 12,
                 overflow: 'hidden'
               }}>
-                <div style={{ height: 180, background: t.dark, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building size={48} style={{ color: t.muted }} />
+                <div style={{ position: 'relative', height: 180, overflow: 'hidden' }}>
+                  {p.images && p.images.length > 0 ? (
+                    <img 
+                      src={p.images[0]} 
+                      alt={p.title}
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover',
+                        display: 'block' 
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
+                      }}
+                    />
+                  ) : (
+                    <div style={{ 
+                      height: '100%', 
+                      background: `linear-gradient(135deg, ${t.dark2}, ${t.dark3})`, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}>
+                      <Building size={48} style={{ color: t.muted }} />
+                    </div>
+                  )}
+                  <div style={{ 
+                    position: 'absolute', 
+                    inset: 0, 
+                    background: 'linear-gradient(to top, rgba(8,8,8,.6) 0%, transparent 55%)' 
+                  }} />
+                  {p.featured && (
+                    <div style={{
+                      position: 'absolute', 
+                      top: 12, 
+                      left: 12,
+                      background: t.gold, 
+                      color: '#111',
+                      ...body, 
+                      fontSize: 9, 
+                      fontWeight: 700, 
+                      letterSpacing: '0.12em', 
+                      textTransform: 'uppercase',
+                      padding: '3px 8px', 
+                      borderRadius: 4,
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 4,
+                    }}>
+                      <Star size={9} fill="currentColor" /> Featured
+                    </div>
+                  )}
+                  <div style={{ 
+                    position: 'absolute', 
+                    bottom: 12, 
+                    left: 14 
+                  }}>
+                    <div style={{ ...body, fontSize: 17, fontWeight: 700, color: t.gold }}>{fmt(p.price)}</div>
+                    <div style={{ ...body, fontSize: 10, color: 'rgba(232,228,220,.7)', marginTop: 1 }}>per month</div>
+                  </div>
+                  <div style={{ 
+                    position: 'absolute', 
+                    bottom: 12, 
+                    right: 12 
+                  }}>
+                    <span style={pill(statusColor(p.status))}>{p.status}</span>
+                  </div>
                 </div>
                 <div style={{ padding: 20 }}>
                   <h3 style={{ ...serif, fontSize: 17, color: t.cream, margin: '0 0 8px' }}>{p.title}</h3>
@@ -383,7 +472,34 @@ const PropertiesManagement = () => {
                 alignItems: 'center',
                 gap: 16
               }}>
-                <Building size={32} style={{ color: t.gold, flexShrink: 0 }} />
+                <div style={{ width: 60, height: 60, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
+                  {p.images && p.images.length > 0 ? (
+                    <img 
+                      src={p.images[0]} 
+                      alt={p.title}
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover',
+                        display: 'block' 
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='10' fill='%23C89128'%3ENo Img%3C/text%3E%3C/svg%3E`;
+                      }}
+                    />
+                  ) : (
+                    <div style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      background: `linear-gradient(135deg, ${t.dark2}, ${t.dark3})`, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}>
+                      <Building size={20} style={{ color: t.muted }} />
+                    </div>
+                  )}
+                </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, color: t.cream }}>{p.title}</div>
                   <div style={{ color: t.muted, fontSize: 14 }}>{p.location || p.address}</div>
