@@ -229,15 +229,8 @@ class AdminController extends Controller
 
         $properties = $query->orderByDesc('created_at')->paginate(10);
 
-        // Ensure images are properly formatted for frontend
-        $formattedProperties = $properties->items()->map(function ($property) {
-            // Ensure images is always an array
-            $property->images = $property->images ?? [];
-            return $property;
-        });
-
         return response()->json([
-            'data' => $formattedProperties,
+            'data' => $properties->items(),
             'pagination' => [
                 'current_page' => $properties->currentPage(),
                 'last_page' => $properties->lastPage(),
