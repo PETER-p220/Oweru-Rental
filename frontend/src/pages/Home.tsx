@@ -41,6 +41,97 @@ const formatPrice = (price: number) =>
     minimumFractionDigits: 0, maximumFractionDigits: 0,
   }).format(price);
 
+/* ── Sub-components ── */
+
+const EmptyState = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
+  <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--slate)' }}>
+    <div style={{ color: 'var(--gold)', marginBottom: 16, opacity: 0.5 }}>{icon}</div>
+    <h3 style={{ color: 'var(--cream)', fontSize: 18, marginBottom: 8 }}>{title}</h3>
+    <p style={{ fontSize: 14 }}>{desc}</p>
+  </div>
+);
+
+const SaveButton = ({ saved, onClick }: { saved: boolean; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    style={{
+      padding:         '8px 16px',
+      border:          `1px solid ${saved ? 'var(--gold)' : 'var(--border)'}`,
+      backgroundColor: saved ? 'var(--gold)' : 'transparent',
+      color:           saved ? 'var(--navy-900)' : 'var(--slate)',
+      fontSize:        12,
+      fontWeight:      700,
+      cursor:          'pointer',
+      borderRadius:    4,
+      display:         'flex',
+      alignItems:      'center',
+      gap:             6,
+      transition:      'all 0.2s',
+    }}
+  >
+    <Heart size={13} fill={saved ? 'currentColor' : 'none'} />
+    {saved ? 'Saved' : 'Save'}
+  </button>
+);
+
+const BookingForm = ({
+  property,
+  onClose,
+  onSuccess,
+}: {
+  property: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}) => {
+  const [formData, setFormData] = useState({
+    guest_name: '', guest_email: '', check_in: '', check_out: '',
+    guest_count: '1', special_requests: '',
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await new Promise((r) => setTimeout(r, 800));
+      onSuccess();
+    } finally {
+      setLoading(false);
+    }
+  };
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '10px 14px', background: 'var(--navy-900)',
+    border: '1px solid var(--border)', color: 'var(--cream)', borderRadius: 6,
+    fontSize: 14, marginBottom: 14, outline: 'none',
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h2 style={{ color: 'var(--cream)', marginBottom: 6, fontSize: 20, fontWeight: 600 }}>
+        Book {property.title}
+      </h2>
+      <p style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 20 }}>
+        {property.location || property.address}
+      </p>
+      <input required style={inputStyle} placeholder="Your name" value={formData.guest_name} onChange={(e) => setFormData((p) => ({ ...p, guest_name: e.target.value }))} />
+      <input required type="email" style={inputStyle} placeholder="Email address" value={formData.guest_email} onChange={(e) => setFormData((p) => ({ ...p, guest_email: e.target.value }))} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <input required type="date" style={inputStyle} value={formData.check_in} onChange={(e) => setFormData((p) => ({ ...p, check_in: e.target.value }))} />
+        <input required type="date" style={inputStyle} value={formData.check_out} onChange={(e) => setFormData((p) => ({ ...p, check_out: e.target.value }))} />
+      </div>
+      <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} placeholder="Special requests (optional)" value={formData.special_requests} onChange={(e) => setFormData((p) => ({ ...p, special_requests: e.target.value }))} />
+      <div style={{ display: 'flex', gap: 12 }}>
+        <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
+          Cancel
+        </button>
+        <button type="submit" disabled={loading} style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+          {loading ? 'Submitting…' : 'Submit Booking'}
+        </button>
+      </div>
+    </form>
+  );
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
@@ -347,6 +438,28 @@ const Home = () => {
                       <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold)' }}>
                         {formatPrice(p.price)}<span style={{ fontSize: 12, color: 'var(--slate)' }}>/month</span>
                       </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); navigate(`/property/${p.id}`); }}
+                        style={{
+                          width:         '100%',
+                          background:    'var(--gold)',
+                          color:         'var(--navy-900)',
+                          border:        'none',
+                          padding:       '13px',
+                          fontWeight:    700,
+                          fontSize:      13,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          borderRadius:  6,
+                          cursor:        'pointer',
+                          transition:    'background 0.2s',
+                          marginTop:     16,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
+                      >
+                        View Details
+                      </button>
                     </div>
                   </Link>
                   <div style={{ padding: '0 20px 20px', display: 'flex', justifyContent: 'flex-end' }}>
@@ -396,6 +509,28 @@ const Home = () => {
                     <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold)' }}>
                       {formatPrice(p.price)}<span style={{ fontSize: 12, color: 'var(--slate)' }}>/night</span>
                     </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/property/${p.id}`); }}
+                      style={{
+                        width:         '100%',
+                        background:    'var(--gold)',
+                        color:         'var(--navy-900)',
+                        border:        'none',
+                        padding:       '13px',
+                        fontWeight:    700,
+                        fontSize:      13,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        borderRadius:  6,
+                        cursor:        'pointer',
+                        transition:    'background 0.2s',
+                        marginTop:     16,
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
+                    >
+                      View Details
+                    </button>
                   </div>
                 </div>
               ))}
@@ -554,102 +689,10 @@ const Home = () => {
       <footer style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)', padding: '28px 0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <img src={LOGO} alt="OWERU" style={{ height: 22 }} />
-          <div style={{ color: 'var(--slate)', fontSize: 13 }}>© 2026 Oweru. Tanzania.</div>
+          <div style={{ color: 'var(--slate)', fontSize: 13 }}>&copy; 2026 Oweru. Tanzania.</div>
         </div>
       </footer>
     </div>
-  );
-};
-
-/* ── Sub-components ── */
-
-const EmptyState = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
-  <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--slate)' }}>
-    <div style={{ color: 'var(--gold)', marginBottom: 16, opacity: 0.5 }}>{icon}</div>
-    <h3 style={{ color: 'var(--cream)', fontSize: 18, marginBottom: 8 }}>{title}</h3>
-    <p style={{ fontSize: 14 }}>{desc}</p>
-  </div>
-);
-
-const SaveButton = ({ saved, onClick }: { saved: boolean; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    style={{
-      padding:         '8px 16px',
-      border:          `1px solid ${saved ? 'var(--gold)' : 'var(--border)'}`,
-      backgroundColor: saved ? 'var(--gold)' : 'transparent',
-      color:           saved ? 'var(--navy-900)' : 'var(--slate)',
-      fontSize:        12,
-      fontWeight:      700,
-      cursor:          'pointer',
-      borderRadius:    4,
-      display:         'flex',
-      alignItems:      'center',
-      gap:             6,
-      transition:      'all 0.2s',
-    }}
-  >
-    <Heart size={13} fill={saved ? 'currentColor' : 'none'} />
-    {saved ? 'Saved' : 'Save'}
-  </button>
-);
-
-const BookingForm = ({
-  property,
-  onClose,
-  onSuccess,
-}: {
-  property: any;
-  onClose: () => void;
-  onSuccess: () => void;
-}) => {
-  const [formData, setFormData] = useState({
-    guest_name: '', guest_email: '', check_in: '', check_out: '',
-    guest_count: '1', special_requests: '',
-  });
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await new Promise((r) => setTimeout(r, 800));
-      onSuccess();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 14px', background: 'var(--navy-900)',
-    border: '1px solid var(--border)', color: 'var(--cream)', borderRadius: 6,
-    fontSize: 14, marginBottom: 14, outline: 'none',
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <h2 style={{ color: 'var(--cream)', marginBottom: 6, fontSize: 20, fontWeight: 600 }}>
-        Book {property.title}
-      </h2>
-      <p style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 20 }}>
-        {property.location || property.address}
-      </p>
-      <input required style={inputStyle} placeholder="Your name" value={formData.guest_name} onChange={(e) => setFormData((p) => ({ ...p, guest_name: e.target.value }))} />
-      <input required type="email" style={inputStyle} placeholder="Email address" value={formData.guest_email} onChange={(e) => setFormData((p) => ({ ...p, guest_email: e.target.value }))} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <input required type="date" style={inputStyle} value={formData.check_in} onChange={(e) => setFormData((p) => ({ ...p, check_in: e.target.value }))} />
-        <input required type="date" style={inputStyle} value={formData.check_out} onChange={(e) => setFormData((p) => ({ ...p, check_out: e.target.value }))} />
-      </div>
-      <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} placeholder="Special requests (optional)" value={formData.special_requests} onChange={(e) => setFormData((p) => ({ ...p, special_requests: e.target.value }))} />
-      <div style={{ display: 'flex', gap: 12 }}>
-        <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
-          Cancel
-        </button>
-        <button type="submit" disabled={loading} style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-          {loading ? 'Submitting…' : 'Submit Booking'}
-        </button>
-      </div>
-    </form>
   );
 };
 
