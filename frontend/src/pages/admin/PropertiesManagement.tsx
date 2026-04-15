@@ -56,10 +56,11 @@ const resolveImage = (property: Property): string => {
     if (typeof raw === 'string' && raw.trim() !== '') {
       if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
       if (raw.startsWith('/')) return `${VITE_STORAGE}${raw}`;
+      // If path already starts with "storage/", don't add it again
+      if (raw.startsWith('storage/')) return `${VITE_STORAGE}/${raw}`;
       return `${VITE_STORAGE}/storage/${raw}`;
     }
   }
-
   // SVG placeholder — matches the dark admin theme
   return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%230e0e0e'/%3E%3Crect x='240' y='140' width='120' height='120' rx='8' fill='none' stroke='%23c9a84c' stroke-width='2' opacity='0.4'/%3E%3Ctext x='50%25' y='78%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='13' fill='%237a7060'%3ENo Image%3C/text%3E%3C/svg%3E`;
 };
