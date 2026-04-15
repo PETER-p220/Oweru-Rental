@@ -13,11 +13,7 @@ const API_BASE     = import.meta.env.VITE_API_URL ?? '';
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
 /**
- * Resolve a property image URL correctly.
- * - Full URL            → returned as-is
- * - Starts with /       → prepend VITE_STORAGE
- * - Starts with storage/→ prepend VITE_STORAGE + "/"  (avoids /storage/storage/)
- * - Bare filename       → prepend VITE_STORAGE/storage/properties/
+ * Reliable image resolver
  */
 const getImage = (property: any): string => {
   if (property.images && property.images.length > 0) {
@@ -68,7 +64,6 @@ const Home = () => {
     try {
       setOweruLoading(true);
 
-      // Strategy A: filter by type directly
       const resA = await fetch(
         `${API_BASE}/api/public/properties?type=oweru_rental&per_page=20`,
         { headers: { Accept: 'application/json' } },
@@ -76,19 +71,17 @@ const Home = () => {
 
       if (resA.ok) {
         const jsonA = await resA.json();
-        const listA: any[] =
-          jsonA?.data?.data ?? jsonA?.data ?? (Array.isArray(jsonA) ? jsonA : []);
-
+        const listA: any[] = jsonA?.data?.data ?? jsonA?.data ?? (Array.isArray(jsonA) ? jsonA : []);
         if (listA.length > 0) {
           setOweruProperties(listA.slice(0, 6));
           return;
         }
       }
 
-      // Strategy B: paginate through ALL pages and collect oweru_rental
+      // Fallback pagination strategy
       const collected: any[] = [];
       let currentPage = 1;
-      let lastPage    = 1;
+      let lastPage = 1;
 
       do {
         const res = await fetch(
@@ -102,19 +95,13 @@ const Home = () => {
         const items: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
 
         const pagination = json?.data?.pagination ?? json?.pagination ?? null;
-        if (pagination) {
-          lastPage = pagination.last_page ?? 1;
-        } else if (json?.data?.last_page) {
-          lastPage = json.data.last_page;
-        }
+        if (pagination) lastPage = pagination.last_page ?? 1;
+        else if (json?.data?.last_page) lastPage = json.data.last_page;
 
-        const oweruItems = items.filter(
-          (p) => p.type === 'oweru_rental' || p.isOweru === true,
-        );
+        const oweruItems = items.filter((p) => p.type === 'oweru_rental' || p.isOweru === true);
         collected.push(...oweruItems);
 
         if (collected.length >= 6) break;
-
         currentPage++;
       } while (currentPage <= lastPage && currentPage <= 5);
 
@@ -130,8 +117,11 @@ const Home = () => {
   const loadFeaturedProperties = async () => {
     try {
       setLoading(true);
-      const res  = await fetch(`${API_BASE}/api/public/properties`, { headers: { Accept: 'application/json' } });
+      const res = await fetch(`${API_BASE}/api/public/properties`, { 
+        headers: { Accept: 'application/json' } 
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
       const json = await res.json();
       const list: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
       setFeaturedProperties(list.slice(0, 6));
@@ -145,7 +135,6 @@ const Home = () => {
   const loadBnbProperties = async () => {
     try {
       setBnbLoading(true);
-
       for (const url of [
         `${API_BASE}/api/public/bnb`,
         `${API_BASE}/api/public/bnb/search`,
@@ -225,7 +214,16 @@ const Home = () => {
         .skeleton { animation: shimmer 1.5s ease-in-out infinite; background: var(--navy-700); border-radius: 8px; }
         @keyframes shimmer { 0%{opacity:0.4} 50%{opacity:0.9} 100%{opacity:0.4} }
         .oweru-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-        .prop-img { width: 100%; display: block; object-fit: cover; }
+        
+        /* FIXED: Reliable image container for Popular Properties */
+        .prop-img-container {
+          width: 100%;
+          height: 200px;
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+        }
+
         @media (max-width: 900px) {
           .hero-content { grid-template-columns: 1fr; gap: 40px; }
           .section { padding: 60px 24px; }
@@ -234,10 +232,9 @@ const Home = () => {
         }
       `}</style>
 
-      {/* ══════════════════════════════════════════
-          HERO
-      ══════════════════════════════════════════ */}
+      {/* HERO - unchanged */}
       <section className="hero">
+        {/* ... same as your code ... */}
         <div className="hero-geo" />
         <div className="hero-glow" />
         <div className="hero-content">
@@ -258,7 +255,6 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Search card */}
           <div className="search-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <div style={{ width: 38, height: 38, background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--navy-900)' }}>
@@ -292,16 +288,14 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          STATS BAR
-      ══════════════════════════════════════════ */}
+      {/* STATS BAR - unchanged */}
       <div style={{ background: 'var(--navy-800)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderLeft: '1px solid var(--border)' }}>
           {[
             { num: stats.totalProperties.toLocaleString(), lbl: 'Active Listings' },
-            { num: stats.totalUsers.toLocaleString(),      lbl: 'Registered Users' },
-            { num: stats.activeListings.toLocaleString(),  lbl: 'Available Now' },
-            { num: stats.avgResponseTime,                  lbl: 'Avg. Response' },
+            { num: stats.totalUsers.toLocaleString(), lbl: 'Registered Users' },
+            { num: stats.activeListings.toLocaleString(), lbl: 'Available Now' },
+            { num: stats.avgResponseTime, lbl: 'Avg. Response' },
           ].map((s) => (
             <div key={s.lbl} style={{ textAlign: 'center', padding: '28px 24px', borderRight: '1px solid var(--border)' }}>
               <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--gold)', marginBottom: 6 }}>{s.num}</div>
@@ -311,9 +305,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════
-          FEATURED LISTINGS
-      ══════════════════════════════════════════ */}
+      {/* FEATURED LISTINGS - FIXED IMAGE DISPLAY */}
       <section style={{ background: 'var(--navy-900)' }}>
         <div className="section">
           <div className="section-hdr">
@@ -323,6 +315,7 @@ const Home = () => {
             </div>
             <Link to="/properties" className="btn-ghost">View All <ArrowRight size={15} /></Link>
           </div>
+
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
               {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 340 }} />)}
@@ -332,12 +325,12 @@ const Home = () => {
               {featuredProperties.map((p) => (
                 <div key={p.id} className="prop-card" style={{ borderRadius: 12 }}>
                   <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <img
-                      className="prop-img"
-                      src={getImage(p)}
-                      alt={p.title}
-                      style={{ height: 200 }}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
+                    {/* FIXED: Using backgroundImage instead of <img> tag */}
+                    <div 
+                      className="prop-img-container"
+                      style={{ 
+                        backgroundImage: `url(${getImage(p)})` 
+                      }}
                     />
                     <div style={{ padding: 20 }}>
                       <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 8 }}>{p.title}</div>
@@ -359,9 +352,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          BNB SECTION
-      ══════════════════════════════════════════ */}
+      {/* BNB SECTION - using <img> as it was already working */}
       <section style={{ background: 'var(--navy-800)', borderTop: '1px solid var(--border)' }}>
         <div className="section">
           <div className="section-hdr">
@@ -385,7 +376,7 @@ const Home = () => {
                     className="prop-img"
                     src={getImage(p)}
                     alt={p.title}
-                    style={{ height: 220 }}
+                    style={{ height: 220, width: '100%', objectFit: 'cover' }}
                     onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
                   />
                   <div style={{ padding: 20 }}>
@@ -404,9 +395,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          OWERU SPECIAL PACKAGES
-      ══════════════════════════════════════════ */}
+      {/* OWERU SPECIAL PACKAGES - using <img> as it was working */}
       <section style={{ background: 'linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%)', borderTop: '1px solid var(--border)' }}>
         <div className="section">
           <div className="section-hdr">
@@ -441,20 +430,14 @@ const Home = () => {
                       className="prop-img"
                       src={getImage(p)}
                       alt={p.title}
-                      style={{ height: 210 }}
+                      style={{ height: 210, width: '100%', objectFit: 'cover' }}
                       onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
                     />
                     <div style={{
-                      position:      'absolute',
-                      top:           12,
-                      right:         12,
-                      background:    'var(--gold)',
-                      color:         'var(--navy-900)',
-                      padding:       '5px 12px',
-                      borderRadius:  6,
-                      fontSize:      11,
-                      fontWeight:    700,
-                      letterSpacing: '0.06em',
+                      position: 'absolute', top: 12, right: 12,
+                      background: 'var(--gold)', color: 'var(--navy-900)',
+                      padding: '5px 12px', borderRadius: 6,
+                      fontSize: 11, fontWeight: 700, letterSpacing: '0.06em'
                     }}>
                       OWERU
                     </div>
@@ -475,18 +458,10 @@ const Home = () => {
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate(`/property/${p.id}`); }}
                       style={{
-                        width:         '100%',
-                        background:    'var(--gold)',
-                        color:         'var(--navy-900)',
-                        border:        'none',
-                        padding:       '13px',
-                        fontWeight:    700,
-                        fontSize:      13,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        borderRadius:  6,
-                        cursor:        'pointer',
-                        transition:    'background 0.2s',
+                        width: '100%', background: 'var(--gold)', color: 'var(--navy-900)',
+                        border: 'none', padding: '13px', fontWeight: 700, fontSize: 13,
+                        letterSpacing: '0.08em', textTransform: 'uppercase', borderRadius: 6,
+                        cursor: 'pointer', transition: 'background 0.2s'
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
@@ -501,9 +476,8 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          CTA
-      ══════════════════════════════════════════ */}
+      {/* CTA and Footer remain unchanged - copy from your original code if needed */}
+      {/* CTA SECTION */}
       <section style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)' }}>
         <div className="section">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
@@ -531,9 +505,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════
-          BOOKING MODAL
-      ══════════════════════════════════════════ */}
+      {/* BOOKING MODAL */}
       {showBookingModal && selectedProperty && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'var(--navy-800)', border: '1px solid var(--border)', padding: 36, maxWidth: 600, width: '90%', maxHeight: '90vh', overflowY: 'auto', borderRadius: 12 }}>
@@ -549,9 +521,7 @@ const Home = () => {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          FOOTER
-      ══════════════════════════════════════════ */}
+      {/* FOOTER */}
       <footer style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)', padding: '28px 0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <img src={LOGO} alt="OWERU" style={{ height: 22 }} />
@@ -562,8 +532,7 @@ const Home = () => {
   );
 };
 
-/* ── Sub-components ── */
-
+/* Sub-components */
 const EmptyState = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
   <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--slate)' }}>
     <div style={{ color: 'var(--gold)', marginBottom: 16, opacity: 0.5 }}>{icon}</div>
@@ -576,18 +545,18 @@ const SaveButton = ({ saved, onClick }: { saved: boolean; onClick: () => void })
   <button
     onClick={onClick}
     style={{
-      padding:         '8px 16px',
-      border:          `1px solid ${saved ? 'var(--gold)' : 'var(--border)'}`,
+      padding: '8px 16px',
+      border: `1px solid ${saved ? 'var(--gold)' : 'var(--border)'}`,
       backgroundColor: saved ? 'var(--gold)' : 'transparent',
-      color:           saved ? 'var(--navy-900)' : 'var(--slate)',
-      fontSize:        12,
-      fontWeight:      700,
-      cursor:          'pointer',
-      borderRadius:    4,
-      display:         'flex',
-      alignItems:      'center',
-      gap:             6,
-      transition:      'all 0.2s',
+      color: saved ? 'var(--navy-900)' : 'var(--slate)',
+      fontSize: 12,
+      fontWeight: 700,
+      cursor: 'pointer',
+      borderRadius: 4,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      transition: 'all 0.2s',
     }}
   >
     <Heart size={13} fill={saved ? 'currentColor' : 'none'} />
