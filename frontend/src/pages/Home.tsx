@@ -8,12 +8,16 @@ import Api from '../services/api';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
 const VITE_STORAGE = (import.meta.env.VITE_API_URL ?? '').replace('/api', '');
-const API_BASE = import.meta.env.VITE_API_URL ?? '';
+const API_BASE     = import.meta.env.VITE_API_URL ?? '';
 
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
 /**
- * Reliable image URL resolver
+ * Resolve a property image URL correctly.
+ * - Full URL            → returned as-is
+ * - Starts with /       → prepend VITE_STORAGE
+ * - Starts with storage/→ prepend VITE_STORAGE + "/"  (avoids /storage/storage/)
+ * - Bare filename       → prepend VITE_STORAGE/storage/properties/
  */
 const getImage = (property: any): string => {
   if (property.images && property.images.length > 0) {
@@ -30,28 +34,26 @@ const getImage = (property: any): string => {
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('en-TZ', {
-    style: 'currency',
-    currency: 'TZS',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    style: 'currency', currency: 'TZS',
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
   }).format(price);
 
 const Home = () => {
   const navigate = useNavigate();
   const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
-  const [bnbProperties, setBnbProperties] = useState<any[]>([]);
-  const [oweruProperties, setOweruProperties] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [bnbLoading, setBnbLoading] = useState(true);
-  const [oweruLoading, setOweruLoading] = useState(true);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState<any>(null);
-  const [savedProperties, setSavedProperties] = useState<Set<number>>(new Set());
+  const [bnbProperties,      setBnbProperties]      = useState<any[]>([]);
+  const [oweruProperties,    setOweruProperties]    = useState<any[]>([]);
+  const [loading,            setLoading]            = useState(true);
+  const [bnbLoading,         setBnbLoading]         = useState(true);
+  const [oweruLoading,       setOweruLoading]       = useState(true);
+  const [showBookingModal,   setShowBookingModal]   = useState(false);
+  const [selectedProperty,   setSelectedProperty]   = useState<any>(null);
+  const [savedProperties,    setSavedProperties]    = useState<Set<number>>(new Set());
 
   const stats = {
     totalProperties: 1247,
-    totalUsers: 3842,
-    activeListings: 892,
+    totalUsers:      3842,
+    activeListings:  892,
     avgResponseTime: '24 hr',
   };
 
@@ -62,24 +64,61 @@ const Home = () => {
     loadSavedProperties();
   }, []);
 
-  // Load Oweru Special Packages
   const loadOweruProperties = async () => {
     try {
       setOweruLoading(true);
-      const res = await fetch(`${API_BASE}/api/public/properties`, {
-        headers: { Accept: 'application/json' },
-      });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Strategy A: filter by type directly
+      const resA = await fetch(
+        `${API_BASE}/api/public/properties?type=oweru_rental&per_page=20`,
+        { headers: { Accept: 'application/json' } },
+      );
 
-      const json = await res.json();
-      const list: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
+      if (resA.ok) {
+        const jsonA = await resA.json();
+        const listA: any[] =
+          jsonA?.data?.data ?? jsonA?.data ?? (Array.isArray(jsonA) ? jsonA : []);
 
-      const oweruList = list
-        .filter((p) => p.type === 'oweru_rental' || p.isOweru === true)
-        .slice(0, 6);
+        if (listA.length > 0) {
+          setOweruProperties(listA.slice(0, 6));
+          return;
+        }
+      }
 
-      setOweruProperties(oweruList);
+      // Strategy B: paginate through ALL pages and collect oweru_rental
+      const collected: any[] = [];
+      let currentPage = 1;
+      let lastPage    = 1;
+
+      do {
+        const res = await fetch(
+          `${API_BASE}/api/public/properties?page=${currentPage}&per_page=50`,
+          { headers: { Accept: 'application/json' } },
+        );
+
+        if (!res.ok) break;
+
+        const json = await res.json();
+        const items: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
+
+        const pagination = json?.data?.pagination ?? json?.pagination ?? null;
+        if (pagination) {
+          lastPage = pagination.last_page ?? 1;
+        } else if (json?.data?.last_page) {
+          lastPage = json.data.last_page;
+        }
+
+        const oweruItems = items.filter(
+          (p) => p.type === 'oweru_rental' || p.isOweru === true,
+        );
+        collected.push(...oweruItems);
+
+        if (collected.length >= 6) break;
+
+        currentPage++;
+      } while (currentPage <= lastPage && currentPage <= 5);
+
+      setOweruProperties(collected.slice(0, 6));
     } catch (error) {
       console.error('Error loading Oweru properties:', error);
       setOweruProperties([]);
@@ -88,30 +127,25 @@ const Home = () => {
     }
   };
 
-  // Load Featured / Popular Properties
   const loadFeaturedProperties = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/public/properties`, {
-        headers: { Accept: 'application/json' },
-      });
+      const res  = await fetch(`${API_BASE}/api/public/properties`, { headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
       const json = await res.json();
       const list: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
       setFeaturedProperties(list.slice(0, 6));
-    } catch (error) {
-      console.error('Error loading featured properties:', error);
+    } catch {
       setFeaturedProperties([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Load BNB Properties
   const loadBnbProperties = async () => {
     try {
       setBnbLoading(true);
+
       for (const url of [
         `${API_BASE}/api/public/bnb`,
         `${API_BASE}/api/public/bnb/search`,
@@ -139,27 +173,19 @@ const Home = () => {
         .map((item: any) => item.property?.id ?? item.id)
         .filter(Boolean);
       setSavedProperties(new Set(ids));
-    } catch {
-      /* silent */
-    }
+    } catch { /* silent */ }
   };
 
   const handleSaveProperty = async (propertyId: number) => {
     try {
       if (savedProperties.has(propertyId)) {
         await Api.unsaveProperty(propertyId).catch(() => Api.publicUnsaveProperty(propertyId));
-        setSavedProperties((prev) => {
-          const n = new Set(prev);
-          n.delete(propertyId);
-          return n;
-        });
+        setSavedProperties((prev) => { const n = new Set(prev); n.delete(propertyId); return n; });
       } else {
         await Api.saveProperty(propertyId).catch(() => Api.publicSaveProperty(propertyId));
         setSavedProperties((prev) => new Set(prev).add(propertyId));
       }
-    } catch {
-      /* silent */
-    }
+    } catch { /* silent */ }
   };
 
   return (
@@ -199,7 +225,7 @@ const Home = () => {
         .skeleton { animation: shimmer 1.5s ease-in-out infinite; background: var(--navy-700); border-radius: 8px; }
         @keyframes shimmer { 0%{opacity:0.4} 50%{opacity:0.9} 100%{opacity:0.4} }
         .oweru-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-        .prop-img-container { width: 100%; height: 200px; background-size: cover; background-position: center; background-repeat: no-repeat; }
+        .prop-img { width: 100%; display: block; object-fit: cover; }
         @media (max-width: 900px) {
           .hero-content { grid-template-columns: 1fr; gap: 40px; }
           .section { padding: 60px 24px; }
@@ -208,7 +234,9 @@ const Home = () => {
         }
       `}</style>
 
-      {/* HERO SECTION */}
+      {/* ══════════════════════════════════════════
+          HERO
+      ══════════════════════════════════════════ */}
       <section className="hero">
         <div className="hero-geo" />
         <div className="hero-glow" />
@@ -230,7 +258,7 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Search Card */}
+          {/* Search card */}
           <div className="search-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <div style={{ width: 38, height: 38, background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--navy-900)' }}>
@@ -241,11 +269,7 @@ const Home = () => {
                 <div style={{ fontSize: 12, color: 'var(--slate)' }}>Find your perfect match</div>
               </div>
             </div>
-            <input 
-              type="text" 
-              placeholder="Location, district, neighbourhood…" 
-              style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--cream)', padding: '10px 14px', marginBottom: 12, fontSize: 14, outline: 'none' }} 
-            />
+            <input type="text" placeholder="Location, district, neighbourhood…" style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--cream)', padding: '10px 14px', marginBottom: 12, fontSize: 14, outline: 'none' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
               <select style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--slate)', padding: '11px 14px', fontSize: 13 }}>
                 <option value="">Property Type</option>
@@ -261,24 +285,23 @@ const Home = () => {
                 <option value="1000+">Above 1M TZS</option>
               </select>
             </div>
-            <button 
-              onClick={() => navigate('/properties')} 
-              style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', padding: '13px', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-            >
+            <button onClick={() => navigate('/properties')} style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', padding: '13px', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <Search size={15} /> Search Properties
             </button>
           </div>
         </div>
       </section>
 
-      {/* STATS BAR */}
+      {/* ══════════════════════════════════════════
+          STATS BAR
+      ══════════════════════════════════════════ */}
       <div style={{ background: 'var(--navy-800)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderLeft: '1px solid var(--border)' }}>
           {[
             { num: stats.totalProperties.toLocaleString(), lbl: 'Active Listings' },
-            { num: stats.totalUsers.toLocaleString(), lbl: 'Registered Users' },
-            { num: stats.activeListings.toLocaleString(), lbl: 'Available Now' },
-            { num: stats.avgResponseTime, lbl: 'Avg. Response' },
+            { num: stats.totalUsers.toLocaleString(),      lbl: 'Registered Users' },
+            { num: stats.activeListings.toLocaleString(),  lbl: 'Available Now' },
+            { num: stats.avgResponseTime,                  lbl: 'Avg. Response' },
           ].map((s) => (
             <div key={s.lbl} style={{ textAlign: 'center', padding: '28px 24px', borderRight: '1px solid var(--border)' }}>
               <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--gold)', marginBottom: 6 }}>{s.num}</div>
@@ -288,7 +311,9 @@ const Home = () => {
         </div>
       </div>
 
-      {/* FEATURED / POPULAR PROPERTIES - FIXED IMAGE DISPLAY */}
+      {/* ══════════════════════════════════════════
+          FEATURED LISTINGS
+      ══════════════════════════════════════════ */}
       <section style={{ background: 'var(--navy-900)' }}>
         <div className="section">
           <div className="section-hdr">
@@ -298,25 +323,26 @@ const Home = () => {
             </div>
             <Link to="/properties" className="btn-ghost">View All <ArrowRight size={15} /></Link>
           </div>
-
           {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
               {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 340 }} />)}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
               {featuredProperties.map((p) => (
                 <div key={p.id} className="prop-card" style={{ borderRadius: 12 }}>
                   <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    {/* FIXED: Using backgroundImage for reliable display */}
-                    <div
-                      className="prop-img-container"
-                      style={{ backgroundImage: `url(${getImage(p)})` }}
+                    <img
+                      className="prop-img"
+                      src={getImage(p)}
+                      alt={p.title}
+                      style={{ height: 200 }}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
                     />
                     <div style={{ padding: 20 }}>
                       <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 8 }}>{p.title}</div>
                       <div style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <MapPin size={12} style={{ color: 'var(--gold)' }} />{p.location || p.address || 'Tanzania'}
+                        <MapPin size={12} style={{ color: 'var(--gold)' }} />{p.location || p.address}
                       </div>
                       <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold)' }}>
                         {formatPrice(p.price)}<span style={{ fontSize: 12, color: 'var(--slate)' }}>/month</span>
@@ -333,7 +359,9 @@ const Home = () => {
         </div>
       </section>
 
-      {/* BNB SECTION */}
+      {/* ══════════════════════════════════════════
+          BNB SECTION
+      ══════════════════════════════════════════ */}
       <section style={{ background: 'var(--navy-800)', borderTop: '1px solid var(--border)' }}>
         <div className="section">
           <div className="section-hdr">
@@ -343,20 +371,22 @@ const Home = () => {
             </div>
             <p className="section-desc">Handpicked short-term rentals for every occasion.</p>
           </div>
-
           {bnbLoading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 24 }}>
               {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 380 }} />)}
             </div>
           ) : bnbProperties.length === 0 ? (
             <EmptyState icon={<Building size={40} />} title="No BNB properties yet" desc="Short-term rentals will appear here soon." />
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 24 }}>
               {bnbProperties.map((p: any) => (
                 <div key={p.id} className="bnb-card" style={{ borderRadius: 12 }} onClick={() => { setSelectedProperty(p); setShowBookingModal(true); }}>
-                  <div
-                    className="prop-img-container"
-                    style={{ height: 220, backgroundImage: `url(${getImage(p)})` }}
+                  <img
+                    className="prop-img"
+                    src={getImage(p)}
+                    alt={p.title}
+                    style={{ height: 220 }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
                   />
                   <div style={{ padding: 20 }}>
                     <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 10 }}>{p.title}</h3>
@@ -374,7 +404,9 @@ const Home = () => {
         </div>
       </section>
 
-      {/* OWERU SPECIAL PACKAGES */}
+      {/* ══════════════════════════════════════════
+          OWERU SPECIAL PACKAGES
+      ══════════════════════════════════════════ */}
       <section style={{ background: 'linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%)', borderTop: '1px solid var(--border)' }}>
         <div className="section">
           <div className="section-hdr">
@@ -390,7 +422,11 @@ const Home = () => {
               {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 360 }} />)}
             </div>
           ) : oweruProperties.length === 0 ? (
-            <EmptyState icon={<Building size={40} />} title="No Oweru packages yet" desc="Premium properties uploaded by the admin will appear here soon." />
+            <EmptyState
+              icon={<Building size={40} />}
+              title="No Oweru packages yet"
+              desc="Premium properties uploaded by the admin will appear here soon."
+            />
           ) : (
             <div className="oweru-grid">
               {oweruProperties.map((p: any) => (
@@ -401,15 +437,24 @@ const Home = () => {
                   style={{ borderRadius: 12 }}
                 >
                   <div style={{ position: 'relative', height: 210, overflow: 'hidden' }}>
-                    <div
-                      className="prop-img-container"
-                      style={{ height: 210, backgroundImage: `url(${getImage(p)})` }}
+                    <img
+                      className="prop-img"
+                      src={getImage(p)}
+                      alt={p.title}
+                      style={{ height: 210 }}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
                     />
                     <div style={{
-                      position: 'absolute', top: 12, right: 12,
-                      background: 'var(--gold)', color: 'var(--navy-900)',
-                      padding: '5px 12px', borderRadius: 6,
-                      fontSize: 11, fontWeight: 700, letterSpacing: '0.06em'
+                      position:      'absolute',
+                      top:           12,
+                      right:         12,
+                      background:    'var(--gold)',
+                      color:         'var(--navy-900)',
+                      padding:       '5px 12px',
+                      borderRadius:  6,
+                      fontSize:      11,
+                      fontWeight:    700,
+                      letterSpacing: '0.06em',
                     }}>
                       OWERU
                     </div>
@@ -430,11 +475,21 @@ const Home = () => {
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate(`/property/${p.id}`); }}
                       style={{
-                        width: '100%', background: 'var(--gold)', color: 'var(--navy-900)',
-                        border: 'none', padding: '13px', fontWeight: 700, fontSize: 13,
-                        letterSpacing: '0.08em', textTransform: 'uppercase', borderRadius: 6,
-                        cursor: 'pointer'
+                        width:         '100%',
+                        background:    'var(--gold)',
+                        color:         'var(--navy-900)',
+                        border:        'none',
+                        padding:       '13px',
+                        fontWeight:    700,
+                        fontSize:      13,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        borderRadius:  6,
+                        cursor:        'pointer',
+                        transition:    'background 0.2s',
                       }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
                     >
                       View Details
                     </button>
@@ -446,7 +501,9 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CTA SECTION */}
+      {/* ══════════════════════════════════════════
+          CTA
+      ══════════════════════════════════════════ */}
       <section style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)' }}>
         <div className="section">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
@@ -474,7 +531,9 @@ const Home = () => {
         </div>
       </section>
 
-      {/* BOOKING MODAL */}
+      {/* ══════════════════════════════════════════
+          BOOKING MODAL
+      ══════════════════════════════════════════ */}
       {showBookingModal && selectedProperty && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: 'var(--navy-800)', border: '1px solid var(--border)', padding: 36, maxWidth: 600, width: '90%', maxHeight: '90vh', overflowY: 'auto', borderRadius: 12 }}>
@@ -490,7 +549,9 @@ const Home = () => {
         </div>
       )}
 
-      {/* FOOTER */}
+      {/* ══════════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════════ */}
       <footer style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)', padding: '28px 0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <img src={LOGO} alt="OWERU" style={{ height: 22 }} />
@@ -501,7 +562,7 @@ const Home = () => {
   );
 };
 
-/* ==================== SUB COMPONENTS ==================== */
+/* ── Sub-components ── */
 
 const EmptyState = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
   <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--slate)' }}>
@@ -515,18 +576,18 @@ const SaveButton = ({ saved, onClick }: { saved: boolean; onClick: () => void })
   <button
     onClick={onClick}
     style={{
-      padding: '8px 16px',
-      border: `1px solid ${saved ? 'var(--gold)' : 'var(--border)'}`,
+      padding:         '8px 16px',
+      border:          `1px solid ${saved ? 'var(--gold)' : 'var(--border)'}`,
       backgroundColor: saved ? 'var(--gold)' : 'transparent',
-      color: saved ? 'var(--navy-900)' : 'var(--slate)',
-      fontSize: 12,
-      fontWeight: 700,
-      cursor: 'pointer',
-      borderRadius: 4,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 6,
-      transition: 'all 0.2s',
+      color:           saved ? 'var(--navy-900)' : 'var(--slate)',
+      fontSize:        12,
+      fontWeight:      700,
+      cursor:          'pointer',
+      borderRadius:    4,
+      display:         'flex',
+      alignItems:      'center',
+      gap:             6,
+      transition:      'all 0.2s',
     }}
   >
     <Heart size={13} fill={saved ? 'currentColor' : 'none'} />
@@ -553,7 +614,7 @@ const BookingForm = ({
     e.preventDefault();
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 800)); // simulate API call
+      await new Promise((r) => setTimeout(r, 800));
       onSuccess();
     } finally {
       setLoading(false);
@@ -574,58 +635,18 @@ const BookingForm = ({
       <p style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 20 }}>
         {property.location || property.address}
       </p>
-
-      <input
-        required
-        style={inputStyle}
-        placeholder="Your name"
-        value={formData.guest_name}
-        onChange={(e) => setFormData((p) => ({ ...p, guest_name: e.target.value }))}
-      />
-      <input
-        required
-        type="email"
-        style={inputStyle}
-        placeholder="Email address"
-        value={formData.guest_email}
-        onChange={(e) => setFormData((p) => ({ ...p, guest_email: e.target.value }))}
-      />
+      <input required style={inputStyle} placeholder="Your name" value={formData.guest_name} onChange={(e) => setFormData((p) => ({ ...p, guest_name: e.target.value }))} />
+      <input required type="email" style={inputStyle} placeholder="Email address" value={formData.guest_email} onChange={(e) => setFormData((p) => ({ ...p, guest_email: e.target.value }))} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <input
-          required
-          type="date"
-          style={inputStyle}
-          value={formData.check_in}
-          onChange={(e) => setFormData((p) => ({ ...p, check_in: e.target.value }))}
-        />
-        <input
-          required
-          type="date"
-          style={inputStyle}
-          value={formData.check_out}
-          onChange={(e) => setFormData((p) => ({ ...p, check_out: e.target.value }))}
-        />
+        <input required type="date" style={inputStyle} value={formData.check_in} onChange={(e) => setFormData((p) => ({ ...p, check_in: e.target.value }))} />
+        <input required type="date" style={inputStyle} value={formData.check_out} onChange={(e) => setFormData((p) => ({ ...p, check_out: e.target.value }))} />
       </div>
-      <textarea
-        style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }}
-        placeholder="Special requests (optional)"
-        value={formData.special_requests}
-        onChange={(e) => setFormData((p) => ({ ...p, special_requests: e.target.value }))}
-      />
-
+      <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} placeholder="Special requests (optional)" value={formData.special_requests} onChange={(e) => setFormData((p) => ({ ...p, special_requests: e.target.value }))} />
       <div style={{ display: 'flex', gap: 12 }}>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}
-        >
+        <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
           Cancel
         </button>
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}
-        >
+        <button type="submit" disabled={loading} style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
           {loading ? 'Submitting…' : 'Submit Booking'}
         </button>
       </div>
