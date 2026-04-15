@@ -8,7 +8,7 @@ import Api from '../services/api';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
 const VITE_STORAGE = (import.meta.env.VITE_API_URL ?? '').replace('/api', '');
-const API_BASE     = import.meta.env.VITE_API_URL ?? '';
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
@@ -16,7 +16,7 @@ const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
  * Reliable image resolver
  */
 const getImage = (property: any): string => {
-  if (property.images && property.images.length > 0) {
+  if (property?.images && property.images.length > 0) {
     const i = property.images[0];
     if (typeof i === 'string' && i.trim() !== '') {
       if (i.startsWith('http://') || i.startsWith('https://')) return i;
@@ -30,26 +30,28 @@ const getImage = (property: any): string => {
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('en-TZ', {
-    style: 'currency', currency: 'TZS',
-    minimumFractionDigits: 0, maximumFractionDigits: 0,
+    style: 'currency',
+    currency: 'TZS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(price);
 
 const Home = () => {
   const navigate = useNavigate();
   const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
-  const [bnbProperties,      setBnbProperties]      = useState<any[]>([]);
-  const [oweruProperties,    setOweruProperties]    = useState<any[]>([]);
-  const [loading,            setLoading]            = useState(true);
-  const [bnbLoading,         setBnbLoading]         = useState(true);
-  const [oweruLoading,       setOweruLoading]       = useState(true);
-  const [showBookingModal,   setShowBookingModal]   = useState(false);
-  const [selectedProperty,   setSelectedProperty]   = useState<any>(null);
-  const [savedProperties,    setSavedProperties]    = useState<Set<number>>(new Set());
+  const [bnbProperties, setBnbProperties] = useState<any[]>([]);
+  const [oweruProperties, setOweruProperties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [bnbLoading, setBnbLoading] = useState(true);
+  const [oweruLoading, setOweruLoading] = useState(true);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
+  const [savedProperties, setSavedProperties] = useState<Set<number>>(new Set());
 
   const stats = {
     totalProperties: 1247,
-    totalUsers:      3842,
-    activeListings:  892,
+    totalUsers: 3842,
+    activeListings: 892,
     avgResponseTime: '24 hr',
   };
 
@@ -60,14 +62,28 @@ const Home = () => {
     loadSavedProperties();
   }, []);
 
+  const loadFeaturedProperties = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/public/properties`, { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const list: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
+      setFeaturedProperties(list.slice(0, 6));
+    } catch (error) {
+      console.error('Error loading featured properties:', error);
+      setFeaturedProperties([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadOweruProperties = async () => {
     try {
       setOweruLoading(true);
-
-      const resA = await fetch(
-        `${API_BASE}/api/public/properties?type=oweru_rental&per_page=20`,
-        { headers: { Accept: 'application/json' } },
-      );
+      const resA = await fetch(`${API_BASE}/api/public/properties?type=oweru_rental&per_page=20`, {
+        headers: { Accept: 'application/json' },
+      });
 
       if (resA.ok) {
         const jsonA = await resA.json();
@@ -78,30 +94,27 @@ const Home = () => {
         }
       }
 
-      // Fallback pagination strategy
+      // Fallback
       const collected: any[] = [];
       let currentPage = 1;
       let lastPage = 1;
 
       do {
-        const res = await fetch(
-          `${API_BASE}/api/public/properties?page=${currentPage}&per_page=50`,
-          { headers: { Accept: 'application/json' } },
-        );
-
+        const res = await fetch(`${API_BASE}/api/public/properties?page=${currentPage}&per_page=50`, {
+          headers: { Accept: 'application/json' },
+        });
         if (!res.ok) break;
 
         const json = await res.json();
         const items: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
 
-        const pagination = json?.data?.pagination ?? json?.pagination ?? null;
+        const pagination = json?.data?.pagination ?? json?.pagination;
         if (pagination) lastPage = pagination.last_page ?? 1;
-        else if (json?.data?.last_page) lastPage = json.data.last_page;
 
         const oweruItems = items.filter((p) => p.type === 'oweru_rental' || p.isOweru === true);
         collected.push(...oweruItems);
-
         if (collected.length >= 6) break;
+
         currentPage++;
       } while (currentPage <= lastPage && currentPage <= 5);
 
@@ -114,31 +127,10 @@ const Home = () => {
     }
   };
 
-  const loadFeaturedProperties = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE}/api/public/properties`, { 
-        headers: { Accept: 'application/json' } 
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const json = await res.json();
-      const list: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
-      setFeaturedProperties(list.slice(0, 6));
-    } catch {
-      setFeaturedProperties([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadBnbProperties = async () => {
     try {
       setBnbLoading(true);
-      for (const url of [
-        `${API_BASE}/api/public/bnb`,
-        `${API_BASE}/api/public/bnb/search`,
-      ]) {
+      for (const url of [`${API_BASE}/api/public/bnb`, `${API_BASE}/api/public/bnb/search`]) {
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
         if (res.ok) {
           const json = await res.json();
@@ -169,7 +161,11 @@ const Home = () => {
     try {
       if (savedProperties.has(propertyId)) {
         await Api.unsaveProperty(propertyId).catch(() => Api.publicUnsaveProperty(propertyId));
-        setSavedProperties((prev) => { const n = new Set(prev); n.delete(propertyId); return n; });
+        setSavedProperties((prev) => {
+          const n = new Set(prev);
+          n.delete(propertyId);
+          return n;
+        });
       } else {
         await Api.saveProperty(propertyId).catch(() => Api.publicSaveProperty(propertyId));
         setSavedProperties((prev) => new Set(prev).add(propertyId));
@@ -191,17 +187,9 @@ const Home = () => {
         .hero-geo { position: absolute; inset: 0; background-image: repeating-linear-gradient(60deg, transparent, transparent 30px, rgba(200,145,40,0.025) 30px, rgba(200,145,40,0.025) 31px), repeating-linear-gradient(-60deg, transparent, transparent 30px, rgba(200,145,40,0.025) 30px, rgba(200,145,40,0.025) 31px); pointer-events: none; }
         .hero-glow { position: absolute; right: -10%; top: -20%; width: 60%; height: 80%; background: radial-gradient(ellipse, rgba(200,145,40,0.08) 0%, transparent 65%); pointer-events: none; }
         .hero-content { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 60px 24px 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; width: 100%; }
-        .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--gold-dim); border: 1px solid var(--border); color: var(--gold); padding: 6px 14px; font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 28px; }
-        .hero-badge-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; flex-shrink: 0; }
-        .hero-title { font-size: clamp(32px, 6vw, 52px); font-weight: 300; line-height: 1.1; letter-spacing: -0.025em; color: var(--cream); margin-bottom: 16px; }
-        .hero-sub { font-size: 15px; font-weight: 300; line-height: 1.7; color: var(--slate); margin-bottom: 30px; }
-        .btn-gold { display: inline-flex; align-items: center; gap: 8px; background: var(--gold); color: var(--navy-900); padding: 14px 26px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-decoration: none; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.2s; }
-        .btn-gold:hover { background: var(--gold-lt); gap: 12px; }
-        .btn-outline { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--cream); padding: 13px 26px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-decoration: none; text-transform: uppercase; border: 1px solid rgba(248,248,249,0.2); cursor: pointer; transition: all 0.2s; }
-        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
         .search-card { background: var(--navy-800); border: 1px solid var(--border); padding: 28px; position: relative; overflow: hidden; }
         .search-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); }
-        .prop-card, .bnb-card, .oweru-card { background: var(--navy-800); border: 1px solid var(--border); overflow: hidden; transition: all 0.3s; cursor: pointer; }
+        .prop-card, .bnb-card, .oweru-card { background: var(--navy-800); border: 1px solid var(--border); overflow: hidden; transition: all 0.3s; cursor: pointer; border-radius: 12px; }
         .prop-card:hover, .bnb-card:hover, .oweru-card:hover { border-color: rgba(200,145,40,0.5); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,23,42,0.6); }
         .section { max-width: 1200px; margin: 0 auto; padding: 80px 48px; }
         .section-hdr { display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: end; margin-bottom: 48px; }
@@ -214,15 +202,11 @@ const Home = () => {
         .skeleton { animation: shimmer 1.5s ease-in-out infinite; background: var(--navy-700); border-radius: 8px; }
         @keyframes shimmer { 0%{opacity:0.4} 50%{opacity:0.9} 100%{opacity:0.4} }
         .oweru-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-        
-        /* FIXED: Reliable image container for Popular Properties */
-        .prop-img-container {
-          width: 100%;
-          height: 200px;
-          background-size: cover;
-          background-position: center;
-          background-repeat: no-repeat;
-        }
+
+        /* Reliable Image Containers */
+        .prop-img-container { width: 100%; height: 200px; background-size: cover; background-position: center; background-repeat: no-repeat; }
+        .bnb-img-container { width: 100%; height: 220px; background-size: cover; background-position: center; background-repeat: no-repeat; }
+        .oweru-img-container { width: 100%; height: 210px; background-size: cover; background-position: center; background-repeat: no-repeat; }
 
         @media (max-width: 900px) {
           .hero-content { grid-template-columns: 1fr; gap: 40px; }
@@ -232,9 +216,8 @@ const Home = () => {
         }
       `}</style>
 
-      {/* HERO - unchanged */}
+      {/* HERO */}
       <section className="hero">
-        {/* ... same as your code ... */}
         <div className="hero-geo" />
         <div className="hero-glow" />
         <div className="hero-content">
@@ -288,7 +271,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* STATS BAR - unchanged */}
+      {/* STATS BAR */}
       <div style={{ background: 'var(--navy-800)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderLeft: '1px solid var(--border)' }}>
           {[
@@ -305,7 +288,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* FEATURED LISTINGS - FIXED IMAGE DISPLAY */}
+      {/* POPULAR PROPERTIES - FIXED */}
       <section style={{ background: 'var(--navy-900)' }}>
         <div className="section">
           <div className="section-hdr">
@@ -323,19 +306,13 @@ const Home = () => {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
               {featuredProperties.map((p) => (
-                <div key={p.id} className="prop-card" style={{ borderRadius: 12 }}>
+                <div key={p.id} className="prop-card">
                   <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    {/* FIXED: Using backgroundImage instead of <img> tag */}
-                    <div 
-                      className="prop-img-container"
-                      style={{ 
-                        backgroundImage: `url(${getImage(p)})` 
-                      }}
-                    />
+                    <div className="prop-img-container" style={{ backgroundImage: `url(${getImage(p)})` }} />
                     <div style={{ padding: 20 }}>
                       <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 8 }}>{p.title}</div>
                       <div style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <MapPin size={12} style={{ color: 'var(--gold)' }} />{p.location || p.address}
+                        <MapPin size={12} style={{ color: 'var(--gold)' }} />{p.location || p.address || 'Tanzania'}
                       </div>
                       <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold)' }}>
                         {formatPrice(p.price)}<span style={{ fontSize: 12, color: 'var(--slate)' }}>/month</span>
@@ -352,7 +329,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* BNB SECTION - using <img> as it was already working */}
+      {/* BNB SECTION */}
       <section style={{ background: 'var(--navy-800)', borderTop: '1px solid var(--border)' }}>
         <div className="section">
           <div className="section-hdr">
@@ -362,6 +339,7 @@ const Home = () => {
             </div>
             <p className="section-desc">Handpicked short-term rentals for every occasion.</p>
           </div>
+
           {bnbLoading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 24 }}>
               {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 380 }} />)}
@@ -372,13 +350,7 @@ const Home = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 24 }}>
               {bnbProperties.map((p: any) => (
                 <div key={p.id} className="bnb-card" style={{ borderRadius: 12 }} onClick={() => { setSelectedProperty(p); setShowBookingModal(true); }}>
-                  <img
-                    className="prop-img"
-                    src={getImage(p)}
-                    alt={p.title}
-                    style={{ height: 220, width: '100%', objectFit: 'cover' }}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
-                  />
+                  <div className="bnb-img-container" style={{ backgroundImage: `url(${getImage(p)})` }} />
                   <div style={{ padding: 20 }}>
                     <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 10 }}>{p.title}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--slate)', fontSize: 13, marginBottom: 10 }}>
@@ -395,7 +367,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* OWERU SPECIAL PACKAGES - using <img> as it was working */}
+      {/* OWERU SPECIAL PACKAGES */}
       <section style={{ background: 'linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%)', borderTop: '1px solid var(--border)' }}>
         <div className="section">
           <div className="section-hdr">
@@ -411,61 +383,27 @@ const Home = () => {
               {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 360 }} />)}
             </div>
           ) : oweruProperties.length === 0 ? (
-            <EmptyState
-              icon={<Building size={40} />}
-              title="No Oweru packages yet"
-              desc="Premium properties uploaded by the admin will appear here soon."
-            />
+            <EmptyState icon={<Building size={40} />} title="No Oweru packages yet" desc="Premium properties uploaded by the admin will appear here soon." />
           ) : (
             <div className="oweru-grid">
               {oweruProperties.map((p: any) => (
-                <div
-                  key={p.id}
-                  className="oweru-card"
-                  onClick={() => navigate(`/property/${p.id}`)}
-                  style={{ borderRadius: 12 }}
-                >
+                <div key={p.id} className="oweru-card" onClick={() => navigate(`/property/${p.id}`)} style={{ borderRadius: 12 }}>
                   <div style={{ position: 'relative', height: 210, overflow: 'hidden' }}>
-                    <img
-                      className="prop-img"
-                      src={getImage(p)}
-                      alt={p.title}
-                      style={{ height: 210, width: '100%', objectFit: 'cover' }}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
-                    />
-                    <div style={{
-                      position: 'absolute', top: 12, right: 12,
-                      background: 'var(--gold)', color: 'var(--navy-900)',
-                      padding: '5px 12px', borderRadius: 6,
-                      fontSize: 11, fontWeight: 700, letterSpacing: '0.06em'
-                    }}>
+                    <div className="oweru-img-container" style={{ backgroundImage: `url(${getImage(p)})` }} />
+                    <div style={{ position: 'absolute', top: 12, right: 12, background: 'var(--gold)', color: 'var(--navy-900)', padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em' }}>
                       OWERU
                     </div>
                   </div>
-
                   <div style={{ padding: 20 }}>
-                    <h3 style={{ fontSize: 17, fontWeight: 600, color: 'var(--cream)', marginBottom: 10, lineHeight: 1.3 }}>
-                      {p.title}
-                    </h3>
+                    <h3 style={{ fontSize: 17, fontWeight: 600, color: 'var(--cream)', marginBottom: 10, lineHeight: 1.3 }}>{p.title}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, color: 'var(--slate)', fontSize: 13 }}>
                       <MapPin size={14} style={{ color: 'var(--gold)', flexShrink: 0 }} />
                       {p.location || p.address || 'Tanzania'}
                     </div>
                     <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)', marginBottom: 18 }}>
-                      {formatPrice(p.price)}{' '}
-                      <span style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 400 }}>/month</span>
+                      {formatPrice(p.price)} <span style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 400 }}>/month</span>
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/property/${p.id}`); }}
-                      style={{
-                        width: '100%', background: 'var(--gold)', color: 'var(--navy-900)',
-                        border: 'none', padding: '13px', fontWeight: 700, fontSize: 13,
-                        letterSpacing: '0.08em', textTransform: 'uppercase', borderRadius: 6,
-                        cursor: 'pointer', transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
-                    >
+                    <button onClick={(e) => { e.stopPropagation(); navigate(`/property/${p.id}`); }} style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', padding: '13px', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', borderRadius: 6, cursor: 'pointer' }}>
                       View Details
                     </button>
                   </div>
@@ -476,8 +414,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CTA and Footer remain unchanged - copy from your original code if needed */}
-      {/* CTA SECTION */}
+      {/* CTA */}
       <section style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)' }}>
         <div className="section">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
@@ -532,7 +469,7 @@ const Home = () => {
   );
 };
 
-/* Sub-components */
+/* ── Sub-components ── */
 const EmptyState = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
   <div style={{ textAlign: 'center', padding: '60px 40px', color: 'var(--slate)' }}>
     <div style={{ color: 'var(--gold)', marginBottom: 16, opacity: 0.5 }}>{icon}</div>
@@ -564,19 +501,8 @@ const SaveButton = ({ saved, onClick }: { saved: boolean; onClick: () => void })
   </button>
 );
 
-const BookingForm = ({
-  property,
-  onClose,
-  onSuccess,
-}: {
-  property: any;
-  onClose: () => void;
-  onSuccess: () => void;
-}) => {
-  const [formData, setFormData] = useState({
-    guest_name: '', guest_email: '', check_in: '', check_out: '',
-    guest_count: '1', special_requests: '',
-  });
+const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose: () => void; onSuccess: () => void }) => {
+  const [formData, setFormData] = useState({ guest_name: '', guest_email: '', check_in: '', check_out: '', guest_count: '1', special_requests: '' });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -598,23 +524,17 @@ const BookingForm = ({
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2 style={{ color: 'var(--cream)', marginBottom: 6, fontSize: 20, fontWeight: 600 }}>
-        Book {property.title}
-      </h2>
-      <p style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 20 }}>
-        {property.location || property.address}
-      </p>
-      <input required style={inputStyle} placeholder="Your name" value={formData.guest_name} onChange={(e) => setFormData((p) => ({ ...p, guest_name: e.target.value }))} />
-      <input required type="email" style={inputStyle} placeholder="Email address" value={formData.guest_email} onChange={(e) => setFormData((p) => ({ ...p, guest_email: e.target.value }))} />
+      <h2 style={{ color: 'var(--cream)', marginBottom: 6, fontSize: 20, fontWeight: 600 }}>Book {property.title}</h2>
+      <p style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 20 }}>{property.location || property.address}</p>
+      <input required style={inputStyle} placeholder="Your name" value={formData.guest_name} onChange={(e) => setFormData(p => ({ ...p, guest_name: e.target.value }))} />
+      <input required type="email" style={inputStyle} placeholder="Email address" value={formData.guest_email} onChange={(e) => setFormData(p => ({ ...p, guest_email: e.target.value }))} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <input required type="date" style={inputStyle} value={formData.check_in} onChange={(e) => setFormData((p) => ({ ...p, check_in: e.target.value }))} />
-        <input required type="date" style={inputStyle} value={formData.check_out} onChange={(e) => setFormData((p) => ({ ...p, check_out: e.target.value }))} />
+        <input required type="date" style={inputStyle} value={formData.check_in} onChange={(e) => setFormData(p => ({ ...p, check_in: e.target.value }))} />
+        <input required type="date" style={inputStyle} value={formData.check_out} onChange={(e) => setFormData(p => ({ ...p, check_out: e.target.value }))} />
       </div>
-      <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} placeholder="Special requests (optional)" value={formData.special_requests} onChange={(e) => setFormData((p) => ({ ...p, special_requests: e.target.value }))} />
+      <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} placeholder="Special requests (optional)" value={formData.special_requests} onChange={(e) => setFormData(p => ({ ...p, special_requests: e.target.value }))} />
       <div style={{ display: 'flex', gap: 12 }}>
-        <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
-          Cancel
-        </button>
+        <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
         <button type="submit" disabled={loading} style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
           {loading ? 'Submitting…' : 'Submit Booking'}
         </button>
