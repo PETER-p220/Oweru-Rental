@@ -10,9 +10,14 @@ import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 const VITE_STORAGE = (import.meta.env.VITE_API_URL ?? '').replace('/api', '');
 const API_BASE     = import.meta.env.VITE_API_URL ?? '';
 
+const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
+
 /**
  * Resolve a property image URL correctly.
- * Handles: absolute URLs, storage-relative paths (/storage/...), bare filenames.
+ * - Full URL            → returned as-is
+ * - Starts with /       → prepend VITE_STORAGE
+ * - Starts with storage/→ prepend VITE_STORAGE + "/"  (avoids /storage/storage/)
+ * - Bare filename       → prepend VITE_STORAGE/storage/properties/
  */
 const getImage = (property: any): string => {
   if (property.images && property.images.length > 0) {
@@ -20,10 +25,11 @@ const getImage = (property: any): string => {
     if (typeof i === 'string' && i.trim() !== '') {
       if (i.startsWith('http://') || i.startsWith('https://')) return i;
       if (i.startsWith('/')) return `${VITE_STORAGE}${i}`;
-      return `${VITE_STORAGE}/storage/${i}`;
+      if (i.startsWith('storage/')) return `${VITE_STORAGE}/${i}`;
+      return `${VITE_STORAGE}/storage/properties/${i}`;
     }
   }
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
+  return PLACEHOLDER;
 };
 
 const formatPrice = (price: number) =>
@@ -58,24 +64,11 @@ const Home = () => {
     loadSavedProperties();
   }, []);
 
-  /**
-   * Load Oweru Special Packages.
-   *
-   * WHY THE PREVIOUS VERSION FAILED:
-   * It fetched the public paginated endpoint (/api/public/properties) which:
-   *   1. Only returns 12 properties per page — Oweru items on page 2+ were invisible.
-   *   2. Requires `available = true` — admin-created properties might not have this set.
-   *
-   * FIX: We try multiple strategies in order:
-   *   a) Public endpoint with type filter (works if backend supports ?type=oweru_rental)
-   *   b) Paginate through all pages and collect oweru_rental items
-   *   c) Silent fail → show empty state
-   */
   const loadOweruProperties = async () => {
     try {
       setOweruLoading(true);
 
-      // ── Strategy A: filter by type directly (most efficient) ──────────────
+      // Strategy A: filter by type directly
       const resA = await fetch(
         `${API_BASE}/api/public/properties?type=oweru_rental&per_page=20`,
         { headers: { Accept: 'application/json' } },
@@ -88,12 +81,11 @@ const Home = () => {
 
         if (listA.length > 0) {
           setOweruProperties(listA.slice(0, 6));
-          return; // done ✓
+          return;
         }
       }
 
-      // ── Strategy B: paginate through ALL pages and collect oweru_rental ───
-      // This ensures we don't miss items that happen to land on page 2+.
+      // Strategy B: paginate through ALL pages and collect oweru_rental
       const collected: any[] = [];
       let currentPage = 1;
       let lastPage    = 1;
@@ -107,11 +99,8 @@ const Home = () => {
         if (!res.ok) break;
 
         const json = await res.json();
-
-        // Extract items — handle both paginated and flat responses
         const items: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
 
-        // Extract pagination meta
         const pagination = json?.data?.pagination ?? json?.pagination ?? null;
         if (pagination) {
           lastPage = pagination.last_page ?? 1;
@@ -119,17 +108,15 @@ const Home = () => {
           lastPage = json.data.last_page;
         }
 
-        // Filter oweru items from this page
         const oweruItems = items.filter(
           (p) => p.type === 'oweru_rental' || p.isOweru === true,
         );
         collected.push(...oweruItems);
 
-        // Stop early if we already have enough
         if (collected.length >= 6) break;
 
         currentPage++;
-      } while (currentPage <= lastPage && currentPage <= 5); // cap at 5 pages for safety
+      } while (currentPage <= lastPage && currentPage <= 5);
 
       setOweruProperties(collected.slice(0, 6));
     } catch (error) {
@@ -238,10 +225,7 @@ const Home = () => {
         .skeleton { animation: shimmer 1.5s ease-in-out infinite; background: var(--navy-700); border-radius: 8px; }
         @keyframes shimmer { 0%{opacity:0.4} 50%{opacity:0.9} 100%{opacity:0.4} }
         .oweru-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
-
-        /* Property image — graceful error handling */
         .prop-img { width: 100%; display: block; object-fit: cover; }
-
         @media (max-width: 900px) {
           .hero-content { grid-template-columns: 1fr; gap: 40px; }
           .section { padding: 60px 24px; }
@@ -353,7 +337,7 @@ const Home = () => {
                       src={getImage(p)}
                       alt={p.title}
                       style={{ height: 200 }}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = getImage({ images: [] }); }}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
                     />
                     <div style={{ padding: 20 }}>
                       <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 8 }}>{p.title}</div>
@@ -402,7 +386,7 @@ const Home = () => {
                     src={getImage(p)}
                     alt={p.title}
                     style={{ height: 220 }}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = getImage({ images: [] }); }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
                   />
                   <div style={{ padding: 20 }}>
                     <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 10 }}>{p.title}</h3>
@@ -452,25 +436,24 @@ const Home = () => {
                   onClick={() => navigate(`/property/${p.id}`)}
                   style={{ borderRadius: 12 }}
                 >
-                  {/* Image with OWERU badge */}
                   <div style={{ position: 'relative', height: 210, overflow: 'hidden' }}>
                     <img
                       className="prop-img"
                       src={getImage(p)}
                       alt={p.title}
                       style={{ height: 210 }}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = getImage({ images: [] }); }}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
                     />
                     <div style={{
-                      position:     'absolute',
-                      top:          12,
-                      right:        12,
-                      background:   'var(--gold)',
-                      color:        'var(--navy-900)',
-                      padding:      '5px 12px',
-                      borderRadius: 6,
-                      fontSize:     11,
-                      fontWeight:   700,
+                      position:      'absolute',
+                      top:           12,
+                      right:         12,
+                      background:    'var(--gold)',
+                      color:         'var(--navy-900)',
+                      padding:       '5px 12px',
+                      borderRadius:  6,
+                      fontSize:      11,
+                      fontWeight:    700,
                       letterSpacing: '0.06em',
                     }}>
                       OWERU
@@ -631,8 +614,7 @@ const BookingForm = ({
     e.preventDefault();
     setLoading(true);
     try {
-      // Booking API call goes here
-      await new Promise((r) => setTimeout(r, 800)); // stub
+      await new Promise((r) => setTimeout(r, 800));
       onSuccess();
     } finally {
       setLoading(false);
