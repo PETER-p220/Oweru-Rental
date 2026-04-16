@@ -532,18 +532,7 @@ class Api {
   static async getTenantDashboard()      { return this.request<any>('tenant/dashboard'); }
   static async getSavedProperties()      { return this.request<Property[]>('tenant/saved-properties'); }
   static async getTenantApplications()   { return this.request<any[]>('tenant/applications'); }
-  static async getOwnerContracts()        { return this.request<any[]>('owner/contracts'); }
-  static async createContract(contractData: any) { return this.request<any>('owner/contracts', { method: 'POST', body: JSON.stringify(contractData) }); }
   static async getDigitalContracts()      { return this.request<any[]>('owner/digital-contracts'); }
-  static async uploadContractFile(formData: FormData) { 
-    return this.request<any>('owner/digital-contracts/upload-file', { 
-      method: 'POST', 
-      body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }); 
-  }
   static async generateDigitalContract(data: any) { 
     return this.request<any>('owner/digital-contracts/generate', { 
       method: 'POST', 

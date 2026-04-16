@@ -982,7 +982,7 @@ class OwnerController extends Controller
             'file_name' => $request->file_name,
             'file_type' => $request->file_type,
             'fields' => $request->fields ?? [],
-            'status' => $request->status ?? 'draft',
+            'status' => $request->status ?? 'pending_signature',
             'created_by' => $user->id,
         ]);
 
