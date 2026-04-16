@@ -919,7 +919,9 @@ class OwnerController extends Controller
         $filePath = $file->storeAs('contracts/' . $fileName, 'public');
         
         $contract = DigitalContract::create([
+            'title' => 'Contract for ' . $tenant->property->title,
             'tenant_id' => $tenant->id,
+            'property_id' => $tenant->property->id,
             'file_path' => $filePath,
             'file_name' => $fileName,
             'file_type' => $file->getClientMimeType(),
