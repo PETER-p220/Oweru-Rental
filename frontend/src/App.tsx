@@ -17,7 +17,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import RouteGuard from './components/RouteGuard';
 
 // Tenant pages
-import Contract from './pages/tenant/Contract';
 import Payments from './pages/tenant/Payments';
 import PaymentHistory from './pages/tenant/PaymentHistory';
 import Notifications from './pages/tenant/Notifications';
@@ -34,7 +33,6 @@ import MyTenants from './pages/landlord/MyTenants';
 import AddProperty from './pages/landlord/AddProperty';
 import EditPropertySimple from './pages/landlord/EditPropertySimple';
 import ApplicationsPage from './pages/landlord/ApplicationsPage';
-import ContractsPage from './pages/landlord/ContractsPage';
 import DigitalContractPage from './pages/landlord/DigitalContractPage';
 import RentCollectionPage from './pages/landlord/RentCollectionPage';
 import ReceiptsPage from './pages/landlord/ReceiptsPage';
@@ -111,7 +109,6 @@ const TenantRoutes = () => (
         <Route path="analytics" element={<TenantAnalyticsPage />} />
         <Route path="saved-properties" element={<SavedProperties />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="contract" element={<Contract />} />
         <Route path="payments" element={<Payments />} />
         <Route path="payment-history" element={<PaymentHistory />} />
         <Route path="notifications" element={<Notifications />} />
@@ -132,7 +129,6 @@ const LandlordRoutes = () => (
         <Route path="add-property" element={<AddProperty />} />
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="digital-contracts" element={<DigitalContractPage />} />
-        <Route path="contracts" element={<ContractsPage />} />
         <Route path="tenants" element={<MyTenants />} />
         <Route path="rent-collection" element={<RentCollectionPage />} />
         <Route path="receipts" element={<ReceiptsPage />} />

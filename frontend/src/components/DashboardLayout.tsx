@@ -41,7 +41,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Browse Properties',  icon: Search,        href: '/dashboard/tenant/properties',         color: '#60a5fa' },
       { name: 'My Applications',    icon: FileText,      href: 'applications',        color: '#a78bfa' },
       { name: 'Saved Properties',   icon: Star,          href: 'saved-properties',    color: '#f59e0b' },
-      { name: 'My Contract',        icon: BookOpen,      href: 'contract',            color: '#34d399' },
+      { name: 'Digital Contracts',  icon: FileText,      href: 'digital-contracts',            color: '#34d399' },
       { name: 'Rent Payments',      icon: CreditCard,    href: 'payments',            color: '#10b981' },
       { name: 'Payment History',    icon: Receipt,       href: 'payment-history',     color: '#6ee7b7' },
       { name: 'Messages',           icon: MessageSquare, href: 'messages',            color: '#f87171' },
