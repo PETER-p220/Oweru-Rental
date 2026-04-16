@@ -532,8 +532,24 @@ class Api {
   static async getTenantDashboard()      { return this.request<any>('tenant/dashboard'); }
   static async getSavedProperties()      { return this.request<Property[]>('tenant/saved-properties'); }
   static async getTenantApplications()   { return this.request<any[]>('tenant/applications'); }
-  static async getMyContract()           { return this.request<any>('tenant/contract'); }
-  static async createContract(data: any)  { return this.request<any>('tenant/contract', { method: 'POST', body: JSON.stringify(data) }); }
+  static async getOwnerContracts()        { return this.request<any[]>('owner/contracts'); }
+  static async createContract(contractData: any) { return this.request<any>('owner/contracts', { method: 'POST', body: JSON.stringify(contractData) }); }
+  static async getDigitalContracts()      { return this.request<any[]>('owner/digital-contracts'); }
+  static async uploadContractFile(formData: FormData) { 
+    return this.request<any>('owner/digital-contracts/upload-file', { 
+      method: 'POST', 
+      body: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }); 
+  }
+  static async generateDigitalContract(data: any) { 
+    return this.request<any>('owner/digital-contracts/generate', { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }); 
+  }
   static async updateContract(id: number, data: any) { return this.request<any>(`tenant/contract/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
   static async signContract(id: number) { return this.request<any>(`tenant/contract/${id}/sign`, { method: 'POST' }); }
   

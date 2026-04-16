@@ -860,4 +860,122 @@ class OwnerController extends Controller
     {
         return $this->tenantTablesAvailable() && $this->paymentsTableAvailable();
     }
+    
+    // Digital Contracts Management
+    public function getDigitalContracts(): JsonResponse
+    {
+        if (! $this->tenantTablesAvailable()) {
+            return response()->json(['message' => 'Digital contracts are not available until tenant tables are migrated'], 503);
+        }
+        
+        $user = Auth::user();
+        
+        $contracts = DigitalContract::with(['tenant', 'property'])
+            ->whereHas('tenant', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->whereHas('property', function ($query) use ($user) {
+                $query->where('owner_id', $user->id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        return response()->json([
+            'data' => $contracts->items(),
+            'pagination' => [
+                'current_page' => $contracts->currentPage(),
+                'last_page'    => $contracts->lastPage(),
+                'per_page'     => $contracts->perPage(),
+                'total'        => $contracts->total(),
+            ]
+        ]);
+    }
+    
+    public function uploadContractFile(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:pdf,doc,docx|max:10240',
+            'tenant_id' => 'required|exists:tenants,id',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        
+        // Verify tenant ownership
+        $tenant = Tenant::findOrFail($request->tenant_id);
+        if ($tenant->user_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $file = $request->file('file');
+        $fileName = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+        $filePath = $file->storeAs('contracts/' . $fileName, 'public');
+        
+        $contract = DigitalContract::create([
+            'tenant_id' => $tenant->id,
+            'file_path' => $filePath,
+            'file_name' => $fileName,
+            'file_type' => $file->getClientMimeType(),
+            'uploaded_by' => $user->id,
+        ]);
+        
+        return response()->json([
+            'message' => 'Contract uploaded successfully',
+            'data'    => $contract
+        ]);
+    }
+    
+    public function generateDigitalContract(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'tenant_id' => 'required|exists:tenants,id',
+            'property_id' => 'required|exists:properties,id',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        
+        // Verify tenant and property ownership
+        $tenant = Tenant::findOrFail($request->tenant_id);
+        $property = Property::findOrFail($request->property_id);
+        
+        if ($tenant->user_id !== $user->id || $property->owner_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        // Generate PDF contract (simplified for demo)
+        $contractContent = "This is a digitally generated rental agreement between {$tenant->user->first_name} {$tenant->user->last_name} and {$property->owner->first_name} {$property->owner->last_name} for property located at {$property->title}.";
+        
+        $fileName = 'contract_' . time() . '.pdf';
+        $filePath = 'contracts/' . $fileName;
+        
+        // Create file
+        file_put_contents($filePath, $contractContent);
+        
+        $contract = DigitalContract::create([
+            'tenant_id' => $tenant->id,
+            'property_id' => $property->id,
+            'file_path' => $filePath,
+            'file_name' => $fileName,
+            'file_type' => 'application/pdf',
+            'generated_by' => $user->id,
+        ]);
+        
+        return response()->json([
+            'message' => 'Contract generated successfully',
+            'data'    => $contract
+        ]);
+    }
 }

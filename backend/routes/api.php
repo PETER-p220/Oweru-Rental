@@ -186,8 +186,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/owner/tenants/create-from-approved', [OwnerController::class, 'createTenantFromApprovedApplication']);
 
         // Contracts
-        Route::get('/owner/contracts',  [OwnerController::class, 'getContracts']);
+        Route::get('/owner/contracts', [OwnerController::class, 'getContracts']);
         Route::post('/owner/contracts', [OwnerController::class, 'createContract']);
+        
+        // Digital Contracts
+        Route::get('/owner/digital-contracts', [OwnerController::class, 'getDigitalContracts']);
+        Route::post('/owner/digital-contracts/upload-file', [OwnerController::class, 'uploadContractFile']);
+        Route::post('/owner/digital-contracts/generate', [OwnerController::class, 'generateDigitalContract']);
 
         // Rent Collection
         Route::get('/owner/rent-collection',       [OwnerController::class, 'getRentCollection']);
