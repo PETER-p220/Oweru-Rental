@@ -79,6 +79,7 @@ const DigitalContractPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState<DigitalContract | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -199,11 +200,13 @@ const DigitalContractPage = () => {
       setFormData(prev => ({
         ...prev,
         file,
-        file_url: uploadResponse.data.file_url,
+        file_url: uploadResponse.data.file_path,
         file_name: file.name,
         file_type: file.type,
       }));
       setError('');
+      // Show success message
+      alert('File uploaded successfully!');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to upload file');
     } finally {
@@ -224,6 +227,7 @@ const DigitalContractPage = () => {
       return;
     }
 
+    setCreating(true);
     try {
       const contractData = {
         title: formData.title,
@@ -241,8 +245,12 @@ const DigitalContractPage = () => {
       setShowModal(false);
       resetForm();
       setError('');
+      // Show success message
+      alert('Contract created successfully!');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to create contract');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -552,9 +560,9 @@ const DigitalContractPage = () => {
                   <button
                     type="submit"
                     style={{ ...buttonStyle('primary'), padding: '10px 20px' }}
-                    disabled={uploading}
+                    disabled={uploading || creating}
                   >
-                    <Save size={16} /> Create Contract
+                    <Save size={16} /> {creating ? 'Creating...' : 'Create Contract'}
                   </button>
                 </div>
               </div>
