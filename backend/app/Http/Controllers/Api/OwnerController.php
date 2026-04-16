@@ -356,8 +356,10 @@ class OwnerController extends Controller
             ->whereHas('property', function ($query) use ($user) {
                 $query->where('owner_id', $user->id);
             })
-            ->whereHas('contract', function ($query) {
-                $query->where('status', 'active');
+            ->where(function ($query) {
+                $query->whereHas('contract', function ($subQuery) {
+                    $subQuery->where('status', 'active');
+                })->orWhereHas('digitalContracts');
             })
             ->paginate(20);
 
