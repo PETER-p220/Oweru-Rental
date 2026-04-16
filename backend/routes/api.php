@@ -91,6 +91,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/tenant/contract',                          [TenantController::class, 'createContract']);
         Route::get('/tenant/contracts/{contract}/download',      [TenantController::class, 'downloadContract']);
 
+        // Digital Contracts
+        Route::get('/tenant/digital-contracts',                   [TenantController::class, 'getDigitalContracts']);
+        Route::get('/tenant/digital-contracts/{contract}/download', [TenantController::class, 'downloadDigitalContract']);
+        Route::post('/tenant/digital-contracts/submit',           [TenantController::class, 'submitDigitalContract']);
+
         // Payments
         Route::get('/tenant/payments',                           [TenantController::class, 'getMyPayments']);
         Route::get('/tenant/payment-methods',                    [TenantController::class, 'getPaymentMethods']);

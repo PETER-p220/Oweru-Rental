@@ -975,6 +975,16 @@ class OwnerController extends Controller
             'status' => $request->status ?? 'draft',
             'created_by' => $user->id,
         ]);
+
+        // Create notification for tenant
+        Notification::create([
+            'user_id' => $tenant->user_id,
+            'title' => 'New Contract Available',
+            'message' => "A new contract '{$request->title}' has been created for your property at {$property->title}",
+            'type' => 'contract',
+            'data' => json_encode(['contract_id' => $contract->id]),
+            'read' => false,
+        ]);
         
         return response()->json([
             'message' => 'Contract created successfully',

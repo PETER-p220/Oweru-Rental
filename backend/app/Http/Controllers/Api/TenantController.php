@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Models\Property;
 use App\Models\Application;
 use App\Models\Contract;
+use App\Models\DigitalContract;
 use App\Models\Payment;
 use App\Models\SavedProperty;
 use App\Models\Notification;
@@ -659,6 +660,89 @@ class TenantController extends Controller
                 'per_page' => $perPage,
                 'total' => 0,
             ]
+        ]);
+    }
+
+    // Digital Contracts Management
+    public function getDigitalContracts(): JsonResponse
+    {
+        $user = Auth::user();
+        
+        $contracts = DigitalContract::with(['property'])
+            ->whereHas('tenant', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($contracts);
+    }
+
+    public function downloadDigitalContract($contractId): JsonResponse
+    {
+        $user = Auth::user();
+        
+        $contract = DigitalContract::with(['tenant', 'property'])
+            ->whereHas('tenant', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->findOrFail($contractId);
+
+        if (!$contract->file_path) {
+            return response()->json(['message' => 'Contract file not found'], 404);
+        }
+
+        $filePath = storage_path('app/' . $contract->file_path);
+        if (!file_exists($filePath)) {
+            return response()->json(['message' => 'File not found'], 404);
+        }
+
+        return response()->download($filePath, $contract->file_name);
+    }
+
+    public function submitDigitalContract(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'contract_id' => 'required|exists:digital_contracts,id',
+            'fields' => 'required|array',
+            'signature' => 'required|string',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        
+        $contract = DigitalContract::with(['tenant', 'property'])
+            ->whereHas('tenant', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->findOrFail($request->contract_id);
+
+        $contract->update([
+            'fields' => $request->fields,
+            'tenant_signature' => $request->signature,
+            'status' => 'pending',
+            'signed_at' => now(),
+        ]);
+
+        // Create notification for landlord
+        Notification::create([
+            'user_id' => $contract->property->owner_id,
+            'title' => 'Contract Signed',
+            'message' => "Tenant has signed the contract for {$contract->property->title}",
+            'type' => 'contract',
+            'data' => json_encode(['contract_id' => $contract->id]),
+            'read' => false,
+        ]);
+
+        return response()->json([
+            'message' => 'Contract submitted successfully',
+            'data'    => $contract
         ]);
     }
 }
