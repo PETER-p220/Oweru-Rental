@@ -931,6 +931,52 @@ class OwnerController extends Controller
         ]);
     }
     
+    public function createDigitalContract(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'property_id' => 'required|exists:properties,id',
+            'tenant_id' => 'required|exists:tenants,id',
+            'file_url' => 'nullable|string',
+            'file_name' => 'nullable|string|max:255',
+            'file_type' => 'nullable|string|max:100',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+        
+        $user = Auth::user();
+        
+        // Verify tenant and property ownership
+        $tenant = Tenant::findOrFail($request->tenant_id);
+        $property = Property::findOrFail($request->property_id);
+        
+        if ($tenant->user_id !== $user->id || $property->owner_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        
+        $contract = DigitalContract::create([
+            'title' => $request->title,
+            'tenant_id' => $tenant->id,
+            'property_id' => $property->id,
+            'file_url' => $request->file_url,
+            'file_name' => $request->file_name,
+            'file_type' => $request->file_type,
+            'fields' => $request->fields ?? [],
+            'status' => $request->status ?? 'draft',
+            'created_by' => $user->id,
+        ]);
+        
+        return response()->json([
+            'message' => 'Contract created successfully',
+            'data'    => $contract
+        ]);
+    }
+    
     public function generateDigitalContract(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
