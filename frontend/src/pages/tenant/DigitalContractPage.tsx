@@ -70,7 +70,7 @@ const DigitalContractPage = () => {
   const viewContract = (contract: DigitalContract) => {
     setSelectedContract(contract);
     const initialValues: Record<string, string> = {};
-    contract.fields.forEach(field => { initialValues[field.id] = field.tenant_value || ''; });
+    (contract.fields || []).forEach(field => { initialValues[field.id] = field.tenant_value || ''; });
     setFieldValues(initialValues);
     setShowContractModal(true);
   };
@@ -190,7 +190,7 @@ const DigitalContractPage = () => {
 
   const submitContract = async () => {
     if (!selectedContract) return;
-    const missingFields = selectedContract.fields.filter(f => f.required && !fieldValues[f.id]);
+    const missingFields = (selectedContract.fields || []).filter(f => f.required && !fieldValues[f.id]);
     if (missingFields.length > 0) {
       setError(`Please fill in all required fields: ${missingFields.map(f => f.label).join(', ')}`);
       return;
@@ -381,7 +381,7 @@ const DigitalContractPage = () => {
 
             {/* Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {selectedContract.fields.map((field) => (
+              {(selectedContract.fields || []).map((field) => (
                 <div key={field.id}>
                   <label style={{ display: 'block', marginBottom: '8px', color: palette.navy700, fontSize: '14px', fontWeight: 600 }}>
                     {field.label}{' '}

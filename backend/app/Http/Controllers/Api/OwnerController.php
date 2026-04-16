@@ -956,12 +956,22 @@ class OwnerController extends Controller
         
         $user = Auth::user();
         
-        // Verify tenant belongs to landlord's property
-        $tenant = Tenant::with(['property'])->findOrFail($request->tenant_id);
+        // Verify tenant belongs to landlord's property and has approved application
+        $tenant = Tenant::with(['property', 'user'])->findOrFail($request->tenant_id);
         $property = Property::findOrFail($request->property_id);
         
         if ($tenant->property->owner_id !== $user->id || $property->owner_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Check if tenant has an approved application for this property
+        $approvedApplication = \App\Models\Application::where('user_id', $tenant->user_id)
+            ->where('property_id', $property->id)
+            ->where('status', 'approved')
+            ->first();
+
+        if (!$approvedApplication) {
+            return response()->json(['message' => 'Contracts can only be created for tenants with approved applications'], 403);
         }
         
         $contract = DigitalContract::create([
