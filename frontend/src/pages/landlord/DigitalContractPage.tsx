@@ -40,8 +40,29 @@ interface PropertyOption {
   price?: number;
 }
 
+// Covers both shapes: tenants from getMyTenants() and approved applicants
 interface TenantOption {
   id: number;
+  // Shape from getMyTenants()
+  user?: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+  };
+  // Shape from getOwnerApplications() approved entries
+  status?: string;
+  user_id?: number;
+  property_id?: number;
+  // Applicant shape – user data nested under .user already, same key
+  // but email may differ; we keep one interface that covers both
+}
+
+// Approved applicant as returned by getOwnerApplications()
+interface ApprovedApplicant {
+  id: number;
+  status: string;
+  user_id: number;
+  property_id: number;
   user?: {
     first_name?: string;
     last_name?: string;
@@ -93,15 +114,60 @@ const DigitalContractPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [contractsRes, propertiesRes, tenantsRes] = await Promise.all([
+
+      const [contractsRes, propertiesRes] = await Promise.all([
         Api.getOwnerContracts(),
         Api.getOwnerProperties(),
-        Api.getMyTenants(),
       ]);
 
       setContracts(Array.isArray(contractsRes.data) ? contractsRes.data : []);
       setProperties(Array.isArray(propertiesRes.data) ? propertiesRes.data : []);
-      setTenants(Array.isArray(tenantsRes.data) ? tenantsRes.data : []);
+
+      // ── Load tenants: merge active tenants + approved applicants ──────────
+      // We collect from both endpoints so the dropdown always contains people
+      // who have been approved even if no Tenant record exists yet.
+      const seen = new Set<string>(); // key: `userId-propertyId`
+      const merged: TenantOption[] = [];
+
+      try {
+        const tenantsRes = await Api.getMyTenants();
+        const activeTenants: TenantOption[] = Array.isArray(tenantsRes.data) ? tenantsRes.data : [];
+        activeTenants.forEach((t) => {
+          const key = `${t.user_id ?? t.id}-${t.property_id ?? ''}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(t);
+          }
+        });
+      } catch (_) {
+        // getMyTenants may return empty if contracts table isn't ready; that's fine
+      }
+
+      try {
+        const applicationsRes = await Api.getOwnerApplications();
+        const approved: ApprovedApplicant[] = (
+          Array.isArray(applicationsRes.data) ? applicationsRes.data : []
+        ).filter((a: ApprovedApplicant) => a.status === 'approved');
+
+        approved.forEach((a) => {
+          const key = `${a.user_id}-${a.property_id}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            // Reshape to match TenantOption so the rest of the component works
+            merged.push({
+              id: a.user_id,          // use user_id as the id sent to the API
+              user_id: a.user_id,
+              property_id: a.property_id,
+              status: a.status,
+              user: a.user,
+            });
+          }
+        });
+      } catch (_) {
+        // ignore if applications endpoint fails
+      }
+
+      setTenants(merged);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to load data');
     } finally {
@@ -113,14 +179,12 @@ const DigitalContractPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!allowedTypes.includes(file.type)) {
       setError('Only PDF and Word documents are allowed');
       return;
     }
 
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setError('File size must be less than 10MB');
       return;
@@ -128,12 +192,9 @@ const DigitalContractPage = () => {
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Upload file to server
-      const uploadResponse = await Api.uploadContractFile(formData);
-      
+      const fd = new FormData();
+      fd.append('file', file);
+      const uploadResponse = await Api.uploadContractFile(fd);
       setFormData(prev => ({
         ...prev,
         file,
@@ -141,7 +202,6 @@ const DigitalContractPage = () => {
         file_name: file.name,
         file_type: file.type,
       }));
-      
       setError('');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to upload file');
@@ -152,7 +212,7 @@ const DigitalContractPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title || !formData.property_id || !formData.tenant_id) {
       setError('Please fill in all required fields');
       return;
@@ -196,9 +256,7 @@ const DigitalContractPage = () => {
       file_type: '',
       fields: [],
     });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const sendToTenant = async (contractId: number) => {
@@ -228,6 +286,39 @@ const DigitalContractPage = () => {
     }
   };
 
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  const getTenantLabel = (t: TenantOption) => {
+    const firstName = t.user?.first_name ?? '';
+    const lastName  = t.user?.last_name  ?? '';
+    const name = `${firstName} ${lastName}`.trim() || `User #${t.user_id ?? t.id}`;
+    const email = t.user?.email ? ` — ${t.user.email}` : '';
+    return `${name}${email}`;
+  };
+
+  const resolveDisplayTenant = (contract: DigitalContract) => {
+    // Try matching on tenant.id (active tenant) or user_id (approved applicant)
+    const match = tenants.find(
+      (t) => t.id === contract.tenant_id || t.user_id === contract.tenant_id
+    );
+    if (!match) return 'Unknown';
+    return `${match.user?.first_name ?? ''} ${match.user?.last_name ?? ''}`.trim() || `User #${contract.tenant_id}`;
+  };
+
+  // Inline style for <select> + <option> elements so text is always readable
+  const selectStyle: React.CSSProperties = {
+    ...inputStyle,
+    width: '100%',
+    color: '#ffffff',           // white text on the select button
+    backgroundColor: '#1e1a12', // dark background matching the panel
+  };
+
+  // Options need an explicit dark background so they're readable in every OS/browser
+  const optionStyle: React.CSSProperties = {
+    color: '#ffffff',
+    backgroundColor: '#2a2418',
+  };
+
   return (
     <div style={{ ...pageStyle, padding: '0' }}>
       {/* Header */}
@@ -239,7 +330,7 @@ const DigitalContractPage = () => {
         </div>
         <h1 style={headingStyle}>Digital Contracts</h1>
         <p style={descriptionStyle}>Upload contract documents and manage digital signatures.</p>
-        
+
         <button
           style={{ ...buttonStyle('primary'), marginTop: '20px' }}
           onClick={() => setShowModal(true)}
@@ -293,7 +384,7 @@ const DigitalContractPage = () => {
                     <td style={tdStyle}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <User size={12} />
-                        {tenants.find(t => t.id === contract.tenant_id)?.user?.first_name || 'Unknown'} {tenants.find(t => t.id === contract.tenant_id)?.user?.last_name || ''}
+                        {resolveDisplayTenant(contract)}
                       </div>
                     </td>
                     <td style={tdStyle}>
@@ -347,6 +438,7 @@ const DigitalContractPage = () => {
 
             <form onSubmit={handleSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Contract Title */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', color: palette.cream, fontSize: '14px', fontWeight: 500 }}>
                     Contract Title *
@@ -361,45 +453,69 @@ const DigitalContractPage = () => {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  {/* Property */}
                   <div>
                     <label style={{ display: 'block', marginBottom: '8px', color: palette.cream, fontSize: '14px', fontWeight: 500 }}>
                       Property *
                     </label>
                     <select
-                      style={{ ...inputStyle, width: '100%' }}
+                      style={selectStyle}
                       value={formData.property_id}
                       onChange={(e) => setFormData(prev => ({ ...prev, property_id: e.target.value }))}
                       required
                     >
-                      <option value="">Select Property</option>
+                      <option value="" style={optionStyle}>Select Property</option>
                       {properties.map(property => (
-                        <option key={property.id} value={property.id}>
-                          {property.title} - {property.location}
+                        <option key={property.id} value={property.id} style={optionStyle}>
+                          {property.title}{property.location ? ` — ${property.location}` : ''}
                         </option>
                       ))}
                     </select>
                   </div>
 
+                  {/* Tenant */}
                   <div>
                     <label style={{ display: 'block', marginBottom: '8px', color: palette.cream, fontSize: '14px', fontWeight: 500 }}>
                       Tenant *
                     </label>
-                    <select
-                      style={{ ...inputStyle, width: '100%' }}
-                      value={formData.tenant_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, tenant_id: e.target.value }))}
-                      required
-                    >
-                      <option value="">Select Tenant</option>
-                      {tenants.map(tenant => (
-                        <option key={tenant.id} value={tenant.id}>
-                          {tenant.user?.first_name} {tenant.user?.last_name}
-                        </option>
-                      ))}
-                    </select>
+                    {tenants.length === 0 ? (
+                      <div style={{
+                        ...inputStyle as React.CSSProperties,
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: palette.muted,
+                        fontSize: '13px',
+                        opacity: 0.8,
+                      }}>
+                        No approved tenants found
+                      </div>
+                    ) : (
+                      <select
+                        style={selectStyle}
+                        value={formData.tenant_id}
+                        onChange={(e) => setFormData(prev => ({ ...prev, tenant_id: e.target.value }))}
+                        required
+                      >
+                        <option value="" style={optionStyle}>Select Tenant</option>
+                        {tenants.map(tenant => (
+                          <option key={`${tenant.id}-${tenant.user_id ?? ''}`} value={tenant.id} style={optionStyle}>
+                            {getTenantLabel(tenant)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
 
+                {/* Tenant count hint */}
+                {tenants.length > 0 && (
+                  <div style={{ fontSize: '12px', color: palette.muted, marginTop: '-8px' }}>
+                    {tenants.length} approved tenant{tenants.length !== 1 ? 's' : ''} available
+                  </div>
+                )}
+
+                {/* File Upload */}
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', color: palette.cream, fontSize: '14px', fontWeight: 500 }}>
                     Contract Document * (PDF or Word)
