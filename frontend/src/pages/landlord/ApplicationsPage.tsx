@@ -61,7 +61,19 @@ const ApplicationsPage = () => {
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { loadApplications(); }, []);
+  useEffect(() => {
+    loadApplications();
+    
+    // Check if URL has hash for specific application
+    const hash = window.location.hash;
+    if (hash) {
+      const appId = hash.replace('#', '');
+      const element = document.getElementById(`app-${appId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, []);
 
   const stats = useMemo(() => ({
     total:    applications.length,
@@ -75,7 +87,9 @@ const ApplicationsPage = () => {
       setBusyId(id);
       setError(''); setSuccess('');
 
-      await Api.approveApplication(id);
+      console.log('=== APPROVING APPLICATION ===', id);
+      const response = await Api.approveApplication(id);
+      console.log('Approval response:', response);
 
       // Reload the applications list so the status updates in the table
       await loadApplications();
@@ -95,9 +109,14 @@ const ApplicationsPage = () => {
       }
 
       // After 1.8 s navigate to the tenants page so the user can see the new tenant
-      setTimeout(() => navigate('/landlord/tenants'), 1800);
+      setTimeout(() => {
+        navigate('/landlord/tenants');
+        // Force a refresh of tenant data after navigation
+        setTimeout(() => window.location.reload(), 500);
+      }, 1800);
 
     } catch (err: any) {
+      console.error('Approval error:', err);
       setError(err?.response?.data?.message || 'Unable to approve application.');
     } finally { setBusyId(null); }
   };
@@ -230,6 +249,7 @@ const ApplicationsPage = () => {
                 {applications.map((application) => (
                   <tr
                     key={application.id}
+                    id={`app-${application.id}`}
                     onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,145,40,0.04)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >

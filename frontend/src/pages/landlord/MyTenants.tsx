@@ -68,6 +68,13 @@ const MyTenants = () => {
       console.log('==============================');
 
       setTenants(Array.isArray(response.data) ? response.data : []);
+
+      // Add a small delay to ensure backend has processed the approval
+      if (!silent) {
+        setTimeout(() => {
+          loadData(true); // Silent refresh after 2 seconds
+        }, 2000);
+      }
     } catch (err: any) {
       console.error('Tenants API error:', err);
       setError(err?.response?.data?.message || 'Unable to load tenants.');
@@ -332,7 +339,7 @@ const MyTenants = () => {
                     <td style={tdStyle}>
                       {tenant.application_id ? (
                         <Link
-                          to={`/landlord/applications`}
+                          to={`/landlord/applications#${tenant.application_id}`}
                           style={{
                             color: 'var(--accent-color)',
                             textDecoration: 'none',
@@ -340,7 +347,7 @@ const MyTenants = () => {
                             fontWeight: 600,
                           }}
                         >
-                          View Application → 
+                          View Application (ID: {tenant.application_id})
                         </Link>
                       ) : (
                         <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>—</span>
