@@ -122,13 +122,13 @@ const TenantDashboard = () => {
         </div>
 
         <div className="td-eyebrow">Quick Actions</div>
-        <div className="td-actions">
+        {/* <div className="td-actions">
           <Link className="td-action primary" to="/properties">Browse Properties</Link>
           <Link className="td-action" to="/dashboard/tenant/saved-properties">Saved Properties</Link>
           <Link className="td-action" to="/dashboard/tenant/applications">My Applications</Link>
           <Link className="td-action" to="/dashboard/tenant/digital-contracts">Digital Contracts</Link>
           <Link className="td-action" to="/dashboard/tenant/messages">Messages</Link>
-        </div>
+        </div> */}
 
         <div className="td-eyebrow">Featured Picks</div>
         <div className="td-list">
