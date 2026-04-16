@@ -194,6 +194,7 @@ const DigitalContractPage = () => {
     try {
       const fd = new FormData();
       fd.append('file', file);
+      fd.append('tenant_id', formData.tenant_id);
       const uploadResponse = await Api.uploadContractFile(fd);
       setFormData(prev => ({
         ...prev,
