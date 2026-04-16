@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Property;
 use App\Models\Application;
 use App\Models\Contract;
+use App\Models\DigitalContract;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\Message;
