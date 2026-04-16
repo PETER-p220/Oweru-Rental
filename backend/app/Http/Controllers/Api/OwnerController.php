@@ -907,9 +907,9 @@ class OwnerController extends Controller
         
         $user = Auth::user();
         
-        // Verify tenant ownership
-        $tenant = Tenant::findOrFail($request->tenant_id);
-        if ($tenant->user_id !== $user->id) {
+        // Verify tenant belongs to landlord's property
+        $tenant = Tenant::with(['property'])->findOrFail($request->tenant_id);
+        if ($tenant->property->owner_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         
@@ -951,11 +951,11 @@ class OwnerController extends Controller
         
         $user = Auth::user();
         
-        // Verify tenant and property ownership
-        $tenant = Tenant::findOrFail($request->tenant_id);
+        // Verify tenant belongs to landlord's property
+        $tenant = Tenant::with(['property'])->findOrFail($request->tenant_id);
         $property = Property::findOrFail($request->property_id);
         
-        if ($tenant->user_id !== $user->id || $property->owner_id !== $user->id) {
+        if ($tenant->property->owner_id !== $user->id || $property->owner_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         
@@ -993,11 +993,11 @@ class OwnerController extends Controller
         
         $user = Auth::user();
         
-        // Verify tenant and property ownership
-        $tenant = Tenant::findOrFail($request->tenant_id);
+        // Verify tenant belongs to landlord's property
+        $tenant = Tenant::with(['property'])->findOrFail($request->tenant_id);
         $property = Property::findOrFail($request->property_id);
         
-        if ($tenant->user_id !== $user->id || $property->owner_id !== $user->id) {
+        if ($tenant->property->owner_id !== $user->id || $property->owner_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         
