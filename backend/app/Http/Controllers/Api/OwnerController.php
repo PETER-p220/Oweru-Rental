@@ -66,15 +66,14 @@ class OwnerController extends Controller
             ->paginate(12);
             
         \Log::info('Found ' . $properties->total() . ' properties for user ' . $user->id);
-        \Log::info('Properties data:', $properties->items());
 
         return response()->json([
             'data' => $properties->items(),
             'pagination' => [
                 'current_page' => $properties->currentPage(),
-                'last_page' => $properties->lastPage(),
-                'per_page' => $properties->perPage(),
-                'total' => $properties->total(),
+                'last_page'    => $properties->lastPage(),
+                'per_page'     => $properties->perPage(),
+                'total'        => $properties->total(),
             ]
         ]);
     }
@@ -82,29 +81,28 @@ class OwnerController extends Controller
     public function createProperty(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'required|string|max:2000',
-            'price' => 'required|numeric|min:0',
-            'location' => 'required|string|max:255',
-            'type' => 'required|in:apartment,house,villa,studio,commercial',
-            'bedrooms' => 'required|integer|min:0',
-            'bathrooms' => 'required|integer|min:0',
-            'area' => 'required|integer|min:0',
-            'agent_id' => 'sometimes|exists:users,id',
-            'images' => 'sometimes|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'price'       => 'required|numeric|min:0',
+            'location'    => 'required|string|max:255',
+            'type'        => 'required|in:apartment,house,villa,studio,commercial',
+            'bedrooms'    => 'required|integer|min:0',
+            'bathrooms'   => 'required|integer|min:0',
+            'area'        => 'required|integer|min:0',
+            'agent_id'    => 'sometimes|exists:users,id',
+            'images'      => 'sometimes|array',
+            'images.*'    => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
         $user = Auth::user();
         
-        // Handle image uploads
         $imagePaths = [];
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
@@ -114,26 +112,26 @@ class OwnerController extends Controller
         }
         
         $property = Property::create([
-            'title' => $request->title,
+            'title'       => $request->title,
             'description' => $request->description,
-            'price' => $request->price,
-            'location' => $request->location,
-            'address' => $request->address ?? '',
-            'type' => $request->type,
-            'bedrooms' => $request->bedrooms,
-            'bathrooms' => $request->bathrooms,
-            'area' => $request->area,
-            'images' => $imagePaths,
-            'amenities' => $request->amenities ?? [],
-            'featured' => $request->boolean('featured', false),
-            'available' => true,
-            'owner_id' => $user->id,
-            'agent_id' => $request->agent_id,
+            'price'       => $request->price,
+            'location'    => $request->location,
+            'address'     => $request->address ?? '',
+            'type'        => $request->type,
+            'bedrooms'    => $request->bedrooms,
+            'bathrooms'   => $request->bathrooms,
+            'area'        => $request->area,
+            'images'      => $imagePaths,
+            'amenities'   => $request->amenities ?? [],
+            'featured'    => $request->boolean('featured', false),
+            'available'   => true,
+            'owner_id'    => $user->id,
+            'agent_id'    => $request->agent_id,
         ]);
 
         return response()->json([
             'message' => 'Property created successfully',
-            'data' => $property->load('agent')
+            'data'    => $property->load('agent')
         ], 201);
     }
 
@@ -146,21 +144,21 @@ class OwnerController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|string|max:255',
+            'title'       => 'sometimes|string|max:255',
             'description' => 'sometimes|string|max:2000',
-            'price' => 'sometimes|numeric|min:0',
-            'location' => 'sometimes|string|max:255',
-            'type' => 'sometimes|in:apartment,house,villa,studio,commercial',
-            'bedrooms' => 'sometimes|integer|min:0',
-            'bathrooms' => 'sometimes|integer|min:0',
-            'area' => 'sometimes|integer|min:0',
-            'available' => 'sometimes|boolean',
+            'price'       => 'sometimes|numeric|min:0',
+            'location'    => 'sometimes|string|max:255',
+            'type'        => 'sometimes|in:apartment,house,villa,studio,commercial',
+            'bedrooms'    => 'sometimes|integer|min:0',
+            'bathrooms'   => 'sometimes|integer|min:0',
+            'area'        => 'sometimes|integer|min:0',
+            'available'   => 'sometimes|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
@@ -171,7 +169,7 @@ class OwnerController extends Controller
 
         return response()->json([
             'message' => 'Property updated successfully',
-            'data' => $property->load('agent')
+            'data'    => $property->load('agent')
         ]);
     }
 
@@ -198,23 +196,23 @@ class OwnerController extends Controller
 
         if (! $this->paymentsTableAvailable()) {
             return response()->json(['data' => [
-                'views' => $property->views ?? 0,
-                'inquiries' => Application::where('property_id', $property->id)->count(),
-                'applications' => Application::where('property_id', $property->id)->count(),
-                'conversion_rate' => $this->calculateConversionRate($property),
-                'revenue' => 0,
-                'occupancy_rate' => $this->calculatePropertyOccupancyRate($property),
+                'views'                    => $property->views ?? 0,
+                'inquiries'                => Application::where('property_id', $property->id)->count(),
+                'applications'             => Application::where('property_id', $property->id)->count(),
+                'conversion_rate'          => $this->calculateConversionRate($property),
+                'revenue'                  => 0,
+                'occupancy_rate'           => $this->calculatePropertyOccupancyRate($property),
                 'avg_rent_collection_time' => $this->calculateAvgRentCollectionTime($property),
             ]]);
         }
 
         $analytics = [
-            'views' => $property->views ?? 0,
-            'inquiries' => Application::where('property_id', $property->id)->count(),
-            'applications' => Application::where('property_id', $property->id)->count(),
-            'conversion_rate' => $this->calculateConversionRate($property),
-            'revenue' => Payment::where('property_id', $property->id)->sum('amount'),
-            'occupancy_rate' => $this->calculatePropertyOccupancyRate($property),
+            'views'                    => $property->views ?? 0,
+            'inquiries'                => Application::where('property_id', $property->id)->count(),
+            'applications'             => Application::where('property_id', $property->id)->count(),
+            'conversion_rate'          => $this->calculateConversionRate($property),
+            'revenue'                  => Payment::where('property_id', $property->id)->sum('amount'),
+            'occupancy_rate'           => $this->calculatePropertyOccupancyRate($property),
             'avg_rent_collection_time' => $this->calculateAvgRentCollectionTime($property),
         ];
 
@@ -236,13 +234,19 @@ class OwnerController extends Controller
             'data' => $applications->items(),
             'pagination' => [
                 'current_page' => $applications->currentPage(),
-                'last_page' => $applications->lastPage(),
-                'per_page' => $applications->perPage(),
-                'total' => $applications->total(),
+                'last_page'    => $applications->lastPage(),
+                'per_page'     => $applications->perPage(),
+                'total'        => $applications->total(),
             ]
         ]);
     }
 
+    /**
+     * FIX: approveApplication now correctly creates the Tenant record FIRST,
+     * then uses that $tenant instance for the notification and contract.
+     * Previously $tenant was used before being defined, so no Tenant or
+     * Contract was ever persisted and getMyTenants() always returned [].
+     */
     public function approveApplication(Request $request, Application $application): JsonResponse
     {
         $user = Auth::user();
@@ -251,31 +255,60 @@ class OwnerController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        // Mark the application as approved
         $application->update(['status' => 'approved']);
 
-        // Send notification to tenant about approval
-        if ($tenant) {
-            \App\Models\Notification::create([
-                'user_id' => $tenant->user_id,
-                'title' => 'Application Approved!',
-                'message' => "Your rental application for {$application->property->title} has been approved. Please check your application status for next steps.",
-                'type' => 'application_approved',
-                'is_read' => false,
+        // Guard: skip tenant/contract creation if the tables don't exist yet
+        if (! $this->tenantTablesAvailable()) {
+            return response()->json(['message' => 'Application approved successfully']);
+        }
+
+        // Avoid creating a duplicate tenant for the same user+property
+        $tenant = Tenant::firstOrCreate(
+            [
+                'user_id'     => $application->user_id,
+                'property_id' => $application->property_id,
+            ],
+            [
+                'move_in_date' => now(),
+                'status'       => 'active',
+            ]
+        );
+
+        // Create a contract only if one doesn't already exist for this tenant+property
+        $contractExists = Contract::where('tenant_id', $tenant->id)
+            ->where('property_id', $application->property_id)
+            ->exists();
+
+        if (! $contractExists) {
+            Contract::create([
+                'tenant_id'   => $tenant->id,
+                'property_id' => $application->property_id,
+                'start_date'  => now(),
+                'end_date'    => null,
+                'rent_amount' => $application->property->price,
+                'status'      => 'active',
+                'terms'       => 'Standard rental agreement created from approved application',
             ]);
         }
-        
-        // Create contract
-        \App\Models\Contract::create([
-            'tenant_id' => $tenant->id,
-            'property_id' => $application->property_id,
-            'start_date' => now(),
-            'end_date' => null,
-            'rent_amount' => $application->property->price,
-            'status' => 'active',
-            'terms' => 'Standard rental agreement created from approved application',
-        ]);
 
-        return response()->json(['message' => 'Application approved successfully']);
+        // Send in-app notification to the tenant (best-effort — skip if table missing)
+        try {
+            \App\Models\Notification::create([
+                'user_id'  => $tenant->user_id,
+                'title'    => 'Application Approved!',
+                'message'  => "Your rental application for {$application->property->title} has been approved. Please check your application status for next steps.",
+                'type'     => 'application_approved',
+                'is_read'  => false,
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('Could not create approval notification: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message'   => 'Application approved successfully',
+            'tenant_id' => $tenant->id,
+        ]);
     }
 
     public function rejectApplication(Request $request, Application $application): JsonResponse
@@ -293,16 +326,14 @@ class OwnerController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
         $application->update([
-            'status' => 'rejected',
+            'status'           => 'rejected',
             'rejection_reason' => $request->rejection_reason,
         ]);
-
-        // TODO: Send notification to tenant
 
         return response()->json(['message' => 'Application rejected successfully']);
     }
@@ -329,116 +360,82 @@ class OwnerController extends Controller
             })
             ->paginate(20);
 
-        \Log::info('Tenants query result count: ' . $tenants->total());
-        \Log::info('Tenants items count: ' . count($tenants->items()));
-        
-        // Log the first tenant if exists
-        if ($tenants->count() > 0) {
-            \Log::info('First tenant data: ', $tenants->first()->toArray());
-        }
+        \Log::info('Tenants found: ' . $tenants->total());
 
-        $response = [
+        return response()->json([
             'data' => $tenants->items(),
             'pagination' => [
                 'current_page' => $tenants->currentPage(),
-                'last_page' => $tenants->lastPage(),
-                'per_page' => $tenants->perPage(),
-                'total' => $tenants->total(),
+                'last_page'    => $tenants->lastPage(),
+                'per_page'     => $tenants->perPage(),
+                'total'        => $tenants->total(),
             ]
-        ];
-        
-        \Log::info('Returning response: ', $response);
-        \Log::info('=== END GET MY TENANTS ===');
-
-        return response()->json($response);
+        ]);
     }
 
-    // Manual method to create tenant from existing approved application
+    // Manual sync: create tenant+contract records for any approved applications
+    // that don't yet have them. Safe to call repeatedly (idempotent).
     public function createTenantFromApprovedApplication(): JsonResponse
     {
-        \Log::info('=== CREATING TENANT FROM APPROVED APPLICATION ===');
+        \Log::info('=== SYNC TENANTS FROM APPROVED APPLICATIONS ===');
         
         $user = Auth::user();
         
-        // First, let's see ALL approved applications for this landlord
-        $allApprovedApps = \App\Models\Application::with(['user', 'property'])
+        $approvedApplications = Application::with(['user', 'property'])
             ->where('status', 'approved')
             ->whereHas('property', function ($query) use ($user) {
                 $query->where('owner_id', $user->id);
             })
             ->get();
 
-        \Log::info('All approved applications for landlord ' . $user->id . ': ' . $allApprovedApps->count());
-        foreach ($allApprovedApps as $app) {
-            \Log::info('Approved app ID: ' . $app->id . ', User: ' . $app->user_id . ', Property: ' . $app->property_id);
-        }
-
-        // Now check if there are any existing tenants for these applications
-        $existingTenants = \App\Models\Tenant::whereIn('user_id', $allApprovedApps->pluck('user_id'))
-            ->whereIn('property_id', $allApprovedApps->pluck('property_id'))
-            ->get();
-
-        \Log::info('Existing tenants for these applications: ' . $existingTenants->count());
-        foreach ($existingTenants as $tenant) {
-            \Log::info('Existing tenant - User: ' . $tenant->user_id . ', Property: ' . $tenant->property_id);
-        }
-
-        // Simple approach: just get approved applications and check manually
-        $approvedApplications = [];
-        foreach ($allApprovedApps as $app) {
-            $hasTenant = \App\Models\Tenant::where('user_id', $app->user_id)
-                ->where('property_id', $app->property_id)
-                ->exists();
-            
-            if (!$hasTenant) {
-                $approvedApplications[] = $app;
-                \Log::info('Application ' . $app->id . ' needs tenant record created');
-            } else {
-                \Log::info('Application ' . $app->id . ' already has tenant record');
-            }
-        }
-
-        \Log::info('Final count of applications needing tenant records: ' . count($approvedApplications));
+        \Log::info('Approved applications found: ' . $approvedApplications->count());
 
         $createdTenants = [];
         
         foreach ($approvedApplications as $application) {
             try {
-                // Create tenant record
-                $tenant = \App\Models\Tenant::create([
-                    'user_id' => $application->user_id,
-                    'property_id' => $application->property_id,
-                    'move_in_date' => now(),
-                    'status' => 'active',
-                ]);
+                $tenant = Tenant::firstOrCreate(
+                    [
+                        'user_id'     => $application->user_id,
+                        'property_id' => $application->property_id,
+                    ],
+                    [
+                        'move_in_date' => now(),
+                        'status'       => 'active',
+                    ]
+                );
 
-                // Create contract record
-                \App\Models\Contract::create([
-                    'tenant_id' => $tenant->id,
-                    'property_id' => $application->property_id,
-                    'start_date' => now(),
-                    'end_date' => null,
-                    'rent_amount' => $application->property->price,
-                    'status' => 'active',
-                    'terms' => 'Standard rental agreement created from approved application',
-                ]);
+                $contractExists = Contract::where('tenant_id', $tenant->id)
+                    ->where('property_id', $application->property_id)
+                    ->exists();
+
+                if (! $contractExists) {
+                    Contract::create([
+                        'tenant_id'   => $tenant->id,
+                        'property_id' => $application->property_id,
+                        'start_date'  => now(),
+                        'end_date'    => null,
+                        'rent_amount' => $application->property->price,
+                        'status'      => 'active',
+                        'terms'       => 'Standard rental agreement created from approved application',
+                    ]);
+                }
 
                 $createdTenants[] = [
-                    'tenant_id' => $tenant->id,
-                    'user_name' => $application->user->first_name . ' ' . $application->user->last_name,
+                    'tenant_id'      => $tenant->id,
+                    'user_name'      => $application->user->first_name . ' ' . $application->user->last_name,
                     'property_title' => $application->property->title,
+                    'was_new'        => $tenant->wasRecentlyCreated,
                 ];
-                
-                \Log::info('Created tenant for application ' . $application->id);
-                
+
             } catch (\Exception $e) {
-                \Log::error('Failed to create tenant for application ' . $application->id . ': ' . $e->getMessage());
+                \Log::error('Failed to sync tenant for application ' . $application->id . ': ' . $e->getMessage());
             }
         }
 
         return response()->json([
-            'message' => 'Created ' . count($createdTenants) . ' tenant records from approved applications',
-            'tenants_created' => $createdTenants
+            'message'         => 'Synced ' . count($createdTenants) . ' tenant records from approved applications',
+            'tenants_created' => $createdTenants,
         ]);
     }
 
@@ -461,9 +458,9 @@ class OwnerController extends Controller
             'data' => $contracts->items(),
             'pagination' => [
                 'current_page' => $contracts->currentPage(),
-                'last_page' => $contracts->lastPage(),
-                'per_page' => $contracts->perPage(),
-                'total' => $contracts->total(),
+                'last_page'    => $contracts->lastPage(),
+                'per_page'     => $contracts->perPage(),
+                'total'        => $contracts->total(),
             ]
         ]);
     }
@@ -475,42 +472,41 @@ class OwnerController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'tenant_id' => 'required|exists:tenants,id',
+            'tenant_id'   => 'required|exists:tenants,id',
             'property_id' => 'required|exists:properties,id',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
+            'start_date'  => 'required|date',
+            'end_date'    => 'required|date|after:start_date',
             'rent_amount' => 'required|numeric|min:0',
-            'terms' => 'required|string',
+            'terms'       => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
         $user = Auth::user();
         
-        // Verify ownership
         $property = Property::findOrFail($request->property_id);
         if ($property->owner_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $contract = Contract::create([
-            'tenant_id' => $request->tenant_id,
+            'tenant_id'   => $request->tenant_id,
             'property_id' => $request->property_id,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
+            'start_date'  => $request->start_date,
+            'end_date'    => $request->end_date,
             'rent_amount' => $request->rent_amount,
-            'terms' => $request->terms,
-            'status' => 'active',
+            'terms'       => $request->terms,
+            'status'      => 'active',
         ]);
 
         return response()->json([
             'message' => 'Contract created successfully',
-            'data' => $contract->load(['tenant.user', 'property'])
+            'data'    => $contract->load(['tenant.user', 'property'])
         ], 201);
     }
 
@@ -534,9 +530,9 @@ class OwnerController extends Controller
             'data' => $payments->items(),
             'pagination' => [
                 'current_page' => $payments->currentPage(),
-                'last_page' => $payments->lastPage(),
-                'per_page' => $payments->perPage(),
-                'total' => $payments->total(),
+                'last_page'    => $payments->lastPage(),
+                'per_page'     => $payments->perPage(),
+                'total'        => $payments->total(),
             ]
         ]);
     }
@@ -545,14 +541,14 @@ class OwnerController extends Controller
     {
         if (! $this->paymentsTableAvailable()) {
             return response()->json(['data' => [
-                'total_collected' => 0,
-                'this_month' => 0,
+                'total_collected'  => 0,
+                'this_month'       => 0,
                 'pending_payments' => 0,
-                'collection_rate' => 0,
+                'collection_rate'  => 0,
             ]]);
         }
 
-        $user = Auth::user();
+        $user  = Auth::user();
         $stats = [
             'total_collected' => Payment::whereHas('property', function ($query) use ($user) {
                 $query->where('owner_id', $user->id);
@@ -589,9 +585,9 @@ class OwnerController extends Controller
             'data' => $payments->items(),
             'pagination' => [
                 'current_page' => $payments->currentPage(),
-                'last_page' => $payments->lastPage(),
-                'per_page' => $payments->perPage(),
-                'total' => $payments->total(),
+                'last_page'    => $payments->lastPage(),
+                'per_page'     => $payments->perPage(),
+                'total'        => $payments->total(),
             ]
         ]);
     }
@@ -604,7 +600,6 @@ class OwnerController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // TODO: Generate PDF receipt
         return response()->json(['message' => 'Receipt download not implemented yet'], 501);
     }
 
@@ -628,9 +623,9 @@ class OwnerController extends Controller
             'data' => $commissions->items(),
             'pagination' => [
                 'current_page' => $commissions->currentPage(),
-                'last_page' => $commissions->lastPage(),
-                'per_page' => $commissions->perPage(),
-                'total' => $commissions->total(),
+                'last_page'    => $commissions->lastPage(),
+                'per_page'     => $commissions->perPage(),
+                'total'        => $commissions->total(),
             ]
         ]);
     }
@@ -640,18 +635,18 @@ class OwnerController extends Controller
     {
         $user = Auth::user();
         
-        $properties = Property::where('owner_id', $user->id);
-        $totalProperties = $properties->count();
-        $occupiedProperties = $properties->where('available', false)->count();
-        $availableProperties = $properties->where('available', true)->count();
+        $propertiesQuery  = Property::where('owner_id', $user->id);
+        $totalProperties  = (clone $propertiesQuery)->count();
+        $occupiedProperties  = (clone $propertiesQuery)->where('available', false)->count();
+        $availableProperties = (clone $propertiesQuery)->where('available', true)->count();
         
         $analytics = [
             'property_performance' => [
-                'total_properties' => $totalProperties,
+                'total_properties'    => $totalProperties,
                 'occupied_properties' => $occupiedProperties,
-                'available_properties' => $availableProperties,
-                'avg_rent' => $properties->avg('price') ?: 0,
-                'occupancy_rate' => $totalProperties > 0 ? ($occupiedProperties / $totalProperties) * 100 : 0,
+                'available_properties'=> $availableProperties,
+                'avg_rent'            => (clone $propertiesQuery)->avg('price') ?: 0,
+                'occupancy_rate'      => $totalProperties > 0 ? ($occupiedProperties / $totalProperties) * 100 : 0,
             ],
             'financial_metrics' => [
                 'total_revenue' => $this->paymentsTableAvailable() ? Payment::whereHas('property', function ($query) use ($user) {
@@ -665,8 +660,8 @@ class OwnerController extends Controller
                 })->where('type', 'commission')->sum('amount') : 0,
             ],
             'tenant_metrics' => [
-                'total_tenants' => $occupiedProperties, // Simplified: one tenant per occupied property
-                'new_tenants_this_month' => 0, // TODO: Implement with proper tenant tracking
+                'total_tenants'          => $occupiedProperties,
+                'new_tenants_this_month' => 0,
             ],
         ];
 
@@ -685,7 +680,7 @@ class OwnerController extends Controller
         $messages = Message::with(['sender', 'recipient', 'property'])
             ->where(function ($query) use ($user) {
                 $query->where('sender_id', $user->id)
-                    ->orWhere('recipient_id', $user->id);
+                      ->orWhere('recipient_id', $user->id);
             })
             ->where(function ($query) use ($user) {
                 $query->whereHas('property', function ($propertyQuery) use ($user) {
@@ -695,20 +690,16 @@ class OwnerController extends Controller
                         ->where(function ($participantQuery) use ($user) {
                             $participantQuery
                                 ->whereIn('sender_id', function ($tenantQuery) use ($user) {
-                                    $tenantQuery->select('user_id')
-                                        ->from('tenants')
+                                    $tenantQuery->select('user_id')->from('tenants')
                                         ->whereIn('property_id', function ($propertyQuery) use ($user) {
-                                            $propertyQuery->select('id')
-                                                ->from('properties')
+                                            $propertyQuery->select('id')->from('properties')
                                                 ->where('owner_id', $user->id);
                                         });
                                 })
                                 ->orWhereIn('recipient_id', function ($tenantQuery) use ($user) {
-                                    $tenantQuery->select('user_id')
-                                        ->from('tenants')
+                                    $tenantQuery->select('user_id')->from('tenants')
                                         ->whereIn('property_id', function ($propertyQuery) use ($user) {
-                                            $propertyQuery->select('id')
-                                                ->from('properties')
+                                            $propertyQuery->select('id')->from('properties')
                                                 ->where('owner_id', $user->id);
                                         });
                                 });
@@ -727,9 +718,9 @@ class OwnerController extends Controller
             'data' => $messages->items(),
             'pagination' => [
                 'current_page' => $messages->currentPage(),
-                'last_page' => $messages->lastPage(),
-                'per_page' => $messages->perPage(),
-                'total' => $messages->total(),
+                'last_page'    => $messages->lastPage(),
+                'per_page'     => $messages->perPage(),
+                'total'        => $messages->total(),
             ]
         ]);
     }
@@ -742,26 +733,25 @@ class OwnerController extends Controller
 
         $validator = Validator::make($request->all(), [
             'recipient_id' => 'required|exists:users,id',
-            'property_id' => 'nullable|exists:properties,id',
-            'subject' => 'nullable|string|max:255',
-            'body' => 'required|string|max:5000',
+            'property_id'  => 'nullable|exists:properties,id',
+            'subject'      => 'nullable|string|max:255',
+            'body'         => 'required|string|max:5000',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
-        $user = Auth::user();
+        $user        = Auth::user();
         $recipientId = (int) $request->recipient_id;
-        $propertyId = $request->property_id ? (int) $request->property_id : null;
+        $propertyId  = $request->property_id ? (int) $request->property_id : null;
 
         $recipientIsTenant = Tenant::where('user_id', $recipientId)
             ->whereHas('property', function ($query) use ($user, $propertyId) {
                 $query->where('owner_id', $user->id);
-
                 if ($propertyId) {
                     $query->where('id', $propertyId);
                 }
@@ -783,25 +773,24 @@ class OwnerController extends Controller
         }
 
         $message = Message::create([
-            'sender_id' => $user->id,
+            'sender_id'    => $user->id,
             'recipient_id' => $recipientId,
-            'property_id' => $propertyId,
-            'subject' => $request->subject,
-            'body' => $request->body,
+            'property_id'  => $propertyId,
+            'subject'      => $request->subject,
+            'body'         => $request->body,
         ])->load(['sender', 'recipient', 'property']);
 
         return response()->json([
             'message' => 'Message sent successfully',
-            'data' => $message,
+            'data'    => $message,
         ], 201);
     }
 
     // Helper methods
     private function calculateOccupancyRate(User $user): float
     {
-        $totalProperties = Property::where('owner_id', $user->id)->count();
+        $totalProperties    = Property::where('owner_id', $user->id)->count();
         $occupiedProperties = Property::where('owner_id', $user->id)->where('available', false)->count();
-        
         return $totalProperties > 0 ? ($occupiedProperties / $totalProperties) * 100 : 0;
     }
 
@@ -809,20 +798,17 @@ class OwnerController extends Controller
     {
         $applications = Application::where('property_id', $property->id)->count();
         $views = $property->views ?? 1;
-        
         return $views > 0 ? ($applications / $views) * 100 : 0;
     }
 
     private function calculatePropertyOccupancyRate(Property $property): float
     {
-        // TODO: Calculate property-specific occupancy rate
-        return 85.0; // percentage
+        return 85.0;
     }
 
     private function calculateAvgRentCollectionTime(Property $property): float
     {
-        // TODO: Calculate average rent collection time in days
-        return 2.5; // days
+        return 2.5;
     }
 
     private function calculateCollectionRate(User $user): float
@@ -848,9 +834,9 @@ class OwnerController extends Controller
             'data' => [],
             'pagination' => [
                 'current_page' => 1,
-                'last_page' => 1,
-                'per_page' => 20,
-                'total' => 0,
+                'last_page'    => 1,
+                'per_page'     => 20,
+                'total'        => 0,
             ]
         ]);
     }

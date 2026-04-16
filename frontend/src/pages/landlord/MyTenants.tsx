@@ -340,7 +340,7 @@ const MyTenants = () => {
                             fontWeight: 600,
                           }}
                         >
-                          View Application →
+                          View Application → 
                         </Link>
                       ) : (
                         <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>—</span>
