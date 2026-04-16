@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { RefreshCw, AlertCircle, UserPlus } from 'lucide-react';
 import Api from '../../services/api';
 import {
@@ -39,6 +40,7 @@ interface TenantItem {
     end_date?: string;
     rent_amount?: number | string;
   };
+  application_id?: number;
 }
 
 const MyTenants = () => {
@@ -221,6 +223,19 @@ const MyTenants = () => {
                     <td style={tdStyle}>{formatCurrency(tenant.contract?.rent_amount)}</td>
                     <td style={tdStyle}>
                       <span style={statusPillStyle(getStatusColor(tenant.contract?.status))}>{tenant.contract?.status || 'unknown'}</span>
+                    </td>
+                    <td style={tdStyle}>
+                      <Link 
+                        to={`/tenant/application-status?id=${tenant.application_id}`}
+                        style={{ 
+                          color: 'var(--accent-color)', 
+                          textDecoration: 'none',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        View Application Status
+                      </Link>
                     </td>
                   </tr>
                 ))}

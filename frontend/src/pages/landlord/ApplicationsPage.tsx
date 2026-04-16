@@ -83,6 +83,17 @@ const ApplicationsPage = () => {
       // Show a proper success message — NOT using setError for this
       setSuccess('Application approved. The tenant record has been created.');
 
+      // Get tenant email from the application to notify them
+      const tenantEmail = applications.find(app => app.id === id)?.user?.email;
+
+      if (tenantEmail) {
+        // Send notification to tenant about approval
+        await Api.notifyTenantApproval(id, tenantEmail);
+        setSuccess(`Application approved and tenant notified at ${tenantEmail}`);
+      } else {
+        setSuccess('Application approved. The tenant record has been created.');
+      }
+
       // After 1.8 s navigate to the tenants page so the user can see the new tenant
       setTimeout(() => navigate('/landlord/tenants'), 1800);
 

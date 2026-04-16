@@ -49,10 +49,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/properties/{property}/save', [PropertyController::class, 'unsave']);
 
     // Applications
-    Route::post('/applications',               [ApplicationController::class, 'store']);
-    Route::get('/applications',                [ApplicationController::class, 'index']);
-    Route::get('/applications/{application}',  [ApplicationController::class, 'show']);
-    Route::put('/applications/{application}',  [ApplicationController::class, 'update']);
+    Route::post('/applications',          [ApplicationController::class, 'store']);
+    Route::get('/applications', [TenantController::class, 'index']);
+    Route::get('/applications/{application}',[TenantController::class, 'show']);
+    Route::post('/applications', [TenantController::class, 'store']);
+    Route::patch('/applications/{application}',[TenantController::class, 'update']);
+    Route::delete('/applications/{application}',[TenantController::class, 'destroy']);
+    Route::get('/applications/application-status', [TenantController::class, 'applicationStatus']);
+    Route::post('/tenant/applications/notify-approval', [TenantController::class, 'notifyApproval']);
 
     // ── Shared landlord + agent property management ───────────────────────────
     // FIX: Removed duplicate registrations. These were previously registered both

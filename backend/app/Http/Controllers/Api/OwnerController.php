@@ -253,8 +253,27 @@ class OwnerController extends Controller
 
         $application->update(['status' => 'approved']);
 
-        // TODO: Send notification to tenant
-        // TODO: Create contract
+        // Send notification to tenant about approval
+        if ($tenant) {
+            \App\Models\Notification::create([
+                'user_id' => $tenant->user_id,
+                'title' => 'Application Approved!',
+                'message' => "Your rental application for {$application->property->title} has been approved. Please check your application status for next steps.",
+                'type' => 'application_approved',
+                'is_read' => false,
+            ]);
+        }
+        
+        // Create contract
+        \App\Models\Contract::create([
+            'tenant_id' => $tenant->id,
+            'property_id' => $application->property_id,
+            'start_date' => now(),
+            'end_date' => null,
+            'rent_amount' => $application->property->price,
+            'status' => 'active',
+            'terms' => 'Standard rental agreement created from approved application',
+        ]);
 
         return response()->json(['message' => 'Application approved successfully']);
     }

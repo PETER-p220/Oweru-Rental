@@ -24,6 +24,7 @@ import Notifications from './pages/tenant/Notifications';
 import Messages from './pages/tenant/Messages';
 import SavedProperties from './pages/tenant/SavedProperties';
 import TenantApplicationsPage from './pages/tenant/ApplicationsPage';
+import ApplicationStatus from './pages/tenant/ApplicationStatus';
 import TenantDigitalContractPage from './pages/tenant/DigitalContractPage';
 import TenantAnalyticsPage from './pages/tenant/AnalyticsPage';
 
@@ -105,6 +106,7 @@ const TenantRoutes = () => (
         <Route path="" element={<TenantDashboard />} />
         <Route path="properties" element={<Properties />} />
         <Route path="applications" element={<TenantApplicationsPage />} />
+        <Route path="application-status" element={<ApplicationStatus />} />
         <Route path="digital-contracts" element={<TenantDigitalContractPage />} />
         <Route path="analytics" element={<TenantAnalyticsPage />} />
         <Route path="saved-properties" element={<SavedProperties />} />

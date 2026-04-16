@@ -712,6 +712,20 @@ class Api {
   static async getOwnerApplications()     { return this.request<any[]>('owner/applications'); }
   static async getMyTenants()             { return this.request<any[]>('owner/tenants'); }
   static async createTenantFromApprovedApplication() { return this.request<any>('owner/tenants/create-from-approved', { method: 'POST' }); }
+
+  static async updateApplicationStatus(id: number, status: string, message?: string) { 
+    return this.request<any>(`owner/applications/${id}`, { 
+      method: 'PATCH', 
+      body: JSON.stringify({ status, message }) 
+    }); 
+  }
+
+  static async notifyTenantApproval(applicationId: number, tenantEmail: string) { 
+    return this.request<any>('tenant/applications/notify-approval', { 
+      method: 'POST', 
+      body: JSON.stringify({ applicationId, tenantEmail }) 
+    }); 
+  }
   static async getOwnerContracts()        { return this.request<any[]>('owner/contracts'); }
   static async getRentCollection()        { return this.request<any[]>('owner/rent-collection'); }
   static async getRentCollectionStats()   { return this.request<any>('owner/rent-collection-stats'); }

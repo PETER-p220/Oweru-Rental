@@ -327,6 +327,54 @@ class TenantController extends Controller
         return response()->json(['message' => 'Receipt download not implemented yet'], 501);
     }
 
+    public function updateApplicationStatus(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $applicationId = $request->get('id');
+        $status = $request->get('status');
+        $message = $request->get('message');
+        
+        if (!$applicationId || !$status) {
+            return response()->json(['error' => 'Application ID and status are required'], 400);
+        }
+        
+        $application = Application::with(['user', 'property'])
+            ->where('user_id', $user->id)
+            ->where('id', $applicationId)
+            ->first();
+        
+        if (!$application) {
+            return response()->json(['error' => 'Application not found'], 404);
+        }
+        
+        $application->update(['status' => $status, 'message' => $message]);
+        
+        return response()->json(['message' => 'Application status updated successfully']);
+    }
+
+    public function notifyApproval(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        
+        $applicationId = $request->get('application_id');
+        $tenantEmail = $request->get('tenant_email');
+        
+        if (!$applicationId || !$tenantEmail) {
+            return response()->json(['error' => 'Application ID and tenant email are required'], 400);
+        }
+        
+        // Create notification for tenant
+        \App\Models\Notification::create([
+            'user_id' => $user->id,
+            'title' => 'Application Status Update',
+            'message' => "Your application status has been updated to: {$status}. Please check your dashboard for more details.",
+            'type' => 'application_status_update',
+            'is_read' => false,
+        ]);
+        
+        return response()->json(['message' => 'Tenant notified successfully']);
+    }
+
     // Notifications
     public function getNotifications(): JsonResponse
     {
