@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import {
   FileText, Download, Eye, Send, AlertCircle, CheckCircle,
-  MapPin, PenTool, X,
+  MapPin, PenTool, X, Clock, User, Calendar, FileCheck,
 } from 'lucide-react';
 import Api from '../../services/api';
 import {
@@ -26,7 +26,7 @@ interface DigitalContract {
   title: string;
   property_id: number;
   tenant_id: number;
-  status: 'draft' | 'pending' | 'signed' | 'rejected';
+  status: 'draft' | 'pending_signature' | 'pending_review' | 'approved' | 'rejected';
   file_url?: string;
   file_name?: string;
   file_type?: string;
@@ -123,8 +123,69 @@ const DigitalContractPage = () => {
 
   const saveSignature = () => {
     const canvas = canvasRef.current; if (!canvas) return;
-    setSignatureDataUrl(canvas.toDataURL());
+    const dataUrl = canvas.toDataURL();
+    if (dataUrl === 'data:,') {
+      setError('Please provide a signature before saving');
+      return;
+    }
+    setSignatureDataUrl(dataUrl);
     setShowSignatureModal(false);
+  };
+
+  // Helper functions for contract status
+  const getContractStatusColor = (status: string): string => {
+    switch (status) {
+      case 'draft': return '#6b7280';
+      case 'pending_signature': return '#c9a84c';
+      case 'pending_review': return '#3b82f6';
+      case 'approved': return '#16a34a';
+      case 'rejected': return '#dc2626';
+      default: return '#6b7280';
+    }
+  };
+
+  const getContractStatusText = (status: string): string => {
+    switch (status) {
+      case 'draft': return 'Draft';
+      case 'pending_signature': return 'Awaiting Signature';
+      case 'pending_review': return 'Under Review';
+      case 'approved': return 'Approved';
+      case 'rejected': return 'Rejected';
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  const getContractActionButton = (contract: DigitalContract) => {
+    if (contract.status === 'pending_signature') {
+      return (
+        <button
+          style={{ ...buttonStyle('primary'), padding: '5px 10px', fontSize: '12px' }}
+          onClick={() => viewContract(contract)}
+        >
+          <PenTool size={11} /> Sign Contract
+        </button>
+      );
+    }
+    
+    if (['pending_review', 'approved'].includes(contract.status)) {
+      return (
+        <button
+          style={{ ...buttonStyle('ghost'), padding: '5px 10px', fontSize: '12px' }}
+          onClick={() => viewContract(contract)}
+        >
+          <Eye size={11} /> View Details
+        </button>
+      );
+    }
+    
+    return (
+      <button
+        style={{ ...buttonStyle('ghost'), padding: '5px 10px', fontSize: '12px' }}
+        onClick={() => viewContract(contract)}
+      >
+        <Eye size={11} /> View
+      </button>
+    );
   };
 
   const submitContract = async () => {
@@ -139,11 +200,13 @@ const DigitalContractPage = () => {
       setSubmitting(true);
       await Api.submitDigitalContract({
         contract_id: selectedContract.id,
-        field_values: fieldValues,
+        fields: fieldValues,
         signature: signatureDataUrl,
       });
       await loadContracts();
-      setShowContractModal(false); setSelectedContract(null); setError('');
+      setShowContractModal(false); setSelectedContract(null); 
+      setError('');
+      alert('Contract submitted successfully! Your landlord will be notified for review.');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Failed to submit contract');
     } finally { setSubmitting(false); }
@@ -151,8 +214,8 @@ const DigitalContractPage = () => {
 
   const renderField = (field: ContractField) => {
     const value    = fieldValues[field.id] || '';
-    const disabled = selectedContract?.status === 'signed';
-    const common   = { style: { ...inputStyle, width: '100%' }, disabled, required: field.required };
+    const isDisabled = ['approved', 'pending_review'].includes(selectedContract?.status || '');
+    const common   = { style: { ...inputStyle, width: '100%' }, disabled: isDisabled, required: field.required };
 
     switch (field.type) {
       case 'text':
@@ -168,7 +231,7 @@ const DigitalContractPage = () => {
             value={value}
             onChange={e => handleFieldChange(field.id, e.target.value)}
             placeholder={field.placeholder}
-            disabled={disabled} required={field.required}
+            disabled={isDisabled} required={field.required}
           />
         );
       case 'signature':
@@ -180,7 +243,7 @@ const DigitalContractPage = () => {
                 <span style={{ color: '#16a34a', fontSize: '14px' }}>Signature provided</span>
                 <button
                   style={{ ...buttonStyle('secondary'), padding: '6px 12px', fontSize: '12px' }}
-                  onClick={() => setShowSignatureModal(true)} disabled={disabled}
+                  onClick={() => setShowSignatureModal(true)} disabled={isDisabled}
                 >
                   <PenTool size={12} /> Edit
                 </button>
@@ -188,7 +251,7 @@ const DigitalContractPage = () => {
             ) : (
               <button
                 style={{ ...buttonStyle('primary'), padding: '8px 16px' }}
-                onClick={() => setShowSignatureModal(true)} disabled={disabled}
+                onClick={() => setShowSignatureModal(true)} disabled={isDisabled}
               >
                 <PenTool size={16} /> Add Signature
               </button>
@@ -273,8 +336,8 @@ const DigitalContractPage = () => {
                       </div>
                     </td>
                     <td style={tdStyle}>
-                      <span style={statusPillStyle(getStatusColor(contract.status))}>
-                        {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+                      <span style={statusPillStyle(getContractStatusColor(contract.status))}>
+                        {getContractStatusText(contract.status)}
                       </span>
                     </td>
                     <td style={tdStyle}>
@@ -285,12 +348,7 @@ const DigitalContractPage = () => {
                         >
                           <Download size={11} /> Download
                         </button>
-                        <button
-                          style={{ ...buttonStyle('primary'), padding: '5px 10px', fontSize: '12px' }}
-                          onClick={() => viewContract(contract)}
-                        >
-                          <Eye size={11} /> View & Sign
-                        </button>
+                        {getContractActionButton(contract)}
                       </div>
                     </td>
                   </tr>
@@ -352,7 +410,7 @@ const DigitalContractPage = () => {
                 >
                   Cancel
                 </button>
-                {selectedContract.status === 'pending' && (
+                {selectedContract.status === 'pending_signature' && (
                   <button
                     style={{ ...buttonStyle('primary'), padding: '10px 20px' }}
                     onClick={submitContract} disabled={submitting}
@@ -363,9 +421,29 @@ const DigitalContractPage = () => {
                         Submitting…
                       </>
                     ) : (
-                      <><Send size={16} /> Submit Contract</>
+                      <><Send size={16} /> Submit for Review</>
                     )}
                   </button>
+                )}
+                {selectedContract.status === 'pending_review' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 16px', background: 'rgba(37,99,235,0.1)',
+                    border: '1px solid rgba(37,99,235,0.2)', borderRadius: '8px',
+                    color: palette.navy700, fontSize: '14px'
+                  }}>
+                    <Clock size={16} /> Under Review
+                  </div>
+                )}
+                {selectedContract.status === 'approved' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '10px 16px', background: 'rgba(22,163,74,0.1)',
+                    border: '1px solid rgba(22,163,74,0.2)', borderRadius: '8px',
+                    color: '#16a34a', fontSize: '14px'
+                  }}>
+                    <CheckCircle size={16} /> Contract Approved
+                  </div>
                 )}
               </div>
             </div>
