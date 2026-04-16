@@ -134,7 +134,7 @@ const TenantDashboard = () => {
         <div className="td-list">
           {properties.map((property) => (
             <div key={property.id} className="td-item">
-              {property.images?.[0] ? <img className="td-thumb" src={imageUrl(property.images[0])} alt={property.title || 'Property'} /> : <div className="td-thumb" />}
+              {property.images && property.images.length > 0 && property.images[0] ? <img className="td-thumb" src={imageUrl(property.images[0])} alt={property.title || 'Property'} /> : <div className="td-thumb" />}
               <div>
                 <div className="td-title">{property.title || 'Untitled property'}</div>
                 <div className="td-meta">
