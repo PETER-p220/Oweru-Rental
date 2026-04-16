@@ -54,7 +54,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Add Property',       icon: Plus,          href: 'add-property',        color: '#34d399' },
       { name: 'Applications',       icon: FileText,      href: 'applications',        color: '#60a5fa' },
       { name: 'My Tenants',         icon: Users,         href: 'tenants',             color: '#a78bfa' },
-      { name: 'Digital Contracts',  icon: BookOpen,      href: 'contracts',           color: '#f472b6' },
+      { name: 'Digital Contracts',  icon: BookOpen,      href: 'digital-contracts',   color: '#f472b6' },
       { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection',     color: '#10b981' },
       { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts',            color: '#6ee7b7' },
       { name: 'Commission Reports', icon: PieChart,      href: 'commissions',         color: '#fb923c' },
@@ -158,7 +158,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const sectionMap: Record<UserRole, { label: string; items: string[] }[]> = {
     tenant: [
       { label: 'Explore',   items: ['Overview','Browse Properties','Saved Properties'] },
-      { label: 'My Rental', items: ['My Applications','My Contract','Rent Payments','Payment History'] },
+      { label: 'My Rental', items: ['My Applications','Digital Contracts','Rent Payments','Payment History'] },
       { label: 'Connect',   items: ['Messages','Notifications'] },
     ],
     landlord: [

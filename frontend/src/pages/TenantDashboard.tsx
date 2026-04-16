@@ -49,7 +49,7 @@ const TenantDashboard = () => {
         const [dashboardRes, propertiesRes, contractsRes] = await Promise.all([
           Api.getTenantDashboard(),
           Api.getProperties({ page: 1 }),
-          Api.getMyContract().catch(() => ({ data: [] })), // Handle if no contracts yet
+          Api.getTenantDigitalContracts().catch(() => ({ data: [] })), // Handle if no contracts yet
         ]);
         setStats(dashboardRes.data || {});
         setProperties(Array.isArray(propertiesRes.data?.data) ? propertiesRes.data.data.slice(0, 4) : []);
