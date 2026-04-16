@@ -672,6 +672,12 @@ class TenantController extends Controller
             ->whereHas('tenant', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })
+            ->whereHas('tenant.user', function ($query) use ($user) {
+                $query->whereHas('applications', function ($subQuery) {
+                    $subQuery->where('status', 'approved')
+                              ->where('property_id', \DB::raw('digital_contracts.property_id'));
+                });
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 
