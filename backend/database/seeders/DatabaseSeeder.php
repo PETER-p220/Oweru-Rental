@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             SampleUsersSeeder::class,
             LandlordDemoDataSeeder::class,
             BnbOwnerSeeder::class,
+            UpdateContractStatusesSeeder::class,
         ]);
     }
 }
