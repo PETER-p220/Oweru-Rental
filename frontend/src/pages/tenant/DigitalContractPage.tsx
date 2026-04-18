@@ -149,7 +149,15 @@ const DigitalContractPage = () => {
       }));
 
       console.log('[Tenant DigitalContracts] Normalised contracts:', normalised);
-      console.log('[Tenant DigitalContracts] Contract statuses:', normalised.map(c => ({ id: c.id, title: c.title, status: c.status })));
+      console.log('[Tenant DigitalContracts] Contract statuses:', normalised.map(c => ({ 
+        id: c.id, 
+        title: c.title, 
+        status: c.status,
+        file_name: c.file_name,
+        file_url: c.file_url,
+        file_path: c.file_path,
+        has_file: hasFile(c)
+      })));
       console.log('[Tenant DigitalContracts] Visible contracts (non-draft):', normalised.filter(isVisible));
 
       // Temporarily show all contracts for debugging
@@ -208,7 +216,13 @@ const DigitalContractPage = () => {
     } catch (err: any) {
       console.error('[Tenant DigitalContracts] Download error:', err);
       if (err?.response?.status === 404) {
-        setError('Contract file not found. The landlord may not have uploaded the file yet.');
+        const errorMessage = err?.response?.data?.message || 'Contract file not found';
+        console.log('[Tenant DigitalContracts] 404 error message:', errorMessage);
+        if (errorMessage.includes('File not found on disk')) {
+          setError('Contract file exists in database but not found on server. Please contact your landlord to re-upload the file.');
+        } else {
+          setError(errorMessage);
+        }
       } else {
         setError(err?.response?.data?.message || 'Failed to download contract.');
       }
