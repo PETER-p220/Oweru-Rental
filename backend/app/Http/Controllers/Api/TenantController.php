@@ -822,21 +822,14 @@ public function downloadDigitalContract($contractId): \Symfony\Component\HttpFou
     ]);
  
     // Notify the landlord — best-effort, skip if notifications table is missing
-    try {
         Notification::create([
     'user_id' => $contract->property->owner_id,
     'title'   => 'Contract Signed',
     'message' => "Tenant has signed the contract for {$contract->property->title}.",
     'type'    => 'contract',
     'data'    => json_encode(['contract_id' => $contract->id]),
-    'is_read' => false,
-]);
+    'is_read' => false,]);
 
-    } 
-    catch (\Exception $e) {
-        \Log::warning('Could not create contract-signed notification: ' . $e->getMessage());
-    }
- 
     return response()->json([
         'message' => 'Contract submitted successfully',
         'data'    => $contract->fresh(['property']),
