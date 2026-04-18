@@ -354,121 +354,171 @@ class TenantController extends Controller
     }
 
     public function notifyApproval(Request $request): JsonResponse
-    {
-        $user = Auth::user();
-        
-        $applicationId = $request->get('application_id');
-        $tenantEmail = $request->get('tenant_email');
-        
-        if (!$applicationId || !$tenantEmail) {
-            return response()->json(['error' => 'Application ID and tenant email are required'], 400);
-        }
-        
-        // Create notification for tenant
-        \App\Models\Notification::create([
-            'user_id' => $user->id,
-            'title' => 'Application Status Update',
-            'message' => "Your application status has been updated to: {$status}. Please check your dashboard for more details.",
-            'type' => 'application_status_update',
-            'is_read' => false,
-        ]);
-        
-        return response()->json(['message' => 'Tenant notified successfully']);
+{
+    $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+        'application_id' => 'required|integer',
+        'tenant_email'   => 'required|email',
+    ]);
+ 
+    if ($validator->fails()) {
+        return response()->json(['error' => 'Application ID and tenant email are required'], 400);
     }
+ 
+    $user          = Auth::user();
+    $applicationId = $request->get('application_id');
+ 
+    $application = \App\Models\Application::with('property')
+        ->findOrFail($applicationId);
+ 
+    // Find the tenant user by email
+    $tenantUser = \App\Models\User::where('email', $request->tenant_email)->first();
+    if (! $tenantUser) {
+        return response()->json(['error' => 'Tenant not found'], 404);
+    }
+ 
+    Notification::create([
+        'user_id' => $tenantUser->id,
+        'title'   => 'Application Approved',
+        'message' => "Your application for {$application->property->title} has been approved.",
+        'type'    => 'application_approved',
+        'is_read' => false,
+    ]);
+ 
+    return response()->json(['message' => 'Tenant notified successfully']);
+}
 
     // Notifications
-    public function getNotifications(): JsonResponse
-    {
-        if (! $this->notificationsTableAvailable()) {
-            return $this->emptyPaginatedResponse();
-        }
-
-        $user = Auth::user();
-        $notifications = Notification::where('user_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
-
-        return response()->json([
-            'data' => $notifications->items(),
-            'pagination' => [
-                'current_page' => $notifications->currentPage(),
-                'last_page' => $notifications->lastPage(),
-                'per_page' => $notifications->perPage(),
-                'total' => $notifications->total(),
-            ]
-        ]);
+   public function getNotifications(): JsonResponse
+{
+    if (! $this->notificationsTableAvailable()) {
+        return $this->emptyPaginatedResponse();
     }
+ 
+    $user = Auth::user();
+ 
+    $notifications = Notification::where('user_id', $user->id)
+        // Exclude archived notifications from the main list
+        ->when(
+            \Illuminate\Support\Facades\Schema::hasColumn('notifications', 'archived_at'),
+            fn($q) => $q->whereNull('archived_at')
+        )
+        ->orderBy('created_at', 'desc')
+        ->paginate(20);
+ 
+    return response()->json([
+        'data' => $notifications->items(),
+        'pagination' => [
+            'current_page' => $notifications->currentPage(),
+            'last_page'    => $notifications->lastPage(),
+            'per_page'     => $notifications->perPage(),
+            'total'        => $notifications->total(),
+        ]
+    ]);
+}
 
     public function getNotificationStats(): JsonResponse
-    {
-        if (! $this->notificationsTableAvailable()) {
-            return response()->json(['data' => [
-                'total' => 0,
-                'unread' => 0,
-                'this_week' => 0,
-            ]]);
-        }
-
-        $user = Auth::user();
-        $stats = [
-            'total' => Notification::where('user_id', $user->id)->count(),
-            'unread' => Notification::where('user_id', $user->id)->where('read_at', null)->count(),
-            'this_week' => Notification::where('user_id', $user->id)
-                ->where('created_at', '>=', now()->startOfWeek())
-                ->count(),
-        ];
-
-        return response()->json(['data' => $stats]);
+{
+    if (! $this->notificationsTableAvailable()) {
+        return response()->json(['data' => [
+            'total'     => 0,
+            'unread'    => 0,
+            'this_week' => 0,
+        ]]);
     }
-
-    public function markNotificationAsRead(Notification $notification): JsonResponse
-    {
-        if (! $this->notificationsTableAvailable()) {
-            return response()->json(['message' => 'Notifications are unavailable until supporting tables are migrated'], 503);
-        }
-
-        $user = Auth::user();
-        
-        if ($notification->user_id !== $user->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $notification->update(['read_at' => now()]);
-
-        return response()->json(['message' => 'Notification marked as read']);
+ 
+    $user = Auth::user();
+ 
+    // Determine which column tracks read status — prefer 'is_read', fall back
+    // to 'read_at' for legacy schemas.
+    $hasIsRead  = \Illuminate\Support\Facades\Schema::hasColumn('notifications', 'is_read');
+    $hasReadAt  = \Illuminate\Support\Facades\Schema::hasColumn('notifications', 'read_at');
+ 
+    $unreadQuery = Notification::where('user_id', $user->id);
+    if ($hasIsRead) {
+        $unreadQuery->where('is_read', false);
+    } elseif ($hasReadAt) {
+        $unreadQuery->whereNull('read_at');
     }
+ 
+    $stats = [
+        'total'     => Notification::where('user_id', $user->id)->count(),
+        'unread'    => $unreadQuery->count(),
+        'this_week' => Notification::where('user_id', $user->id)
+            ->where('created_at', '>=', now()->startOfWeek())
+            ->count(),
+    ];
+ 
+    return response()->json(['data' => $stats]);
+}
+ 
+
+   public function markNotificationAsRead(Notification $notification): JsonResponse
+{
+    if (! $this->notificationsTableAvailable()) {
+        return response()->json(['message' => 'Notifications unavailable'], 503);
+    }
+ 
+    $user = Auth::user();
+    if ($notification->user_id !== $user->id) {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+ 
+    $updates = ['is_read' => true];
+ 
+    // Also set read_at if the column exists (keeps legacy schemas happy)
+    if (\Illuminate\Support\Facades\Schema::hasColumn('notifications', 'read_at')) {
+        $updates['read_at'] = now();
+    }
+ 
+    $notification->update($updates);
+ 
+    return response()->json(['message' => 'Notification marked as read']);
+}
+ 
 
     public function markAllNotificationsAsRead(): JsonResponse
-    {
-        if (! $this->notificationsTableAvailable()) {
-            return response()->json(['message' => 'Notifications are unavailable until supporting tables are migrated'], 503);
-        }
-
-        $user = Auth::user();
-        
-        Notification::where('user_id', $user->id)
-            ->where('read_at', null)
-            ->update(['read_at' => now()]);
-
-        return response()->json(['message' => 'All notifications marked as read']);
+{
+    if (! $this->notificationsTableAvailable()) {
+        return response()->json(['message' => 'Notifications unavailable'], 503);
     }
+ 
+    $user = Auth::user();
+ 
+    $updates = ['is_read' => true];
+    if (\Illuminate\Support\Facades\Schema::hasColumn('notifications', 'read_at')) {
+        $updates['read_at'] = now();
+    }
+ 
+    Notification::where('user_id', $user->id)
+        ->where('is_read', false)
+        ->update($updates);
+ 
+    return response()->json(['message' => 'All notifications marked as read']);
+}
+ 
 
     public function archiveNotification(Notification $notification): JsonResponse
-    {
-        if (! $this->notificationsTableAvailable()) {
-            return response()->json(['message' => 'Notifications are unavailable until supporting tables are migrated'], 503);
-        }
-
-        $user = Auth::user();
-        
-        if ($notification->user_id !== $user->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $notification->update(['archived_at' => now()]);
-
-        return response()->json(['message' => 'Notification archived']);
+{
+    if (! $this->notificationsTableAvailable()) {
+        return response()->json(['message' => 'Notifications unavailable'], 503);
     }
+ 
+    $user = Auth::user();
+    if ($notification->user_id !== $user->id) {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+ 
+    // If the table has an archived_at column, use it; otherwise soft-delete
+    if (\Illuminate\Support\Facades\Schema::hasColumn('notifications', 'archived_at')) {
+        $notification->update(['archived_at' => now()]);
+    } else {
+        // Fallback: just mark as read so it stops showing as unread
+        $notification->update(['is_read' => true]);
+    }
+ 
+    return response()->json(['message' => 'Notification archived']);
+}
+
 
     public function deleteNotification(Notification $notification): JsonResponse
     {
@@ -665,90 +715,132 @@ class TenantController extends Controller
 
     // Digital Contracts Management
     public function getDigitalContracts(): JsonResponse
-    {
-        $user = Auth::user();
-        
-        $contracts = DigitalContract::with(['property'])
-            ->whereHas('tenant', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->whereHas('tenant.user', function ($query) use ($user) {
-                $query->whereHas('applications', function ($subQuery) {
-                    $subQuery->where('status', 'approved')
-                              ->where('property_id', \DB::raw('digital_contracts.property_id'));
-                });
-            })
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return response()->json($contracts);
+{
+    $user = Auth::user();
+ 
+    // Resolve all Tenant records that belong to this user
+    $tenantIds = Tenant::where('user_id', $user->id)->pluck('id');
+ 
+    if ($tenantIds->isEmpty()) {
+        return response()->json(['data' => []]);
     }
+ 
+    $contracts = DigitalContract::with(['property'])
+        ->whereIn('tenant_id', $tenantIds)
+        // Hide drafts — those are landlord-internal and not yet sent to the tenant
+        ->where('status', '!=', 'draft')
+        ->orderBy('created_at', 'desc')
+        ->get();
+ 
+    return response()->json(['data' => $contracts]);
+}
+ 
 
-    public function downloadDigitalContract($contractId): JsonResponse
-    {
-        $user = Auth::user();
-        
-        $contract = DigitalContract::with(['tenant', 'property'])
-            ->whereHas('tenant', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->findOrFail($contractId);
-
-        if (!$contract->file_path) {
-            return response()->json(['message' => 'Contract file not found'], 404);
-        }
-
-        $filePath = storage_path('app/' . $contract->file_path);
-        if (!file_exists($filePath)) {
-            return response()->json(['message' => 'File not found'], 404);
-        }
-
-        return response()->download($filePath, $contract->file_name);
+public function downloadDigitalContract($contractId): \Symfony\Component\HttpFoundation\BinaryFileResponse|JsonResponse
+{
+    $user = Auth::user();
+ 
+    $tenantIds = Tenant::where('user_id', $user->id)->pluck('id');
+ 
+    $contract = DigitalContract::whereIn('tenant_id', $tenantIds)
+        ->where('id', $contractId)
+        ->first();
+ 
+    if (! $contract) {
+        return response()->json(['message' => 'Contract not found'], 404);
     }
-
+ 
+    // Prefer file_url (remote / stored path) over legacy file_path
+    $storedPath = $contract->file_url ?? $contract->file_path ?? null;
+ 
+    if (! $storedPath) {
+        return response()->json(['message' => 'No file attached to this contract'], 404);
+    }
+ 
+    // Resolve absolute path via the public storage disk
+    $absolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($storedPath);
+ 
+    if (! file_exists($absolutePath)) {
+        return response()->json(['message' => 'File not found on disk'], 404);
+    }
+ 
+    $fileName = $contract->file_name ?? basename($storedPath);
+ 
+    return response()->download($absolutePath, $fileName);
+}
     public function submitDigitalContract(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'contract_id' => 'required|exists:digital_contracts,id',
-            'fields' => 'required|array',
-            'signature' => 'required|string',
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors'  => $validator->errors()
-            ], 422);
-        }
-        
-        $user = Auth::user();
-        
-        $contract = DigitalContract::with(['tenant', 'property'])
-            ->whereHas('tenant', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
-            ->findOrFail($request->contract_id);
-
-        $contract->update([
-            'fields' => $request->fields,
-            'tenant_signature' => $request->signature,
-            'status' => 'pending',
-            'signed_at' => now(),
-        ]);
-
-        // Create notification for landlord
-        Notification::create([
-            'user_id' => $contract->property->owner_id,
-            'title' => 'Contract Signed',
-            'message' => "Tenant has signed the contract for {$contract->property->title}",
-            'type' => 'contract',
-            'data' => json_encode(['contract_id' => $contract->id]),
-            'read' => false,
-        ]);
-
+{
+    $validator = Validator::make($request->all(), [
+        'contract_id' => 'required|exists:digital_contracts,id',
+        'fields'      => 'required|array',
+        'signature'   => 'required|string',
+    ]);
+ 
+    if ($validator->fails()) {
         return response()->json([
-            'message' => 'Contract submitted successfully',
-            'data'    => $contract
-        ]);
+            'message' => 'Validation failed',
+            'errors'  => $validator->errors(),
+        ], 422);
     }
+ 
+    $user      = Auth::user();
+    $tenantIds = Tenant::where('user_id', $user->id)->pluck('id');
+ 
+    // Scope to this tenant so they can't sign contracts belonging to others
+    $contract = DigitalContract::with(['property'])
+        ->whereIn('tenant_id', $tenantIds)
+        ->where('id', $request->contract_id)
+        ->first();
+ 
+    if (! $contract) {
+        return response()->json(['message' => 'Contract not found'], 404);
+    }
+ 
+    if ($contract->status !== 'pending_signature') {
+        return response()->json([
+            'message' => 'This contract is not awaiting a signature (status: ' . $contract->status . ')',
+        ], 422);
+    }
+ 
+    // Merge tenant-supplied values into the existing field definitions
+    // so the landlord's labels, types, and required flags are preserved.
+    $tenantValues   = $request->fields;                       // ['field_id' => 'value', ...]
+    $existingFields = is_array($contract->fields) ? $contract->fields : [];
+ 
+    $mergedFields = array_map(function ($field) use ($tenantValues) {
+        if (isset($tenantValues[$field['id']])) {
+            $field['tenant_value'] = $tenantValues[$field['id']];
+        }
+        return $field;
+    }, $existingFields);
+ 
+    $contract->update([
+        'fields'           => $mergedFields,
+        'tenant_signature' => $request->signature,
+        'status'           => 'pending_review',   // ← was 'pending', now matches frontend
+        'signed_at'        => now(),
+    ]);
+ 
+    // Notify the landlord — best-effort, skip if notifications table is missing
+    try {
+        Notification::create([
+    'user_id' => $contract->property->owner_id,
+    'title'   => 'Contract Signed',
+    'message' => "Tenant has signed the contract for {$contract->property->title}.",
+    'type'    => 'contract',
+    'data'    => json_encode(['contract_id' => $contract->id]),
+    'is_read' => false,
+]);
+
+    } 
+    catch (\Exception $e) {
+        \Log::warning('Could not create contract-signed notification: ' . $e->getMessage());
+    }
+ 
+    return response()->json([
+        'message' => 'Contract submitted successfully',
+        'data'    => $contract->fresh(['property']),
+    ]);
+}
+
 }

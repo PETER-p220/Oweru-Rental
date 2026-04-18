@@ -295,13 +295,14 @@ class OwnerController extends Controller
 
         // Send in-app notification to the tenant (best-effort — skip if table missing)
         try {
-            \App\Models\Notification::create([
-                'user_id'  => $tenant->user_id,
-                'title'    => 'Application Approved!',
-                'message'  => "Your rental application for {$application->property->title} has been approved. Please check your application status for next steps.",
-                'type'     => 'application_approved',
-                'is_read'  => false,
-            ]);
+            Notification::create([
+    'user_id' => $tenant->user_id,
+    'title'   => 'Application Approved!',
+    'message' => "Your rental application for {$application->property->title} has been approved.",
+    'type'    => 'application_approved',
+    'is_read' => false,         // ← was 'is_read' in some places, 'read' in others
+]);
+
         } catch (\Exception $e) {
             \Log::warning('Could not create approval notification: ' . $e->getMessage());
         }
@@ -987,14 +988,15 @@ class OwnerController extends Controller
         ]);
 
         // Create notification for tenant
-        Notification::create([
-            'user_id' => $tenant->user_id,
-            'title' => 'New Contract Available',
-            'message' => "A new contract '{$request->title}' has been created for your property at {$property->title}",
-            'type' => 'contract',
-            'data' => json_encode(['contract_id' => $contract->id]),
-            'read' => false,
-        ]);
+       Notification::create([
+    'user_id' => $tenant->user_id,
+    'title'   => 'New Contract Available',
+    'message' => "A new contract '{$request->title}' has been created for {$property->title}.",
+    'type'    => 'contract',
+    'data'    => json_encode(['contract_id' => $contract->id]),
+    'is_read' => false,       
+]);
+
         
         return response()->json([
             'message' => 'Contract created successfully',
