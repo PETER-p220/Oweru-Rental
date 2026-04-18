@@ -148,7 +148,13 @@ const DigitalContractPage = () => {
         file_url: c.file_url || c.file_path || undefined,
       }));
 
-      setContracts(normalised.filter(isVisible));
+      console.log('[Tenant DigitalContracts] Normalised contracts:', normalised);
+      console.log('[Tenant DigitalContracts] Contract statuses:', normalised.map(c => ({ id: c.id, title: c.title, status: c.status })));
+      console.log('[Tenant DigitalContracts] Visible contracts (non-draft):', normalised.filter(isVisible));
+
+      // Temporarily show all contracts for debugging
+      setContracts(normalised);
+      // setContracts(normalised.filter(isVisible));
 
     } catch (err: any) {
       if (err?.response?.status === 503) {
