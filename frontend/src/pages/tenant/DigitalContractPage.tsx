@@ -85,6 +85,8 @@ const DigitalContractPage = () => {
 
       console.log('[Tenant DigitalContracts] API response:', response);
       console.log('[Tenant DigitalContracts] Response status:', response.status);
+      console.log('[Tenant DigitalContracts] Response data type:', typeof response.data);
+      console.log('[Tenant DigitalContracts] Response data:', response.data);
 
       // ── Unwrap logic ──────────────────────────────────────────────────────
       //
@@ -96,23 +98,23 @@ const DigitalContractPage = () => {
       // If backend returns { "data": { "data": [...], "pagination":{} } }:
       //   → response.data = { data: [...] }  (paginated object, unwrap .data)
       //
-      // If backend returns [...] directly:
-      //   → response.data = [...]            (array, use directly)
+      const raw = response.data;
+      console.log('[Tenant DigitalContracts] Raw data:', raw);
 
-      let raw: any[];
+      let rawArray: any[];
       if (Array.isArray(response.data)) {
-        raw = response.data;
+        rawArray = response.data;
       } else if (Array.isArray((response.data as any)?.data)) {
-        raw = (response.data as any).data;
+        rawArray = (response.data as any).data;
       } else {
         console.warn('[DigitalContracts] Unexpected API shape:', response.data);
-        raw = [];
+        rawArray = [];
       }
 
-      console.log('[DigitalContracts] Raw contracts:', raw);
+      console.log('[DigitalContracts] Raw contracts:', rawArray);
 
       // Normalise: parse fields JSON, unify file_url/file_path
-      const normalised: DigitalContract[] = raw.map((c: any) => ({
+      const normalised: DigitalContract[] = rawArray.map((c: any) => ({
         ...c,
         fields:   parseFields(c.fields),
         file_url: c.file_url || c.file_path || undefined,

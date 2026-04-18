@@ -7,56 +7,89 @@ import {
   tableStyle, tableWrapStyle, tdStyle, thStyle,
   mobileTableContainer, mobileCard, mobileCardHeader,
   mobileCardSection, mobileCardLabel, mobileCardValue, mobileCardActions,
-} from './tenantPageStyles';
+} from './landlordPageStyles'; // ← unified to landlord (dark amber) theme
 
-// Works regardless of whether the backend sends is_read (bool) or read_at (timestamp)
-const isUnread = (item: any): boolean => {
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Determines whether a notification has not yet been read.
+ * Handles two backend shapes:
+ *   • { is_read: boolean }
+ *   • { read_at: string | null }
+ */
+const isUnread = (item: Notification): boolean => {
   if (typeof item.is_read === 'boolean') return !item.is_read;
   if (item.read_at !== null && item.read_at !== undefined) return false;
-  return true; // no read info → treat as unread
+  return true;
 };
 
+const getTypeLabel = (type: string | undefined): string =>
+  (type ?? 'system').replace(/_/g, ' ');
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface Notification {
+  id: number;
+  title?: string;
+  message?: string;
+  type?: string;
+  is_read?: boolean;
+  read_at?: string | null;
+  created_at?: string;
+}
+
+interface NotificationStats {
+  total?: number;
+  unread?: number;
+  this_week?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 const Notifications = () => {
-  const [items, setItems]     = useState<any[]>([]);
-  const [stats, setStats]     = useState<any>({});
+  const [items, setItems]     = useState<Notification[]>([]);
+  const [stats, setStats]     = useState<NotificationStats>({});
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [search, setSearch]   = useState('');
+
+  // ── Data fetching ──────────────────────────────────────────────────────────
 
   const load = async () => {
     try {
       setLoading(true);
       setError('');
+
       const [itemsRes, statsRes] = await Promise.all([
         Api.getNotifications(),
         Api.getNotificationStats(),
       ]);
 
-      // Api.request() unwraps one level: response.data = backend's data field.
-      // Backend sends { data: [...], pagination: {} }
-      // So itemsRes.data = { data: [...], pagination: {} }
-      // We need the inner array:
+      // Normalise: backend may return a flat array or { data: [], pagination: {} }
       const raw = itemsRes.data;
-      const arr = Array.isArray(raw)
-        ? raw                                          // flat array response
+      const arr: Notification[] = Array.isArray(raw)
+        ? raw
         : Array.isArray(raw?.data)
-          ? raw.data                                   // paginated { data: [] }
+          ? raw.data
           : [];
 
       setItems(arr);
 
-      // Stats: statsRes.data might be { total, unread, this_week } directly
-      // or nested as { data: { ... } }
-      const s = statsRes.data?.data ?? statsRes.data ?? {};
+      // Stats may arrive as { data: { … } } or directly as { total, unread, … }
+      const s: NotificationStats = statsRes.data?.data ?? statsRes.data ?? {};
       setStats(s);
 
     } catch (err: any) {
-      const msg = err?.response?.data?.message;
-      // 503 just means the table isn't migrated yet — show a soft message
       if (err?.response?.status === 503) {
         setError('Notifications are not yet available. Please check back later.');
       } else {
-        setError(msg || 'Unable to load notifications.');
+        setError(err?.response?.data?.message || 'Unable to load notifications.');
       }
     } finally {
       setLoading(false);
@@ -65,30 +98,23 @@ const Notifications = () => {
 
   useEffect(() => { load(); }, []);
 
+  // ── Derived state ──────────────────────────────────────────────────────────
+
   const filtered = useMemo(() =>
-    items.filter((item) =>
-      `${item.title ?? ''} ${item.message ?? ''}`.toLowerCase().includes(search.toLowerCase())
-    ), [items, search]);
+    items.filter(({ title = '', message = '' }) =>
+      `${title} ${message}`.toLowerCase().includes(search.toLowerCase())
+    ),
+    [items, search],
+  );
 
-  const handleMarkRead = async (id: number) => {
-    try { await Api.markNotificationAsRead(id); load(); }
-    catch { /* silently ignore */ }
-  };
+  // ── Actions ────────────────────────────────────────────────────────────────
 
-  const handleMarkAllRead = async () => {
-    try { await Api.markAllNotificationsAsRead(); load(); }
-    catch { /* silently ignore */ }
-  };
+  const handleMarkRead    = async (id: number) => { try { await Api.markNotificationAsRead(id);    load(); } catch { /* non-critical */ } };
+  const handleMarkAllRead = async ()            => { try { await Api.markAllNotificationsAsRead(); load(); } catch { /* non-critical */ } };
+  const handleArchive     = async (id: number) => { try { await Api.archiveNotification(id);       load(); } catch { /* non-critical */ } };
+  const handleDelete      = async (id: number) => { try { await Api.deleteNotification(id);        load(); } catch { /* non-critical */ } };
 
-  const handleArchive = async (id: number) => {
-    try { await Api.archiveNotification(id); load(); }
-    catch { /* silently ignore */ }
-  };
-
-  const handleDelete = async (id: number) => {
-    try { await Api.deleteNotification(id); load(); }
-    catch { /* silently ignore */ }
-  };
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ ...pageStyle, padding: '0' }}>
@@ -97,7 +123,7 @@ const Notifications = () => {
       <section style={{ ...panelStyle, position: 'relative' }}>
         <div style={{
           position: 'absolute', top: 0, left: 32, right: 32, height: '2px',
-          background: `linear-gradient(90deg, transparent, ${palette.gold}, transparent)`,
+          background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)`,
         }} />
 
         <div style={{
@@ -108,12 +134,12 @@ const Notifications = () => {
             <div style={sectionTitleStyle}>
               <span style={{
                 width: 6, height: 6, borderRadius: '50%',
-                background: palette.gold, display: 'inline-block', marginRight: 6,
+                background: palette.amber, display: 'inline-block', marginRight: 6,
               }} />
               Tenant Workspace
             </div>
             <h1 style={headingStyle}>Notifications</h1>
-            <p style={descriptionStyle}>Stay updated on contracts, applications and messages.</p>
+            <p style={descriptionStyle}>Stay updated on contracts, applications, and messages.</p>
           </div>
 
           <button
@@ -124,7 +150,7 @@ const Notifications = () => {
           </button>
         </div>
 
-        {/* Stats + search */}
+        {/* Stats + search row */}
         <div style={{
           display: 'flex', gap: '14px', marginTop: '24px',
           flexWrap: 'wrap', alignItems: 'center',
@@ -136,21 +162,21 @@ const Notifications = () => {
           ].map(({ label, value, accent }) => (
             <div key={label} style={{
               padding: '10px 18px', borderRadius: '10px',
-              background: accent ? 'rgba(200,145,40,0.10)' : 'rgba(15,23,42,0.04)',
+              background: accent ? 'rgba(200,145,40,0.10)' : 'rgba(255,255,255,0.03)',
               border: accent
                 ? '1px solid rgba(200,145,40,0.28)'
-                : `1px solid ${palette.gray200}`,
+                : '1px solid rgba(255,255,255,0.08)',
               display: 'flex', gap: '10px', alignItems: 'center',
             }}>
               <span style={{
                 fontSize: '10px', letterSpacing: '0.15em',
-                textTransform: 'uppercase', color: palette.gray400, fontWeight: 700,
+                textTransform: 'uppercase', color: palette.muted, fontWeight: 700,
               }}>
                 {label}
               </span>
               <span style={{
                 fontSize: '20px', fontWeight: 700,
-                color: accent ? palette.gold : palette.navy900,
+                color: accent ? palette.amber : palette.cream,
               }}>
                 {value}
               </span>
@@ -158,16 +184,13 @@ const Notifications = () => {
           ))}
 
           {/* Search */}
-          <div style={{
-            flex: 1, minWidth: '200px', maxWidth: '320px',
-            position: 'relative' as const,
-          }}>
+          <div style={{ flex: 1, minWidth: '200px', maxWidth: '320px', position: 'relative' }}>
             <Search size={14} style={{
               position: 'absolute', left: 12, top: '50%',
-              transform: 'translateY(-50%)', color: palette.gray400,
+              transform: 'translateY(-50%)', color: palette.muted,
             }} />
             <input
-              style={{ ...inputStyle, paddingLeft: '36px' }}
+              style={{ ...inputStyle, paddingLeft: '36px', width: '100%' }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search notifications…"
@@ -176,13 +199,14 @@ const Notifications = () => {
         </div>
       </section>
 
-      {/* ── List ── */}
-      <section style={{ ...panelStyle }}>
+      {/* ── Notifications list ── */}
+      <section style={panelStyle}>
+
         {error && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px',
-            color: '#dc2626', background: 'rgba(220,38,38,0.06)',
-            border: '1px solid rgba(220,38,38,0.18)',
+            color: 'var(--error)', background: 'var(--error-bg)',
+            border: '1px solid var(--error-border)',
             borderRadius: '10px', padding: '14px 18px',
             marginBottom: '20px', fontSize: '14px',
           }}>
@@ -190,7 +214,7 @@ const Notifications = () => {
           </div>
         )}
 
-        {/* Desktop table */}
+        {/* ── Desktop table ── */}
         <div style={tableWrapStyle}>
           <table style={tableStyle}>
             <thead>
@@ -201,82 +225,98 @@ const Notifications = () => {
               </tr>
             </thead>
             <tbody>
+
               {loading ? (
                 <tr>
-                  <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: palette.gray400 }}>
+                  <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: palette.muted }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                       <div style={{
                         width: 16, height: 16,
-                        border: `2px solid ${palette.gold}`, borderTopColor: 'transparent',
+                        border: `2px solid ${palette.amber}`, borderTopColor: 'transparent',
                         borderRadius: '50%', animation: 'spin 0.8s linear infinite',
                       }} />
                       Loading…
                     </div>
                   </td>
                 </tr>
+
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: palette.gray400 }}>
+                  <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: palette.muted }}>
                     <Bell size={32} style={{ opacity: 0.25, margin: '0 auto 10px', display: 'block' }} />
-                    <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 600, color: palette.cream, marginBottom: '4px' }}>
                       No notifications yet
                     </div>
                     <div style={{ fontSize: '13px', opacity: 0.7 }}>
-                      You'll be notified about contracts, applications and messages here.
+                      You'll be notified about contracts, applications, and messages here.
                     </div>
                   </td>
                 </tr>
+
               ) : filtered.map((item) => {
                 const unread = isUnread(item);
                 return (
                   <tr
                     key={item.id}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,145,40,0.04)')}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
+                    {/* Title + message */}
                     <td style={tdStyle}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                         {unread && (
                           <div style={{
                             width: 7, height: 7, borderRadius: '50%',
-                            background: palette.gold, flexShrink: 0, marginTop: 6,
+                            background: palette.amber, flexShrink: 0, marginTop: 6,
                           }} />
                         )}
                         <div>
-                          <div style={{ fontWeight: unread ? 600 : 400, color: palette.navy900 }}>
+                          <div style={{ fontWeight: unread ? 600 : 400, color: palette.cream }}>
                             {item.title || 'Notification'}
                           </div>
-                          <div style={{ color: palette.gray500, fontSize: '13px', marginTop: '3px' }}>
+                          <div style={{ color: palette.muted, fontSize: '13px', marginTop: '3px' }}>
                             {item.message}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td style={{ ...tdStyle, color: palette.gray500, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      {item.type || 'system'}
+
+                    {/* Type */}
+                    <td style={{
+                      ...tdStyle,
+                      color: palette.muted, fontSize: '12px',
+                      textTransform: 'uppercase', letterSpacing: '0.08em',
+                    }}>
+                      {getTypeLabel(item.type)}
                     </td>
-                    <td style={{ ...tdStyle, color: palette.gray500, fontSize: '13px' }}>
+
+                    {/* Date */}
+                    <td style={{ ...tdStyle, color: palette.muted, fontSize: '13px' }}>
                       {formatDate(item.created_at)}
                     </td>
+
+                    {/* Actions */}
                     <td style={tdStyle}>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         {unread && (
                           <button
-                            style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: '12px' }}
+                            style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
                             onClick={() => handleMarkRead(item.id)}
                           >
                             <CheckCheck size={11} /> Read
                           </button>
                         )}
                         <button
-                          style={{ ...buttonStyle('ghost'), padding: '5px 10px', fontSize: '12px' }}
+                          style={{ ...buttonStyle('ghost'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
                           onClick={() => handleArchive(item.id)}
+                          title="Archive"
                         >
                           <Archive size={11} />
                         </button>
                         <button
-                          style={{ ...buttonStyle('danger'), padding: '5px 10px', fontSize: '12px' }}
+                          style={{ ...buttonStyle('danger'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
                           onClick={() => handleDelete(item.id)}
+                          title="Delete"
                         >
                           <Trash2 size={11} />
                         </button>
@@ -289,17 +329,21 @@ const Notifications = () => {
           </table>
         </div>
 
-        {/* Mobile cards */}
+        {/* ── Mobile cards ── */}
         <div style={mobileTableContainer}>
           {loading ? (
-            <div style={mobileCard}><div style={mobileCardValue}>Loading notifications…</div></div>
+            <div style={mobileCard}>
+              <div style={mobileCardValue}>Loading notifications…</div>
+            </div>
+
           ) : filtered.length === 0 ? (
             <div style={mobileCard}>
-              <div style={{ textAlign: 'center', padding: '20px 0', color: palette.gray400 }}>
+              <div style={{ textAlign: 'center', padding: '20px 0', color: palette.muted }}>
                 <Bell size={28} style={{ opacity: 0.25, margin: '0 auto 8px', display: 'block' }} />
                 <div style={mobileCardValue}>No notifications yet</div>
               </div>
             </div>
+
           ) : filtered.map((item) => {
             const unread = isUnread(item);
             return (
@@ -310,25 +354,25 @@ const Notifications = () => {
                       {unread && (
                         <div style={{
                           width: 8, height: 8, borderRadius: '50%',
-                          background: palette.gold, flexShrink: 0, marginTop: 4,
+                          background: palette.amber, flexShrink: 0, marginTop: 4,
                         }} />
                       )}
                       <div>
-                        <div style={{ fontWeight: unread ? 600 : 400, fontSize: '15px', color: palette.navy900 }}>
+                        <div style={{ fontWeight: unread ? 600 : 400, fontSize: '15px', color: palette.cream }}>
                           {item.title || 'Notification'}
                         </div>
-                        <div style={{ color: palette.gray500, fontSize: '13px' }}>{item.message}</div>
+                        <div style={{ color: palette.muted, fontSize: '13px' }}>{item.message}</div>
                       </div>
                     </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: palette.gray400, whiteSpace: 'nowrap' as const }}>
+                  <div style={{ fontSize: '11px', color: palette.muted, whiteSpace: 'nowrap' }}>
                     {formatDate(item.created_at)}
                   </div>
                 </div>
 
                 <div style={mobileCardSection}>
                   <div style={mobileCardLabel}>Type</div>
-                  <div style={mobileCardValue}>{item.type || 'system'}</div>
+                  <div style={mobileCardValue}>{getTypeLabel(item.type)}</div>
                 </div>
 
                 <div style={mobileCardActions}>
@@ -350,7 +394,7 @@ const Notifications = () => {
                     style={{ ...buttonStyle('danger'), flex: 1, padding: '8px 12px', fontSize: '13px' }}
                     onClick={() => handleDelete(item.id)}
                   >
-                    <Trash2 size={12} />
+                    <Trash2 size={12} /> Delete
                   </button>
                 </div>
               </div>

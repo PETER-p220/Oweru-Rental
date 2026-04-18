@@ -727,8 +727,8 @@ class TenantController extends Controller
  
     $contracts = DigitalContract::with(['property'])
         ->whereIn('tenant_id', $tenantIds)
-        // Hide drafts — those are landlord-internal and not yet sent to the tenant
-        ->where('status', '!=', 'draft')
+        // Temporarily show all contracts for debugging
+        // ->where('status', '!=', 'draft')
         ->orderBy('created_at', 'desc')
         ->get();
  
