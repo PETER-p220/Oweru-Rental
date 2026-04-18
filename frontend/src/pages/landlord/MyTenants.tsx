@@ -31,16 +31,32 @@ interface TenantItem {
     phone?: string;
   };
   property?: {
+    id?: number;
     title?: string;
     location?: string;
+    rent?: number | string;
+    bedrooms?: number;
+    bathrooms?: number;
   };
   contract?: {
+    id?: number;
     status?: string;
     start_date?: string;
     end_date?: string;
     rent_amount?: number | string;
   };
+  digital_contracts?: Array<{
+    id: number;
+    title: string;
+    status: string;
+    created_at: string;
+  }>;
   application_id?: number;
+  application?: {
+    id: number;
+    status: string;
+    created_at: string;
+  };
 }
 
 const MyTenants = () => {
@@ -312,28 +328,71 @@ const MyTenants = () => {
                     </td>
 
                     <td style={tdStyle}>
-                      <div>{tenant.property?.title || 'Untitled property'}</div>
+                      <div style={{ fontWeight: 600 }}>
+                        {tenant.property?.title || 'Untitled property'}
+                      </div>
                       <div style={{ color: 'var(--text-secondary)', marginTop: '4px', fontSize: '13px' }}>
                         {tenant.property?.location || 'No location'}
                       </div>
+                      <div style={{ color: 'var(--accent-color)', marginTop: '4px', fontSize: '13px', fontWeight: 600 }}>
+                        {formatCurrency(tenant.property?.rent || tenant.contract?.rent_amount)}
+                      </div>
+                      {(tenant.property?.bedrooms || tenant.property?.bathrooms) && (
+                        <div style={{ color: 'var(--text-secondary)', marginTop: '2px', fontSize: '12px' }}>
+                          {tenant.property?.bedrooms && `${tenant.property.bedrooms} bed`}
+                          {tenant.property?.bedrooms && tenant.property?.bathrooms && ' · '}
+                          {tenant.property?.bathrooms && `${tenant.property.bathrooms} bath`}
+                        </div>
+                      )}
                     </td>
 
                     <td style={tdStyle}>
-                      <div style={{ fontSize: '13px' }}>
-                        {formatDate(tenant.contract?.start_date)} → {formatDate(tenant.contract?.end_date)}
-                      </div>
+                      {tenant.contract?.start_date && tenant.contract?.end_date ? (
+                        <div style={{ fontSize: '13px' }}>
+                          {formatDate(tenant.contract.start_date)} &rarr; {formatDate(tenant.contract.end_date)}
+                        </div>
+                      ) : tenant.digital_contracts && tenant.digital_contracts.length > 0 ? (
+                        <div style={{ fontSize: '13px' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--accent-color)' }}>
+                            Digital Contract
+                          </div>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                            {tenant.digital_contracts[0].status}
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          No active contract
+                        </div>
+                      )}
                     </td>
 
                     <td style={tdStyle}>
                       <div style={{ color: 'var(--accent-color)', fontWeight: 600 }}>
-                        {formatCurrency(tenant.contract?.rent_amount)}
+                        {formatCurrency(tenant.property?.rent || tenant.contract?.rent_amount || 0)}
                       </div>
+                      {tenant.property?.rent && tenant.contract?.rent_amount && 
+                       Number(tenant.property.rent) !== Number(tenant.contract.rent_amount) && (
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+                          Contract: {formatCurrency(tenant.contract.rent_amount)}
+                        </div>
+                      )}
                     </td>
 
                     <td style={tdStyle}>
-                      <span style={statusPillStyle(getStatusColor(tenant.contract?.status))}>
-                        {tenant.contract?.status || 'unknown'}
-                      </span>
+                      {tenant.digital_contracts && tenant.digital_contracts.length > 0 ? (
+                        <span style={statusPillStyle(getStatusColor(tenant.digital_contracts[0].status))}>
+                          {tenant.digital_contracts[0].status.replace('_', ' ')}
+                        </span>
+                      ) : tenant.contract?.status ? (
+                        <span style={statusPillStyle(getStatusColor(tenant.contract.status))}>
+                          {tenant.contract.status}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          No contract
+                        </span>
+                      )}
                     </td>
 
                     <td style={tdStyle}>
@@ -347,10 +406,18 @@ const MyTenants = () => {
                             fontWeight: 600,
                           }}
                         >
-                          View Application (ID: {tenant.application_id})
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <div>View Application</div>
+                            <div style={{ fontSize: '10px', opacity: 0.8 }}>
+                              ID: {tenant.application_id} 
+                              {tenant.application?.status && ` · ${tenant.application.status}`}
+                            </div>
+                          </div>
                         </Link>
                       ) : (
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>—</span>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          No application
+                        </span>
                       )}
                     </td>
                   </tr>

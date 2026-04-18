@@ -355,7 +355,7 @@ class OwnerController extends Controller
         $user = Auth::user();
         \Log::info('User ID: ' . $user->id . ' (Owner ID)');
         
-        $tenants = Tenant::with(['user', 'property', 'contract'])
+        $tenants = Tenant::with(['user', 'property', 'contract', 'digitalContracts', 'application'])
             ->whereHas('property', function ($query) use ($user) {
                 $query->where('owner_id', $user->id);
             })
