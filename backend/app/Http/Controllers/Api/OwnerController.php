@@ -876,10 +876,7 @@ class OwnerController extends Controller
         
         $user = Auth::user();
         
-        $contracts = DigitalContract::with(['tenant', 'property'])
-            ->whereHas('tenant', function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })
+        $contracts = DigitalContract::with(['tenant.user', 'property'])
             ->whereHas('property', function ($query) use ($user) {
                 $query->where('owner_id', $user->id);
             })

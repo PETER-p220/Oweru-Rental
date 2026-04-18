@@ -34,7 +34,7 @@ interface TenantItem {
     id?: number;
     title?: string;
     location?: string;
-    rent?: number | string;
+    price?: number | string;
     bedrooms?: number;
     bathrooms?: number;
   };
@@ -335,7 +335,7 @@ const MyTenants = () => {
                         {tenant.property?.location || 'No location'}
                       </div>
                       <div style={{ color: 'var(--accent-color)', marginTop: '4px', fontSize: '13px', fontWeight: 600 }}>
-                        {formatCurrency(tenant.property?.rent || tenant.contract?.rent_amount)}
+                        {formatCurrency(tenant.property?.price || tenant.contract?.rent_amount)}
                       </div>
                       {(tenant.property?.bedrooms || tenant.property?.bathrooms) && (
                         <div style={{ color: 'var(--text-secondary)', marginTop: '2px', fontSize: '12px' }}>
@@ -345,11 +345,13 @@ const MyTenants = () => {
                         </div>
                       )}
                     </td>
-
                     <td style={tdStyle}>
                       {tenant.contract?.start_date && tenant.contract?.end_date ? (
                         <div style={{ fontSize: '13px' }}>
-                          {formatDate(tenant.contract.start_date)} &rarr; {formatDate(tenant.contract.end_date)}
+                          <div>{formatDate(tenant.contract.start_date)} &rarr; {formatDate(tenant.contract.end_date)}</div>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+                            Traditional Contract
+                          </div>
                         </div>
                       ) : tenant.digital_contracts && tenant.digital_contracts.length > 0 ? (
                         <div style={{ fontSize: '13px' }}>
@@ -357,7 +359,10 @@ const MyTenants = () => {
                             Digital Contract
                           </div>
                           <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                            {tenant.digital_contracts[0].status}
+                            {tenant.digital_contracts[0].status.replace('_', ' ')}
+                          </div>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+                            Created: {formatDate(tenant.digital_contracts[0].created_at)}
                           </div>
                         </div>
                       ) : (
@@ -369,10 +374,10 @@ const MyTenants = () => {
 
                     <td style={tdStyle}>
                       <div style={{ color: 'var(--accent-color)', fontWeight: 600 }}>
-                        {formatCurrency(tenant.property?.rent || tenant.contract?.rent_amount || 0)}
+                        {formatCurrency(tenant.property?.price || tenant.contract?.rent_amount || 0)}
                       </div>
-                      {tenant.property?.rent && tenant.contract?.rent_amount && 
-                       Number(tenant.property.rent) !== Number(tenant.contract.rent_amount) && (
+                      {tenant.property?.price && tenant.contract?.rent_amount && 
+                       Number(tenant.property.price) !== Number(tenant.contract.rent_amount) && (
                         <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
                           Contract: {formatCurrency(tenant.contract.rent_amount)}
                         </div>
