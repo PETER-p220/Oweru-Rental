@@ -160,10 +160,9 @@ const DigitalContractPage = () => {
       })));
       console.log('[Tenant DigitalContracts] Visible contracts (non-draft):', normalised.filter(isVisible));
 
-      // Temporarily show all contracts for debugging
-      console.log('[Tenant DigitalContracts] Setting contracts state to:', normalised);
-      setContracts(normalised);
-      // setContracts(normalised.filter(isVisible));
+      const visibleContracts = normalised.filter(isVisible);
+      console.log('[Tenant DigitalContracts] Setting contracts state to:', visibleContracts);
+      setContracts(visibleContracts);
 
     } catch (err: any) {
       if (err?.response?.status === 503) {
@@ -446,9 +445,9 @@ const DigitalContractPage = () => {
         ) : contracts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: palette.muted }}>
             <FileText size={48} style={{ opacity: 0.25, margin: '0 auto 12px', display: 'block' }} />
-            <div style={{ fontSize: 16, fontWeight: 600, color: palette.cream }}>No contracts yet</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: palette.cream }}>No active contracts</div>
             <div style={{ fontSize: 13, opacity: 0.7, marginTop: 4 }}>
-              Your landlord will send a contract here once your application is approved.
+              Your landlord has not yet sent you any contracts to sign. Contracts will appear here once they're ready for your review.
             </div>
           </div>
 
