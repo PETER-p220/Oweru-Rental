@@ -126,42 +126,20 @@ const DigitalContractPage = () => {
       setError('');
 
       const response = await Api.getTenantDigitalContracts();
-      console.log('[Tenant DigitalContracts] API response:', response);
       const raw = response.data;
-      console.log('[Tenant DigitalContracts] Raw data:', raw);
-
-      // Api.request() already unwraps one level, so response.data should be the array
-      // But handle both array and paginated structures just in case
       const rawArray: any[] = Array.isArray(raw)
         ? raw
         : Array.isArray((raw as any)?.data)
           ? (raw as any).data
           : [];
 
-      console.log('[Tenant DigitalContracts] Raw array length:', rawArray.length);
-      console.log('[Tenant DigitalContracts] Raw array:', rawArray);
-
       const normalised: DigitalContract[] = rawArray.map((c: any) => ({
         ...c,
         fields:   parseFields(c.fields),
-        // Unify file_url / file_path so the rest of the component only checks file_url
         file_url: c.file_url || c.file_path || undefined,
       }));
 
-      console.log('[Tenant DigitalContracts] Normalised contracts:', normalised);
-      console.log('[Tenant DigitalContracts] Contract statuses:', normalised.map(c => ({ 
-        id: c.id, 
-        title: c.title, 
-        status: c.status,
-        file_name: c.file_name,
-        file_url: c.file_url,
-        file_path: c.file_path,
-        has_file: hasFile(c)
-      })));
-      console.log('[Tenant DigitalContracts] Visible contracts (non-draft):', normalised.filter(isVisible));
-
       const visibleContracts = normalised.filter(isVisible);
-      console.log('[Tenant DigitalContracts] Setting contracts state to:', visibleContracts);
       setContracts(visibleContracts);
 
     } catch (err: any) {
