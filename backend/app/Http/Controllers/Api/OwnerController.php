@@ -936,6 +936,40 @@ class OwnerController extends Controller
         ]);
     }
     
+    public function sendContractToTenant(Request $request, $contractId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'contract_id' => 'required|exists:digital_contracts,id',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Invalid contract ID'], 422);
+        }
+        
+        $user = Auth::user();
+        
+        $contract = DigitalContract::where('id', $contractId)
+            ->whereHas('property', function ($query) use ($user) {
+                $query->where('owner_id', $user->id);
+            })
+            ->first();
+            
+        if (!$contract) {
+            return response()->json(['message' => 'Contract not found'], 404);
+        }
+        
+        if ($contract->status !== 'draft') {
+            return response()->json(['message' => 'Only draft contracts can be sent to tenants'], 422);
+        }
+        
+        $contract->update(['status' => 'pending_signature']);
+        
+        return response()->json([
+            'message' => 'Contract sent to tenant successfully',
+            'data'    => $contract
+        ]);
+    }
+    
     public function createDigitalContract(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [

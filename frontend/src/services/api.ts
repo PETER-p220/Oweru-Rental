@@ -832,7 +832,7 @@ class Api {
   // Digital Contract APIs for Landlords
   static async createDigitalContract(data: any) { return this.request<any>('owner/digital-contracts', { method: 'POST', body: JSON.stringify(data) }); }
   static async uploadContractFile(formData: FormData) { return this.request<any>('owner/digital-contracts/upload-file', { method: 'POST', body: formData, headers: {} }); }
-  static async sendContractToTenant(contractId: number) { return this.request<any>(`owner/digital-contracts/${contractId}/send`, { method: 'POST' }); }
+  static async sendContractToTenant(contractId: number) { return this.request<any>(`owner/digital-contracts/${contractId}/send`, { method: 'PUT' }); }
   static async downloadLandlordDigitalContract(id: number) { return this.request(`owner/digital-contracts/${id}/download`); }
 
   static async sendOwnerMessage(data: {

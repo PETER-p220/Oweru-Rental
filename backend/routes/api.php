@@ -199,6 +199,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/owner/digital-contracts', [OwnerController::class, 'createDigitalContract']);
         Route::post('/owner/digital-contracts/upload-file', [OwnerController::class, 'uploadContractFile']);
         Route::post('/owner/digital-contracts/generate', [OwnerController::class, 'generateDigitalContract']);
+        Route::put('/owner/digital-contracts/{contract}/send', [OwnerController::class, 'sendContractToTenant']);
 
         // Rent Collection
         Route::get('/owner/rent-collection',       [OwnerController::class, 'getRentCollection']);
