@@ -153,6 +153,7 @@ const DigitalContractPage = () => {
       console.log('[Tenant DigitalContracts] Visible contracts (non-draft):', normalised.filter(isVisible));
 
       // Temporarily show all contracts for debugging
+      console.log('[Tenant DigitalContracts] Setting contracts state to:', normalised);
       setContracts(normalised);
       // setContracts(normalised.filter(isVisible));
 
@@ -195,6 +196,7 @@ const DigitalContractPage = () => {
 
   const downloadContract = async (contractId: number, fileName: string) => {
     try {
+      console.log('[Tenant DigitalContracts] Downloading contract:', contractId, fileName);
       const res  = await Api.downloadDigitalContract(contractId);
       const blob = new Blob([res.data as BlobPart], { type: 'application/pdf' });
       const url  = window.URL.createObjectURL(blob);
@@ -204,7 +206,12 @@ const DigitalContractPage = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to download contract.');
+      console.error('[Tenant DigitalContracts] Download error:', err);
+      if (err?.response?.status === 404) {
+        setError('Contract file not found. The landlord may not have uploaded the file yet.');
+      } else {
+        setError(err?.response?.data?.message || 'Failed to download contract.');
+      }
     }
   };
 
