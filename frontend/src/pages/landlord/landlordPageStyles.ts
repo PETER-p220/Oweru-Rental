@@ -253,8 +253,70 @@ export const formatCurrency = (amount?: number | string | null): string => {
 };
 
 export const formatDate = (value?: string | null): string => {
-  if (!value) return '—';
+  if (!value) return '---';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 };
+
+// ---------------------------------------------------------------------------
+// Mobile responsive styles
+// ---------------------------------------------------------------------------
+
+export const mobileTableContainer: CSSProperties = { display: 'none' };
+
+export const mobileCard: CSSProperties = {
+  background: palette.navy800,
+  border: `1px solid ${palette.borderSoft}`,
+  borderRadius: '12px',
+  padding: '16px',
+  marginBottom: '12px',
+  boxShadow: '0 1px 4px rgba(15, 23, 42, 0.06)',
+};
+
+export const mobileCardHeader: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'flex-start',
+  marginBottom: '12px',
+  gap: '8px',
+};
+
+export const mobileCardTitle: CSSProperties = {
+  fontSize: '15px',
+  fontWeight: 600,
+  color: palette.cream,
+  margin: 0,
+};
+
+export const mobileCardStatus: CSSProperties = {
+  padding: '3px 9px',
+  borderRadius: '100px',
+  fontSize: '11px',
+  fontWeight: 700,
+  letterSpacing: '0.04em',
+};
+
+export const mobileCardSection: CSSProperties = { marginBottom: '10px' };
+
+export const mobileCardLabel: CSSProperties = {
+  fontSize: '11px',
+  color: palette.gray400,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  marginBottom: '3px',
+};
+
+export const mobileCardValue: CSSProperties = {
+  fontSize: '14px',
+  color: palette.cream,
+};
+
+export const mobileCardActions: CSSProperties = {
+  display: 'flex',
+  gap: '8px',
+  flexWrap: 'wrap',
+};
+
+export const mobileMediaQuery = '@media (max-width: 768px)';

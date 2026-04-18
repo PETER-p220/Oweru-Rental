@@ -7,7 +7,7 @@ import {
   tableStyle, tableWrapStyle, tdStyle, thStyle,
   mobileTableContainer, mobileCard, mobileCardHeader,
   mobileCardSection, mobileCardLabel, mobileCardValue, mobileCardActions,
-} from './landlordPageStyles'; // ← unified to landlord (dark amber) theme
+} from '../landlord/landlordPageStyles'; // ← shared dark amber theme (cross-folder import)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -307,7 +307,7 @@ const Notifications = () => {
                           </button>
                         )}
                         <button
-                          style={{ ...buttonStyle('ghost'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
+                          style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
                           onClick={() => handleArchive(item.id)}
                           title="Archive"
                         >
@@ -385,9 +385,9 @@ const Notifications = () => {
                     </button>
                   )}
                   <button
-                    style={{ ...buttonStyle('ghost'), flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                    style={{ ...buttonStyle('secondary'), flex: 1, padding: '8px 12px', fontSize: '13px' }}
                     onClick={() => handleArchive(item.id)}
-                  >
+                  >                           
                     <Archive size={12} /> Archive
                   </button>
                   <button
