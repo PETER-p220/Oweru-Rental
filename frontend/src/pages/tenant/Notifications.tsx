@@ -19,12 +19,23 @@ const Notifications = () => {
   const load = async () => {
     try {
       setLoading(true);
+      setError('');
       const [itemsRes, statsRes] = await Promise.all([
         Api.getNotifications(), Api.getNotificationStats(),
       ]);
-      setItems(Array.isArray(itemsRes.data) ? itemsRes.data : []);
+      
+      console.log('Notifications response:', itemsRes);
+      console.log('Stats response:', statsRes);
+      
+      const itemsData = itemsRes.data?.data || itemsRes.data || [];
+      setItems(Array.isArray(itemsData) ? itemsData : []);
       setStats(statsRes.data || {});
+      
+      if (itemsRes.status === 503) {
+        setError('Notifications service is temporarily unavailable');
+      }
     } catch (err: any) {
+      console.error('Notification load error:', err);
       setError(err?.response?.data?.message || 'Unable to load notifications.');
     } finally { setLoading(false); }
   };
@@ -145,7 +156,10 @@ const Notifications = () => {
                 <tr>
                   <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: palette.gray400 }}>
                     <Bell size={32} style={{ opacity: 0.25, margin: '0 auto 10px', display: 'block' }} />
-                    No notifications found
+                    <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>No notifications found</div>
+                    <div style={{ fontSize: '13px', opacity: 0.7 }}>
+                      {loading ? 'Loading notifications...' : `Total items: ${items.length}, Filtered: ${filtered.length}`}
+                    </div>
                   </td>
                 </tr>
               ) : filtered.map((item) => (
