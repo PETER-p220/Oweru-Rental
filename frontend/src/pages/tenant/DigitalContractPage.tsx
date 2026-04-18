@@ -126,14 +126,20 @@ const DigitalContractPage = () => {
       setError('');
 
       const response = await Api.getTenantDigitalContracts();
+      console.log('[Tenant DigitalContracts] API response:', response);
       const raw = response.data;
+      console.log('[Tenant DigitalContracts] Raw data:', raw);
 
-      // Api.request() unwraps one level; handle both flat array and paginated shapes
+      // Api.request() already unwraps one level, so response.data should be the array
+      // But handle both array and paginated structures just in case
       const rawArray: any[] = Array.isArray(raw)
         ? raw
         : Array.isArray((raw as any)?.data)
           ? (raw as any).data
           : [];
+
+      console.log('[Tenant DigitalContracts] Raw array length:', rawArray.length);
+      console.log('[Tenant DigitalContracts] Raw array:', rawArray);
 
       const normalised: DigitalContract[] = rawArray.map((c: any) => ({
         ...c,
