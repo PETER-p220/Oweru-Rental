@@ -83,6 +83,9 @@ const DigitalContractPage = () => {
 
       const response = await Api.getTenantDigitalContracts();
 
+      console.log('[Tenant DigitalContracts] API response:', response);
+      console.log('[Tenant DigitalContracts] Response status:', response.status);
+
       // ── Unwrap logic ──────────────────────────────────────────────────────
       //
       // Api.request() does: return { data: data.data ?? data, ... }

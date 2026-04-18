@@ -22,7 +22,7 @@ interface DigitalContract {
   title: string;
   property_id: number;
   tenant_id: number;
-  status: 'draft' | 'pending' | 'signed' | 'rejected';
+  status: 'draft' | 'pending' | 'signed' | 'rejected' | 'pending_signature' | 'pending_review' | 'approved';
   file_url?: string;
   file_name?: string;
   file_type?: string;
@@ -31,6 +31,20 @@ interface DigitalContract {
   tenant_signature?: string;
   created_at?: string;
   updated_at?: string;
+  property?: {
+    id: number;
+    title?: string;
+    location?: string;
+    price?: number;
+  };
+  tenant?: {
+    id: number;
+    user?: {
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+    };
+  };
 }
 
 interface PropertyOption {
@@ -117,12 +131,22 @@ const DigitalContractPage = () => {
       setLoading(true);
 
       const [contractsRes, propertiesRes] = await Promise.all([
-        Api.getOwnerContracts(),
+        Api.getDigitalContracts(),
         Api.getOwnerProperties(),
       ]);
 
-      setContracts(Array.isArray(contractsRes.data) ? contractsRes.data : []);
-      setProperties(Array.isArray(propertiesRes.data) ? propertiesRes.data : []);
+      console.log('[Landlord DigitalContracts] Contracts response:', contractsRes);
+      console.log('[Landlord DigitalContracts] Properties response:', propertiesRes);
+
+      // Handle both direct array and paginated response formats
+      const contractsData = Array.isArray((contractsRes as any).data) 
+        ? (contractsRes as any).data 
+        : Array.isArray((contractsRes as any).data?.data) 
+          ? (contractsRes as any).data.data 
+          : [];
+
+      setContracts(contractsData);
+      setProperties(Array.isArray((propertiesRes as any).data) ? (propertiesRes as any).data : []);
 
       // ── Load tenants: merge active tenants + approved applicants ──────────
       // We collect from both endpoints so the dropdown always contains people
@@ -396,17 +420,17 @@ const DigitalContractPage = () => {
                     </td>
                     <td style={tdStyle}>
                       <div style={{ fontWeight: 600 }}>
-                        {properties.find(p => p.id === contract.property_id)?.title || 'Unknown'}
+                        {contract.property?.title || properties.find(p => p.id === contract.property_id)?.title || 'Unknown'}
                       </div>
                       <div style={{ color: palette.muted, fontSize: '13px', marginTop: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <MapPin size={12} />
-                          {properties.find(p => p.id === contract.property_id)?.location || 'No location'}
+                          {contract.property?.location || properties.find(p => p.id === contract.property_id)?.location || 'No location'}
                         </div>
                       </div>
-                      {properties.find(p => p.id === contract.property_id)?.price && (
+                      {(contract.property?.price || properties.find(p => p.id === contract.property_id)?.price) && (
                         <div style={{ color: palette.amber, fontSize: '13px', fontWeight: 600, marginTop: '2px' }}>
-                          {formatCurrency(properties.find(p => p.id === contract.property_id)?.price)}
+                          {formatCurrency(contract.property?.price || properties.find(p => p.id === contract.property_id)?.price)}
                         </div>
                       )}
                     </td>
