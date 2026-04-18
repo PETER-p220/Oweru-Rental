@@ -42,4 +42,10 @@ class Tenant extends Model
     {
         return $this->hasMany(DigitalContract::class, 'tenant_id');
     }
+
+    public function application(): HasOne
+    {
+        return $this->hasOne(Application::class, 'user_id', 'user_id')
+                    ->where('property_id', $this->property_id);
+    }
 }

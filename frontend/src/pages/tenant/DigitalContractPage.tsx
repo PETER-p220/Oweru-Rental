@@ -106,6 +106,8 @@ const DigitalContractPage = () => {
         raw = [];
       }
 
+      console.log('[DigitalContracts] Raw contracts:', raw);
+
       // Normalise: parse fields JSON, unify file_url/file_path
       const normalised: DigitalContract[] = raw.map((c: any) => ({
         ...c,
@@ -113,7 +115,12 @@ const DigitalContractPage = () => {
         file_url: c.file_url || c.file_path || undefined,
       }));
 
-      setContracts(normalised.filter(isContractVisible));
+      console.log('[DigitalContracts] Normalised contracts:', normalised);
+      
+      const visibleContracts = normalised.filter(isContractVisible);
+      console.log('[DigitalContracts] Visible contracts:', visibleContracts);
+
+      setContracts(visibleContracts);
     } catch (err: any) {
       if (err?.response?.status === 503) {
         // Tables not yet migrated — not a real error, just show empty state

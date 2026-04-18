@@ -371,7 +371,7 @@ const DigitalContractPage = () => {
           <div style={tableWrapStyle}>
             <table style={tableStyle}>
               <thead>
-                <tr>{['Contract', 'Property', 'Tenant', 'Status', 'Actions'].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr>
+                <tr>{['Contract Details', 'Property', 'Tenant', 'Created', 'Status', 'Actions'].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {contracts.map((contract) => (
@@ -383,22 +383,55 @@ const DigitalContractPage = () => {
                       <div style={{ color: palette.muted, fontSize: '13px', marginTop: '4px' }}>
                         {contract.file_name}
                       </div>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px', fontSize: '12px' }}>
+                        <span style={{ color: palette.muted }}>
+                          {contract.file_type?.toUpperCase() || 'PDF'}
+                        </span>
+                        {contract.fields && contract.fields.length > 0 && (
+                          <span style={{ color: palette.amber }}>
+                            {contract.fields.length} fields
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <MapPin size={12} />
+                      <div style={{ fontWeight: 600 }}>
                         {properties.find(p => p.id === contract.property_id)?.title || 'Unknown'}
                       </div>
+                      <div style={{ color: palette.muted, fontSize: '13px', marginTop: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={12} />
+                          {properties.find(p => p.id === contract.property_id)?.location || 'No location'}
+                        </div>
+                      </div>
+                      {properties.find(p => p.id === contract.property_id)?.price && (
+                        <div style={{ color: palette.amber, fontSize: '13px', fontWeight: 600, marginTop: '2px' }}>
+                          {formatCurrency(properties.find(p => p.id === contract.property_id)?.price)}
+                        </div>
+                      )}
                     </td>
                     <td style={tdStyle}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <User size={12} />
-                        {resolveDisplayTenant(contract)}
+                        <div>
+                          <div>{resolveDisplayTenant(contract)}</div>
+                          <div style={{ fontSize: '12px', color: palette.muted, marginTop: '2px' }}>
+                            ID: {contract.tenant_id}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={tdStyle}>
+                      <div style={{ fontSize: '13px' }}>
+                        {formatDate(contract.created_at)}
+                      </div>
+                      <div style={{ fontSize: '11px', color: palette.muted, marginTop: '2px' }}>
+                        {contract.updated_at && contract.updated_at !== contract.created_at ? 'Updated' : 'Created'}
                       </div>
                     </td>
                     <td style={tdStyle}>
                       <span style={statusPillStyle(getStatusColor(contract.status))}>
-                        {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+                        {contract.status.charAt(0).toUpperCase() + contract.status.slice(1).replace('_', ' ')}
                       </span>
                     </td>
                     <td style={tdStyle}>
