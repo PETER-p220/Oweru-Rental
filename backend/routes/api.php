@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Applications
         Route::get('/tenant/applications',  [TenantController::class, 'getApplications']);
         Route::post('/tenant/applications', [TenantController::class, 'createApplication']);
+        Route::put('/tenant/applications/{application}/payment-status', [TenantController::class, 'updateApplicationPaymentStatus']);
 
         // Payment routes (for tenants to make payments)
         Route::post('/payment/selcom/mobile-money', [PaymentController::class, 'initiateMobileMoney']);

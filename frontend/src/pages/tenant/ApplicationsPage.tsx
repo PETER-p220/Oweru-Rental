@@ -109,6 +109,14 @@ const ApplicationsPage = () => {
       });
 
       if (paymentResponse.success && paymentResponse.data?.transaction_id) {
+        // Update application with payment status
+        await Api.updateApplicationPaymentStatus(appId, {
+          payment_status: 'paid',
+          payment_method: 'selcom',
+          transaction_id: paymentResponse.data.transaction_id,
+          amount_paid: totalAmount,
+        });
+
         alert(`${paymentProvider.toUpperCase()} payment initiated! Check your phone for payment prompt. Ref: ${paymentResponse.data.transaction_id}`);
         setPaymentModal(null);
         setPhoneNumber('');

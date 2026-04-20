@@ -734,14 +734,89 @@ class TenantController extends Controller
  
     return response()->json(['data' => $contracts]);
 }
- 
+
+/**
+ * Update application payment status after successful payment
+ * PUT /api/tenant/applications/{application}/payment-status
+ */
+public function updateApplicationPaymentStatus(Request $request, $applicationId)
+{
+    try {
+        $validated = $request->validate([
+            'payment_status' => 'required|string|in:paid,pending,failed',
+            'payment_method' => 'required|string',
+            'transaction_id' => 'required|string',
+            'amount_paid' => 'required|numeric|min:0',
+        ]);
+
+        $user = Auth::user();
+        
+        // Get tenant IDs for this user
+        $tenantIds = Tenant::where('user_id', $user->id)->pluck('id');
+        
+        // Find the application belonging to this tenant
+        $application = \App\Models\Application::whereIn('tenant_id', $tenantIds)
+            ->where('id', $applicationId)
+            ->firstOrFail();
+
+        // Update application payment status
+        $application->update([
+            'payment_status' => $validated['payment_status'],
+            'payment_method' => $validated['payment_method'],
+            'transaction_id' => $validated['transaction_id'],
+            'amount_paid' => $validated['amount_paid'],
+            'paid_at' => $validated['payment_status'] === 'paid' ? now() : null,
+        ]);
+
+        // If payment is successful, update rent_paid status
+        if ($validated['payment_status'] === 'paid') {
+            $application->update(['rent_paid' => true]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Application payment status updated successfully',
+            'data' => $application->fresh()
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'error' => 'VALIDATION_ERROR',
+            'errors' => $e->errors(),
+        ], 422);
+        
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Application not found or access denied',
+        ], 404);
+        
+    } catch (\Exception $e) {
+        \Log::error('Error updating application payment status', [
+            'error' => $e->getMessage(),
+            'application_id' => $applicationId,
+            'user_id' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'An unexpected error occurred while updating payment status',
+        ], 500);
+    }
+}
 
 public function downloadDigitalContract($contractId): \Symfony\Component\HttpFoundation\BinaryFileResponse|JsonResponse
 {
     $user = Auth::user();
  
+    // Resolve all Tenant records that belong to this user
     $tenantIds = Tenant::where('user_id', $user->id)->pluck('id');
  
+    if ($tenantIds->isEmpty()) {
+        return response()->json(['message' => 'No tenant records found'], 404);
+    }
+
     $contract = DigitalContract::whereIn('tenant_id', $tenantIds)
         ->where('id', $contractId)
         ->first();
