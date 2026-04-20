@@ -61,11 +61,16 @@ const StatusBadge = ({ status }: { status?: string }) => {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Parse rent amount from string or number */
+/**
+ * Parse rent amount from string or number.
+ * Strips currency symbols and text, preserving digits and decimal point only.
+ * e.g. "Tsh 50,000/mo" → 50000, 75000 → 75000
+ */
 const parseRent = (price?: number | string): number => {
   if (price == null) return 0;
   if (typeof price === 'number') return price;
-  return parseInt(price.replace(/[^0-9]/g, ''), 10) || 0;
+  const cleaned = price.replace(/[^0-9.]/g, '');
+  return parseFloat(cleaned) || 0;
 };
 
 /** Generate a unique order ID matching the Properties page pattern */
@@ -130,7 +135,7 @@ const ApplicationsPage = () => {
     }
   };
 
-  // ── Pay rent — mirrors Properties.handlePay() exactly ──────────────────────
+  // ── Pay rent ────────────────────────────────────────────────────────────────
   const handlePayRent = async (appId: number) => {
     if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
       setPayResult('error');
@@ -139,32 +144,15 @@ const ApplicationsPage = () => {
     }
 
     const application = applications.find(app => app.id === appId);
-    const rawPrice    = application?.property?.price;
-    const rentAmount  = parseRent(rawPrice);
-    
-    // Debug logging
-    console.log('Rent amount debug:', {
-      applicationId: appId,
-      rawPrice: rawPrice,
-      rawPriceType: typeof rawPrice,
-      parsedRent: rentAmount,
-    });
-    
-    // Temporary fix: If rent amount seems too high (over 1 million), divide by 100
-    // This handles cases where price is stored as cents (e.g., 500000 instead of 5000)
-    let finalRentAmount = rentAmount;
-    if (rentAmount > 1000000) {
-      finalRentAmount = rentAmount / 100;
-      console.log('Rent amount adjusted from', rentAmount, 'to', finalRentAmount);
-    }
-    
-    if (!finalRentAmount) {
+    const rentAmount  = parseRent(application?.property?.price);
+
+    if (!rentAmount) {
       setPayResult('error');
       setPayMessage('Unable to determine rent amount for this application.');
       return;
     }
 
-    // Pull user context exactly as Properties page does
+    // Pull user context
     const userStr  = localStorage.getItem('user');
     const user     = userStr ? JSON.parse(userStr) : null;
     const tenantId = user?.id;
@@ -180,11 +168,11 @@ const ApplicationsPage = () => {
     setPayMessage('');
 
     try {
-      // Step 1 – Oweru USSD push (same service & payload shape as Properties page)
+      // Step 1 – Initiate USSD push
       const paymentResponse = await SelcomService.initiateMobileMoneyPayment({
-        amount:         finalRentAmount,
+        amount:         rentAmount,
         phone_number:   phoneNumber,
-        provider:       paymentProvider,   // 'tigo' | 'mpesa' | 'airtel'
+        provider:       paymentProvider,
         property_id:    application?.property?.id ?? appId,
         tenant_id:      tenantId,
         payment_type:   'rent_payment',
@@ -205,7 +193,7 @@ const ApplicationsPage = () => {
         payment_status: 'paid',
         payment_method: paymentProvider,
         transaction_id: transactionId,
-        amount_paid: finalRentAmount,
+        amount_paid: rentAmount,
       });
 
       setPayResult('success');
@@ -499,7 +487,7 @@ const ApplicationsPage = () => {
       </div>
 
       {/* ══════════════════════════════════════════════
-          PAYMENT MODAL  — mirrors Properties payment modal
+          PAYMENT MODAL
       ══════════════════════════════════════════════ */}
       {paymentModal && activeApp && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
