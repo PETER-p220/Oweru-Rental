@@ -751,11 +751,8 @@ public function updateApplicationPaymentStatus(Request $request, $applicationId)
 
         $user = Auth::user();
         
-        // Get tenant IDs for this user
-        $tenantIds = Tenant::where('user_id', $user->id)->pluck('id');
-        
-        // Find the application belonging to this tenant
-        $application = \App\Models\Application::whereIn('tenant_id', $tenantIds)
+        // Find the application belonging to this user (applications uses user_id not tenant_id)
+        $application = \App\Models\Application::where('user_id', $user->id)
             ->where('id', $applicationId)
             ->firstOrFail();
 
