@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FileCheck, Search, MapPin, AlertCircle, ClipboardList, Clock } from 'lucide-react';
+import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2 } from 'lucide-react';
 import Api from '../../services/api';
-import { formatCurrency, formatDate, getStatusColor } from './tenantPageStyles';
+import { formatCurrency, formatDate } from './tenantPageStyles';
 
 interface ApplicationItem {
   id: number;
   status?: string;
   message?: string;
   created_at?: string;
+  site_visit_paid?: boolean;
+  rent_paid?: boolean;
   property?: { title?: string; location?: string; price?: number | string };
 }
 
@@ -58,10 +60,83 @@ const ApplicationsPage = () => {
   const [search, setSearch]             = useState('');
   const [searchParams]                  = useSearchParams();
   const propertyId                      = searchParams.get('property');
+  const [paymentModal, setPaymentModal] = useState<{ type: 'site_visit' | 'rent'; appId: number } | null>(null);
+  const [paying, setPaying]             = useState(false);
+  const [phoneNumber, setPhoneNumber]   = useState('');
 
   useEffect(() => {
     if (propertyId) handleApplyForProperty(propertyId);
   }, [propertyId]);
+
+  const handlePaySiteVisit = async (appId: number) => {
+    if (!phoneNumber.trim()) {
+      alert('Please enter your phone number');
+      return;
+    }
+    setPaying(true);
+    try {
+      // Call API to initiate site visit payment
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/workflow/site-visit/${appId}/pay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          payment_method: 'selcom',
+        }),
+      });
+      
+      if (!res.ok) throw new Error('Payment failed');
+      
+      alert('Site visit payment initiated! Check your phone for payment prompt.');
+      setPaymentModal(null);
+      setPhoneNumber('');
+      // Refresh applications
+      const appRes = await Api.getTenantApplications();
+      setApplications(Array.isArray(appRes.data) ? appRes.data : []);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to process site visit payment');
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const handlePayRent = async (appId: number) => {
+    if (!phoneNumber.trim()) {
+      alert('Please enter your phone number');
+      return;
+    }
+    setPaying(true);
+    try {
+      // Call API to initiate rent payment
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/workflow/initiate-payment/${appId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          payment_method: 'selcom',
+        }),
+      });
+      
+      if (!res.ok) throw new Error('Payment failed');
+      
+      alert('Rent payment initiated! Check your phone for payment prompt.');
+      setPaymentModal(null);
+      setPhoneNumber('');
+      // Refresh applications
+      const appRes = await Api.getTenantApplications();
+      setApplications(Array.isArray(appRes.data) ? appRes.data : []);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to process rent payment');
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const handleApplyForProperty = async (id: string) => {
     try {
@@ -260,7 +335,7 @@ const ApplicationsPage = () => {
               <table className="ap-table">
                 <thead>
                   <tr>
-                    {['Property', 'Price', 'Status', 'Message', 'Applied'].map(h => <th key={h}>{h}</th>)}
+                    {['Property', 'Price', 'Status', 'Message', 'Applied', 'Action'].map(h => <th key={h}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -289,6 +364,27 @@ const ApplicationsPage = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: B.slate, fontSize: 13, fontWeight: 300 }}>
                           <Clock size={12} /> {formatDate(item.created_at)}
                         </div>
+                      </td>
+                      <td>
+                        {item.status === 'approved' && !item.site_visit_paid ? (
+                          <button
+                            onClick={() => setPaymentModal({ type: 'site_visit', appId: item.id })}
+                            style={{ padding: '6px 12px', background: B.gold, color: B.navy900, border: 'none', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
+                          >
+                            Pay Site Visit
+                          </button>
+                        ) : item.site_visit_paid && !item.rent_paid ? (
+                          <button
+                            onClick={() => setPaymentModal({ type: 'rent', appId: item.id })}
+                            style={{ padding: '6px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
+                          >
+                            Pay Rent
+                          </button>
+                        ) : item.rent_paid ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#10b981', fontSize: 12, fontWeight: 600 }}>
+                            <CheckCircle size={14} /> Paid
+                          </div>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -326,6 +422,27 @@ const ApplicationsPage = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: B.slate, fontSize: 12, fontWeight: 300 }}>
                       <Clock size={11} /> {formatDate(item.created_at)}
                     </div>
+                    <div style={{ borderTop: `1px solid ${B.border}`, paddingTop: 10 }}>
+                      {item.status === 'approved' && !item.site_visit_paid ? (
+                        <button
+                          onClick={() => setPaymentModal({ type: 'site_visit', appId: item.id })}
+                          style={{ width: '100%', padding: '8px 12px', background: B.gold, color: B.navy900, border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
+                        >
+                          Pay Site Visit
+                        </button>
+                      ) : item.site_visit_paid && !item.rent_paid ? (
+                        <button
+                          onClick={() => setPaymentModal({ type: 'rent', appId: item.id })}
+                          style={{ width: '100%', padding: '8px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
+                        >
+                          Pay Rent
+                        </button>
+                      ) : item.rent_paid ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: '#10b981', fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
+                          <CheckCircle size={16} /> Payment Complete
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -333,6 +450,112 @@ const ApplicationsPage = () => {
           </>
         )}
       </div>
+
+      {/* Payment Modal */}
+      {paymentModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }}>
+          <div style={{
+            background: B.navy800, border: `1px solid ${B.border}`,
+            borderRadius: 8, padding: 32, maxWidth: 420, width: '90%',
+            maxHeight: '90vh', overflowY: 'auto',
+          }}>
+            <h3 style={{ fontSize: 20, fontWeight: 700, color: B.cream, marginBottom: 20 }}>
+              {paymentModal.type === 'site_visit' ? 'Pay for Site Visit' : 'Pay Rent'}
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: B.gold, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="e.g., +255 123 456 789"
+                  style={{
+                    width: '100%', padding: '10px 12px', background: B.navy900,
+                    border: `1px solid ${B.border}`, color: B.cream, borderRadius: 4,
+                    fontSize: 14, fontFamily: 'inherit', outline: 'none',
+                  }}
+                  disabled={paying}
+                />
+                <p style={{ fontSize: 12, color: B.slate, marginTop: 6 }}>
+                  Enter your mobile money registered number (Tigo, M-Pesa, Airtel, or Halopesa)
+                </p>
+              </div>
+
+              <div style={{ background: B.navy900, padding: 16, borderRadius: 4 }}>
+                <div style={{ fontSize: 12, color: B.slate, marginBottom: 12 }}>
+                  {paymentModal.type === 'site_visit' 
+                    ? 'Payment for: Site Visit Fee' 
+                    : 'Payment for: Monthly Rent + Service Charge'}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${B.border}`, paddingTop: 12 }}>
+                  <span style={{ fontWeight: 600, color: B.cream }}>Amount:</span>
+                  <span style={{ fontWeight: 700, fontSize: 18, color: B.gold }}>
+                    {paymentModal.type === 'site_visit' ? 'Tsh 5,000' : 'Tsh 50,000+'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={() => {
+                    setPaymentModal(null);
+                    setPhoneNumber('');
+                  }}
+                  disabled={paying}
+                  style={{
+                    flex: 1, padding: '10px 16px', background: B.navy900,
+                    border: `1px solid ${B.border}`, color: B.cream, borderRadius: 4,
+                    fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: paying ? 0.5 : 1,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (paymentModal.type === 'site_visit') {
+                      handlePaySiteVisit(paymentModal.appId);
+                    } else {
+                      handlePayRent(paymentModal.appId);
+                    }
+                  }}
+                  disabled={paying}
+                  style={{
+                    flex: 1, padding: '10px 16px', background: B.gold,
+                    border: 'none', color: B.navy900, borderRadius: 4,
+                    fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    opacity: paying ? 0.7 : 1,
+                  }}
+                >
+                  {paying ? (
+                    <>
+                      <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <DollarSign size={14} />
+                      {paymentModal.type === 'site_visit' ? 'Pay Site Visit' : 'Pay Rent'}
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div style={{ fontSize: 12, color: B.slate, textAlign: 'center', lineHeight: 1.6 }}>
+                🔒 Your payment is secure. You'll receive a payment prompt on your phone.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
