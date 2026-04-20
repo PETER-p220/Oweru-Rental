@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2 } from 'lucide-react';
 import Api from '../../services/api';
+import SelcomService from '../../services/selcom';
 import { formatCurrency, formatDate } from './tenantPageStyles';
 
 interface ApplicationItem {
@@ -10,7 +11,12 @@ interface ApplicationItem {
   message?: string;
   created_at?: string;
   rent_paid?: boolean;
-  property?: { title?: string; location?: string; price?: number | string };
+  property?: { 
+    id?: number; 
+    title?: string; 
+    location?: string; 
+    price?: number | string 
+  };
 }
 
 const B = {
@@ -22,6 +28,7 @@ const B = {
   goldDim:  'rgba(200,145,40,0.12)',
   cream:    '#F8F8F9',
   slate:    '#94A3B8',
+  blue:     '#3B82F6',
   border:   'rgba(200,145,40,0.18)',
   borderF:  'rgba(200,145,40,0.08)',
 };
@@ -62,6 +69,7 @@ const ApplicationsPage = () => {
   const [paymentModal, setPaymentModal] = useState<number | null>(null);
   const [paying, setPaying]             = useState(false);
   const [phoneNumber, setPhoneNumber]   = useState('');
+  const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
 
   useEffect(() => {
     if (propertyId) handleApplyForProperty(propertyId);
@@ -72,30 +80,54 @@ const ApplicationsPage = () => {
       alert('Please enter your phone number');
       return;
     }
+
+    // Find the application to get rent amount
+    const application = applications.find(app => app.id === appId);
+    if (!application?.property?.price) {
+      alert('Unable to determine rent amount');
+      return;
+    }
+
+    const rentAmount = typeof application.property.price === 'string' 
+      ? parseInt(application.property.price.replace(/[^0-9]/g, '')) 
+      : application.property.price;
+    
+    const serviceCharge = 20000; // Service charge fee
+    const totalAmount = rentAmount + serviceCharge;
+
     setPaying(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/workflow/initiate-payment/${appId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          phone_number: phoneNumber,
-          payment_method: 'selcom',
-        }),
+      // Use Selcom service for payment processing
+      const paymentResponse = await SelcomService.initiateMobileMoneyPayment({
+        amount: totalAmount,
+        phone_number: phoneNumber,
+        provider: paymentProvider,
+        property_id: application.property?.id || appId,
+        tenant_id: 1, // This should come from user context
+        payment_type: 'rent_payment',
+        customer_email: '', // Optional
+        customer_name: '', // Optional
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Payment failed');
-      }
+      if (paymentResponse.success && paymentResponse.data?.transaction_id) {
+        // Update application with payment status
+        await Api.updateApplicationPaymentStatus(appId, {
+          payment_status: 'paid',
+          payment_method: 'selcom',
+          transaction_id: paymentResponse.data.transaction_id,
+          amount_paid: totalAmount,
+        });
 
-      alert('Rent payment initiated! Check your phone for payment prompt.');
-      setPaymentModal(null);
-      setPhoneNumber('');
-      const res = await Api.getTenantApplications();
-      setApplications(Array.isArray(res.data) ? res.data : []);
+        alert(`${paymentProvider.toUpperCase()} payment initiated! Check your phone for payment prompt. Ref: ${paymentResponse.data.transaction_id}`);
+        setPaymentModal(null);
+        setPhoneNumber('');
+        
+        // Refresh applications
+        const res = await Api.getTenantApplications();
+        setApplications(Array.isArray(res.data) ? res.data : []);
+      } else {
+        throw new Error(paymentResponse.message || 'Payment initiation failed');
+      }
     } catch (err: any) {
       alert(err?.message || 'Failed to process rent payment');
     } finally {
@@ -421,6 +453,36 @@ const ApplicationsPage = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: B.gold, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  Payment Method
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {[
+                    { value: 'tigo' as const, label: 'Tigo Pesa', color: '#3B82F6' },
+                    { value: 'mpesa' as const, label: 'M-Pesa', color: '#10B981' },
+                    { value: 'airtel' as const, label: 'Airtel Money', color: '#EF4444' },
+                  ].map((provider) => (
+                    <button
+                      key={provider.value}
+                      type="button"
+                      onClick={() => setPaymentProvider(provider.value)}
+                      disabled={paying}
+                      style={{
+                        padding: '8px 12px', fontSize: 11, fontWeight: 600,
+                        border: `2px solid ${paymentProvider === provider.value ? provider.color : B.border}`,
+                        background: paymentProvider === provider.value ? `${provider.color}20` : B.navy900,
+                        color: paymentProvider === provider.value ? provider.color : B.cream,
+                        borderRadius: 4, cursor: paying ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {provider.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: B.gold, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                   Phone Number
                 </label>
                 <input
@@ -436,7 +498,7 @@ const ApplicationsPage = () => {
                   disabled={paying}
                 />
                 <p style={{ fontSize: 12, color: B.slate, marginTop: 6 }}>
-                  Enter your mobile money registered number (Tigo, M-Pesa, Airtel, or Halopesa)
+                  Enter your {paymentProvider.toUpperCase()} registered number
                 </p>
               </div>
 
@@ -444,12 +506,39 @@ const ApplicationsPage = () => {
                 <div style={{ fontSize: 12, color: B.slate, marginBottom: 12 }}>
                   Payment for: Monthly Rent + Service Charge
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${B.border}`, paddingTop: 12 }}>
-                  <span style={{ fontWeight: 600, color: B.cream }}>Amount:</span>
-                  <span style={{ fontWeight: 700, fontSize: 18, color: B.gold }}>
-                    Tsh 50,000+
-                  </span>
-                </div>
+                {(() => {
+                  const application = applications.find(app => app.id === paymentModal);
+                  const rentAmount = application?.property?.price 
+                    ? (typeof application.property.price === 'string' 
+                        ? parseInt(application.property.price.replace(/[^0-9]/g, '')) 
+                        : application.property.price)
+                    : 0;
+                  const serviceCharge = 20000;
+                  const totalAmount = rentAmount + serviceCharge;
+                  
+                  return (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, color: B.slate }}>Monthly Rent:</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: B.cream }}>
+                          Tsh {rentAmount.toLocaleString()}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, color: B.slate }}>Service Charge:</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: B.blue }}>
+                          Tsh {serviceCharge.toLocaleString()}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${B.border}`, paddingTop: 12 }}>
+                        <span style={{ fontWeight: 600, color: B.cream }}>Total Amount:</span>
+                        <span style={{ fontWeight: 700, fontSize: 18, color: B.gold }}>
+                          Tsh {totalAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div style={{ display: 'flex', gap: 10 }}>
@@ -481,12 +570,12 @@ const ApplicationsPage = () => {
                   {paying ? (
                     <>
                       <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
-                      Processing...
+                      Processing {paymentProvider.toUpperCase()} Payment...
                     </>
                   ) : (
                     <>
                       <DollarSign size={14} />
-                      Pay Rent
+                      Pay via {paymentProvider === 'tigo' ? 'Tigo Pesa' : paymentProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}
                     </>
                   )}
                 </button>

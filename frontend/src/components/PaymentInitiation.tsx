@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { AlertCircle, Loader2, CheckCircle, DollarSign, Phone } from 'lucide-react';
+import SelcomService from '../services/selcom';
 
 interface PaymentInstructionsProps {
   applicationId: number;
@@ -17,6 +18,7 @@ interface PaymentInitiationData {
   phone_number: string;
   payment_method?: string;
   service_charge?: number;
+  payment_provider?: 'tigo' | 'mpesa' | 'airtel';
 }
 
 export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
@@ -29,6 +31,7 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
   onSuccess,
 }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -53,15 +56,33 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
     setIsSubmitting(true);
 
     try {
-      await onPaymentInitiate({
-        application_id: applicationId,
+      // Use Selcom service for payment processing
+      const paymentResponse = await SelcomService.initiateMobileMoneyPayment({
+        amount: totalAmount,
         phone_number: phoneNumber,
-        payment_method: 'selcom',
-        service_charge: serviceCharge,
+        provider: paymentProvider,
+        property_id: applicationId,
+        tenant_id: 1, // This should come from user context
+        payment_type: 'rent_payment',
+        customer_email: '', // Optional
+        customer_name: '', // Optional
       });
 
-      setSuccess(true);
-      onSuccess?.();
+      if (paymentResponse.success && paymentResponse.data?.transaction_id) {
+        // Call the original callback with transaction data
+        await onPaymentInitiate({
+          application_id: applicationId,
+          phone_number: phoneNumber,
+          payment_method: 'selcom',
+          service_charge: serviceCharge,
+          payment_provider: paymentProvider,
+        });
+
+        setSuccess(true);
+        onSuccess?.();
+      } else {
+        throw new Error(paymentResponse.message || 'Payment initiation failed');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to initiate payment');
     } finally {
@@ -145,6 +166,34 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
             </div>
           </div>
 
+          {/* Payment Provider Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Payment Method
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: 'tigo' as const, label: 'Tigo Pesa', color: 'blue' },
+                { value: 'mpesa' as const, label: 'M-Pesa', color: 'green' },
+                { value: 'airtel' as const, label: 'Airtel Money', color: 'red' },
+              ].map((provider) => (
+                <button
+                  key={provider.value}
+                  type="button"
+                  onClick={() => setPaymentProvider(provider.value)}
+                  disabled={isSubmitting}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
+                    paymentProvider === provider.value
+                      ? `border-${provider.color}-500 bg-${provider.color}-50 text-${provider.color}-700 dark:bg-${provider.color}-900/20 dark:text-${provider.color}-400`
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {provider.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Phone Number Input */}
           <div className="space-y-2">
             <label htmlFor="phone" className="block text-sm font-medium flex items-center gap-2 text-gray-700 dark:text-gray-300">
@@ -161,7 +210,7 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Enter your mobile money registered number (Tigo, M-Pesa, Airtel, or Halopesa)
+              Enter your {paymentProvider.toUpperCase()} registered number
             </p>
           </div>
 
@@ -189,12 +238,12 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
             {isSubmitting || isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Initiating Payment...
+                Initiating {paymentProvider.toUpperCase()} Payment...
               </>
             ) : (
               <>
                 <DollarSign className="w-4 h-4" />
-                Pay Tsh {totalAmount.toLocaleString()}
+                Pay Tsh {totalAmount.toLocaleString()} via {paymentProvider === 'tigo' ? 'Tigo Pesa' : paymentProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}
               </>
             )}
           </button>

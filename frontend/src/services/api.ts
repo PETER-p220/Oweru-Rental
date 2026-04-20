@@ -635,6 +635,13 @@ class Api {
     });
   }
 
+  static async updateApplicationPaymentStatus(applicationId: number, paymentData: any) {
+    return this.request<any>(`tenant/applications/${applicationId}/payment-status`, {
+      method: 'PUT',
+      body: JSON.stringify(paymentData),
+    });
+  }
+
   static async downloadContract(id: number) {
     return this.request(`tenant/contracts/${id}/download`, {
       headers: { 'Accept': 'application/pdf' },
