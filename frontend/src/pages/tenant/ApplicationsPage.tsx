@@ -92,8 +92,7 @@ const ApplicationsPage = () => {
       ? parseInt(application.property.price.replace(/[^0-9]/g, '')) 
       : application.property.price;
     
-    const serviceCharge = 20000; // Service charge fee
-    const totalAmount = rentAmount + serviceCharge;
+    const totalAmount = rentAmount; // Only charge rent, no service charge
 
     setPaying(true);
     try {
@@ -110,14 +109,6 @@ const ApplicationsPage = () => {
       });
 
       if (paymentResponse.success && paymentResponse.data?.transaction_id) {
-        // Update application with payment status
-        await Api.updateApplicationPaymentStatus(appId, {
-          payment_status: 'paid',
-          payment_method: 'selcom',
-          transaction_id: paymentResponse.data.transaction_id,
-          amount_paid: totalAmount,
-        });
-
         alert(`${paymentProvider.toUpperCase()} payment initiated! Check your phone for payment prompt. Ref: ${paymentResponse.data.transaction_id}`);
         setPaymentModal(null);
         setPhoneNumber('');
@@ -504,7 +495,7 @@ const ApplicationsPage = () => {
 
               <div style={{ background: B.navy900, padding: 16, borderRadius: 4 }}>
                 <div style={{ fontSize: 12, color: B.slate, marginBottom: 12 }}>
-                  Payment for: Monthly Rent + Service Charge
+                  Payment for: Monthly Rent
                 </div>
                 {(() => {
                   const application = applications.find(app => app.id === paymentModal);
@@ -513,27 +504,13 @@ const ApplicationsPage = () => {
                         ? parseInt(application.property.price.replace(/[^0-9]/g, '')) 
                         : application.property.price)
                     : 0;
-                  const serviceCharge = 20000;
-                  const totalAmount = rentAmount + serviceCharge;
                   
                   return (
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, color: B.slate }}>Monthly Rent:</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: B.cream }}>
-                          Tsh {rentAmount.toLocaleString()}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, color: B.slate }}>Service Charge:</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: B.blue }}>
-                          Tsh {serviceCharge.toLocaleString()}
-                        </span>
-                      </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${B.border}`, paddingTop: 12 }}>
-                        <span style={{ fontWeight: 600, color: B.cream }}>Total Amount:</span>
+                        <span style={{ fontWeight: 600, color: B.cream }}>Monthly Rent:</span>
                         <span style={{ fontWeight: 700, fontSize: 18, color: B.gold }}>
-                          Tsh {totalAmount.toLocaleString()}
+                          Tsh {rentAmount.toLocaleString()}
                         </span>
                       </div>
                     </div>
