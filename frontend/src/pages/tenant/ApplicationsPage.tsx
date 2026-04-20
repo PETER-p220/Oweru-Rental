@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2 } from 'lucide-react';
+import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2, ShieldCheck, ArrowRight } from 'lucide-react';
 import Api from '../../services/api';
 import SelcomService from '../../services/selcom';
 import { formatCurrency, formatDate } from './tenantPageStyles';
@@ -11,26 +11,26 @@ interface ApplicationItem {
   message?: string;
   created_at?: string;
   rent_paid?: boolean;
-  property?: { 
-    id?: number; 
-    title?: string; 
-    location?: string; 
-    price?: number | string 
+  property?: {
+    id?: number;
+    title?: string;
+    location?: string;
+    price?: number | string;
   };
 }
 
 const B = {
-  navy900:  '#0F172A',
-  navy800:  '#162035',
-  navy700:  '#1E2D4A',
-  gold:     '#C89128',
-  goldLt:   '#D4A843',
-  goldDim:  'rgba(200,145,40,0.12)',
-  cream:    '#F8F8F9',
-  slate:    '#94A3B8',
-  blue:     '#3B82F6',
-  border:   'rgba(200,145,40,0.18)',
-  borderF:  'rgba(200,145,40,0.08)',
+  navy900: '#0F172A',
+  navy800: '#162035',
+  navy700: '#1E2D4A',
+  gold:    '#C89128',
+  goldLt:  '#D4A843',
+  goldDim: 'rgba(200,145,40,0.12)',
+  cream:   '#F8F8F9',
+  slate:   '#94A3B8',
+  blue:    '#3B82F6',
+  border:  'rgba(200,145,40,0.18)',
+  borderF: 'rgba(200,145,40,0.08)',
 };
 
 const statusColorMap: Record<string, string> = {
@@ -59,6 +59,21 @@ const StatusBadge = ({ status }: { status?: string }) => {
   );
 };
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Parse rent amount from string or number */
+const parseRent = (price?: number | string): number => {
+  if (price == null) return 0;
+  if (typeof price === 'number') return price;
+  return parseInt(price.replace(/[^0-9]/g, ''), 10) || 0;
+};
+
+/** Generate a unique order ID matching the Properties page pattern */
+const makeOrderId = (appId: number) =>
+  `RENT-${appId}-${Date.now()}`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const ApplicationsPage = () => {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [loading, setLoading]           = useState(true);
@@ -66,74 +81,40 @@ const ApplicationsPage = () => {
   const [search, setSearch]             = useState('');
   const [searchParams]                  = useSearchParams();
   const propertyId                      = searchParams.get('property');
-  const [paymentModal, setPaymentModal] = useState<number | null>(null);
-  const [paying, setPaying]             = useState(false);
-  const [phoneNumber, setPhoneNumber]   = useState('');
-  const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
 
+  // Payment modal state
+  const [paymentModal, setPaymentModal]       = useState<number | null>(null);
+  const [paying, setPaying]                   = useState(false);
+  const [phoneNumber, setPhoneNumber]         = useState('');
+  const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
+  const [payResult, setPayResult]             = useState<'success' | 'error' | null>(null);
+  const [payMessage, setPayMessage]           = useState('');
+
+  // ── Auto-apply from URL param ───────────────────────────────────────────────
   useEffect(() => {
     if (propertyId) handleApplyForProperty(propertyId);
   }, [propertyId]);
 
-  const handlePayRent = async (appId: number) => {
-    if (!phoneNumber.trim()) {
-      alert('Please enter your phone number');
-      return;
-    }
-
-    // Find the application to get rent amount
-    const application = applications.find(app => app.id === appId);
-    if (!application?.property?.price) {
-      alert('Unable to determine rent amount');
-      return;
-    }
-
-    const rentAmount = typeof application.property.price === 'string' 
-      ? parseInt(application.property.price.replace(/[^0-9]/g, '')) 
-      : application.property.price;
-    
-    const totalAmount = rentAmount; // Only charge rent, no service charge
-
-    setPaying(true);
-    try {
-      // Use Selcom service for payment processing
-      const paymentResponse = await SelcomService.initiateMobileMoneyPayment({
-        amount: totalAmount,
-        phone_number: phoneNumber,
-        provider: paymentProvider,
-        property_id: application.property?.id || appId,
-        tenant_id: 1, // This should come from user context
-        payment_type: 'rent_payment',
-        customer_email: '', // Optional
-        customer_name: '', // Optional
-      });
-
-      if (paymentResponse.success && paymentResponse.data?.transaction_id) {
-        // Update application with payment status
-        await Api.updateApplicationPaymentStatus(appId, {
-          payment_status: 'paid',
-          payment_method: 'selcom',
-          transaction_id: paymentResponse.data.transaction_id,
-          amount_paid: totalAmount,
-        });
-
-        alert(`${paymentProvider.toUpperCase()} payment initiated! Check your phone for payment prompt. Ref: ${paymentResponse.data.transaction_id}`);
-        setPaymentModal(null);
-        setPhoneNumber('');
-        
-        // Refresh applications
+  // ── Load applications ───────────────────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
         const res = await Api.getTenantApplications();
         setApplications(Array.isArray(res.data) ? res.data : []);
-      } else {
-        throw new Error(paymentResponse.message || 'Payment initiation failed');
+      } catch (err: any) {
+        setError(err?.response?.data?.message || 'Unable to load applications.');
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      alert(err?.message || 'Failed to process rent payment');
-    } finally {
-      setPaying(false);
-    }
+    })();
+  }, []);
+
+  const refreshApplications = async () => {
+    const res = await Api.getTenantApplications();
+    setApplications(Array.isArray(res.data) ? res.data : []);
   };
 
+  // ── Apply for property ──────────────────────────────────────────────────────
   const handleApplyForProperty = async (id: string) => {
     try {
       if (!id || isNaN(parseInt(id))) throw new Error('Invalid property ID');
@@ -143,35 +124,124 @@ const ApplicationsPage = () => {
       });
       alert('Application submitted successfully!');
       window.history.replaceState({}, '', window.location.pathname);
-      const res = await Api.getTenantApplications();
-      setApplications(Array.isArray(res.data) ? res.data : []);
+      await refreshApplications();
     } catch (err: any) {
       alert(err?.response?.data?.message || err?.message || 'Failed to submit application.');
     }
   };
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await Api.getTenantApplications();
-        setApplications(Array.isArray(res.data) ? res.data : []);
-      } catch (err: any) {
-        setError(err?.response?.data?.message || 'Unable to load applications.');
-      } finally { setLoading(false); }
-    })();
-  }, []);
+  // ── Pay rent — mirrors Properties.handlePay() exactly ──────────────────────
+  const handlePayRent = async (appId: number) => {
+    if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
+      setPayResult('error');
+      setPayMessage('Please enter a valid phone number (at least 10 digits).');
+      return;
+    }
 
-  const filtered = useMemo(() => applications.filter((item) => {
-    const hay = `${item.property?.title || ''} ${item.property?.location || ''} ${item.message || ''}`.toLowerCase();
-    return hay.includes(search.toLowerCase());
-  }), [applications, search]);
+    const application = applications.find(app => app.id === appId);
+    const rentAmount  = parseRent(application?.property?.price);
+    if (!rentAmount) {
+      setPayResult('error');
+      setPayMessage('Unable to determine rent amount for this application.');
+      return;
+    }
+
+    // Pull user context exactly as Properties page does
+    const userStr  = localStorage.getItem('user');
+    const user     = userStr ? JSON.parse(userStr) : null;
+    const tenantId = user?.id;
+    if (!tenantId) {
+      setPayResult('error');
+      setPayMessage('Your session may have expired. Please log in again.');
+      return;
+    }
+
+    const orderId = makeOrderId(appId);
+    setPaying(true);
+    setPayResult(null);
+    setPayMessage('');
+
+    try {
+      // Step 1 – Oweru USSD push (same service & payload shape as Properties page)
+      const paymentResponse = await SelcomService.initiateMobileMoneyPayment({
+        amount:         rentAmount,
+        phone_number:   phoneNumber,
+        provider:       paymentProvider,   // 'tigo' | 'mpesa' | 'airtel'
+        property_id:    application?.property?.id ?? appId,
+        tenant_id:      tenantId,
+        payment_type:   'rent_payment',
+        customer_email: user?.email        ?? '',
+        customer_name:  user?.first_name && user?.last_name
+                          ? `${user.first_name} ${user.last_name}`
+                          : user?.first_name ?? 'Tenant',
+      });
+
+      if (!paymentResponse.success || !paymentResponse.data?.transaction_id) {
+        throw new Error(paymentResponse.message || 'Payment initiation failed');
+      }
+
+      const transactionId = paymentResponse.data.transaction_id;
+
+      // Step 2 – Record the payment against the application
+      await Api.updateApplicationPaymentStatus(appId, {
+        payment_status: 'paid',
+        payment_method: paymentProvider,
+        transaction_id: transactionId,
+        amount_paid:    rentAmount,
+      });
+
+      setPayResult('success');
+      setPayMessage(
+        `Payment request sent! Check your ${paymentProvider.toUpperCase()} prompt on your phone to approve. Ref: ${transactionId}`
+      );
+
+      await refreshApplications();
+    } catch (err: any) {
+      setPayResult('error');
+      setPayMessage(err?.message || 'Failed to process rent payment. Please try again.');
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const openPaymentModal = (appId: number) => {
+    setPaymentModal(appId);
+    setPayResult(null);
+    setPayMessage('');
+    setPhoneNumber('');
+  };
+
+  const closePaymentModal = () => {
+    if (paying) return;
+    setPaymentModal(null);
+    setPayResult(null);
+    setPayMessage('');
+    setPhoneNumber('');
+  };
+
+  // ── Filtering / counts ──────────────────────────────────────────────────────
+  const filtered = useMemo(() =>
+    applications.filter(item => {
+      const hay = `${item.property?.title || ''} ${item.property?.location || ''} ${item.message || ''}`.toLowerCase();
+      return hay.includes(search.toLowerCase());
+    }),
+    [applications, search]
+  );
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    applications.forEach((a) => { const s = a.status || 'unknown'; counts[s] = (counts[s] || 0) + 1; });
+    applications.forEach(a => {
+      const s = a.status || 'unknown';
+      counts[s] = (counts[s] || 0) + 1;
+    });
     return counts;
   }, [applications]);
 
+  // ── Active application for the modal ───────────────────────────────────────
+  const activeApp   = paymentModal ? applications.find(a => a.id === paymentModal) : null;
+  const modalAmount = activeApp ? parseRent(activeApp.property?.price) : 0;
+
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div style={{ fontFamily: "'Jost', 'Futura PT', sans-serif", background: B.navy900, color: B.cream, minHeight: '100vh' }}>
       <style>{`
@@ -187,7 +257,6 @@ const ApplicationsPage = () => {
           position: relative;
           overflow: hidden;
         }
-
         .ap-tag {
           font-size: 10px; font-weight: 600;
           letter-spacing: 0.24em; text-transform: uppercase;
@@ -195,7 +264,6 @@ const ApplicationsPage = () => {
           display: flex; align-items: center; gap: 8px;
         }
         .ap-tag::before { content: ''; width: 20px; height: 1px; background: ${B.gold}; }
-
         .ap-search {
           width: 100%; max-width: 420px;
           background: ${B.navy900};
@@ -204,12 +272,10 @@ const ApplicationsPage = () => {
           padding: 10px 14px 10px 40px;
           font-family: 'Jost', sans-serif;
           font-size: 14px; font-weight: 400;
-          outline: none;
-          transition: border-color 0.2s;
+          outline: none; transition: border-color 0.2s;
         }
         .ap-search::placeholder { color: rgba(148,163,184,0.4); }
         .ap-search:focus { border-color: ${B.gold}; }
-
         .ap-count-pill {
           display: inline-flex; align-items: center; gap: 7px;
           padding: 5px 12px;
@@ -217,7 +283,6 @@ const ApplicationsPage = () => {
           font-size: 11px; font-weight: 700;
           letter-spacing: 0.1em; text-transform: uppercase;
         }
-
         table.ap-table { width: 100%; border-collapse: collapse; }
         table.ap-table thead th {
           font-size: 9px; font-weight: 700; letter-spacing: 0.2em;
@@ -234,29 +299,37 @@ const ApplicationsPage = () => {
         table.ap-table tbody tr:last-child td { border-bottom: none; }
         table.ap-table tbody tr { transition: background 0.15s; }
         table.ap-table tbody tr:hover td { background: rgba(200,145,40,0.03); }
-
-        /* Mobile cards */
         .ap-mobile { display: none; }
-
         @media (max-width: 768px) {
           table.ap-table { display: none; }
           .ap-mobile { display: flex; flex-direction: column; gap: 1px; }
         }
-
         .ap-mob-card {
           background: ${B.navy900};
           border: 1px solid ${B.borderF};
-          padding: 18px;
-          margin-bottom: 1px;
+          padding: 18px; margin-bottom: 1px;
           transition: border-color 0.2s;
         }
         .ap-mob-card:hover { border-color: rgba(200,145,40,0.3); }
+
+        /* ── Payment modal ── */
+        .pay-provider-btn {
+          flex: 1; padding: 10px 8px;
+          font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 600;
+          border: 2px solid ${B.border};
+          background: ${B.navy900};
+          color: ${B.cream};
+          border-radius: 6px; cursor: pointer; transition: all 0.2s; text-align: center;
+        }
+        .pay-provider-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pay-provider-btn[data-active='true'].tigo   { border-color:#00D4AA; background:rgba(0,212,170,.10); color:#00D4AA; }
+        .pay-provider-btn[data-active='true'].mpesa  { border-color:#00C853; background:rgba(0,200,83,.10);  color:#00C853; }
+        .pay-provider-btn[data-active='true'].airtel { border-color:#FF6B35; background:rgba(255,107,53,.10);color:#FF6B35; }
       `}</style>
 
       {/* ── Header Panel ── */}
       <div className="ap-panel">
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: B.gold }} />
-
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap' }}>
           <div>
             <div className="ap-tag">Tenant Workspace</div>
@@ -267,8 +340,6 @@ const ApplicationsPage = () => {
               Track the status of all your rental applications in one place.
             </p>
           </div>
-
-          {/* Status counts */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignSelf: 'flex-end' }}>
             {Object.entries(statusCounts).map(([status, count]) => {
               const color = statusColorMap[status] ?? B.slate;
@@ -281,16 +352,9 @@ const ApplicationsPage = () => {
             })}
           </div>
         </div>
-
-        {/* Search */}
         <div style={{ marginTop: 24, position: 'relative' as const, display: 'inline-block' }}>
           <Search size={14} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: B.slate, pointerEvents: 'none' }} />
-          <input
-            className="ap-search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by property, location, or message…"
-          />
+          <input className="ap-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by property, location, or message…" />
         </div>
       </div>
 
@@ -312,7 +376,6 @@ const ApplicationsPage = () => {
             <div style={{ width: 18, height: 18, border: `2px solid ${B.border}`, borderTopColor: B.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             <span style={{ fontSize: 14, fontWeight: 400 }}>Loading your applications…</span>
           </div>
-
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 20px', color: B.slate }}>
             <div style={{ width: 64, height: 64, background: B.goldDim, border: `1px solid ${B.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
@@ -323,7 +386,6 @@ const ApplicationsPage = () => {
               You haven't submitted any applications yet. Start browsing properties to apply.
             </div>
           </div>
-
         ) : (
           <>
             {/* ── Desktop Table ── */}
@@ -331,16 +393,14 @@ const ApplicationsPage = () => {
               <table className="ap-table">
                 <thead>
                   <tr>
-                    {['Property', 'Price', 'Status', 'Message', 'Applied', 'Action'].map(h => <th key={h}>{h}</th>)}
+                    {['Property', 'Monthly Rent', 'Status', 'Message', 'Applied', 'Action'].map(h => <th key={h}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((item) => (
+                  {filtered.map(item => (
                     <tr key={item.id}>
                       <td>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: B.cream }}>
-                          {item.property?.title || 'Untitled Property'}
-                        </div>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: B.cream }}>{item.property?.title || 'Untitled Property'}</div>
                         <div style={{ color: B.slate, fontSize: 12, marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <MapPin size={11} /> {item.property?.location || 'No location'}
                         </div>
@@ -352,9 +412,7 @@ const ApplicationsPage = () => {
                       </td>
                       <td><StatusBadge status={item.status} /></td>
                       <td style={{ maxWidth: 220 }}>
-                        <div style={{ color: B.slate, fontSize: 13, lineHeight: 1.55, fontWeight: 300 }}>
-                          {item.message || '—'}
-                        </div>
+                        <div style={{ color: B.slate, fontSize: 13, lineHeight: 1.55, fontWeight: 300 }}>{item.message || '—'}</div>
                       </td>
                       <td style={{ whiteSpace: 'nowrap' as const }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: B.slate, fontSize: 13, fontWeight: 300 }}>
@@ -363,11 +421,8 @@ const ApplicationsPage = () => {
                       </td>
                       <td>
                         {item.status === 'approved' && !item.rent_paid ? (
-                          <button
-                            onClick={() => setPaymentModal(item.id)}
-                            style={{ padding: '6px 12px', background: B.gold, color: B.navy900, border: 'none', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
-                          >
-                            Pay Rent
+                          <button onClick={() => openPaymentModal(item.id)} style={{ padding: '6px 14px', background: B.gold, color: B.navy900, border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <DollarSign size={12} /> Pay Rent
                           </button>
                         ) : item.rent_paid ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#10b981', fontSize: 12, fontWeight: 600 }}>
@@ -383,22 +438,17 @@ const ApplicationsPage = () => {
 
             {/* ── Mobile Cards ── */}
             <div className="ap-mobile">
-              {filtered.map((item) => (
+              {filtered.map(item => (
                 <div key={item.id} className="ap-mob-card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 15, color: B.cream, marginBottom: 4 }}>
-                        {item.property?.title || 'Untitled Property'}
-                      </div>
+                      <div style={{ fontWeight: 600, fontSize: 15, color: B.cream, marginBottom: 4 }}>{item.property?.title || 'Untitled Property'}</div>
                       <div style={{ color: B.slate, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <MapPin size={11} /> {item.property?.location || 'No location'}
                       </div>
                     </div>
-                    <div style={{ fontWeight: 700, fontSize: 17, color: B.gold, flexShrink: 0 }}>
-                      {formatCurrency(item.property?.price)}
-                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 17, color: B.gold, flexShrink: 0 }}>{formatCurrency(item.property?.price)}</div>
                   </div>
-
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: B.gold }}>Status</span>
@@ -413,14 +463,11 @@ const ApplicationsPage = () => {
                     </div>
                     <div style={{ borderTop: `1px solid ${B.border}`, paddingTop: 10 }}>
                       {item.status === 'approved' && !item.rent_paid ? (
-                        <button
-                          onClick={() => setPaymentModal(item.id)}
-                          style={{ width: '100%', padding: '8px 12px', background: B.gold, color: B.navy900, border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
-                        >
-                          Pay Rent
+                        <button onClick={() => openPaymentModal(item.id)} style={{ width: '100%', padding: '10px 12px', background: B.gold, color: B.navy900, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                          <DollarSign size={13} /> Pay Rent
                         </button>
                       ) : item.rent_paid ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: '#10b981', fontSize: 13, fontWeight: 600, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: '#10b981', fontSize: 13, fontWeight: 600 }}>
                           <CheckCircle size={16} /> Payment Complete
                         </div>
                       ) : null}
@@ -433,141 +480,112 @@ const ApplicationsPage = () => {
         )}
       </div>
 
-      {/* Payment Modal */}
-      {paymentModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-        }}>
-          <div style={{
-            background: B.navy800, border: `1px solid ${B.border}`,
-            borderRadius: 8, padding: 32, maxWidth: 420, width: '90%',
-            maxHeight: '90vh', overflowY: 'auto',
-          }}>
-            <h3 style={{ fontSize: 20, fontWeight: 700, color: B.cream, marginBottom: 20 }}>
-              Pay Rent
-            </h3>
+      {/* ══════════════════════════════════════════════
+          PAYMENT MODAL  — mirrors Properties payment modal
+      ══════════════════════════════════════════════ */}
+      {paymentModal && activeApp && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div style={{ background: B.navy800, border: `1px solid ${B.border}`, borderRadius: 12, maxWidth: 440, width: '100%', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 40px 80px rgba(0,0,0,0.4)' }}>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: B.gold, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                  Payment Method
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {[
-                    { value: 'tigo' as const, label: 'Tigo Pesa', color: '#3B82F6' },
-                    { value: 'mpesa' as const, label: 'M-Pesa', color: '#10B981' },
-                    { value: 'airtel' as const, label: 'Airtel Money', color: '#EF4444' },
-                  ].map((provider) => (
-                    <button
-                      key={provider.value}
-                      type="button"
-                      onClick={() => setPaymentProvider(provider.value)}
-                      disabled={paying}
-                      style={{
-                        padding: '8px 12px', fontSize: 11, fontWeight: 600,
-                        border: `2px solid ${paymentProvider === provider.value ? provider.color : B.border}`,
-                        background: paymentProvider === provider.value ? `${provider.color}20` : B.navy900,
-                        color: paymentProvider === provider.value ? provider.color : B.cream,
-                        borderRadius: 4, cursor: paying ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      {provider.label}
-                    </button>
-                  ))}
+            {/* Modal header */}
+            <div style={{ background: `linear-gradient(135deg, ${B.navy900} 0%, #0f2030 100%)`, padding: '22px 24px 18px', borderBottom: `1px solid ${B.border}`, borderRadius: '12px 12px 0 0', position: 'relative' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: B.gold, marginBottom: 6 }}>Secure Payment</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: B.cream }}>Pay Monthly Rent</div>
+              <div style={{ fontSize: 12, color: B.slate, marginTop: 3 }}>Powered by Oweru · Selcom Gateway</div>
+            </div>
+
+            <div style={{ padding: '22px 24px' }}>
+
+              {/* Property info */}
+              <div style={{ background: B.navy900, border: `1px solid ${B.borderF}`, borderRadius: 8, padding: '14px 16px', marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: B.cream, marginBottom: 4 }}>{activeApp.property?.title || 'Property'}</div>
+                {activeApp.property?.location && (
+                  <div style={{ fontSize: 12, color: B.slate, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+                    <MapPin size={11} /> {activeApp.property.location}
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${B.border}`, paddingTop: 10 }}>
+                  <span style={{ fontSize: 12, color: B.slate }}>Monthly Rent</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: B.gold }}>Tsh {modalAmount.toLocaleString()}</span>
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: B.gold, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="e.g., +255 123 456 789"
-                  style={{
-                    width: '100%', padding: '10px 12px', background: B.navy900,
-                    border: `1px solid ${B.border}`, color: B.cream, borderRadius: 4,
-                    fontSize: 14, fontFamily: 'inherit', outline: 'none',
-                  }}
-                  disabled={paying}
-                />
-                <p style={{ fontSize: 12, color: B.slate, marginTop: 6 }}>
-                  Enter your {paymentProvider.toUpperCase()} registered number
-                </p>
+              {/* Provider selector */}
+              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: B.slate, marginBottom: 10 }}>
+                Mobile Money Provider
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                {([
+                  { value: 'tigo',   label: 'Tigo Pesa'    },
+                  { value: 'mpesa',  label: 'M-Pesa'       },
+                  { value: 'airtel', label: 'Airtel Money'  },
+                ] as { value: 'tigo' | 'mpesa' | 'airtel'; label: string }[]).map(p => (
+                  <button
+                    key={p.value}
+                    className={`pay-provider-btn ${p.value}`}
+                    data-active={paymentProvider === p.value ? 'true' : 'false'}
+                    onClick={() => setPaymentProvider(p.value)}
+                    disabled={paying}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
 
-              <div style={{ background: B.navy900, padding: 16, borderRadius: 4 }}>
-                <div style={{ fontSize: 12, color: B.slate, marginBottom: 12 }}>
-                  Payment for: Monthly Rent
+              {/* Phone number */}
+              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: B.slate, marginBottom: 8 }}>
+                Phone Number
+              </div>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={e => setPhoneNumber(e.target.value)}
+                placeholder="e.g. 0712 345 678"
+                disabled={paying}
+                style={{ width: '100%', padding: '12px 14px', background: B.navy900, border: `1px solid ${B.border}`, color: B.cream, borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', marginBottom: 6 }}
+              />
+              <div style={{ fontSize: 11, color: B.slate, marginBottom: 20 }}>
+                Enter your {paymentProvider === 'tigo' ? 'Tigo Pesa' : paymentProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} registered number
+              </div>
+
+              {/* Security badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 8, padding: '10px 13px', marginBottom: 20, fontSize: 12, color: '#10b981' }}>
+                <ShieldCheck size={14} /> Secured by Selcom · 256-bit encrypted
+              </div>
+
+              {/* Result feedback */}
+              {payResult === 'success' && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: 13, color: '#10b981', lineHeight: 1.55 }}>
+                  <CheckCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>{payMessage}</span>
                 </div>
-                {(() => {
-                  const application = applications.find(app => app.id === paymentModal);
-                  const rentAmount = application?.property?.price 
-                    ? (typeof application.property.price === 'string' 
-                        ? parseInt(application.property.price.replace(/[^0-9]/g, '')) 
-                        : application.property.price)
-                    : 0;
-                  
-                  return (
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${B.border}`, paddingTop: 12 }}>
-                        <span style={{ fontWeight: 600, color: B.cream }}>Monthly Rent:</span>
-                        <span style={{ fontWeight: 700, fontSize: 18, color: B.gold }}>
-                          Tsh {rentAmount.toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
+              )}
+              {payResult === 'error' && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: 13, color: '#f87171', lineHeight: 1.55 }}>
+                  <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>{payMessage}</span>
+                </div>
+              )}
 
+              {/* Action buttons */}
               <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  onClick={() => {
-                    setPaymentModal(null);
-                    setPhoneNumber('');
-                  }}
-                  disabled={paying}
-                  style={{
-                    flex: 1, padding: '10px 16px', background: B.navy900,
-                    border: `1px solid ${B.border}`, color: B.cream, borderRadius: 4,
-                    fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: paying ? 0.5 : 1,
-                  }}
-                >
-                  Cancel
+                <button onClick={closePaymentModal} disabled={paying} style={{ flex: 1, padding: '11px 16px', background: B.navy900, border: `1px solid ${B.border}`, color: B.cream, borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: paying ? 'not-allowed' : 'pointer', opacity: paying ? 0.5 : 1 }}>
+                  {payResult === 'success' ? 'Close' : 'Cancel'}
                 </button>
-                <button
-                  onClick={() => handlePayRent(paymentModal)}
-                  disabled={paying}
-                  style={{
-                    flex: 1, padding: '10px 16px', background: B.gold,
-                    border: 'none', color: B.navy900, borderRadius: 4,
-                    fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    opacity: paying ? 0.7 : 1,
-                  }}
-                >
-                  {paying ? (
-                    <>
-                      <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
-                      Processing {paymentProvider.toUpperCase()} Payment...
-                    </>
-                  ) : (
-                    <>
-                      <DollarSign size={14} />
-                      Pay via {paymentProvider === 'tigo' ? 'Tigo Pesa' : paymentProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}
-                    </>
-                  )}
-                </button>
-              </div>
 
-              <div style={{ fontSize: 12, color: B.slate, textAlign: 'center', lineHeight: 1.6 }}>
-                🔒 Your payment is secure. You'll receive a payment prompt on your phone.
+                {payResult !== 'success' && (
+                  <button
+                    onClick={() => handlePayRent(paymentModal)}
+                    disabled={paying || !phoneNumber || phoneNumber.length < 10}
+                    style={{ flex: 2, padding: '11px 16px', background: paying ? `${B.gold}aa` : B.gold, border: 'none', color: B.navy900, borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: paying || !phoneNumber || phoneNumber.length < 10 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: !phoneNumber || phoneNumber.length < 10 ? 0.5 : 1 }}
+                  >
+                    {paying ? (
+                      <><Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> Sending prompt…</>
+                    ) : (
+                      <><DollarSign size={14} /> Pay Tsh {modalAmount.toLocaleString()} <ArrowRight size={13} /></>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>

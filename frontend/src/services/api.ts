@@ -642,6 +642,13 @@ class Api {
     });
   }
 
+  static async createContract(contractData: any) {
+    return this.request<any>('tenant/contracts', {
+      method: 'POST',
+      body: JSON.stringify(contractData),
+    });
+  }
+
   static async downloadContract(id: number) {
     return this.request(`tenant/contracts/${id}/download`, {
       headers: { 'Accept': 'application/pdf' },
