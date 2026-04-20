@@ -139,8 +139,26 @@ const ApplicationsPage = () => {
     }
 
     const application = applications.find(app => app.id === appId);
-    const rentAmount  = parseRent(application?.property?.price);
-    if (!rentAmount) {
+    const rawPrice    = application?.property?.price;
+    const rentAmount  = parseRent(rawPrice);
+    
+    // Debug logging
+    console.log('Rent amount debug:', {
+      applicationId: appId,
+      rawPrice: rawPrice,
+      rawPriceType: typeof rawPrice,
+      parsedRent: rentAmount,
+    });
+    
+    // Temporary fix: If rent amount seems too high (over 1 million), divide by 100
+    // This handles cases where price is stored as cents (e.g., 500000 instead of 5000)
+    let finalRentAmount = rentAmount;
+    if (rentAmount > 1000000) {
+      finalRentAmount = rentAmount / 100;
+      console.log('Rent amount adjusted from', rentAmount, 'to', finalRentAmount);
+    }
+    
+    if (!finalRentAmount) {
       setPayResult('error');
       setPayMessage('Unable to determine rent amount for this application.');
       return;
@@ -164,7 +182,7 @@ const ApplicationsPage = () => {
     try {
       // Step 1 – Oweru USSD push (same service & payload shape as Properties page)
       const paymentResponse = await SelcomService.initiateMobileMoneyPayment({
-        amount:         rentAmount,
+        amount:         finalRentAmount,
         phone_number:   phoneNumber,
         provider:       paymentProvider,   // 'tigo' | 'mpesa' | 'airtel'
         property_id:    application?.property?.id ?? appId,
@@ -187,7 +205,7 @@ const ApplicationsPage = () => {
         payment_status: 'paid',
         payment_method: paymentProvider,
         transaction_id: transactionId,
-        amount_paid:    rentAmount,
+        amount_paid: finalRentAmount,
       });
 
       setPayResult('success');
