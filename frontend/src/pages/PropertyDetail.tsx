@@ -129,11 +129,36 @@ const PropertyDetail = () => {
   const navigate = useNavigate();
 
   const getPropertyImageUrl = (property: any, imageIndex: number = 0) => {
+    // Debug: Log the property images structure
+    console.log('PropertyDetail - Property images for', property.title, ':', property.images);
+    
     if (property?.images?.length > 0) {
       const image = property.images[imageIndex];
-      return image.startsWith('http') ? image : `${import.meta.env.VITE_API_URL?.replace('/api', '')}/storage/${image}`;
+      console.log('PropertyDetail - Image at index', imageIndex, ':', image);
+      
+      if (typeof image === 'string' && image.trim() !== '') {
+        const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
+        let finalUrl = '';
+        
+        if (image.startsWith('http://') || image.startsWith('https://')) {
+          finalUrl = image;
+        } else if (image.startsWith('/')) {
+          finalUrl = `${VITE_STORAGE}${image}`;
+        } else if (image.startsWith('storage/')) {
+          finalUrl = `${VITE_STORAGE}/${image}`;
+        } else {
+          // bare filename - could be in /storage/ root or /storage/properties/
+          finalUrl = `${VITE_STORAGE}/storage/${image}`;
+        }
+        
+        console.log('PropertyDetail - Resolved image URL:', finalUrl);
+        return finalUrl;
+      }
     }
-    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Crect width='900' height='600' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='28' fill='%236b7280'%3ENo Image Available%3C/text%3E%3C/svg%3E`;
+    
+    const placeholder = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Crect width='900' height='600' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='28' fill='%236b7280'%3ENo Image Available%3C/text%3E%3C/svg%3E`;
+    console.log('PropertyDetail - Using placeholder for', property.title);
+    return placeholder;
   };
 
   const [selectedImg, setSelectedImg] = useState(0);
