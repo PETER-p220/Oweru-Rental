@@ -9,7 +9,6 @@ interface ApplicationItem {
   status?: string;
   message?: string;
   created_at?: string;
-  site_visit_paid?: boolean;
   rent_paid?: boolean;
   property?: { title?: string; location?: string; price?: number | string };
 }
@@ -60,48 +59,13 @@ const ApplicationsPage = () => {
   const [search, setSearch]             = useState('');
   const [searchParams]                  = useSearchParams();
   const propertyId                      = searchParams.get('property');
-  const [paymentModal, setPaymentModal] = useState<{ type: 'site_visit' | 'rent'; appId: number } | null>(null);
+  const [paymentModal, setPaymentModal] = useState<number | null>(null);
   const [paying, setPaying]             = useState(false);
   const [phoneNumber, setPhoneNumber]   = useState('');
 
   useEffect(() => {
     if (propertyId) handleApplyForProperty(propertyId);
   }, [propertyId]);
-
-  const handlePaySiteVisit = async (appId: number) => {
-    if (!phoneNumber.trim()) {
-      alert('Please enter your phone number');
-      return;
-    }
-    setPaying(true);
-    try {
-      // Call API to initiate site visit payment
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/workflow/site-visit/${appId}/pay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          phone_number: phoneNumber,
-          payment_method: 'selcom',
-        }),
-      });
-      
-      if (!res.ok) throw new Error('Payment failed');
-      
-      alert('Site visit payment initiated! Check your phone for payment prompt.');
-      setPaymentModal(null);
-      setPhoneNumber('');
-      // Refresh applications
-      const appRes = await Api.getTenantApplications();
-      setApplications(Array.isArray(appRes.data) ? appRes.data : []);
-    } catch (err: any) {
-      alert(err?.message || 'Failed to process site visit payment');
-    } finally {
-      setPaying(false);
-    }
-  };
 
   const handlePayRent = async (appId: number) => {
     if (!phoneNumber.trim()) {
@@ -110,8 +74,7 @@ const ApplicationsPage = () => {
     }
     setPaying(true);
     try {
-      // Call API to initiate rent payment
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/workflow/initiate-payment/${appId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/workflow/initiate-payment/${appId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,15 +85,17 @@ const ApplicationsPage = () => {
           payment_method: 'selcom',
         }),
       });
-      
-      if (!res.ok) throw new Error('Payment failed');
-      
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Payment failed');
+      }
+
       alert('Rent payment initiated! Check your phone for payment prompt.');
       setPaymentModal(null);
       setPhoneNumber('');
-      // Refresh applications
-      const appRes = await Api.getTenantApplications();
-      setApplications(Array.isArray(appRes.data) ? appRes.data : []);
+      const res = await Api.getTenantApplications();
+      setApplications(Array.isArray(res.data) ? res.data : []);
     } catch (err: any) {
       alert(err?.message || 'Failed to process rent payment');
     } finally {
@@ -366,17 +331,10 @@ const ApplicationsPage = () => {
                         </div>
                       </td>
                       <td>
-                        {item.status === 'approved' && !item.site_visit_paid ? (
+                        {item.status === 'approved' && !item.rent_paid ? (
                           <button
-                            onClick={() => setPaymentModal({ type: 'site_visit', appId: item.id })}
+                            onClick={() => setPaymentModal(item.id)}
                             style={{ padding: '6px 12px', background: B.gold, color: B.navy900, border: 'none', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
-                          >
-                            Pay Site Visit
-                          </button>
-                        ) : item.site_visit_paid && !item.rent_paid ? (
-                          <button
-                            onClick={() => setPaymentModal({ type: 'rent', appId: item.id })}
-                            style={{ padding: '6px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: 4, fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
                           >
                             Pay Rent
                           </button>
@@ -423,17 +381,10 @@ const ApplicationsPage = () => {
                       <Clock size={11} /> {formatDate(item.created_at)}
                     </div>
                     <div style={{ borderTop: `1px solid ${B.border}`, paddingTop: 10 }}>
-                      {item.status === 'approved' && !item.site_visit_paid ? (
+                      {item.status === 'approved' && !item.rent_paid ? (
                         <button
-                          onClick={() => setPaymentModal({ type: 'site_visit', appId: item.id })}
+                          onClick={() => setPaymentModal(item.id)}
                           style={{ width: '100%', padding: '8px 12px', background: B.gold, color: B.navy900, border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
-                        >
-                          Pay Site Visit
-                        </button>
-                      ) : item.site_visit_paid && !item.rent_paid ? (
-                        <button
-                          onClick={() => setPaymentModal({ type: 'rent', appId: item.id })}
-                          style={{ width: '100%', padding: '8px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.05em' }}
                         >
                           Pay Rent
                         </button>
@@ -464,7 +415,7 @@ const ApplicationsPage = () => {
             maxHeight: '90vh', overflowY: 'auto',
           }}>
             <h3 style={{ fontSize: 20, fontWeight: 700, color: B.cream, marginBottom: 20 }}>
-              {paymentModal.type === 'site_visit' ? 'Pay for Site Visit' : 'Pay Rent'}
+              Pay Rent
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -491,14 +442,12 @@ const ApplicationsPage = () => {
 
               <div style={{ background: B.navy900, padding: 16, borderRadius: 4 }}>
                 <div style={{ fontSize: 12, color: B.slate, marginBottom: 12 }}>
-                  {paymentModal.type === 'site_visit' 
-                    ? 'Payment for: Site Visit Fee' 
-                    : 'Payment for: Monthly Rent + Service Charge'}
+                  Payment for: Monthly Rent + Service Charge
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${B.border}`, paddingTop: 12 }}>
                   <span style={{ fontWeight: 600, color: B.cream }}>Amount:</span>
                   <span style={{ fontWeight: 700, fontSize: 18, color: B.gold }}>
-                    {paymentModal.type === 'site_visit' ? 'Tsh 5,000' : 'Tsh 50,000+'}
+                    Tsh 50,000+
                   </span>
                 </div>
               </div>
@@ -519,13 +468,7 @@ const ApplicationsPage = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    if (paymentModal.type === 'site_visit') {
-                      handlePaySiteVisit(paymentModal.appId);
-                    } else {
-                      handlePayRent(paymentModal.appId);
-                    }
-                  }}
+                  onClick={() => handlePayRent(paymentModal)}
                   disabled={paying}
                   style={{
                     flex: 1, padding: '10px 16px', background: B.gold,
@@ -543,7 +486,7 @@ const ApplicationsPage = () => {
                   ) : (
                     <>
                       <DollarSign size={14} />
-                      {paymentModal.type === 'site_visit' ? 'Pay Site Visit' : 'Pay Rent'}
+                      Pay Rent
                     </>
                   )}
                 </button>
