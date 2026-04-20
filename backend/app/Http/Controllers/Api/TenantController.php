@@ -766,11 +766,6 @@ public function updateApplicationPaymentStatus(Request $request, $applicationId)
             'transaction_id' => $validated['transaction_id'],
         ]);
 
-        // If payment is successful, update rent_paid status
-        if ($validated['payment_status'] === 'paid') {
-            $application->update(['rent_paid' => true]);
-        }
-
         return response()->json([
             'success' => true,
             'message' => 'Application payment status updated successfully',
