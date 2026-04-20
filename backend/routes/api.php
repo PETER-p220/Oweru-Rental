@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\TenantController;
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\OwnerController;
+use App\Http\Controllers\Api\RentalWorkflowController;
 use App\Http\Controllers\Bnb\BnbPropertyController;
 use App\Http\Controllers\Bnb\BnbBookingController;
 use App\Http\Controllers\Bnb\BnbReviewController;
@@ -121,6 +122,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Analytics
         Route::get('/tenant/analytics', [TenantController::class, 'getAnalytics']);
+
+        // ── Rental Workflow Routes ────────────────────────────────────────────
+        Route::post('/workflow/apply', [RentalWorkflowController::class, 'applyForProperty']);
+        Route::get('/workflow/property/{property}/status', [RentalWorkflowController::class, 'getWorkflowStatus']);
+        Route::get('/workflow/pending-payments', [RentalWorkflowController::class, 'getPendingPayments']);
+        Route::post('/workflow/payment/{payment}/pay-monthly', [RentalWorkflowController::class, 'payMonthlyRent']);
     });
 
     // ── Agent routes ──────────────────────────────────────────────────────────
@@ -218,6 +225,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Messages
         Route::get('/owner/messages',  [OwnerController::class, 'getMessages']);
         Route::post('/owner/messages', [OwnerController::class, 'sendMessage']);
+
+        // ── Rental Workflow Routes (Owner) ────────────────────────────────────────────
+        Route::get('/workflow/property/{property}/applications', [RentalWorkflowController::class, 'getApplicationsForProperty']);
+        Route::post('/workflow/application/{application}/approve', [RentalWorkflowController::class, 'approveApplication']);
+        Route::post('/workflow/application/{application}/reject', [RentalWorkflowController::class, 'rejectApplication']);
     });
 
     // ── Admin routes ──────────────────────────────────────────────────────────

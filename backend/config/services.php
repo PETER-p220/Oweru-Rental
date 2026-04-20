@@ -35,4 +35,23 @@ return [
         ],
     ],
 
+    'oweru' => [
+        'app_key' => env('OWERU_APP_KEY'),
+    ],
+
+    'selcom' => [
+        'vendor_id' => env('SELCOM_VENDOR_ID'),
+        'api_key' => env('SELCOM_API_KEY'),
+        'api_secret' => env('SELCOM_API_SECRET'),
+        'base_url' => env('SELCOM_BASE_URL', 'https://apigw.selcommobile.com/v1'),
+        'is_live' => env('SELCOM_IS_LIVE', false),
+        'environment' => env('SELCOM_ENVIRONMENT', 'sandbox'),
+    ],
+
+    'payment' => [
+        'commission_percentage' => env('PAYMENT_COMMISSION_PERCENTAGE', 10),
+        'service_charge_default' => env('PAYMENT_SERVICE_CHARGE', 0),
+        'payment_timeout_minutes' => env('PAYMENT_TIMEOUT_MINUTES', 2),
+    ],
+
 ];

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Payment;
+use App\Services\PaymentProcessingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -207,7 +209,21 @@ class PaymentController extends Controller
                 'transid'   => $transid,
                 'reference' => $reference,
             ]);
-            // TODO: Payment::where('order_id', $transid)->update(['status' => 'paid', 'reference' => $reference]);
+            
+            // Use PaymentProcessingService to handle payment completion
+            try {
+                $paymentService = app(PaymentProcessingService::class);
+                $paymentService->handlePaymentWebhook([
+                    'merchant_transaction_id' => $transid,
+                    'transaction_id' => $reference,
+                    'status' => 'completed',
+                    'paid' => true,
+                    'result_code' => $resultCode,
+                    'result_message' => $request->input('message'),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error processing payment webhook', ['error' => $e->getMessage()]);
+            }
         } else {
             Log::warning('Selcom payment not successful via webhook', [
                 'transid'    => $transid,
@@ -215,7 +231,20 @@ class PaymentController extends Controller
                 'status'     => $status,
                 'message'    => $request->input('message'),
             ]);
-            // TODO: Payment::where('order_id', $transid)->update(['status' => 'failed']);
+            
+            // Mark payment as failed
+            try {
+                $payment = Payment::where('reference', $transid)
+                    ->orWhere('reference', $reference)
+                    ->first();
+                
+                if ($payment) {
+                    $payment->update(['status' => 'failed']);
+                    Log::info('Payment marked as failed', ['payment_id' => $payment->id]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Error marking payment as failed', ['error' => $e->getMessage()]);
+            }
         }
 
         return response()->json(['status' => 'received'], 200);
