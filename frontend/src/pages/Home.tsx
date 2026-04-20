@@ -22,16 +22,33 @@ const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg
  *   4. Bare filename     → file.jpg  (agent/owner uploaded, needs /storage/ prepended)
  */
 const getImage = (property: any): string => {
+  // Debug: Log the property images structure
+  console.log('Home - Property images for', property.title, ':', property.images);
+  
   if (property.images && property.images.length > 0) {
     const i = property.images[0];
+    console.log('Home - First image raw value:', i);
+    
     if (typeof i === 'string' && i.trim() !== '') {
-      if (i.startsWith('http://') || i.startsWith('https://')) return i;
-      if (i.startsWith('/'))        return `${VITE_STORAGE}${i}`;
-      if (i.startsWith('storage/')) return `${VITE_STORAGE}/${i}`;
-      // bare filename — could be in /storage/ root or /storage/properties/
-      return `${VITE_STORAGE}/storage/${i}`;
+      let finalUrl = '';
+      
+      if (i.startsWith('http://') || i.startsWith('https://')) {
+        finalUrl = i;
+      } else if (i.startsWith('/')) {
+        finalUrl = `${VITE_STORAGE}${i}`;
+      } else if (i.startsWith('storage/')) {
+        finalUrl = `${VITE_STORAGE}/${i}`;
+      } else {
+        // bare filename - could be in /storage/ root or /storage/properties/
+        finalUrl = `${VITE_STORAGE}/storage/${i}`;
+      }
+      
+      console.log('Home - Resolved image URL:', finalUrl);
+      return finalUrl;
     }
   }
+  
+  console.log('Home - Using placeholder for', property.title);
   return PLACEHOLDER;
 };
 
