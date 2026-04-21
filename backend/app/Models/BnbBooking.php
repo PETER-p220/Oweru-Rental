@@ -37,9 +37,9 @@ class BnbBooking extends Model
 
     // Relationships
     public function property(): BelongsTo
-    {
-        return $this->belongsTo(BnbProperty::class, 'property_id');
-    }
+{
+    return $this->belongsTo(\App\Models\Property::class, 'property_id');
+}
 
     public function guest(): BelongsTo
     {
