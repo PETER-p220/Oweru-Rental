@@ -116,6 +116,12 @@ class BnbBookingController extends Controller
         $property = \App\Models\Property::findOrFail($request->property_id);
 
         // Create actual BnbBooking record for owner to see in their BnB bookings
+        \Log::info('BnbBookingController::store - Creating BnbBooking:', [
+            'property_id' => $property->id,
+            'property_owner_id' => $property->owner_id,
+            'request_data' => $request->all()
+        ]);
+        
         $bnbBooking = \App\Models\BnbBooking::create([
             'property_id' => $property->id,
             'guest_id' => null, // No authenticated user for public bookings
@@ -127,6 +133,12 @@ class BnbBookingController extends Controller
             'special_requests' => $request->special_requests ? [$request->special_requests] : null,
             'payment_status' => 'pending',
             'notes' => "Public booking by: {$request->customer_name} ({$request->customer_email}, {$request->customer_phone})",
+        ]);
+        
+        \Log::info('BnbBookingController::store - BnbBooking created:', [
+            'booking_id' => $bnbBooking->id,
+            'property_id' => $bnbBooking->property_id,
+            'status' => $bnbBooking->status
         ]);
 
         // Also create a lead for the agent/owner to follow up
