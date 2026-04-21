@@ -2,9 +2,25 @@ import { useState, useEffect } from 'react';
 import {
   Home, Calendar, DollarSign, Users, Star, TrendingUp, Bed, Bath, Wifi,
   Car, Dumbbell, Wind, Utensils, Monitor, Tv, Shirt, MapPin,
-  Plus, CheckCircle, Clock, XCircle, Award, AlertCircle,
+  Plus, CheckCircle, Clock, XCircle, Award, AlertCircle, Phone, Mail,
 } from 'lucide-react';
 import Api from '../../services/api';
+
+// Helper to parse guest info from notes
+function parseGuestFromNotes(notes?: string): { name: string; email: string; phone: string } | null {
+  if (!notes) return null;
+  const match = notes.match(/by:\s*(.+?)\s*\(([^,]+),\s*([^)]+)\)/);
+  if (match) {
+    return {
+      name: match[1].trim(),
+      email: match[2].trim(),
+      phone: match[3].trim(),
+    };
+  }
+  const nameMatch = notes.match(/by:\s*(.+)/);
+  if (nameMatch) return { name: nameMatch[1].trim(), email: '', phone: '' };
+  return null;
+}
 
 /* ─────────────────────────────────────────────────────────────
    BRAND TOKENS — Oweru Brand Kit
@@ -252,29 +268,32 @@ const BnbDashboard = () => {
                 <div style={{ fontSize: 14, fontWeight: 300 }}>No recent bookings</div>
               </div>
             ) : (
-              recentBookings.map((b: any) => (
-                <div key={b.id} className="bnb-booking-row" style={bookingRow}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={iconBox(B.gold)}><Calendar size={16} /></div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: B.cream, marginBottom: 3 }}>
-                        {b.property?.title || 'Property'}
+              recentBookings.map((b: any) => {
+                const guest = b.guest || parseGuestFromNotes(b.notes);
+                return (
+                  <div key={b.id} className="bnb-booking-row" style={bookingRow}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={iconBox(B.gold)}><Calendar size={16} /></div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: B.cream, marginBottom: 3 }}>
+                          {b.property?.title || `Property #${b.property_id}`}
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 300, color: B.slate }}>
+                          {guest?.name || 'Guest'} · {fmtDate(b.check_in)} → {fmtDate(b.check_out)}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 300, color: B.slate }}>
-                        {b.guest?.name} · {fmtDate(b.check_in)} → {fmtDate(b.check_out)}
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: B.gold, marginBottom: 4 }}>
+                        {fmtCurrency(b.total_price)}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end', fontSize: 11, fontWeight: 600, color: statusColor(b.status), textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        {statusIcon(b.status)} {b.status}
                       </div>
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: B.gold, marginBottom: 4 }}>
-                      {fmtCurrency(b.total_price)}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end', fontSize: 11, fontWeight: 600, color: statusColor(b.status), textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                      {statusIcon(b.status)} {b.status}
-                    </div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -315,14 +334,14 @@ const BnbDashboard = () => {
                         <MapPin size={11} /> {p.location}
                       </div>
                       <div style={{ display: 'flex', gap: 12, fontSize: 11, color: B.slate }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Bed size={11} />{p.bedrooms}</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Bath size={11} />{p.bathrooms}</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Users size={11} />{p.bnb_details?.max_guests || 2}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Bed size={11} />{p.bedrooms || 1}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Bath size={11} />{p.bathrooms || 1}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><Users size={11} />{p.max_guests || 2}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: p.bnb_details?.amenities_bnb ? 10 : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: p.amenities ? 10 : 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: B.gold }}>
                       {fmtCurrency(p.price)}<span style={{ fontSize: 11, fontWeight: 400, color: B.slate }}>/night</span>
                     </div>
@@ -332,9 +351,9 @@ const BnbDashboard = () => {
                     </div>
                   </div>
 
-                  {p.bnb_details?.amenities_bnb && (
+                  {p.amenities && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {Object.entries(p.bnb_details.amenities_bnb)
+                      {Object.entries(p.amenities)
                         .filter(([, v]) => v)
                         .slice(0, 4)
                         .map(([k]) => (
