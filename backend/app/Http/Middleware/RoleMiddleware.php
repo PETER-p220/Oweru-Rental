@@ -15,6 +15,15 @@ class RoleMiddleware
         }
 
         $user = Auth::user();
+        
+        // Debug: Log role checking
+        \Log::info('RoleMiddleware - Checking roles:', [
+            'user_id' => $user->id,
+            'user_type' => $user->user_type,
+            'required_roles' => $roles,
+            'has_required_role' => in_array($user->user_type, $roles),
+            'user_attributes' => $user->toArray()
+        ]);
 
         // Support multiple roles: role:admin  OR  role:landlord,agent
         if (!in_array($user->user_type, $roles)) {

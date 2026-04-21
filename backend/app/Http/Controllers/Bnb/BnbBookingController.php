@@ -21,6 +21,14 @@ class BnbBookingController extends Controller
     {
         $user = Auth::user();
         
+        // Debug: Log user info
+        \Log::info('BnbBookingController::index - User info:', [
+            'user_id' => $user->id,
+            'user_type' => $user->user_type,
+            'user_exists' => $user ? true : false,
+            'all_attributes' => $user->toArray()
+        ]);
+        
         // Get bookings where user is either the guest or the owner of the property
         $query = BnbBooking::with(['property', 'guest'])
             ->where(function ($q) use ($user) {
