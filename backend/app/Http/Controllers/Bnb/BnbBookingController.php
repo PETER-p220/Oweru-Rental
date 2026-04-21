@@ -112,8 +112,8 @@ class BnbBookingController extends Controller
             ], 422);
         }
 
-        // Use regular Property model since we're booking regular properties as BnB
-        $property = \App\Models\Property::findOrFail($request->property_id);
+        // Use BnbProperty model for BnB bookings
+        $property = \App\Models\BnbProperty::findOrFail($request->property_id);
 
         // Create actual BnbBooking record for owner to see in their BnB bookings
         \Log::info('BnbBookingController::store - Creating BnbBooking:', [
