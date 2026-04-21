@@ -42,8 +42,8 @@ const BookingForm = ({ property, onClose, onSuccess }: BookingFormProps) => {
         customer_phone: formData.phone,
         check_in: formData.checkIn,
         check_out: formData.checkOut,
-        guests: parseInt(formData.guests),
-        message: formData.message,
+        guest_count: parseInt(formData.guests),
+        special_requests: formData.message,
         total_amount: calculateTotalAmount(),
         status: 'pending'
       };

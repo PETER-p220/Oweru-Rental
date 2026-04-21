@@ -18,7 +18,7 @@ return new class extends Migration
         
         // Add correct foreign key constraint to properties table
         Schema::table('bnb_bookings', function (Blueprint $table) {
-            $table->foreignId('property_id')->constrained('properties')->onDelete('cascade')->change();
+            $table->foreign('property_id')->references('id')->on('properties')->onDelete('cascade');
         });
     }
 
@@ -34,7 +34,7 @@ return new class extends Migration
         
         // Restore the original incorrect foreign key
         Schema::table('bnb_bookings', function (Blueprint $table) {
-            $table->foreignId('property_id')->constrained('bnb_properties')->onDelete('cascade')->change();
+            $table->foreign('property_id')->references('id')->on('bnb_properties')->onDelete('cascade');
         });
     }
 };
