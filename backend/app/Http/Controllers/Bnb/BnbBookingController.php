@@ -97,11 +97,24 @@ class BnbBookingController extends Controller
         // Use regular Property model since we're booking regular properties as BnB
         $property = \App\Models\Property::findOrFail($request->property_id);
 
-        // Create booking record (using a simple table or leads table)
-        // For now, we'll create it as a lead with booking information
-        $bookingData = [
+        // Create actual BnbBooking record for owner to see in their BnB bookings
+        $bnbBooking = \App\Models\BnbBooking::create([
             'property_id' => $property->id,
-            'agent_id' => $property->agent_id ?? $property->owner_id ?? null, // Use agent_id or owner_id from property
+            'guest_id' => null, // No authenticated user for public bookings
+            'check_in' => $request->check_in,
+            'check_out' => $request->check_out,
+            'guests' => $request->guest_count,
+            'total_price' => $request->total_amount,
+            'status' => 'pending', // Pending owner confirmation
+            'special_requests' => $request->special_requests ? [$request->special_requests] : null,
+            'payment_status' => 'pending',
+            'notes' => "Public booking by: {$request->customer_name} ({$request->customer_email}, {$request->customer_phone})",
+        ]);
+
+        // Also create a lead for the agent/owner to follow up
+        $leadData = [
+            'property_id' => $property->id,
+            'agent_id' => $property->agent_id ?? $property->owner_id ?? null,
             'name' => $request->customer_name,
             'email' => $request->customer_email,
             'phone' => $request->customer_phone,
@@ -111,19 +124,20 @@ class BnbBookingController extends Controller
                        "Check-out: {$request->check_out}\n" .
                        "Guests: {$request->guest_count}\n" .
                        "Total Amount: TZS " . number_format($request->total_amount) . "\n" .
-                       "Special Requests: " . ($request->special_requests ?: 'None'),
+                       "Special Requests: " . ($request->special_requests ?: 'None') .
+                       "\n\nBooking ID: #{$bnbBooking->id}",
             'type' => 'bnb_booking',
             'status' => 'pending',
         ];
 
-        // Create as a lead (or you could create a dedicated booking table)
-        $lead = \App\Models\Lead::create($bookingData);
+        // Create lead for follow-up
+        $lead = \App\Models\Lead::create($leadData);
 
         return response()->json([
             'success' => true,
             'message' => 'Booking request submitted successfully! The property owner will contact you soon.',
             'data' => [
-                'booking_id' => $lead->id,
+                'booking_id' => $bnbBooking->id,
                 'property_title' => $request->property_title,
                 'check_in' => $request->check_in,
                 'check_out' => $request->check_out,
