@@ -5,16 +5,27 @@ import Api from '../../services/api';
 interface Booking {
   id: number;
   property_id: number;
-  property_title: string;
-  guest_name: string;
-  guest_email: string;
+  property?: {
+    id: number;
+    title: string;
+    location?: string;
+  };
+  guest?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  guest_id: number | null;
   check_in: string;
   check_out: string;
-  total_amount: number;
+  guests: number;
+  total_price: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  payment_status: string;
+  special_requests?: string[] | null;
+  notes?: string;
   created_at: string;
-  guest_count: number;
-  special_requests?: string;
+  updated_at: string;
 }
 
 const BnbBookings = () => {
@@ -223,10 +234,10 @@ const BnbBookings = () => {
             >
               <div className="booking-header">
                 <div>
-                  <div className="booking-property">{booking.property_title}</div>
+                  <div className="booking-property">{booking.property?.title || `Property #${booking.property_id}`}</div>
                   <div className="booking-guest">
                     <Users size={14} style={{ marginRight: '6px' }} />
-                    {booking.guest_name}
+                    {booking.guest?.name || (booking.notes ? booking.notes.split('by:')[1]?.split('(')[0]?.trim() : 'Guest')}
                   </div>
                 </div>
                 <div
@@ -252,10 +263,10 @@ const BnbBookings = () => {
               </div>
 
               <div className="booking-amount">
-                {formatCurrency(booking.total_amount)}
+                {formatCurrency(booking.total_price)}
               </div>
 
-              {booking.special_requests && (
+              {booking.special_requests && booking.special_requests.length > 0 && (
                 <div style={{
                   fontSize: '13px',
                   color: '#6b7280',
@@ -265,7 +276,7 @@ const BnbBookings = () => {
                   borderRadius: '6px',
                 }}>
                   <MessageSquare size={14} style={{ marginRight: '6px' }} />
-                  {booking.special_requests}
+                  {booking.special_requests.join(', ')}
                 </div>
               )}
             </div>
@@ -312,15 +323,15 @@ const BnbBookings = () => {
             </div>
             
             <div style={{ color: '#9ca3af', lineHeight: 1.6 }}>
-              <p><strong>Property:</strong> {selectedBooking.property_title}</p>
-              <p><strong>Guest:</strong> {selectedBooking.guest_name}</p>
-              <p><strong>Email:</strong> {selectedBooking.guest_email}</p>
+              <p><strong>Property:</strong> {selectedBooking.property?.title || `Property #${selectedBooking.property_id}`}</p>
+              <p><strong>Guest:</strong> {selectedBooking.guest?.name || (selectedBooking.notes ? selectedBooking.notes.split('by:')[1]?.split('(')[0]?.trim() : 'Guest')}</p>
+              <p><strong>Email:</strong> {selectedBooking.guest?.email || 'N/A'}</p>
               <p><strong>Check-in:</strong> {formatDate(selectedBooking.check_in)}</p>
               <p><strong>Check-out:</strong> {formatDate(selectedBooking.check_out)}</p>
-              <p><strong>Guests:</strong> {selectedBooking.guest_count}</p>
-              <p><strong>Amount:</strong> {formatCurrency(selectedBooking.total_amount)}</p>
-              {selectedBooking.special_requests && (
-                <p><strong>Special Requests:</strong> {selectedBooking.special_requests}</p>
+              <p><strong>Guests:</strong> {selectedBooking.guests}</p>
+              <p><strong>Amount:</strong> {formatCurrency(selectedBooking.total_price)}</p>
+              {selectedBooking.special_requests && selectedBooking.special_requests.length > 0 && (
+                <p><strong>Special Requests:</strong> {selectedBooking.special_requests.join(', ')}</p>
               )}
               <p><strong>Status:</strong> 
                 <span style={{

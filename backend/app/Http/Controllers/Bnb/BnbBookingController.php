@@ -19,8 +19,18 @@ class BnbBookingController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user = Auth::user();
+        
+        // Get bookings where user is either the guest or the owner of the property
         $query = BnbBooking::with(['property', 'guest'])
-            ->where('guest_id', Auth::id());
+            ->where(function ($q) use ($user) {
+                // Bookings where user is the guest
+                $q->where('guest_id', $user->id)
+                // OR bookings where user owns the property
+                ->orWhereHas('property', function ($propertyQuery) use ($user) {
+                    $propertyQuery->where('owner_id', $user->id);
+                });
+            });
 
         // Apply filters
         if ($request->search) {
