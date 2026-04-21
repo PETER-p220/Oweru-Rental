@@ -58,7 +58,24 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'is_active' => 'boolean',
+            'user_type' => 'string', // Ensure user_type is always cast to string
         ];
+    }
+
+    /**
+     * Get the user's type (for frontend compatibility)
+     */
+    public function getUserTypeAttribute(): string
+    {
+        return $this->attributes['user_type'] ?? '';
+    }
+
+    /**
+     * Set the user's type (for frontend compatibility)
+     */
+    public function setUserTypeAttribute($value): void
+    {
+        $this->attributes['user_type'] = $value;
     }
 
     // Relationships
