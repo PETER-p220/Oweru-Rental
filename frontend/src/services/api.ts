@@ -2,15 +2,13 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // ── The single source of truth for the token key ──────────────────────────────
-// Make sure localStorage.setItem uses this same key when you save the token
-// after login/register.
 export const TOKEN_KEY = 'token';
 
 export interface ApiResponse<T = any> {
   data: T;
   message?: string;
   status: number;
-  already_saved?: boolean; // For save property responses
+  already_saved?: boolean;
 }
 
 export interface DashboardStats {
@@ -18,7 +16,6 @@ export interface DashboardStats {
   savedProperties: number;
   totalApplications: number;
   messages: number;
-  // Landlord-specific
   activeTenants?: number;
   monthlyRevenue?: number;
   totalRevenue?: number;
@@ -57,7 +54,6 @@ export interface Property {
   status: 'available' | 'occupied' | 'maintenance';
   created_at: string;
   updated_at: string;
-  // BNB specific fields
   bnb_details?: {
     max_guests: number;
     min_stay: number;
@@ -93,7 +89,6 @@ export interface Property {
   available: boolean;
   createdAt: string;
   updatedAt: string;
-  // Relationships
   owner?: { id: number; firstName: string; lastName: string; email: string; phone: string; userType: string };
 }
 
@@ -117,9 +112,8 @@ class Api {
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}/api/${endpoint}`;
 
-    // Don't set Content-Type for FormData - let browser set it with boundary
     const isFormData = options.body instanceof FormData;
-    
+
     const defaultHeaders: Record<string, string> = {
       'Accept': 'application/json',
       'X-Requested-With': 'XMLHttpRequest',
@@ -129,7 +123,6 @@ class Api {
       defaultHeaders['Content-Type'] = 'application/json';
     }
 
-    // ── FIX: use TOKEN_KEY consistently everywhere ──────────────────────────
     const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
       defaultHeaders['Authorization'] = `Bearer ${token}`;
@@ -143,7 +136,6 @@ class Api {
       },
     });
 
-    // ── Return structured error so callers can read response.data.errors ────
     if (!response.ok) {
       let errorBody: any = {};
       try { errorBody = await response.json(); } catch { /* ignore */ }
@@ -403,20 +395,31 @@ class Api {
 
   static async getBnbBookings(params?: { search?: string; status?: string; property_id?: number }) {
     const queryParams = new URLSearchParams();
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.status) queryParams.append('status', params.status);
+    if (params?.search)      queryParams.append('search',      params.search);
+    if (params?.status)      queryParams.append('status',      params.status);
     if (params?.property_id) queryParams.append('property_id', params.property_id.toString());
-    
+
     const url = `bnb/bookings${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return this.request<any[]>(url);
   }
 
+  // ── NEW: Update BNB booking status (used by BnbBookings component) ──────────
+  static async updateBnbBookingStatus(bookingId: number, status: string, cancellationReason?: string) {
+    return this.request<any>(`bnb/bookings/${bookingId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status,
+        ...(cancellationReason ? { cancellation_reason: cancellationReason } : {}),
+      }),
+    });
+  }
+
   static async getBnbReviews(params?: { search?: string; rating?: string; property_id?: number }) {
     const queryParams = new URLSearchParams();
-    if (params?.search) queryParams.append('search', params.search);
-    if (params?.rating) queryParams.append('rating', params.rating);
+    if (params?.search)      queryParams.append('search',      params.search);
+    if (params?.rating)      queryParams.append('rating',      params.rating);
     if (params?.property_id) queryParams.append('property_id', params.property_id.toString());
-    
+
     const url = `bnb/reviews${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return this.request<any[]>(url);
   }
@@ -437,13 +440,13 @@ class Api {
     min_price?: number; max_price?: number; owner_id?: number;
   }) {
     const queryParams = new URLSearchParams();
-    if (filters?.search) queryParams.append('search', filters.search);
-    if (filters?.status) queryParams.append('status', filters.status);
-    if (filters?.location) queryParams.append('location', filters.location);
+    if (filters?.search)    queryParams.append('search',    filters.search);
+    if (filters?.status)    queryParams.append('status',    filters.status);
+    if (filters?.location)  queryParams.append('location',  filters.location);
     if (filters?.min_price) queryParams.append('min_price', filters.min_price.toString());
     if (filters?.max_price) queryParams.append('max_price', filters.max_price.toString());
-    if (filters?.owner_id) queryParams.append('owner_id', filters.owner_id.toString());
-    
+    if (filters?.owner_id)  queryParams.append('owner_id',  filters.owner_id.toString());
+
     const url = `admin/bnb/properties${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return this.request<any[]>(url);
   }
@@ -451,10 +454,7 @@ class Api {
   static async updateAdminBnbPropertyStatus(propertyId: number, status: string, adminNotes?: string) {
     return this.request<any>(`admin/bnb/properties/${propertyId}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ 
-        status, 
-        admin_notes: adminNotes 
-      }),
+      body: JSON.stringify({ status, admin_notes: adminNotes }),
     });
   }
 
@@ -533,16 +533,15 @@ class Api {
   static async getSavedProperties()      { return this.request<Property[]>('tenant/saved-properties'); }
   static async getTenantApplications()   { return this.request<any[]>('tenant/applications'); }
   static async getDigitalContracts()      { return this.request<any[]>('owner/digital-contracts'); }
-  static async generateDigitalContract(data: any) { 
-    return this.request<any>('owner/digital-contracts/generate', { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
-    }); 
+  static async generateDigitalContract(data: any) {
+    return this.request<any>('owner/digital-contracts/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
   static async updateContract(id: number, data: any) { return this.request<any>(`tenant/contract/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
   static async signContract(id: number) { return this.request<any>(`tenant/contract/${id}/sign`, { method: 'POST' }); }
-  
-  // Digital Contract APIs
+
   static async getTenantDigitalContracts() { return this.request<any[]>('tenant/digital-contracts'); }
   static async downloadDigitalContract(id: number) { return this.request(`tenant/digital-contracts/${id}/download`); }
   static async submitDigitalContract(data: any) { return this.request<any>('tenant/digital-contracts/submit', { method: 'POST', body: JSON.stringify(data) }); }
@@ -561,13 +560,16 @@ class Api {
     return this.request(`tenant/properties/${propertyId}/save`, { method: 'DELETE' });
   }
 
-  // ── Public Save/Unsave (works without auth for demo) ──────────────────────────────
   static async publicSaveProperty(_propertyId: number) {
-    // For demo purposes, just return success
+    return Promise.resolve({ success: true });
+  }
+
+  static async publicUnsaveProperty(_propertyId: number) {
     return Promise.resolve({ success: true });
   }
 
   // ── Site Visits ─────────────────────────────────────────────────────────────
+
   static async requestSiteVisit(data: any) {
     return this.request<any>('site-visits', { method: 'POST', body: JSON.stringify(data) });
   }
@@ -590,11 +592,6 @@ class Api {
 
   static async markNotificationRead(notificationId: number) {
     return this.request<any>(`notifications/${notificationId}/read`, { method: 'PATCH' });
-  }
-
-  static async publicUnsaveProperty(_propertyId: number) {
-    // For demo purposes, just return success  
-    return Promise.resolve({ success: true });
   }
 
   static async createApplication(applicationData: any) {
@@ -657,10 +654,10 @@ class Api {
 
   // ── Notifications (tenant-scoped) ───────────────────────────────────────────
 
-  static async getNotifications()          { return this.request<any>('tenant/notifications'); }
-  static async getNotificationStats()      { return this.request<any>('tenant/notification-stats'); }
-  static async markAllNotificationsAsRead(){ return this.request('tenant/notifications/read-all', { method: 'PATCH' }); }
-  static async getTenantMessages()         { return this.request<any>('tenant/messages'); }
+  static async getNotifications()           { return this.request<any>('tenant/notifications'); }
+  static async getNotificationStats()       { return this.request<any>('tenant/notification-stats'); }
+  static async markAllNotificationsAsRead() { return this.request('tenant/notifications/read-all', { method: 'PATCH' }); }
+  static async getTenantMessages()          { return this.request<any>('tenant/messages'); }
   static async sendTenantMessage(data: { subject?: string; body: string }) {
     return this.request<any>('tenant/messages', {
       method: 'POST',
@@ -732,19 +729,20 @@ class Api {
   static async getMyTenants()             { return this.request<any[]>('owner/tenants'); }
   static async createTenantFromApprovedApplication() { return this.request<any>('owner/tenants/create-from-approved', { method: 'POST' }); }
 
-  static async updateApplicationStatus(id: number, status: string, message?: string) { 
-    return this.request<any>(`owner/applications/${id}`, { 
-      method: 'PATCH', 
-      body: JSON.stringify({ status, message }) 
-    }); 
+  static async updateApplicationStatus(id: number, status: string, message?: string) {
+    return this.request<any>(`owner/applications/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, message }),
+    });
   }
 
-  static async notifyTenantApproval(applicationId: number, tenantEmail: string) { 
-    return this.request<any>('tenant/applications/notify-approval', { 
-      method: 'POST', 
-      body: JSON.stringify({ applicationId, tenantEmail }) 
-    }); 
+  static async notifyTenantApproval(applicationId: number, tenantEmail: string) {
+    return this.request<any>('tenant/applications/notify-approval', {
+      method: 'POST',
+      body: JSON.stringify({ applicationId, tenantEmail }),
+    });
   }
+
   static async getOwnerContracts()        { return this.request<any[]>('owner/contracts'); }
   static async getRentCollection()        { return this.request<any[]>('owner/rent-collection'); }
   static async getRentCollectionStats()   { return this.request<any>('owner/rent-collection-stats'); }
@@ -754,48 +752,24 @@ class Api {
   static async getOwnerMessages()         { return this.request<any[]>('owner/messages'); }
 
   static async createOwnerProperty(data: any) {
-    // Handle FormData for file uploads
     if (data instanceof FormData) {
-      return this.request<any>('owner/properties', { 
-        method: 'POST', 
-        body: data,
-        headers: {} // Let browser set Content-Type for FormData
-      });
+      return this.request<any>('owner/properties', { method: 'POST', body: data, headers: {} });
     }
-    return this.request<any>('owner/properties', { 
-      method: 'POST', 
-      body: JSON.stringify(data)
-    });
+    return this.request<any>('owner/properties', { method: 'POST', body: JSON.stringify(data) });
   }
 
   static async agentCreateProperty(data: any) {
-    // Handle FormData for file uploads
     if (data instanceof FormData) {
-      return this.request<any>('agent/listings', { 
-        method: 'POST', 
-        body: data,
-        headers: {} // Let browser set Content-Type for FormData
-      });
+      return this.request<any>('agent/listings', { method: 'POST', body: data, headers: {} });
     }
-    return this.request<any>('agent/listings', { 
-      method: 'POST', 
-      body: JSON.stringify(data)
-    });
+    return this.request<any>('agent/listings', { method: 'POST', body: JSON.stringify(data) });
   }
 
   static async createProperty(data: any) {
-    // Handle FormData for file uploads
     if (data instanceof FormData) {
-      return this.request<any>('properties', { 
-        method: 'POST', 
-        body: data,
-        headers: {} // Let browser set Content-Type for FormData
-      });
+      return this.request<any>('properties', { method: 'POST', body: data, headers: {} });
     }
-    return this.request<any>('properties', { 
-      method: 'POST', 
-      body: JSON.stringify(data)
-    });
+    return this.request<any>('properties', { method: 'POST', body: JSON.stringify(data) });
   }
 
   static async updateOwnerProperty(id: number, data: any) {
@@ -843,7 +817,6 @@ class Api {
     });
   }
 
-  // Digital Contract APIs for Landlords
   static async createDigitalContract(data: any) { return this.request<any>('owner/digital-contracts', { method: 'POST', body: JSON.stringify(data) }); }
   static async uploadContractFile(formData: FormData) { return this.request<any>('owner/digital-contracts/upload-file', { method: 'POST', body: formData, headers: {} }); }
   static async sendContractToTenant(contractId: number) { return this.request<any>(`owner/digital-contracts/${contractId}/send`, { method: 'PUT' }); }
