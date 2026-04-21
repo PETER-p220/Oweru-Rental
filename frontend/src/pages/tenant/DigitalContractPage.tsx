@@ -23,6 +23,7 @@ interface ContractField {
   placeholder?: string;
   validation?: string;
   tenant_value?: string;
+  landlordOnly?: boolean;
 }
 
 interface DigitalContract {
@@ -157,7 +158,7 @@ const DigitalContractPage = () => {
 
   const openContract = (contract: DigitalContract) => {
     const init: Record<string, string> = {};
-    contract.fields.forEach(f => { init[f.id] = f.tenant_value || f.value || ''; });
+    contract.fields.filter(f => !f.landlordOnly).forEach(f => { init[f.id] = f.tenant_value || f.value || ''; });
     setSelectedContract(contract);
     setFieldValues(init);
     setSignatureDataUrl('');
@@ -255,7 +256,7 @@ const DigitalContractPage = () => {
     if (!selectedContract) return;
 
     const missing = selectedContract.fields.filter(
-      f => f.required && f.type !== 'signature' && !fieldValues[f.id]?.trim(),
+      f => !f.landlordOnly && f.required && f.type !== 'signature' && !fieldValues[f.id]?.trim(),
     );
     if (missing.length) {
       setError(`Please fill in: ${missing.map(f => f.label).join(', ')}`);
@@ -606,7 +607,7 @@ const DigitalContractPage = () => {
 
             {/* Fields */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {selectedContract.fields.length === 0 ? (
+              {selectedContract.fields.filter(f => !f.landlordOnly).length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '32px 0', color: palette.muted, fontSize: 14 }}>
                   <FileCheck size={32} style={{ opacity: 0.3, display: 'block', margin: '0 auto 10px' }} />
                   This contract has no fillable fields.
@@ -615,7 +616,7 @@ const DigitalContractPage = () => {
                   )}
                 </div>
               ) : (
-                selectedContract.fields.map(field => (
+                selectedContract.fields.filter(field => !field.landlordOnly).map(field => (
                   <div key={field.id}>
                     <label style={{
                       display: 'block', marginBottom: 8,

@@ -1084,4 +1084,99 @@ class OwnerController extends Controller
             'data'    => $contract
         ]);
     }
+
+    /**
+     * Download digital contract file
+     * GET /api/owner/digital-contracts/{contract}/download
+     */
+    public function downloadDigitalContract($contractId): \Symfony\Component\HttpFoundation\BinaryFileResponse|JsonResponse
+    {
+        $user = Auth::user();
+        
+        // Find contract that belongs to this owner's properties
+        $contract = DigitalContract::with(['property'])
+            ->whereHas('property', function ($query) use ($user) {
+                $query->where('owner_id', $user->id);
+            })
+            ->where('id', $contractId)
+            ->firstOrFail();
+        
+        if (! $contract) {
+            return response()->json(['message' => 'Contract not found'], 404);
+        }
+        
+        // Prefer file_url (remote / stored path) over legacy file_path
+        $storedPath = $contract->file_url ?? $contract->file_path ?? null;
+        
+        if (! $storedPath) {
+            return response()->json(['message' => 'No file attached to this contract'], 404);
+        }
+        
+        // Resolve absolute path via the public storage disk
+        $absolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($storedPath);
+        
+        if (! file_exists($absolutePath)) {
+            return response()->json(['message' => 'File not found on disk'], 404);
+        }
+        
+        $fileName = $contract->file_name ?? basename($storedPath);
+        
+        return response()->download($absolutePath, $fileName);
+    }
+
+    /**
+     * Approve a tenant-signed contract
+     * PUT /api/owner/digital-contracts/{contract}/approve
+     */
+    public function approveSignedContract($contractId): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // Find contract that belongs to this owner's properties
+        $contract = DigitalContract::with(['property', 'tenant'])
+            ->whereHas('property', function ($query) use ($user) {
+                $query->where('owner_id', $user->id);
+            })
+            ->where('id', $contractId)
+            ->firstOrFail();
+        
+        if (! $contract) {
+            return response()->json(['message' => 'Contract not found'], 404);
+        }
+        
+        // Contract must be signed by tenant and pending review
+        if ($contract->status !== 'pending_review') {
+            return response()->json([
+                'message' => 'Contract must be signed by tenant and pending review',
+                'current_status' => $contract->status
+            ], 422);
+        }
+        
+        // Approve the contract
+        $contract->update([
+            'status' => 'approved',
+            'approved_at' => now(),
+            'approved_by' => $user->id,
+        ]);
+        
+        // Notify tenant that contract is approved
+        try {
+            \App\Models\Notification::create([
+                'user_id' => $contract->tenant->user_id,
+                'title'   => 'Contract Approved',
+                'message' => "Your rental contract for {$contract->property->title} has been approved and is now active.",
+                'type'    => 'contract_approved',
+                'data'    => json_encode(['contract_id' => $contract->id]),
+                'is_read' => false,
+            ]);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to create contract approval notification', ['error' => $e->getMessage()]);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Contract approved successfully',
+            'data' => $contract->fresh()
+        ]);
+    }
 }

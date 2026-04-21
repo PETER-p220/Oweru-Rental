@@ -19,6 +19,7 @@ interface ContractField {
   value?: string;
   placeholder?: string;
   validation?: string;
+  landlordOnly?: boolean;
 }
 
 interface DigitalContract {
@@ -106,17 +107,16 @@ const MAX_FILE_SIZE_MB = 10;
 
 const DEFAULT_CONTRACT_FIELDS: ContractField[] = [
   { id: '1',  label: 'Full Name',                  type: 'text',      required: true,  placeholder: 'Enter your full name' },
-  { id: '2',  label: 'Email Address',               type: 'text',      required: true,  placeholder: 'Enter your email' },
-  { id: '3',  label: 'Phone Number',                type: 'text',      required: true,  placeholder: 'Enter your phone number' },
-  { id: '4',  label: 'National ID / Passport',      type: 'text',      required: true,  placeholder: 'Enter ID number' },
-  { id: '5',  label: 'Emergency Contact',           type: 'text',      required: false, placeholder: 'Name and phone number' },
-  { id: '6',  label: 'Start Date',                  type: 'date',      required: true  },
-  { id: '7',  label: 'End Date',                    type: 'date',      required: true  },
-  { id: '8',  label: 'Monthly Rent',                type: 'number',    required: true,  placeholder: 'Amount in local currency' },
-  { id: '9',  label: 'Security Deposit',            type: 'number',    required: true,  placeholder: 'Amount in local currency' },
-  { id: '10', label: 'Special Terms',               type: 'textarea',  required: false, placeholder: 'Additional terms or conditions' },
-  { id: '11', label: 'Landlord Signature',          type: 'signature', required: true  },
-  { id: '12', label: 'Tenant Signature',            type: 'signature', required: true  },
+  { id: '2',  label: 'Phone Number',                type: 'text',      required: true,  placeholder: 'Enter your phone number' },
+  { id: '3',  label: 'National ID / Passport',      type: 'text',      required: false, placeholder: 'Enter ID number (optional)' },
+  { id: '4',  label: 'Emergency Contact',           type: 'text',      required: false, placeholder: 'Name and phone number' },
+  { id: '5',  label: 'Start Date',                  type: 'date',      required: true  },
+  { id: '6',  label: 'End Date',                    type: 'date',      required: true  },
+  { id: '7',  label: 'Monthly Rent',                type: 'number',    required: true,  placeholder: 'Amount in local currency' },
+  { id: '8',  label: 'Security Deposit',            type: 'number',    required: true,  placeholder: 'Amount in local currency' },
+  { id: '9',  label: 'Special Terms',               type: 'textarea',  required: false, placeholder: 'Additional terms or conditions' },
+  { id: '10', label: 'Landlord Signature',          type: 'signature', required: true,  landlordOnly: true },
+  { id: '11', label: 'Tenant Signature',            type: 'signature', required: true  },
 ];
 
 const EMPTY_FORM: ContractFormData = {
