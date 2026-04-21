@@ -72,14 +72,19 @@ class BnbBookingController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // For public bookings, allow different fields
         $validator = Validator::make($request->all(), [
-            'property_id' => 'required|exists:bnb_properties,id',
-            'check_in' => 'required|date|after:today',
+            'property_id' => 'required|exists:properties,id',
+            'property_title' => 'required|string',
+            'customer_name' => 'required|string|max:255',
+            'customer_email' => 'required|email|max:255',
+            'customer_phone' => 'required|string|max:20',
+            'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
-            'guests' => 'required|integer|min:1|max:20',
-            'special_requests' => 'array',
-            'special_requests.*' => 'string',
-            'payment_method' => 'required|string',
+            'guest_count' => 'required|integer|min:1|max:20',
+            'special_requests' => 'nullable|string',
+            'total_amount' => 'required|numeric|min:0',
+            'status' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -89,43 +94,41 @@ class BnbBookingController extends Controller
             ], 422);
         }
 
-        $property = BnbProperty::findOrFail($request->property_id);
+        // Use regular Property model since we're booking regular properties as BnB
+        $property = \App\Models\Property::findOrFail($request->property_id);
 
-        // Check if property is available for the requested dates
-        if (!$property->isAvailableForDates($request->check_in, $request->check_out)) {
-            return response()->json([
-                'message' => 'Property is not available for the selected dates',
-            ], 422);
-        }
-
-        // Check if max guests is not exceeded
-        if ($request->guests > $property->max_guests) {
-            return response()->json([
-                'message' => 'Number of guests exceeds maximum capacity',
-            ], 422);
-        }
-
-        // Calculate total price
-        $totalPrice = $property->calculateTotalPrice($request->check_in, $request->check_out);
-
-        $booking = new BnbBooking([
+        // Create booking record (using a simple table or leads table)
+        // For now, we'll create it as a lead with booking information
+        $bookingData = [
             'property_id' => $property->id,
-            'guest_id' => Auth::id(),
-            'check_in' => $request->check_in,
-            'check_out' => $request->check_out,
-            'guests' => $request->guests,
-            'total_price' => $totalPrice,
+            'name' => $request->customer_name,
+            'email' => $request->customer_email,
+            'phone' => $request->customer_phone,
+            'message' => "BnB Booking Request:\n" .
+                       "Property: {$request->property_title}\n" .
+                       "Check-in: {$request->check_in}\n" .
+                       "Check-out: {$request->check_out}\n" .
+                       "Guests: {$request->guest_count}\n" .
+                       "Total Amount: TZS " . number_format($request->total_amount) . "\n" .
+                       "Special Requests: " . ($request->special_requests ?: 'None'),
+            'type' => 'bnb_booking',
             'status' => 'pending',
-            'special_requests' => $request->special_requests ?? [],
-            'payment_status' => 'pending',
-            'payment_method' => $request->payment_method,
-        ]);
+        ];
 
-        $booking->save();
+        // Create as a lead (or you could create a dedicated booking table)
+        $lead = \App\Models\Lead::create($bookingData);
 
         return response()->json([
-            'message' => 'Booking created successfully',
-            'data' => $booking->load(['property', 'guest']),
+            'success' => true,
+            'message' => 'Booking request submitted successfully! The property owner will contact you soon.',
+            'data' => [
+                'booking_id' => $lead->id,
+                'property_title' => $request->property_title,
+                'check_in' => $request->check_in,
+                'check_out' => $request->check_out,
+                'total_amount' => $request->total_amount,
+                'status' => 'pending',
+            ],
         ], 201);
     }
 

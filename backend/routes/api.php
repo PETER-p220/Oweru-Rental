@@ -31,6 +31,9 @@ Route::get('/public/bnb',                 [PropertyController::class, 'publicBnb
 Route::post('/leads/property/{property}', [LeadController::class, 'createFromProperty']);
 Route::post('/leads/contact',             [LeadController::class, 'createFromContact']);
 
+// Public BnB booking (no authentication required)
+Route::post('/public/bnb/book',           [BnbBookingController::class, 'store']);
+
 // ── Protected routes ──────────────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
 

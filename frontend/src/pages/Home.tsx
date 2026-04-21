@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, MapPin, ArrowRight, ChevronRight,
-  Heart, Building,
+  Heart, Building, X,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Api from '../services/api';
@@ -110,11 +110,57 @@ const BookingForm = ({
     e.preventDefault();
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 800));
-      onSuccess();
+      // Validate form
+      if (!formData.guest_name || !formData.guest_email || !formData.check_in || !formData.check_out) {
+        alert('Please fill in all required fields');
+        setLoading(false);
+        return;
+      }
+
+      // Create booking request (no authentication required)
+      const bookingData = {
+        property_id: property.id,
+        property_title: property.title,
+        customer_name: formData.guest_name,
+        customer_email: formData.guest_email,
+        check_in: formData.check_in,
+        check_out: formData.check_out,
+        guest_count: parseInt(formData.guest_count),
+        special_requests: formData.special_requests,
+        total_amount: calculateTotalAmount(),
+        status: 'pending'
+      };
+
+      // Call public booking API (no auth required)
+      const response = await fetch(`${API_BASE}/api/public/bnb/book`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData)
+      });
+
+      if (response.ok) {
+        onSuccess();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Failed to submit booking request');
+      }
+    } catch (err) {
+      alert('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateTotalAmount = () => {
+    if (!formData.check_in || !formData.check_out) return 0;
+    
+    const checkIn = new Date(formData.check_in);
+    const checkOut = new Date(formData.check_out);
+    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return nights * (property.price || 0);
   };
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 14px', background: 'var(--navy-900)',
@@ -123,29 +169,76 @@ const BookingForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2 style={{ color: 'var(--cream)', marginBottom: 6, fontSize: 20, fontWeight: 600 }}>
-        Book {property.title}
-      </h2>
-      <p style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 20 }}>
-        {property.location || property.address}
-      </p>
-      <input required style={inputStyle} placeholder="Your name" value={formData.guest_name} onChange={(e) => setFormData((p) => ({ ...p, guest_name: e.target.value }))} />
-      <input required type="email" style={inputStyle} placeholder="Email address" value={formData.guest_email} onChange={(e) => setFormData((p) => ({ ...p, guest_email: e.target.value }))} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <input required type="date" style={inputStyle} value={formData.check_in} onChange={(e) => setFormData((p) => ({ ...p, check_in: e.target.value }))} />
-        <input required type="date" style={inputStyle} value={formData.check_out} onChange={(e) => setFormData((p) => ({ ...p, check_out: e.target.value }))} />
-      </div>
-      <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} placeholder="Special requests (optional)" value={formData.special_requests} onChange={(e) => setFormData((p) => ({ ...p, special_requests: e.target.value }))} />
-      <div style={{ display: 'flex', gap: 12 }}>
-        <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
-          Cancel
-        </button>
-        <button type="submit" disabled={loading} style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-          {loading ? 'Submitting…' : 'Submit Booking'}
-        </button>
-      </div>
-    </form>
+    <div style={{ position: 'relative' }}>
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          background: 'none',
+          border: 'none',
+          color: '#94a3b8',
+          cursor: 'pointer',
+          padding: 8,
+          borderRadius: 6,
+          transition: 'all 0.2s'
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
+        onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+      >
+        <X size={20} />
+      </button>
+
+      <form onSubmit={handleSubmit}>
+        <h2 style={{ color: 'var(--cream)', marginBottom: 6, fontSize: 20, fontWeight: 600 }}>
+          Book {property.title}
+        </h2>
+        <p style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 20 }}>
+          {property.location || property.address}
+        </p>
+        <input required style={inputStyle} placeholder="Your name" value={formData.guest_name} onChange={(e) => setFormData((p) => ({ ...p, guest_name: e.target.value }))} />
+        <input required type="email" style={inputStyle} placeholder="Email address" value={formData.guest_email} onChange={(e) => setFormData((p) => ({ ...p, guest_email: e.target.value }))} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <input required type="date" style={inputStyle} value={formData.check_in} onChange={(e) => setFormData((p) => ({ ...p, check_in: e.target.value }))} />
+          <input required type="date" style={inputStyle} value={formData.check_out} onChange={(e) => setFormData((p) => ({ ...p, check_out: e.target.value }))} />
+        </div>
+        <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} placeholder="Special requests (optional)" value={formData.special_requests} onChange={(e) => setFormData((p) => ({ ...p, special_requests: e.target.value }))} />
+        
+        {/* Price Calculation */}
+        {formData.check_in && formData.check_out && (
+          <div style={{
+            background: 'var(--navy-900)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            padding: 16,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              <div style={{ fontSize: 14, color: 'var(--slate)', marginBottom: 4 }}>Total Amount</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold)' }}>
+                TZS {calculateTotalAmount().toLocaleString()}
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'right' }}>
+              {Math.ceil((new Date(formData.check_out).getTime() - new Date(formData.check_in).getTime()) / (1000 * 60 * 60 * 24))} nights
+            </div>
+          </div>
+        )}
+        
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
+            Cancel
+          </button>
+          <button type="submit" disabled={loading} style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+            {loading ? 'Submitting…' : 'Book Now'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 
@@ -510,7 +603,7 @@ const Home = () => {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 24 }}>
               {bnbProperties.map((p: any) => (
-                <div key={p.id} className="bnb-card" style={{ borderRadius: 12 }} onClick={() => { setSelectedProperty(p); setShowBookingModal(true); }}>
+                <div key={p.id} className="bnb-card" style={{ borderRadius: 12 }}>
                   <img
                     className="prop-img"
                     src={getImage(p)}
@@ -526,28 +619,46 @@ const Home = () => {
                     <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold)' }}>
                       {formatPrice(p.price)}<span style={{ fontSize: 12, color: 'var(--slate)' }}>/night</span>
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/property/${p.id}`); }}
-                      style={{
-                        width:         '100%',
-                        background:    'var(--gold)',
-                        color:         'var(--navy-900)',
-                        border:        'none',
-                        padding:       '13px',
-                        fontWeight:    700,
-                        fontSize:      13,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        borderRadius:  6,
-                        cursor:        'pointer',
-                        transition:    'background 0.2s',
-                        marginTop:     16,
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
-                    >
-                      View Details
-                    </button>
+                    <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedProperty(p); setShowBookingModal(true); }}
+                        style={{
+                          flex: 1,
+                          background: 'var(--gold)',
+                          color: 'var(--navy-900)',
+                          border: 'none',
+                          padding: '12px',
+                          fontWeight: 600,
+                          fontSize: 13,
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
+                      >
+                        Book Now
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate(`/property/${p.id}`); }}
+                        style={{
+                          flex: 1,
+                          background: 'var(--gold)',
+                          color: 'var(--navy-900)',
+                          border: 'none',
+                          padding: '12px',
+                          fontWeight: 600,
+                          fontSize: 13,
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
+                      >
+                        View Details
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
