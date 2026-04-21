@@ -177,23 +177,18 @@ class BnbBookingController extends Controller
      * Update the specified BNB booking status.
      */
     public function updateStatus(Request $request, BnbBooking $bnbBooking): JsonResponse
-    {
-        if ($bnbBooking->guest_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+{
+    $user = Auth::user();
+    
+    // Allow: the guest, OR the property owner
+    $isGuest = $bnbBooking->guest_id === $user->id;
+    $isOwner = \App\Models\Property::where('id', $bnbBooking->property_id)
+                 ->where('owner_id', $user->id)
+                 ->exists();
 
-        $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,confirmed,cancelled,completed',
-            'cancellation_reason' => 'required_if:status,cancelled|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
+    if (!$isGuest && !$isOwner) {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
         $bnbBooking->status = $request->status;
 
         if ($request->status === 'cancelled') {
