@@ -92,7 +92,7 @@ class BnbBookingController extends Controller
     {
         // For public bookings, allow different fields
         $validator = Validator::make($request->all(), [
-            'property_id' => 'required|exists:properties,id',
+            'property_id' => 'required|exists:bnb_properties,id',
             'property_title' => 'required|string',
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
@@ -114,6 +114,17 @@ class BnbBookingController extends Controller
 
         // Use BnbProperty model for BnB bookings
         $property = \App\Models\BnbProperty::findOrFail($request->property_id);
+
+        // Check if property has an owner
+        if (!$property->owner_id) {
+            \Log::error('BnbBookingController::store - Property has no owner_id', [
+                'property_id' => $property->id,
+                'property_title' => $property->title
+            ]);
+            return response()->json([
+                'message' => 'This property is not properly configured for bookings',
+            ], 422);
+        }
 
         // Create actual BnbBooking record for owner to see in their BnB bookings
         \Log::info('BnbBookingController::store - Creating BnbBooking:', [
