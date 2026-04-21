@@ -715,7 +715,7 @@ class TenantController extends Controller
 
     // Digital Contracts Management
     public function getDigitalContracts(): JsonResponse
-{
+    {
     $user = Auth::user();
  
     // Resolve all Tenant records that belong to this user
@@ -740,9 +740,9 @@ class TenantController extends Controller
  * PUT /api/tenant/applications/{application}/payment-status
  */
 public function updateApplicationPaymentStatus(Request $request, $applicationId)
-{
-    try {
-        $validated = $request->validate([
+    {
+        try {
+            $validated = $request->validate([
             'payment_status' => 'required|string|in:paid,pending,failed',
             'payment_method' => 'required|string',
             'transaction_id' => 'required|string',
@@ -769,73 +769,78 @@ public function updateApplicationPaymentStatus(Request $request, $applicationId)
             'data' => $application->fresh()
         ]);
 
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json([
-            'success' => false,
-            'error' => 'VALIDATION_ERROR',
-            'errors' => $e->errors(),
-        ], 422);
-        
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Application not found or access denied',
-        ], 404);
-        
-    } catch (\Exception $e) {
-        \Log::error('Error updating application payment status', [
-            'error' => $e->getMessage(),
-            'application_id' => $applicationId,
-            'user_id' => Auth::id(),
-        ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'VALIDATION_ERROR',
+                'errors' => $e->errors(),
+            ], 422);
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Application not found or access denied',
+            ], 404);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error updating application payment status', [
+                'error' => $e->getMessage(),
+                'application_id' => $applicationId,
+                'user_id' => Auth::id(),
+            ]);
 
-        return response()->json([
-            'success' => false,
-            'message' => 'An unexpected error occurred while updating payment status',
-        ], 500);
-    }
-}
-
-public function downloadDigitalContract($contractId): \Symfony\Component\HttpFoundation\BinaryFileResponse|JsonResponse
-{
-    $user = Auth::user();
- 
-    // Resolve all Tenant records that belong to this user
-    $tenantIds = Tenant::where('user_id', $user->id)->pluck('id');
- 
-    if ($tenantIds->isEmpty()) {
-        return response()->json(['message' => 'No tenant records found'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred while updating payment status',
+            ], 500);
+        }
     }
 
-    $contract = DigitalContract::whereIn('tenant_id', $tenantIds)
-        ->where('id', $contractId)
-        ->first();
- 
-    if (! $contract) {
-        return response()->json(['message' => 'Contract not found'], 404);
+    /**
+     * Download digital contract file
+     * GET /api/tenant/digital-contracts/{contract}/download
+     */
+    public function downloadDigitalContract($contractId): \Symfony\Component\HttpFoundation\BinaryFileResponse|JsonResponse
+    {
+        $user = Auth::user();
+     
+        // Resolve all Tenant records that belong to this user
+        $tenantIds = Tenant::where('user_id', $user->id)->pluck('id');
+     
+        if ($tenantIds->isEmpty()) {
+            return response()->json(['message' => 'No tenant records found'], 404);
+        }
+
+        $contract = DigitalContract::whereIn('tenant_id', $tenantIds)
+            ->where('id', $contractId)
+            ->first();
+     
+        if (! $contract) {
+            return response()->json(['message' => 'Contract not found'], 404);
+        }
+     
+        // Prefer file_url (remote / stored path) over legacy file_path
+        $storedPath = $contract->file_url ?? $contract->file_path ?? null;
+     
+        if (! $storedPath) {
+            return response()->json(['message' => 'No file attached to this contract'], 404);
+        }
+     
+        // Resolve absolute path via the public storage disk
+        $absolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($storedPath);
+     
+        if (! file_exists($absolutePath)) {
+            return response()->json(['message' => 'File not found on disk'], 404);
+        }
+     
+        $fileName = $contract->file_name ?? basename($storedPath);
+     
+        return response()->download($absolutePath, $fileName);
     }
- 
-    // Prefer file_url (remote / stored path) over legacy file_path
-    $storedPath = $contract->file_url ?? $contract->file_path ?? null;
- 
-    if (! $storedPath) {
-        return response()->json(['message' => 'No file attached to this contract'], 404);
-    }
- 
-    // Resolve absolute path via the public storage disk
-    $absolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($storedPath);
- 
-    if (! file_exists($absolutePath)) {
-        return response()->json(['message' => 'File not found on disk'], 404);
-    }
- 
-    $fileName = $contract->file_name ?? basename($storedPath);
- 
-    return response()->download($absolutePath, $fileName);
-}
+
     public function submitDigitalContract(Request $request): JsonResponse
-{
-    $validator = Validator::make($request->all(), [
+    {
+        $validator = Validator::make($request->all(), [
         'contract_id' => 'required|exists:digital_contracts,id',
         'fields'      => 'required|array',
         'signature'   => 'required|string',
@@ -899,6 +904,5 @@ public function downloadDigitalContract($contractId): \Symfony\Component\HttpFou
         'message' => 'Contract submitted successfully',
         'data'    => $contract->fresh(['property']),
     ]);
-}
-
+    }
 }

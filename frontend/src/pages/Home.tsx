@@ -101,7 +101,7 @@ const BookingForm = ({
   onSuccess: () => void;
 }) => {
   const [formData, setFormData] = useState({
-    guest_name: '', guest_email: '', check_in: '', check_out: '',
+    guest_name: '', guest_email: '', guest_phone: '', check_in: '', check_out: '',
     guest_count: '1', special_requests: '',
   });
   const [loading, setLoading] = useState(false);
@@ -111,7 +111,7 @@ const BookingForm = ({
     setLoading(true);
     try {
       // Validate form
-      if (!formData.guest_name || !formData.guest_email || !formData.check_in || !formData.check_out) {
+      if (!formData.guest_name || !formData.guest_email || !formData.guest_phone || !formData.check_in || !formData.check_out) {
         alert('Please fill in all required fields');
         setLoading(false);
         return;
@@ -123,6 +123,7 @@ const BookingForm = ({
         property_title: property.title,
         customer_name: formData.guest_name,
         customer_email: formData.guest_email,
+        customer_phone: formData.guest_phone,
         check_in: formData.check_in,
         check_out: formData.check_out,
         guest_count: parseInt(formData.guest_count),
@@ -200,6 +201,7 @@ const BookingForm = ({
         </p>
         <input required style={inputStyle} placeholder="Your name" value={formData.guest_name} onChange={(e) => setFormData((p) => ({ ...p, guest_name: e.target.value }))} />
         <input required type="email" style={inputStyle} placeholder="Email address" value={formData.guest_email} onChange={(e) => setFormData((p) => ({ ...p, guest_email: e.target.value }))} />
+        <input required style={inputStyle} placeholder="Phone number" value={formData.guest_phone} onChange={(e) => setFormData((p) => ({ ...p, guest_phone: e.target.value }))} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <input required type="date" style={inputStyle} value={formData.check_in} onChange={(e) => setFormData((p) => ({ ...p, check_in: e.target.value }))} />
           <input required type="date" style={inputStyle} value={formData.check_out} onChange={(e) => setFormData((p) => ({ ...p, check_out: e.target.value }))} />
@@ -639,25 +641,7 @@ const Home = () => {
                       >
                         Book Now
                       </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); navigate(`/property/${p.id}`); }}
-                        style={{
-                          flex: 1,
-                          background: 'var(--gold)',
-                          color: 'var(--navy-900)',
-                          border: 'none',
-                          padding: '12px',
-                          fontWeight: 600,
-                          fontSize: 13,
-                          borderRadius: 6,
-                          cursor: 'pointer',
-                          transition: 'background 0.2s'
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
-                      >
-                        View Details
-                      </button>
+                      
                     </div>
                   </div>
                 </div>
