@@ -101,6 +101,7 @@ class BnbBookingController extends Controller
         // For now, we'll create it as a lead with booking information
         $bookingData = [
             'property_id' => $property->id,
+            'agent_id' => $property->agent_id ?? $property->owner_id ?? null, // Use agent_id or owner_id from property
             'name' => $request->customer_name,
             'email' => $request->customer_email,
             'phone' => $request->customer_phone,
