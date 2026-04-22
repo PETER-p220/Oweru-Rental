@@ -110,7 +110,7 @@ class User extends Authenticatable
 
     public function receivedMessages(): HasMany
     {
-        return $this->hasMany(Message::class, 'recipient_id');
+        return $this->hasMany(Message::class, 'receiver_id');
     }
 
     public function fullName(): string
