@@ -64,8 +64,8 @@ export interface User {
 
 class MessagesService {
   private static async request<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${API_BASE_URL}/api/${endpoint}`.replace(/\/+/g, '/');
-    console.log('DEBUG - API_BASE_URL:', API_BASE_URL, 'endpoint:', endpoint, 'final URL:', url);
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    const url = `${API_BASE_URL}/api/${cleanEndpoint}`;
 
     const isFormData = options.body instanceof FormData;
 
@@ -100,13 +100,13 @@ class MessagesService {
 
   // Get all conversations for the current user
   static async getConversations() {
-    const response = await this.request<{ conversations: Conversation[]; unread_count: number }>('/messages');
+    const response = await this.request<{ conversations: Conversation[]; unread_count: number }>('messages');
     return response.data;
   }
 
   // Get messages in a conversation
   static async getMessages(userId: number, page = 1) {
-    const response = await this.request<{ messages: Message[]; pagination: any }>(`/messages/${userId}?page=${page}`);
+    const response = await this.request<{ messages: Message[]; pagination: any }>(`messages/${userId}?page=${page}`);
     return response.data;
   }
 
@@ -119,7 +119,7 @@ class MessagesService {
     reply_to_id?: number;
     attachments?: any[];
   }) {
-    const response = await this.request<Message>('/messages', {
+    const response = await this.request<Message>('messages', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -128,7 +128,7 @@ class MessagesService {
 
   // Edit a message
   static async editMessage(messageId: number, content: string) {
-    const response = await this.request(`/messages/${messageId}`, {
+    const response = await this.request(`messages/${messageId}`, {
       method: 'PATCH',
       body: JSON.stringify({ content }),
     });
@@ -137,7 +137,7 @@ class MessagesService {
 
   // Delete a message
   static async deleteMessage(messageId: number) {
-    await this.request(`/messages/${messageId}`, {
+    await this.request(`messages/${messageId}`, {
       method: 'DELETE',
     });
   }
@@ -164,7 +164,7 @@ class MessagesService {
 
   // Mark messages as read
   static async markAsRead(data: { message_ids?: number[]; sender_id?: number }) {
-    await this.request('/messages/mark-read', {
+    await this.request('messages/mark-read', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -172,25 +172,25 @@ class MessagesService {
 
   // Get unread count
   static async getUnreadCount() {
-    const response = await this.request<{ unread_count: number }>('/messages/unread-count');
+    const response = await this.request<{ unread_count: number }>('messages/unread-count');
     return response.data.unread_count;
   }
 
   // Search users to start conversation
   static async searchUsers(search: string) {
-    const response = await this.request<{ users: User[] }>(`/messages/search-users?search=${search}`);
+    const response = await this.request<{ users: User[] }>(`messages/search-users?search=${search}`);
     return response.data.users;
   }
 
   // Test method to get all users (remove in production)
   static async getAllUsers() {
-    const response = await this.request<{ users: User[] }>('/messages/all-users');
+    const response = await this.request<{ users: User[] }>('messages/all-users');
     return response.data.users;
   }
 
   // Start conversation about a property
   static async startPropertyConversation(propertyId: number, receiverId: number, message: string) {
-    const response = await this.request(`/messages/property/${propertyId}`, {
+    const response = await this.request(`messages/property/${propertyId}`, {
       method: 'POST',
       body: JSON.stringify({
         receiver_id: receiverId,
