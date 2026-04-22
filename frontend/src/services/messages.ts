@@ -181,6 +181,12 @@ class MessagesService {
     return response.data.users;
   }
 
+  // Test method to get all users (remove in production)
+  static async getAllUsers() {
+    const response = await this.request<{ users: User[] }>('/messages/all-users');
+    return response.data.users;
+  }
+
   // Start conversation about a property
   static async startPropertyConversation(propertyId: number, receiverId: number, message: string) {
     const response = await this.request(`/messages/property/${propertyId}`, {

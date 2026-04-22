@@ -308,24 +308,61 @@ class MessageController extends Controller
         $user = Auth::user();
         $search = $request->input('search', '');
 
+        // If search is empty, return empty results
+        if (empty($search)) {
+            return response()->json(['users' => []]);
+        }
+
         $users = User::where('id', '!=', $user->id)
                    ->where(function ($query) use ($search) {
+                       // Search by first name
                        $query->where('first_name', 'like', "%{$search}%")
+                             // Search by last name
                              ->orWhere('last_name', 'like', "%{$search}%")
+                             // Search by full name (concatenated)
+                             ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"])
+                             // Search by email
                              ->orWhere('email', 'like', "%{$search}%");
                    })
                    ->select(['id', 'first_name', 'last_name', 'email', 'user_type', 'profile_image'])
                    ->limit(20)
                    ->get();
 
+        // Debug: Log the search query and results
+        \Log::info('Search users query:', ['search' => $search, 'user_id' => $user->id]);
+        \Log::info('Search results count:', ['count' => $users->count()]);
+
         return response()->json([
             'users' => $users->map(function ($user) {
                 return [
                     'id' => $user->id,
-                    'name' => $user->first_name . ' ' . $user->last_name,
+                    'name' => trim($user->first_name . ' ' . $user->last_name),
                     'email' => $user->email,
                     'user_type' => $user->user_type,
                     'avatar' => $user->profile_image ?? null,
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * Get all users for testing (remove in production)
+     */
+    public function getAllUsers(): JsonResponse
+    {
+        $user = Auth::user();
+        $users = User::where('id', '!=', $user->id)
+                   ->select(['id', 'first_name', 'last_name', 'email', 'user_type'])
+                   ->limit(10)
+                   ->get();
+
+        return response()->json([
+            'users' => $users->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => trim($user->first_name . ' ' . $user->last_name),
+                    'email' => $user->email,
+                    'user_type' => $user->user_type,
                 ];
             }),
         ]);
