@@ -179,12 +179,14 @@ class MessagesService {
   // Search users to start conversation
   static async searchUsers(search: string) {
     const response = await this.request<{ users: User[] }>(`messages/search-users?search=${search}`);
+    console.log('DEBUG - Search users response:', response);
     return response.data.users;
   }
 
   // Test method to get all users (remove in production)
   static async getAllUsers() {
     const response = await this.request<{ users: User[] }>('messages/all-users');
+    console.log('DEBUG - All users response:', response);
     return response.data.users;
   }
 

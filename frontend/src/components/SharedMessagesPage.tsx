@@ -152,6 +152,26 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
     return () => clearTimeout(t);
   }, [userQuery]);
 
+  const searchForUsers = async (term: string) => {
+    if (!term.trim()) { setFoundUsers([]); return; }
+    const t = setTimeout(async () => {
+      const users = await MessagesService.searchUsers(userQuery).catch(() => []);
+      setFoundUsers(users);
+    }, 300);
+    return () => clearTimeout(t);
+  };
+
+  const testAllUsers = async () => {
+    try {
+      console.log('Testing all users...');
+      const users = await MessagesService.getAllUsers();
+      console.log('All users found:', users);
+      setFoundUsers(users);
+    } catch (error) {
+      console.error('Failed to get all users:', error);
+    }
+  };
+
   const openConversation = (user: any) => {
     const conv: Conversation = {
       id: user.id, user,
@@ -238,6 +258,12 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                   autoFocus
                   onChange={e => setUserQuery(e.target.value)}
                 />
+                <button
+                  onClick={testAllUsers}
+                  style={{ marginLeft: 8, padding: '6px 12px', background: cfg.accent, color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
+                >
+                  Test All
+                </button>
               </div>
               {foundUsers.length > 0 && (
                 <div style={s.userResults}>
