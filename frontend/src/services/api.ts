@@ -1,7 +1,5 @@
 // API service for connecting to Laravel backend
-const API_BASE_URL = import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim() 
-  ? import.meta.env.VITE_API_URL.replace(/\/$/, '') 
-  : 'http://localhost:8000';
+const API_BASE_URL = 'http://rental.oweru.com'; // Hardcoded for now to fix the issue
 
 // ── The single source of truth for the token key ──────────────────────────────
 export const TOKEN_KEY = 'token';
