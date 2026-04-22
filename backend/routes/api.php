@@ -16,6 +16,7 @@ use App\Http\Controllers\Bnb\BnbBookingController;
 use App\Http\Controllers\Bnb\BnbReviewController;
 use App\Http\Controllers\Api\ImageUploadController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\MessageController;
 
 // ── Public routes ─────────────────────────────────────────────────────────────
 Route::post('/register', [AuthController::class, 'register']);
@@ -42,6 +43,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // Messaging - Available to all authenticated users
+    Route::prefix('messages')->group(function () {
+        Route::get('/', [MessageController::class, 'conversations']);
+        Route::get('/{userId}', [MessageController::class, 'messages']);
+        Route::post('/', [MessageController::class, 'send']);
+        Route::post('/upload', [MessageController::class, 'upload']);
+        Route::patch('/{messageId}', [MessageController::class, 'edit']);
+        Route::delete('/{messageId}', [MessageController::class, 'delete']);
+        Route::post('/mark-read', [MessageController::class, 'markAsRead']);
+        Route::get('/unread-count', [MessageController::class, 'unreadCount']);
+        Route::get('/search-users', [MessageController::class, 'searchUsers']);
+        Route::post('/property/{propertyId}', [MessageController::class, 'startPropertyConversation']);
+    });
 
     // Properties
     // FIX: /properties/saved MUST come before /properties/{property} so Laravel

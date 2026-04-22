@@ -261,10 +261,10 @@ class BnbPropertyController extends Controller
         $totalProperties = $properties->count();
         $activeListings = $properties->where('status', 'available')->count();
         $totalBookings = $properties->sum(function ($property) {
-            return $property->bookings()->where('status', 'confirmed')->count();
+            return $property->bookings()->count();
         });
         $totalRevenue = $properties->sum(function ($property) {
-            return $property->bookings()->where('status', 'confirmed')->sum('total_price');
+            return $property->bookings()->sum('total_price');
         });
         
         // Calculate average occupancy rate

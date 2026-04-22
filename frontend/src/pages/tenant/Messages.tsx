@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { MessageSquare, Send, Inbox, AlertCircle, MessageCircle } from 'lucide-react';
-import Api from '../../services/api';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { MessageSquare, Send, Inbox, AlertCircle, MessageCircle, Search, ArrowLeft, Phone, Video, MoreVertical, Check, CheckCheck, Circle, Reply, Edit2, Trash2, Paperclip, Smile, Home, X } from 'lucide-react';
+import MessagesService, { type Message, type Conversation } from '../../services/messages';
 import {
   buttonStyle, descriptionStyle, formatDate, headingStyle,
   inputStyle, pageStyle, palette, panelStyle, sectionTitleStyle, textareaStyle,
@@ -8,226 +8,567 @@ import {
 } from './tenantPageStyles';
 
 const Messages = () => {
-  const [messages, setMessages]   = useState<any[]>([]);
-  const [recipient, setRecipient] = useState<any | null>(null);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState('');
-  const [success, setSuccess]     = useState('');
-  const [form, setForm]           = useState({ subject: '', body: '' });
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showUserSearch, setShowUserSearch] = useState(false);
+  const [searchUsers, setSearchUsers] = useState<any[]>([]);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [editingMessage, setEditingMessage] = useState<{ id: number; content: string } | null>(null);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const load = async () => {
+  useEffect(() => {
+    loadConversations();
+    loadUnreadCount();
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadConversations();
+      loadUnreadCount();
+      if (selectedConversation) {
+        loadMessages(selectedConversation.id);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (selectedConversation) {
+      loadMessages(selectedConversation.id);
+      // Mark messages as read
+      MessagesService.markAsRead({ sender_id: selectedConversation.id });
+    }
+  }, [selectedConversation]);
+
+  const loadConversations = async () => {
     try {
-      setLoading(true);
-      const res     = await Api.getTenantMessages();
-      const payload = res.data || {};
-      setMessages(Array.isArray(payload.messages) ? payload.messages : []);
-      setRecipient(payload.recipient || null);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Unable to load messages.');
-    } finally { setLoading(false); }
+      const data = await MessagesService.getConversations();
+      setConversations(data.conversations);
+      setUnreadCount(data.unread_count);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+    } finally {
+      setLoading(false);
+    }
   };
-  useEffect(() => { load(); }, []);
 
-  const unread = useMemo(() => messages.filter((m) => !m.read_at).length, [messages]);
-
-  const send = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(''); setSuccess('');
+  const loadMessages = async (userId: number) => {
     try {
-      await Api.sendTenantMessage(form);
-      setForm({ subject: '', body: '' });
-      setSuccess('Message sent successfully.');
-      await load();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Unable to send message.');
+      const data = await MessagesService.getMessages(userId);
+      setMessages(data.messages);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    }
+  };
+
+  const loadUnreadCount = async () => {
+    try {
+      const count = await MessagesService.getUnreadCount();
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Failed to load unread count:', error);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || sendingMessage || !selectedConversation) return;
+
+    setSendingMessage(true);
+    try {
+      const message = await MessagesService.sendMessage({
+        receiver_id: selectedConversation.id,
+        content: newMessage.trim(),
+        reply_to_id: replyingTo?.id,
+      });
+
+      setMessages(prev => [...prev, message]);
+      setNewMessage('');
+      setReplyingTo(null);
+      
+      // Update conversation
+      loadConversations();
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setSendingMessage(false);
+      textareaRef.current?.focus();
+    }
+  };
+
+  const searchForUsers = async (term: string) => {
+    if (!term.trim()) {
+      setSearchUsers([]);
+      return;
+    }
+
+    try {
+      const users = await MessagesService.searchUsers(term);
+      setSearchUsers(users);
+    } catch (error) {
+      console.error('Failed to search users:', error);
+    }
+  };
+
+  const startNewConversation = (user: any) => {
+    const newConv: Conversation = {
+      id: user.id,
+      user,
+      latest_message: {
+        id: 0,
+        content: 'Start a conversation',
+        type: 'text',
+        status: 'sent',
+        created_at: new Date().toISOString(),
+        sender_id: 0,
+        is_edited: false,
+      },
+      unread_count: 0,
+      updated_at: new Date().toISOString(),
+    };
+    
+    setSelectedConversation(newConv);
+    setShowUserSearch(false);
+    setSearchUsers([]);
+    setSearchTerm('');
+    setMessages([]);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'sent':
+        return <Check size={14} className="text-gray-400" />;
+      case 'delivered':
+        return <CheckCheck size={14} className="text-gray-400" />;
+      case 'read':
+        return <CheckCheck size={14} className="text-blue-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const formatMessageTime = (timeStr: string) => {
+    const time = new Date(timeStr);
+    const now = new Date();
+    const diffMs = now.getTime() - time.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return time.toLocaleDateString();
+  };
+
+  const filteredConversations = conversations.filter(conv =>
+    conv.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    conv.latest_message.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const renderMessage = (message: Message) => {
+    const isMe = message.is_from_me;
+    const isEditing = editingMessage?.id === message.id;
+
+    return (
+      <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4`}>
+        <div className={`max-w-xs lg:max-w-md ${isMe ? 'order-2' : 'order-1'}`}>
+          {!isMe && (
+            <div className="flex items-center mb-1">
+              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-2">
+                <span className="text-xs font-medium">
+                  {message.sender.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <span className="text-xs text-gray-600">{message.sender.name}</span>
+            </div>
+          )}
+          
+          {replyingTo && (
+            <div className={`p-2 rounded-lg mb-1 text-sm ${isMe ? 'bg-blue-50' : 'bg-gray-100'}`}>
+              <div className="flex items-center text-gray-600 mb-1">
+                <Reply size={12} className="mr-1" />
+                Replying to {replyingTo.sender.name}
+              </div>
+              <div className="truncate">{replyingTo.content}</div>
+            </div>
+          )}
+
+          <div className={`relative px-4 py-2 rounded-lg ${
+            isMe 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-100 text-gray-900'
+          }`}>
+            {message.type === 'property' && message.property && (
+              <div className="flex items-center mb-2">
+                <Home size={16} className="mr-2" />
+                <div>
+                  <div className="font-medium">{message.property.title}</div>
+                  <div className="text-xs opacity-75">Property inquiry</div>
+                </div>
+              </div>
+            )}
+            
+            {isEditing ? (
+              <div className="flex items-center">
+                <textarea
+                  className="w-full p-1 rounded bg-white text-gray-900 text-sm resize-none"
+                  value={editingMessage.content}
+                  onChange={(e) => setEditingMessage({ ...editingMessage, content: e.target.value })}
+                  autoFocus
+                />
+                <button
+                  onClick={() => handleEditMessage(message.id, editingMessage.content)}
+                  className="ml-2 text-green-500"
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  onClick={() => setEditingMessage(null)}
+                  className="ml-1 text-red-500"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+            )}
+            
+            <div className={`flex items-center justify-end mt-1 text-xs ${
+              isMe ? 'text-blue-100' : 'text-gray-500'
+            }`}>
+              <span>{formatMessageTime(message.created_at)}</span>
+              {message.is_edited && <span className="ml-1">(edited)</span>}
+              {isMe && (
+                <span className="ml-1">{getStatusIcon(message.status)}</span>
+              )}
+            </div>
+          </div>
+
+          {!isEditing && isMe && (
+            <div className="flex items-center mt-1 space-x-2">
+              <button
+                onClick={() => setEditingMessage({ id: message.id, content: message.content })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <Edit2 size={14} />
+              </button>
+              <button
+                onClick={() => handleDeleteMessage(message.id)}
+                className="text-gray-400 hover:text-red-600"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const handleEditMessage = async (messageId: number, content: string) => {
+    try {
+      await MessagesService.editMessage(messageId, content);
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content, is_edited: true, edited_at: new Date().toISOString() }
+          : msg
+      ));
+      setEditingMessage(null);
+    } catch (error) {
+      console.error('Failed to edit message:', error);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!confirm('Are you sure you want to delete this message?')) return;
+    
+    try {
+      await MessagesService.deleteMessage(messageId);
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    } catch (error) {
+      console.error('Failed to delete message:', error);
     }
   };
 
   return (
     <div style={{ ...pageStyle, padding: '0' }}>
-
-      {/* ── Header ── */}
-      <section style={{ ...panelStyle, position: 'relative' }}>
-        {/* Oweru gold accent bar */}
-        <div style={{
-          position: 'absolute', top: 0, left: 32, right: 32, height: '2px',
-          background: `linear-gradient(90deg, transparent, ${palette.gold}, transparent)`,
-        }} />
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
-          <div>
-            <div style={sectionTitleStyle}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: palette.gold, display: 'inline-block', marginRight: 6 }} />
-              Tenant Workspace
+      <div className="flex h-screen bg-white">
+        {/* Sidebar */}
+        <div className="w-80 border-r border-gray-200 flex flex-col">
+          {/* Header */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <MessageCircle className="w-6 h-6 text-blue-500 mr-2" />
+                <h1 className="text-xl font-semibold">Messages</h1>
+                {unreadCount > 0 && (
+                  <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowUserSearch(!showUserSearch)}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <Search size={20} />
+              </button>
             </div>
-            <h1 style={headingStyle}>Messages</h1>
-            <p style={descriptionStyle}>Conversation history with your landlord.</p>
+            
+            {showUserSearch && (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    searchForUsers(e.target.value);
+                  }}
+                />
+                
+                {searchUsers.length > 0 && (
+                  <div className="bg-white border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                    {searchUsers.map(user => (
+                      <button
+                        key={user.id}
+                        onClick={() => startNewConversation(user)}
+                        className="w-full px-3 py-2 hover:bg-gray-50 flex items-center text-left"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                          <span className="text-xs font-medium">
+                            {user.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">{user.name}</div>
+                          <div className="text-xs text-gray-500">{user.user_type}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Stats chips */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {[
-              { label: 'Messages', value: messages.length, accent: false },
-              { label: 'Unread',   value: unread,          accent: true  },
-            ].map(({ label, value, accent }) => (
-              <div key={label} style={{
-                padding: '10px 18px',
-                borderRadius: '10px',
-                background: accent ? 'rgba(200,145,40,0.10)' : 'rgba(15,23,42,0.04)',
-                border: accent ? `1px solid rgba(200,145,40,0.28)` : `1px solid ${palette.gray200}`,
-                textAlign: 'center',
-                minWidth: '80px',
-              }}>
-                <div style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: palette.gray400, fontWeight: 700 }}>{label}</div>
-                <div style={{ fontSize: '22px', fontWeight: 700, color: accent ? palette.gold : palette.navy900, marginTop: '4px' }}>{value}</div>
+          {/* Conversations List */}
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
               </div>
-            ))}
+            ) : filteredConversations.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>No conversations yet</p>
+                <p className="text-sm mt-2">Start messaging with property owners or agents</p>
+              </div>
+            ) : (
+              <div>
+                {filteredConversations.map(conv => (
+                  <button
+                    key={conv.id}
+                    onClick={() => setSelectedConversation(conv)}
+                    className={`w-full p-4 flex items-center hover:bg-gray-50 transition-colors ${
+                      selectedConversation?.id === conv.id ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className="relative mr-3">
+                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
+                        <span className="text-lg font-medium">
+                          {conv.user.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      {conv.user.is_online && (
+                        <Circle size={12} className="absolute bottom-0 right-0 text-green-500 fill-current" />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 text-left">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">{conv.user.name}</h3>
+                        <span className="text-xs text-gray-500">
+                          {formatMessageTime(conv.updated_at)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-600 truncate">
+                          {conv.latest_message.type === 'property' ? (
+                            <span className="flex items-center">
+                              <span className="w-4 h-4 bg-blue-100 rounded mr-1 flex items-center justify-center">
+                                <span className="text-xs">P</span>
+                              </span>
+                              Property inquiry
+                            </span>
+                          ) : (
+                            conv.latest_message.content
+                          )}
+                        </p>
+                        {conv.unread_count > 0 && (
+                          <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1">
+                            {conv.unread_count}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {conv.property && (
+                        <div className="mt-1 text-xs text-gray-500">
+                          <span className="bg-gray-100 px-2 py-0.5 rounded">
+                            {conv.property.title}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </section>
 
-      {/* ── Split layout ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) minmax(300px, 0.9fr)', gap: '20px' }}>
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col">
+          {selectedConversation ? (
+            <>
+              {/* Chat Header */}
+              <div className="p-4 border-b border-gray-200 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="relative mr-3">
+                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                        <span className="text-sm font-medium">
+                          {selectedConversation.user.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      {selectedConversation.user.is_online && (
+                        <Circle size={10} className="absolute bottom-0 right-0 text-green-500 fill-current" />
+                      )}
+                    </div>
+                    <div>
+                      <h2 className="font-medium">{selectedConversation.user.name}</h2>
+                      <p className="text-xs text-gray-500">
+                        {selectedConversation.user.is_online ? 'Online' : 'Offline'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button className="p-2 hover:bg-gray-100 rounded-full">
+                      <Phone size={20} />
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-full">
+                      <Video size={20} />
+                    </button>
+                    <button className="p-2 hover:bg-gray-100 rounded-full">
+                      <MoreVertical size={20} />
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-        {/* Inbox */}
-        <section style={{ ...panelStyle }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: palette.gray600, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Inbox size={15} style={{ color: palette.gold }} /> Inbox
-          </div>
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                {messages.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No messages yet. Start the conversation!</p>
+                  </div>
+                ) : (
+                  <div>
+                    {messages.map(renderMessage)}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </div>
 
-          {error && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              color: '#dc2626', background: 'rgba(220,38,38,0.06)',
-              border: '1px solid rgba(220,38,38,0.18)',
-              borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', fontSize: '14px',
-            }}>
-              <AlertCircle size={16} /> {error}
-            </div>
-          )}
-
-          {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: palette.gray400, padding: '40px 0' }}>
-              <div style={{ width: 16, height: 16, border: `2px solid ${palette.gold}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              Loading messages…
-            </div>
-          ) : messages.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: palette.gray400 }}>
-              <MessageCircle size={36} style={{ opacity: 0.25, margin: '0 auto 10px', display: 'block' }} />
-              <div style={{ fontSize: '14px' }}>No messages yet</div>
-            </div>
-          ) : (
-            <div style={tableWrapStyle}>
-              <table style={tableStyle}>
-                <thead>
-                  <tr>{['', 'From / To', 'Subject', 'Date'].map(h => <th key={h} style={thStyle}>{h}</th>)}</tr>
-                </thead>
-                <tbody>
-                  {messages.map((item) => (
-                    <tr
-                      key={item.id}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,145,40,0.04)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              {/* Message Input */}
+              <div className="p-4 border-t border-gray-200 bg-white">
+                {replyingTo && (
+                  <div className="flex items-center justify-between p-2 bg-gray-100 rounded-lg mb-2">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Reply size={14} className="mr-2" />
+                      Replying to {replyingTo.sender.name}: {replyingTo.content}
+                    </div>
+                    <button
+                      onClick={() => setReplyingTo(null)}
+                      className="text-gray-400 hover:text-gray-600"
                     >
-                      {/* Unread dot */}
-                      <td style={{ ...tdStyle, width: 20 }}>
-                        {!item.read_at && (
-                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: palette.gold }} />
-                        )}
-                      </td>
-
-                      {/* Sender / recipient */}
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 500, fontSize: '13px', color: palette.navy900 }}>
-                          {item.direction === 'sent'
-                            ? `To: ${item.recipient?.first_name} ${item.recipient?.last_name}`
-                            : `From: ${item.sender?.first_name} ${item.sender?.last_name}`}
-                        </div>
-                        <div style={{ fontSize: '11px', color: palette.gray400, marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                          {item.direction === 'sent' ? 'Sent' : 'Received'}
-                        </div>
-                      </td>
-
-                      {/* Subject + body preview */}
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: item.read_at ? 400 : 600, fontSize: '13px', color: palette.navy900 }}>
-                          {item.subject || 'No subject'}
-                        </div>
-                        <div style={{ color: palette.gray400, fontSize: '12px', marginTop: '3px' }}>{item.body}</div>
-                      </td>
-
-                      {/* Date */}
-                      <td style={{ ...tdStyle, color: palette.gray400, fontSize: '12px', whiteSpace: 'nowrap' as const }}>
-                        {formatDate(item.created_at)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+                
+                <div className="flex items-end space-x-2">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-2 hover:bg-gray-100 rounded-full"
+                  >
+                    <Paperclip size={20} />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 rounded-full">
+                    <Smile size={20} />
+                  </button>
+                  
+                  <div className="flex-1">
+                    <textarea
+                      ref={textareaRef}
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      placeholder="Type a message..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={1}
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || sendingMessage}
+                    className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sendingMessage ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      <Send size={20} />
+                    )}
+                  </button>
+                </div>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*,.pdf,.doc,.docx"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center bg-gray-50">
+              <div className="text-center">
+                <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Send size={40} className="text-gray-400" />
+                </div>
+                <h3 className="text-xl font-medium mb-2">Select a conversation</h3>
+                <p className="text-gray-500">Choose a conversation from the sidebar to start messaging</p>
+              </div>
             </div>
           )}
-        </section>
-
-        {/* Compose */}
-        <section style={{ ...panelStyle, alignSelf: 'start' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: palette.gray600, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <MessageSquare size={15} style={{ color: palette.gold }} /> Compose
-          </div>
-
-          <div style={{ color: palette.gray500, fontSize: '13px', lineHeight: 1.6, marginBottom: '20px' }}>
-            {recipient
-              ? `Sending to ${recipient.name}${recipient.property_title ? ` about ${recipient.property_title}` : ''}.`
-              : 'Message will be sent to your assigned landlord when tenancy is active.'}
-          </div>
-
-          {success && (
-            <div style={{
-              color: '#16a34a',
-              background: 'rgba(22,163,74,0.08)',
-              border: '1px solid rgba(22,163,74,0.22)',
-              borderRadius: '8px', padding: '12px 14px', marginBottom: '16px', fontSize: '13px',
-            }}>
-              {success}
-            </div>
-          )}
-
-          {error && !success && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              color: '#dc2626', background: 'rgba(220,38,38,0.06)',
-              border: '1px solid rgba(220,38,38,0.18)',
-              borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px',
-            }}>
-              <AlertCircle size={14} /> {error}
-            </div>
-          )}
-
-          <form onSubmit={send} style={{ display: 'grid', gap: '12px' }}>
-            <input
-              style={{ ...inputStyle }}
-              placeholder="Subject"
-              value={form.subject}
-              onChange={(e) => setForm(c => ({ ...c, subject: e.target.value }))}
-            />
-            <textarea
-              style={{ ...textareaStyle, minHeight: '140px' }}
-              placeholder="Write your message…"
-              value={form.body}
-              onChange={(e) => setForm(c => ({ ...c, body: e.target.value }))}
-              required
-            />
-            <button
-              type="submit"
-              style={{ ...buttonStyle('primary'), padding: '12px 20px', fontSize: '14px', justifyContent: 'center' }}
-              disabled={!recipient}
-            >
-              <Send size={14} /> Send Message
-            </button>
-          </form>
-        </section>
+        </div>
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };

@@ -1,404 +1,567 @@
-import { useState, useEffect } from 'react';
-import { MessageSquare, Inbox, Calendar, Users, Star } from 'lucide-react';
-import Api from '../../services/api';
-
-interface BnbMessage {
-  id: number;
-  property_id: number;
-  property_title: string;
-  guest_name: string;
-  guest_email: string;
-  booking_id: number;
-  subject: string;
-  message: string;
-  direction: 'sent' | 'received';
-  created_at: string;
-  read_at?: string;
-}
+import { useState, useEffect, useRef } from 'react';
+import { MessageSquare, Send, MessageCircle, Search, Phone, Video, MoreVertical, Check, CheckCheck, Circle, Reply, Edit2, Trash2, Paperclip, Smile, Home, X } from 'lucide-react';
+import MessagesService, { type Message, type Conversation } from '../../services/messages';
 
 const BnbMessages = () => {
-  const [messages, setMessages] = useState<BnbMessage[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [replyText, setReplyText] = useState('');
-  const [selectedMessage, setSelectedMessage] = useState<BnbMessage | null>(null);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showUserSearch, setShowUserSearch] = useState(false);
+  const [searchUsers, setSearchUsers] = useState<any[]>([]);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [editingMessage, setEditingMessage] = useState<{ id: number; content: string } | null>(null);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    loadMessages();
+    loadConversations();
+    loadUnreadCount();
+    
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadConversations();
+      loadUnreadCount();
+      if (selectedConversation) {
+        loadMessages(selectedConversation.id);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
-  const loadMessages = async () => {
+  useEffect(() => {
+    if (selectedConversation) {
+      loadMessages(selectedConversation.id);
+      // Mark messages as read
+      MessagesService.markAsRead({ sender_id: selectedConversation.id });
+    }
+  }, [selectedConversation]);
+
+  const loadConversations = async () => {
     try {
-      setLoading(true);
-      setError('');
-      const response = await Api.getTenantMessages(); // Using tenant API as fallback
-      setMessages(response.data || []);
-    } catch (err: any) {
-      console.error('Failed to load BnB messages:', err);
-      // Fallback to mock data if API fails
-      const mockMessages: BnbMessage[] = [
-        {
-          id: 1,
-          property_id: 1,
-          property_title: 'Luxury Beach Villa',
-          guest_name: 'John Doe',
-          guest_email: 'john@example.com',
-          booking_id: 1,
-          subject: 'Check-in Information',
-          message: 'Hi, I wanted to confirm the check-in time and get the exact address.',
-          direction: 'received',
-          created_at: '2026-04-10T10:30:00Z',
-        },
-        {
-          id: 2,
-          property_id: 1,
-          property_title: 'Luxury Beach Villa',
-          guest_name: 'Jane Smith',
-          guest_email: 'jane@example.com',
-          booking_id: 2,
-          subject: 'Early Check-in Request',
-          message: 'Is it possible to check in early at 11 AM instead of 3 PM?',
-          direction: 'received',
-          created_at: '2026-04-09T15:45:00Z',
-        },
-      ];
-      setMessages(mockMessages);
+      const data = await MessagesService.getConversations();
+      setConversations(data.conversations);
+      setUnreadCount(data.unread_count);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleReply = async (messageId: number) => {
-    if (!replyText.trim()) return;
-    
+  const loadMessages = async (userId: number) => {
     try {
-      setError('');
-      setSuccess('');
-      await Api.sendOwnerMessage({
-        recipient_id: 1, // Using a default recipient_id since we don't have the actual user ID
-        subject: `Re: ${selectedMessage?.subject}`,
-        body: replyText,
-      });
-      setSuccess('Reply sent successfully!');
-      setReplyText('');
-      setSelectedMessage(null);
-      loadMessages(); // Reload messages
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to send reply');
+      const data = await MessagesService.getMessages(userId);
+      setMessages(data.messages);
+    } catch (error) {
+      console.error('Failed to load messages:', error);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-TZ', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  const loadUnreadCount = async () => {
+    try {
+      const count = await MessagesService.getUnreadCount();
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Failed to load unread count:', error);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || sendingMessage || !selectedConversation) return;
+
+    setSendingMessage(true);
+    try {
+      const message = await MessagesService.sendMessage({
+        receiver_id: selectedConversation.id,
+        content: newMessage.trim(),
+        reply_to_id: replyingTo?.id,
+      });
+
+      setMessages(prev => [...prev, message]);
+      setNewMessage('');
+      setReplyingTo(null);
+      
+      // Update conversation
+      loadConversations();
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setSendingMessage(false);
+      textareaRef.current?.focus();
+    }
+  };
+
+  const searchForUsers = async (term: string) => {
+    if (!term.trim()) {
+      setSearchUsers([]);
+      return;
+    }
+
+    try {
+      const users = await MessagesService.searchUsers(term);
+      setSearchUsers(users);
+    } catch (error) {
+      console.error('Failed to search users:', error);
+    }
+  };
+
+  const startNewConversation = (user: any) => {
+    const newConv: Conversation = {
+      id: user.id,
+      user,
+      latest_message: {
+        id: 0,
+        content: 'Start a conversation',
+        type: 'text',
+        status: 'sent',
+        created_at: new Date().toISOString(),
+        sender_id: 0,
+        is_edited: false,
+      },
+      unread_count: 0,
+      updated_at: new Date().toISOString(),
+    };
+    
+    setSelectedConversation(newConv);
+    setShowUserSearch(false);
+    setSearchUsers([]);
+    setSearchTerm('');
+    setMessages([]);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'sent':
+        return <Check size={14} className="text-gray-400" />;
+      case 'delivered':
+        return <CheckCheck size={14} className="text-gray-400" />;
+      case 'read':
+        return <CheckCheck size={14} className="text-blue-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const formatMessageTime = (timeStr: string) => {
+    const time = new Date(timeStr);
+    const now = new Date();
+    const diffMs = now.getTime() - time.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+    return time.toLocaleDateString();
+  };
+
+  const filteredConversations = conversations.filter(conv =>
+    conv.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    conv.latest_message.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const renderMessage = (message: Message) => {
+    const isMe = message.is_from_me;
+    const isEditing = editingMessage?.id === message.id;
+
+    return (
+      <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-4`}>
+        <div className={`max-w-xs lg:max-w-md ${isMe ? 'order-2' : 'order-1'}`}>
+          {!isMe && (
+            <div className="flex items-center mb-1">
+              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-2">
+                <span className="text-xs font-medium">
+                  {message.sender.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <span className="text-xs text-gray-600">{message.sender.name}</span>
+            </div>
+          )}
+          
+          {replyingTo && (
+            <div className={`p-2 rounded-lg mb-1 text-sm ${isMe ? 'bg-blue-50' : 'bg-gray-100'}`}>
+              <div className="flex items-center text-gray-600 mb-1">
+                <Reply size={12} className="mr-1" />
+                Replying to {replyingTo.sender.name}
+              </div>
+              <div className="truncate">{replyingTo.content}</div>
+            </div>
+          )}
+
+          <div className={`relative px-4 py-2 rounded-lg ${
+            isMe 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-100 text-gray-900'
+          }`}>
+            {message.type === 'property' && message.property && (
+              <div className="flex items-center mb-2">
+                <Home size={16} className="mr-2" />
+                <div>
+                  <div className="font-medium">{message.property.title}</div>
+                  <div className="text-xs opacity-75">Property inquiry</div>
+                </div>
+              </div>
+            )}
+            
+            {isEditing ? (
+              <div className="flex items-center">
+                <textarea
+                  className="w-full p-1 rounded bg-white text-gray-900 text-sm resize-none"
+                  value={editingMessage.content}
+                  onChange={(e) => setEditingMessage({ ...editingMessage, content: e.target.value })}
+                  autoFocus
+                />
+                <button
+                  onClick={() => handleEditMessage(message.id, editingMessage.content)}
+                  className="ml-2 text-green-500"
+                >
+                  <Check size={16} />
+                </button>
+                <button
+                  onClick={() => setEditingMessage(null)}
+                  className="ml-1 text-red-500"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+            )}
+            
+            <div className={`flex items-center justify-end mt-1 text-xs ${
+              isMe ? 'text-blue-100' : 'text-gray-500'
+            }`}>
+              <span>{formatMessageTime(message.created_at)}</span>
+              {message.is_edited && <span className="ml-1">(edited)</span>}
+              {isMe && (
+                <span className="ml-1">{getStatusIcon(message.status)}</span>
+              )}
+            </div>
+          </div>
+
+          {!isEditing && isMe && (
+            <div className="flex items-center mt-1 space-x-2">
+              <button
+                onClick={() => setEditingMessage({ id: message.id, content: message.content })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <Edit2 size={14} />
+              </button>
+              <button
+                onClick={() => handleDeleteMessage(message.id)}
+                className="text-gray-400 hover:text-red-600"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const handleEditMessage = async (messageId: number, content: string) => {
+    try {
+      await MessagesService.editMessage(messageId, content);
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content, is_edited: true, edited_at: new Date().toISOString() }
+          : msg
+      ));
+      setEditingMessage(null);
+    } catch (error) {
+      console.error('Failed to edit message:', error);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!confirm('Are you sure you want to delete this message?')) return;
+    
+    try {
+      await MessagesService.deleteMessage(messageId);
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    }
   };
 
   return (
-    <div style={{
-      fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-      background: '#080808',
-      color: '#e8e4dc',
-      minHeight: '100vh',
-      padding: '20px',
-    }}>
-      <style>{`
-        .bnb-messages-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-        .bnb-messages-title {
-          font-size: 24px;
-          font-weight: 600;
-          color: #e8e4dc;
-          margin: 0;
-        }
-        .bnb-messages-stats {
-          display: flex;
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-        .stat-card {
-          background: 'rgba(37,99,235,0.1)';
-          border: '1px solid rgba(37,99,235,0.2)';
-          border-radius: '12px';
-          padding: '16px 20px';
-          text-align: center;
-          min-width: '400px';
-        }
-        .stat-number {
-          font-size: '24px';
-          font-weight: 700;
-          color: #2563eb;
-          margin-bottom: 4px;
-        }
-        .stat-label {
-          font-size: 12px;
-          color: #9ca3af;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .messages-grid {
-          display: grid;
-          gap: '16px';
-          grid-template-columns: repeat(auto-fill, minmax('400px', 1fr));
-        }
-        .message-card {
-          background: 'rgba(255,255,255,0.05)';
-          border: '1px solid rgba(255,255,255,0.1)';
-          border-radius: '12px';
-          padding: '20px';
-          transition: all 0.2s ease;
-          cursor: pointer;
-        }
-        .message-card:hover {
-          transform: 'translateY(-2px)';
-          box-shadow: '0 4px 12px rgba(37,99,235,0.15)';
-          border-color: 'rgba(37,99,235,0.3)';
-        }
-        .message-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 12px;
-        }
-        .message-property {
-          font-weight: 600;
-          color: #2563eb;
-          margin-bottom: 4px;
-        }
-        .message-guest {
-          font-size: 14px;
-          color: #9ca3af;
-        }
-        .message-subject {
-          font-weight: 500;
-          color: #e8e4dc;
-          margin-bottom: 8px;
-        }
-        .message-content {
-          color: #d1d5db;
-          lineHeight: 1.5;
-          margin-bottom: 12px;
-          font-size: 14px;
-        }
-        .message-meta {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 12px;
-          color: #6b7280;
-        }
-        .unread-indicator {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: '#2563eb';
-        }
-        .reply-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: 'rgba(0,0,0,0.8)';
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-        .reply-modal-content {
-          background: #1a1a1a;
-          border-radius: 12px;
-          padding: 24px;
-          maxWidth: 500px;
-          width: 90%;
-          maxHeight: 80vh;
-          overflow: auto;
-        }
-        .reply-textarea {
-          width: 100%;
-          min-height: '100px';
-          padding: '12px';
-          border: '1px solid rgba(255,255,255,0.1)';
-          border-radius: '8px';
-          background: 'rgba(255,255,255,0.05)';
-          color: #e8e4dc;
-          font-family: inherit;
-          font-size: 14px;
-          resize: vertical;
-          margin-bottom: 16px;
-        }
-        .reply-buttons {
-          display: flex;
-          gap: 12px;
-          justify-content: flex-end;
-        }
-        .btn {
-          padding: 10px 16px;
-          border: none;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-primary {
-          background: #2563eb;
-          color: white;
-        }
-        .btn-primary:hover {
-          background: '#1d4ed8';
-        }
-        .btn-secondary {
-          background: 'rgba(255,255,255,0.1)';
-          color: '#e8e4dc';
-          border: '1px solid rgba(255,255,255,0.2)';
-        }
-        .btn-secondary:hover {
-          background: 'rgba(255,255,255,0.15)';
-        }
-      `}</style>
-
-      <div className="bnb-messages-header">
-        <h1 className="bnb-messages-title">Messages</h1>
-      </div>
-
-      <div className="bnb-messages-stats">
-        <div className="stat-card">
-          <div className="stat-number">{messages.length}</div>
-          <div className="stat-label">Total</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">{messages.filter(m => !m.read_at).length}</div>
-          <div className="stat-label">Unread</div>
-        </div>
-      </div>
-
-      {error && (
-        <div style={{
-          background: 'rgba(239,68,68,0.1)',
-          border: '1px solid rgba(239,68,68,0.2)',
-          borderRadius: '8px',
-          padding: '12px 16px',
-          marginBottom: '16px',
-          color: '#ef4444'
-        }}>
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div style={{
-          background: 'rgba(16,185,129,0.1)',
-          border: '1px solid rgba(16,185,129,0.2)',
-          borderRadius: '8px',
-          padding: '12px 16px',
-          marginBottom: '16px',
-          color: '#10b981'
-        }}>
-          {success}
-        </div>
-      )}
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>Loading messages...</div>
-      ) : messages.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
-          <MessageSquare size={48} style={{ opacity: 0.3, margin: '0 auto 16px' }} />
-          <div>No messages yet</div>
-        </div>
-      ) : (
-        <div className="messages-grid">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className="message-card"
-              onClick={() => setSelectedMessage(message)}
+    <div className="flex h-screen bg-white">
+      {/* Sidebar */}
+      <div className="w-80 border-r border-gray-200 flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <MessageCircle className="w-6 h-6 text-blue-500 mr-2" />
+              <h1 className="text-xl font-semibold">BNB Messages</h1>
+              {unreadCount > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setShowUserSearch(!showUserSearch)}
+              className="p-2 hover:bg-gray-100 rounded-full"
             >
-              <div className="message-header">
-                <div>
-                  <div className="message-property">{message.property_title}</div>
-                  <div className="message-guest">
-                    <Users size={14} style={{ marginRight: '6px' }} />
-                    {message.guest_name}
+              <Search size={20} />
+            </button>
+          </div>
+          
+          {showUserSearch && (
+            <div className="space-y-2">
+              <input
+                type="text"
+                placeholder="Search users..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  searchForUsers(e.target.value);
+                }}
+              />
+              
+              {searchUsers.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                  {searchUsers.map(user => (
+                    <button
+                      key={user.id}
+                      onClick={() => startNewConversation(user)}
+                      className="w-full px-3 py-2 hover:bg-gray-50 flex items-center text-left"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                        <span className="text-xs font-medium">
+                          {user.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">{user.name}</div>
+                        <div className="text-xs text-gray-500">{user.user_type}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Conversations List */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>No conversations yet</p>
+              <p className="text-sm mt-2">Start messaging with your BnB guests</p>
+            </div>
+          ) : (
+            <div>
+              {filteredConversations.map(conv => (
+                <button
+                  key={conv.id}
+                  onClick={() => setSelectedConversation(conv)}
+                  className={`w-full p-4 flex items-center hover:bg-gray-50 transition-colors ${
+                    selectedConversation?.id === conv.id ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  <div className="relative mr-3">
+                    <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
+                      <span className="text-lg font-medium">
+                        {conv.user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    {conv.user.is_online && (
+                      <Circle size={12} className="absolute bottom-0 right-0 text-green-500 fill-current" />
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">{conv.user.name}</h3>
+                      <span className="text-xs text-gray-500">
+                        {formatMessageTime(conv.updated_at)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-600 truncate">
+                        {conv.latest_message.type === 'property' ? (
+                          <span className="flex items-center">
+                            <span className="w-4 h-4 bg-blue-100 rounded mr-1 flex items-center justify-center">
+                              <span className="text-xs">P</span>
+                            </span>
+                            Property inquiry
+                          </span>
+                        ) : (
+                          conv.latest_message.content
+                        )}
+                      </p>
+                      {conv.unread_count > 0 && (
+                        <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1">
+                          {conv.unread_count}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {conv.property && (
+                      <div className="mt-1 text-xs text-gray-500">
+                        <span className="bg-gray-100 px-2 py-0.5 rounded">
+                          {conv.property.title}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {selectedConversation ? (
+          <>
+            {/* Chat Header */}
+            <div className="p-4 border-b border-gray-200 bg-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="relative mr-3">
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                      <span className="text-sm font-medium">
+                        {selectedConversation.user.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    {selectedConversation.user.is_online && (
+                      <Circle size={10} className="absolute bottom-0 right-0 text-green-500 fill-current" />
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="font-medium">{selectedConversation.user.name}</h2>
+                    <p className="text-xs text-gray-500">
+                      {selectedConversation.user.is_online ? 'Online' : 'Offline'}
+                    </p>
                   </div>
                 </div>
-                {!message.read_at && <div className="unread-indicator" />}
-              </div>
-
-              <div className="message-subject">{message.subject}</div>
-              <div className="message-content">{message.message}</div>
-
-              <div className="message-meta">
-                <span>
-                  <Calendar size={12} style={{ marginRight: '4px' }} />
-                  {formatDate(message.created_at)}
-                </span>
-                <span>{message.direction === 'sent' ? 'Sent' : 'Received'}</span>
+                
+                <div className="flex items-center space-x-2">
+                  <button className="p-2 hover:bg-gray-100 rounded-full">
+                    <Phone size={20} />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 rounded-full">
+                    <Video size={20} />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 rounded-full">
+                    <MoreVertical size={20} />
+                  </button>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
 
-      {selectedMessage && (
-        <div className="reply-modal" onClick={() => setSelectedMessage(null)}>
-          <div onClick={(e) => e.stopPropagation()}>
-            <div className="reply-modal-content">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <h2 style={{ margin: 0, color: '#e8e4dc' }}>Reply to Message</h2>
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+              {messages.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                <div>
+                  {messages.map(renderMessage)}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
+
+            {/* Message Input */}
+            <div className="p-4 border-t border-gray-200 bg-white">
+              {replyingTo && (
+                <div className="flex items-center justify-between p-2 bg-gray-100 rounded-lg mb-2">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Reply size={14} className="mr-2" />
+                    Replying to {replyingTo.sender.name}: {replyingTo.content}
+                  </div>
+                  <button
+                    onClick={() => setReplyingTo(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex items-end space-x-2">
                 <button
-                  onClick={() => setSelectedMessage(null)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#9ca3af',
-                    cursor: 'pointer',
-                    fontSize: '20px'
-                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 hover:bg-gray-100 rounded-full"
                 >
-                  ×
+                  <Paperclip size={20} />
+                </button>
+                <button className="p-2 hover:bg-gray-100 rounded-full">
+                  <Smile size={20} />
+                </button>
+                
+                <div className="flex-1">
+                  <textarea
+                    ref={textareaRef}
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    placeholder="Type a message..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={1}
+                  />
+                </div>
+                
+                <button
+                  onClick={sendMessage}
+                  disabled={!newMessage.trim() || sendingMessage}
+                  className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingMessage ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  ) : (
+                    <Send size={20} />
+                  )}
                 </button>
               </div>
               
-              <div style={{ color: '#9ca3af', lineHeight: 1.6, marginBottom: '16px' }}>
-                <p><strong>From:</strong> {selectedMessage.guest_name}</p>
-                <p><strong>Property:</strong> {selectedMessage.property_title}</p>
-                <p><strong>Subject:</strong> {selectedMessage.subject}</p>
-                <p><strong>Message:</strong> {selectedMessage.message}</p>
-              </div>
-
-              <textarea
-                className="reply-textarea"
-                placeholder="Type your reply here..."
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept="image/*,.pdf,.doc,.docx"
               />
-
-              <div className="reply-buttons">
-                <button className="btn btn-secondary" onClick={() => setSelectedMessage(null)}>
-                  Cancel
-                </button>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={() => handleReply(selectedMessage.id)}
-                  disabled={!replyText.trim()}
-                >
-                  Send Reply
-                </button>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Send size={40} className="text-gray-400" />
               </div>
+              <h3 className="text-xl font-medium mb-2">Select a conversation</h3>
+              <p className="text-gray-500">Choose a conversation from the sidebar to start messaging</p>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

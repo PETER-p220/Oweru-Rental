@@ -10,7 +10,7 @@ import Api from '../../services/api';
 function parseGuestFromNotes(notes?: string): { name: string; email: string; phone: string } | null {
   if (!notes) return null;
   const match = notes.match(/by:\s*(.+?)\s*\(([^,]+),\s*([^)]+)\)/);
-  if (match) {
+  if (match) {                                
     return {
       name: match[1].trim(),
       email: match[2].trim(),

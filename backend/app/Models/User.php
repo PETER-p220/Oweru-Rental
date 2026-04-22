@@ -33,6 +33,8 @@ class User extends Authenticatable
         'profile_image',
         'bio',
         'is_active',
+        'is_online',
+        'last_seen_at',
     ];
 
     /**
@@ -58,6 +60,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'is_active' => 'boolean',
+            'is_online' => 'boolean',
+            'last_seen_at' => 'datetime',
             'user_type' => 'string', // Ensure user_type is always cast to string
         ];
     }

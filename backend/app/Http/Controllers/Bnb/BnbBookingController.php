@@ -211,16 +211,38 @@ class BnbBookingController extends Controller
 {
     $user = Auth::user();
     
+    // Debug: Log authorization check
+    \Log::info('BnbBookingController::updateStatus - Authorization check:', [
+        'booking_id' => $bnbBooking->id,
+        'property_id' => $bnbBooking->property_id,
+        'user_id' => $user->id,
+        'user_type' => $user->user_type,
+        'booking_guest_id' => $bnbBooking->guest_id,
+        'is_guest' => $bnbBooking->guest_id === $user->id,
+    ]);
+    
     // Allow: the guest, OR the property owner
     $isGuest = $bnbBooking->guest_id === $user->id;
-    $isOwner = \App\Models\Property::where('id', $bnbBooking->property_id)
+    $isOwner = \App\Models\BnbProperty::where('id', $bnbBooking->property_id)
                  ->where('owner_id', $user->id)
                  ->exists();
+
+    \Log::info('BnbBookingController::updateStatus - Owner check:', [
+        'is_owner' => $isOwner,
+        'bnb_property_exists' => \App\Models\BnbProperty::where('id', $bnbBooking->property_id)->exists(),
+        'bnb_property_owner' => \App\Models\BnbProperty::where('id', $bnbBooking->property_id)->value('owner_id'),
+    ]);
 
     if (!$isGuest && !$isOwner) {
         return response()->json(['message' => 'Unauthorized'], 403);
     }
-        $bnbBooking->status = $request->status;
+
+    // Validate status
+    $request->validate([
+        'status' => 'required|in:pending,confirmed,cancelled,completed'
+    ]);
+
+    $bnbBooking->status = $request->status;
 
         if ($request->status === 'cancelled') {
             $bnbBooking->cancellation_reason = $request->cancellation_reason;
