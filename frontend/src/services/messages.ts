@@ -64,7 +64,8 @@ export interface User {
 
 class MessagesService {
   private static async request<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${API_BASE_URL}/api/${endpoint}`;
+    const url = `${API_BASE_URL}/api/${endpoint}`.replace(/\/+/g, '/');
+    console.log('DEBUG - API_BASE_URL:', API_BASE_URL, 'endpoint:', endpoint, 'final URL:', url);
 
     const isFormData = options.body instanceof FormData;
 
@@ -146,7 +147,7 @@ class MessagesService {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await fetch(`${API_BASE_URL}/api/messages/upload`, {
+    const response = await fetch(`${API_BASE_URL}/api/messages/upload`.replace(/\/+/g, '/'), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
