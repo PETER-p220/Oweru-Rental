@@ -30,7 +30,7 @@ class TenantController extends Controller
             'saved_properties' => SavedProperty::where('user_id', $user->id)->count(),
             'total_applications' => Application::where('user_id', $user->id)->count(),
             'messages' => $this->messagesTableAvailable()
-                ? Message::where('recipient_id', $user->id)->whereNull('read_at')->count()
+                ? Message::where('receiver_id', $user->id)->whereNull('read_at')->count()
                 : 0,
         ];
 
@@ -580,12 +580,12 @@ class TenantController extends Controller
         $messages = Message::with(['sender', 'recipient', 'property'])
             ->where(function ($query) use ($user) {
                 $query->where('sender_id', $user->id)
-                    ->orWhere('recipient_id', $user->id);
+                    ->orWhere('receiver_id', $user->id);
             })
             ->orderBy('created_at', 'desc')
             ->paginate(50);
 
-        Message::where('recipient_id', $user->id)
+        Message::where('receiver_id', $user->id)
             ->whereNull('read_at')
             ->whereIn('id', collect($messages->items())->pluck('id'))
             ->update(['read_at' => now()]);
@@ -598,7 +598,7 @@ class TenantController extends Controller
                     return [
                         'id' => $message->id,
                         'sender_id' => $message->sender_id,
-                        'recipient_id' => $message->recipient_id,
+                        'receiver_id' => $message->receiver_id,
                         'property_id' => $message->property_id,
                         'subject' => $message->subject,
                         'body' => $message->body,
@@ -657,7 +657,7 @@ class TenantController extends Controller
 
         $message = Message::create([
             'sender_id' => $user->id,
-            'recipient_id' => $tenant->property->owner->id,
+            'receiver_id' => $tenant->property->owner->id,
             'property_id' => $tenant->property_id,
             'subject' => $request->subject,
             'body' => $request->body,

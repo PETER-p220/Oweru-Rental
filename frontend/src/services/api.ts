@@ -693,7 +693,7 @@ class Api {
   static async getPayoutHistory()         { return this.request<any[]>('agent/payouts'); }
   static async getAgentAnalytics()        { return this.request<any>('agent/analytics'); }
   static async getAgentMessages()         { return this.request<any>('agent/messages'); }
-  static async sendAgentMessage(data: { recipient_id: number; property_id?: number; subject?: string; body: string }) {
+  static async sendAgentMessage(data: { receiver_id: number; property_id?: number; subject?: string; body: string }) {
     return this.request<any>('agent/messages', { method: 'POST', body: JSON.stringify(data) });
   }
 
@@ -824,7 +824,7 @@ class Api {
   static async downloadLandlordDigitalContract(id: number) { return this.request(`owner/digital-contracts/${id}/download`); }
 
   static async sendOwnerMessage(data: {
-    recipient_id: number;
+    receiver_id: number;
     property_id?: number;
     subject?: string;
     body: string;

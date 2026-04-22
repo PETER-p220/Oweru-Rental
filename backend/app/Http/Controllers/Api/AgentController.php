@@ -712,7 +712,7 @@ public function recordShare(Property $property): JsonResponse
             ->where(function ($q) use ($user, $ownerIds) {
                 // Condition A: message participant is this agent
                 $q->where('sender_id', $user->id)
-                  ->orWhere('recipient_id', $user->id);
+                  ->orWhere('receiver_id', $user->id);
             })
             ->where(function ($q) use ($user, $ownerIds) {
                 // Condition B: message is tied to a property the agent manages …
@@ -726,7 +726,7 @@ public function recordShare(Property $property): JsonResponse
                         $inner->whereNull('property_id')
                               ->where(function ($p) use ($ownerIds) {
                                   $p->whereIn('sender_id', $ownerIds)
-                                    ->orWhereIn('recipient_id', $ownerIds);
+                                    ->orWhereIn('receiver_id', $ownerIds);
                               });
                     });
                 }
@@ -735,7 +735,7 @@ public function recordShare(Property $property): JsonResponse
             ->paginate(50);
 
         // Mark retrieved messages as read
-        Message::where('recipient_id', $user->id)
+        Message::where('receiver_id', $user->id)
             ->whereNull('read_at')
             ->whereIn('id', collect($messages->items())->pluck('id'))
             ->update(['read_at' => now()]);
@@ -748,7 +748,7 @@ public function recordShare(Property $property): JsonResponse
                     return [
                         'id'           => $message->id,
                         'sender_id'    => $message->sender_id,
-                        'recipient_id' => $message->recipient_id,
+                        'receiver_id' => $message->receiver_id,
                         'property_id'  => $message->property_id,
                         'subject'      => $message->subject,
                         'body'         => $message->body,
@@ -779,7 +779,7 @@ public function recordShare(Property $property): JsonResponse
         }
 
         $validator = Validator::make($request->all(), [
-            'recipient_id' => 'required|exists:users,id',
+            'receiver_id' => 'required|exists:users,id',
             'property_id'  => 'nullable|exists:properties,id',
             'subject'      => 'nullable|string|max:255',
             'body'         => 'required|string|max:5000',
@@ -793,7 +793,7 @@ public function recordShare(Property $property): JsonResponse
         }
 
         $user        = Auth::user();
-        $recipientId = (int) $request->recipient_id;
+        $recipientId = (int) $request->receiver_id;
         $propertyId  = $request->property_id ? (int) $request->property_id : null;
 
         $propertyQuery = Property::where('agent_id', $user->id)
@@ -810,7 +810,7 @@ public function recordShare(Property $property): JsonResponse
 
         $message = Message::create([
             'sender_id'    => $user->id,
-            'recipient_id' => $recipientId,
+            'receiver_id' => $recipientId,
             'property_id'  => $property->id,
             'subject'      => $request->subject,
             'body'         => $request->body,
@@ -909,13 +909,13 @@ public function recordShare(Property $property): JsonResponse
             ->get()
             ->filter(fn ($p) => $p->owner !== null)
             ->map(fn ($property) => [
-                'recipient_id'    => $property->owner->id,
-                'recipient_name'  => trim($property->owner->first_name . ' ' . $property->owner->last_name),
-                'recipient_email' => $property->owner->email,
+                'receiver_id'    => $property->owner->id,
+                'receiver_name'  => trim($property->owner->first_name . ' ' . $property->owner->last_name),
+                'receiver_email' => $property->owner->email,
                 'property_id'     => $property->id,
                 'property_title'  => $property->title,
             ])
-            ->unique(fn ($item) => $item['recipient_id'] . '-' . $item['property_id'])
+            ->unique(fn ($item) => $item['receiver_id'] . '-' . $item['property_id'])
             ->values()
             ->toArray();
     }

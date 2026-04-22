@@ -686,7 +686,7 @@ class OwnerController extends Controller
         $messages = Message::with(['sender', 'recipient', 'property'])
             ->where(function ($query) use ($user) {
                 $query->where('sender_id', $user->id)
-                      ->orWhere('recipient_id', $user->id);
+                      ->orWhere('receiver_id', $user->id);
             })
             ->where(function ($query) use ($user) {
                 $query->whereHas('property', function ($propertyQuery) use ($user) {
@@ -702,7 +702,7 @@ class OwnerController extends Controller
                                                 ->where('owner_id', $user->id);
                                         });
                                 })
-                                ->orWhereIn('recipient_id', function ($tenantQuery) use ($user) {
+                                ->orWhereIn('receiver_id', function ($tenantQuery) use ($user) {
                                     $tenantQuery->select('user_id')->from('tenants')
                                         ->whereIn('property_id', function ($propertyQuery) use ($user) {
                                             $propertyQuery->select('id')->from('properties')
@@ -715,7 +715,7 @@ class OwnerController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(50);
 
-        Message::where('recipient_id', $user->id)
+        Message::where('receiver_id', $user->id)
             ->whereNull('read_at')
             ->whereIn('id', collect($messages->items())->pluck('id'))
             ->update(['read_at' => now()]);
@@ -738,7 +738,7 @@ class OwnerController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'recipient_id' => 'required|exists:users,id',
+            'receiver_id' => 'required|exists:users,id',
             'property_id'  => 'nullable|exists:properties,id',
             'subject'      => 'nullable|string|max:255',
             'body'         => 'required|string|max:5000',
@@ -752,7 +752,7 @@ class OwnerController extends Controller
         }
 
         $user        = Auth::user();
-        $recipientId = (int) $request->recipient_id;
+        $recipientId = (int) $request->receiver_id;
         $propertyId  = $request->property_id ? (int) $request->property_id : null;
 
         $recipientIsTenant = Tenant::where('user_id', $recipientId)
@@ -780,7 +780,7 @@ class OwnerController extends Controller
 
         $message = Message::create([
             'sender_id'    => $user->id,
-            'recipient_id' => $recipientId,
+            'receiver_id' => $recipientId,
             'property_id'  => $propertyId,
             'subject'      => $request->subject,
             'body'         => $request->body,
