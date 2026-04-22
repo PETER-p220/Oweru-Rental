@@ -325,7 +325,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
             {/* Chat header */}
             <div style={s.chatHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button style={s.backBtn} onClick={() => setMobilePaneOpen(false)}>
+                <button style={s.backBtn} className="back-btn" onClick={() => setMobilePaneOpen(false)}>
                   <ChevronLeft size={20} />
                 </button>
                 <div style={{ position: 'relative' }}>
@@ -628,7 +628,6 @@ const s: Record<string, React.CSSProperties> = {
   backBtn: {
     background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b',
     padding: 4, borderRadius: 8, display: 'none',
-    '@media(max-width:767px)': { display: 'flex' },
   },
   chatHeaderName: { fontWeight: 700, fontSize: 15, color: '#f1f5f9' },
   chatHeaderSub: { fontSize: 12, display: 'flex', alignItems: 'center', marginTop: 2 },
