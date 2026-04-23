@@ -230,7 +230,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
   /* filtered conversations */
   const filtered = conversations.filter(c =>
     c.user.name.toLowerCase().includes(sideSearch.toLowerCase()) ||
-    c.latest_message.content.toLowerCase().includes(sideSearch.toLowerCase())
+    (c.latest_message?.content?.toLowerCase().includes(sideSearch.toLowerCase()) || false)
   );
 
   /* RENDER */
@@ -410,7 +410,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                     </div>
                     <div style={s.convRow}>
                       <span style={{ ...s.convPreview, fontWeight: unreadCount > 0 ? 600 : 400 }}>
-                        {latestMessage.type === 'property' ? ' Property inquiry' : latestMessage.content || '...'}
+                        {latestMessage?.type === 'property' ? ' Property inquiry' : latestMessage?.content || '...'}
                       </span>
                       {unreadCount > 0 && (
                         <span style={{ ...s.badge, background: cfg.accent, fontSize: 10 }}>{unreadCount}</span>
@@ -539,7 +539,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                                   </div>
                                 </div>
                               ) : (
-                                <p style={s.msgText}>{msg.content}</p>
+                                <p style={s.msgText}>{msg.content || '...'}</p>
                               )}
 
                               <div style={s.msgMeta}>
@@ -558,7 +558,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                                 </button>
                                 {isMe && (
                                   <>
-                                    <button style={s.msgActionBtn} onClick={() => setEditing({ id: msg.id, content: msg.content })} title="Edit">
+                                    <button style={s.msgActionBtn} onClick={() => setEditing({ id: msg.id, content: msg.content || '' })} title="Edit">
                                       <Edit2 size={12} />
                                     </button>
                                     <button style={{ ...s.msgActionBtn, color: '#ef4444' }} onClick={() => deleteMsg(msg.id)} title="Delete">
@@ -586,9 +586,9 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                 <div style={s.replyBanner}>
                   <Reply size={13} color={cfg.accent} />
                   <span style={{ marginLeft: 8, fontSize: 13, color: '#94a3b8', flex: 1 }}>
-                    Replying to <strong style={{ color: '#e2e8f0' }}>{replyTo.sender.name}</strong>
+                    Replying to <strong style={{ color: '#e2e8f0' }}>{replyTo.sender?.name || 'Unknown User'}</strong>
                     {' · '}
-                    <span style={{ opacity: 0.7 }}>{replyTo.content.slice(0, 60)}{replyTo.content.length > 60 ? '...' : ''}</span>
+                    <span style={{ opacity: 0.7 }}>{(replyTo?.content || '').slice(0, 60)}{(replyTo?.content?.length || 0) > 60 ? '...' : ''}</span>
                   </span>
                   <button style={s.closeReply} onClick={() => setReplyTo(null)}><X size={14} /></button>
                 </div>
