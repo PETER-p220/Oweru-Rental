@@ -1,12 +1,12 @@
 import { TOKEN_KEY } from './api';
 
-const API_BASE_URL = 'http://rental.oweru.com'; // Hardcoded for now to fix the issue
+const API_BASE_URL = 'http://rental.oweru.com';
 
 export interface Message {
   id: number;
   sender_id: number;
   receiver_id: number;
-  content: string;
+  content: string | null;
   type: 'text' | 'image' | 'file' | 'location' | 'property';
   attachments?: any[];
   status: 'sent' | 'delivered' | 'read';
@@ -42,13 +42,13 @@ export interface Conversation {
   };
   latest_message: {
     id: number;
-    content: string;
+    content: string | null;
     type: string;
     status: string;
     created_at: string;
     sender_id: number;
     is_edited: boolean;
-  };
+  } | null;
   unread_count: number;
   property?: any;
   updated_at: string;
@@ -113,6 +113,7 @@ class MessagesService {
   }
 
   // Send a new message
+  // NOTE: Backend returns { message: string, data: Message } — we unwrap .data here
   static async sendMessage(data: {
     receiver_id: number;
     content: string;
@@ -120,17 +121,17 @@ class MessagesService {
     property_id?: number;
     reply_to_id?: number;
     attachments?: any[];
-  }) {
-    const response = await this.request<Message>('messages', {
+  }): Promise<Message> {
+    const response = await this.request<{ message: string; data: Message }>('messages', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return response;
+    return response.data;
   }
 
   // Edit a message
   static async editMessage(messageId: number, content: string) {
-    const response = await this.request(`messages/${messageId}`, {
+    const response = await this.request<{ message: string; data: any }>(`messages/${messageId}`, {
       method: 'PATCH',
       body: JSON.stringify({ content }),
     });
@@ -148,19 +149,19 @@ class MessagesService {
   static async uploadFile(file: File) {
     const formData = new FormData();
     formData.append('file', file);
-    
-    const response = await fetch(`${API_BASE_URL}/api/messages/upload`.replace(/\/+/g, '/'), {
+
+    const response = await fetch(`${API_BASE_URL}/api/messages/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
       },
       body: formData,
     });
-    
+
     if (!response.ok) {
       throw new Error('Upload failed');
     }
-    
+
     return response.json();
   }
 
@@ -180,19 +181,19 @@ class MessagesService {
 
   // Search users to start conversation
   static async searchUsers(search: string) {
-    const response = await this.request<{ users: User[] }>(`messages/search-users?search=${search}`);
-    return response.users || [];
+    const response = await this.request<{ users: User[] }>(`messages/search-users?search=${encodeURIComponent(search)}`);
+    return response.users ?? [];
   }
 
   // Get online users for messaging
-  static async getOnlineUsers() {
+  static async getOnlineUsers(): Promise<User[]> {
     try {
       const response = await this.request<{ users: User[] }>('messages/online-users');
-      return (response.users || []).map(user => ({
+      return (response.users ?? []).map(user => ({
         ...user,
         name: user.name || 'Unknown User',
         user_type: user.user_type || 'Unknown',
-        is_online: user.is_online || false,
+        is_online: user.is_online ?? false,
       }));
     } catch (error) {
       console.error('Failed to fetch online users:', error);
@@ -200,10 +201,10 @@ class MessagesService {
     }
   }
 
-  // Test method to get all users (remove in production)
-  static async getAllUsers() {
+  // Get all users (for testing — remove in production)
+  static async getAllUsers(): Promise<User[]> {
     const response = await this.request<{ users: User[] }>('messages/all-users');
-    return response.users || [];
+    return response.users ?? [];
   }
 
   // Start conversation about a property

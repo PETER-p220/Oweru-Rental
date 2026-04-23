@@ -96,13 +96,14 @@ class MessageController extends Controller
 
     /**
      * Send a new message
+     * FIX: content is nullable for property-type messages
      */
     public function send(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'receiver_id' => 'required|exists:users,id',
-            'content' => 'required|string|max:5000',
-            'type' => 'in:text,file,image,location,property',
+            'content'     => 'nullable|string|max:5000',   // <-- was 'required', now nullable
+            'type'        => 'in:text,file,image,location,property',
             'property_id' => 'nullable|exists:properties,id',
             'reply_to_id' => 'nullable|exists:messages,id',
             'attachments' => 'nullable|array',
@@ -111,51 +112,51 @@ class MessageController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors(),
+                'errors'  => $validator->errors(),
             ], 422);
         }
 
         $user = Auth::user();
 
-        // Create message
         $message = Message::create([
-            'sender_id' => $user->id,
+            'sender_id'   => $user->id,
             'receiver_id' => $request->receiver_id,
-            'content' => $request->content,
-            'type' => $request->type ?? Message::TYPE_TEXT,
+            'content'     => $request->content,
+            'type'        => $request->type ?? Message::TYPE_TEXT,
             'property_id' => $request->property_id,
             'reply_to_id' => $request->reply_to_id,
             'attachments' => $request->attachments,
-            'status' => Message::STATUS_SENT,
+            'status'      => Message::STATUS_SENT,
         ]);
 
-        // Load relationships
         $message->load(['sender', 'receiver', 'property', 'replyTo']);
 
         return response()->json([
             'message' => 'Message sent successfully',
-            'data' => [
-                'id' => $message->id,
-                'sender_id' => $message->sender_id,
-                'receiver_id' => $message->receiver_id,
-                'content' => $message->content,
-                'type' => $message->type,
-                'attachments' => $message->attachments,
-                'status' => $message->status,
-                'created_at' => $message->created_at,
+            'data'    => [
+                'id'             => $message->id,
+                'sender_id'      => $message->sender_id,
+                'receiver_id'    => $message->receiver_id,
+                'content'        => $message->content,        // may be null — frontend handles it
+                'type'           => $message->type,
+                'attachments'    => $message->attachments,
+                'status'         => $message->status,
+                'created_at'     => $message->created_at,
+                'edited_at'      => null,
+                'is_edited'      => false,
+                'reply_to_id'    => $message->reply_to_id,
                 'time_formatted' => $message->time_formatted,
-                'is_from_me' => true,
-                'sender' => [
-                    'id' => $message->sender->id,
-                    'name' => $message->sender->first_name . ' ' . $message->sender->last_name,
+                'is_from_me'     => true,
+                'sender'         => [
+                    'id'        => $message->sender->id,
+                    'name'      => $message->sender->first_name . ' ' . $message->sender->last_name,
                     'user_type' => $message->sender->user_type,
-                    'avatar' => $message->sender->profile_image ?? null,
+                    'avatar'    => $message->sender->profile_image ?? null,
                 ],
-                'property' => $message->property,
+                'property'       => $message->property,
             ],
         ], 201);
     }
-
     /**
      * Edit a message
      */

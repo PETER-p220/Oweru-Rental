@@ -482,7 +482,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                 </div>
               ) : (
                 <>
-                  {messages.filter(msg => msg != null).map((msg, idx) => {
+                  {messages.map((msg, idx) => {
                     const isMe = msg.is_from_me;
                     const isEdit = editing?.id === msg.id;
                     const prevDate = idx > 0 && messages[idx - 1]?.created_at
@@ -493,7 +493,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                       : new Date().toDateString();
                     const showDate = prevDate !== thisDate;
                     const senderName = msg.sender?.name ?? 'Unknown User';
-                    const msgContent = (msg.content != null) ? msg.content : '...';
+                    const msgContent = msg.content ?? '';
 
                     return (
                       <div key={msg.id}>
@@ -534,7 +534,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                                 <div style={s.propCard}>
                                   <Home size={14} style={{ marginRight: 6, flexShrink: 0 }} />
                                   <div>
-                                    <div style={{ fontWeight: 600, fontSize: 13 }}>{msg.property?.title || 'Property'}</div>
+                                    <div style={{ fontWeight: 600, fontSize: 13 }}>{msg.property.title}</div>
                                     <div style={{ fontSize: 11, opacity: 0.7 }}>Property inquiry</div>
                                   </div>
                                 </div>
@@ -545,12 +545,12 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                                   <textarea
                                     autoFocus
                                     style={s.editTextarea}
-                                    value={editing?.content || ''}
-                                    onChange={e => setEditing(editing ? { ...editing, content: e.target.value } : null)}
+                                    value={editing.content}
+                                    onChange={e => setEditing({ ...editing, content: e.target.value })}
                                     onKeyDown={e => {
                                       if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
-                                        if (editing) saveEdit(msg.id, editing.content);
+                                        saveEdit(msg.id, editing.content);
                                       }
                                       if (e.key === 'Escape') setEditing(null);
                                     }}
@@ -558,7 +558,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                     <button
                                       style={{ ...s.editBtn, background: '#22c55e' }}
-                                      onClick={() => editing && saveEdit(msg.id, editing.content)}
+                                      onClick={() => saveEdit(msg.id, editing.content)}
                                     >
                                       <Check size={12} />
                                     </button>
