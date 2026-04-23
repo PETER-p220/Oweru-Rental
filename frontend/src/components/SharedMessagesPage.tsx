@@ -315,7 +315,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                 <Search size={14} style={s.searchIcon} />
                 <input
                   style={s.searchInput}
-                  placeholder={showOnlineOnly ? "Search online people..." : "Search all people..."}
+                  placeholder={showOnlineOnly ? "Search connected people..." : "Search all connected people..."}
                   value={userQuery}
                   autoFocus
                   onChange={e => setUserQuery(e.target.value)}
@@ -364,7 +364,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                 <p style={s.noResult}>No users found</p>
               )}
               {!userQuery && showOnlineOnly && foundUsers.length === 0 && (
-                <p style={s.noResult}>No online users available</p>
+                <p style={s.noResult}>No connected users available. Start a property inquiry to connect with agents or landlords.</p>
               )}
             </div>
           )}

@@ -98,6 +98,13 @@ class User extends Authenticatable
         return $this->belongsToMany(Property::class, 'saved_properties');
     }
 
+    public function properties(): BelongsToMany
+    {
+        return $this->belongsToMany(Property::class, 'property_users')
+                    ->withPivot('role', 'status')
+                    ->withTimestamps();
+    }
+
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);

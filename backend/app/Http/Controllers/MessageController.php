@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class MessageController extends Controller
 {
@@ -310,7 +311,7 @@ class MessageController extends Controller
     }
 
     /**
-     * Search users to start a conversation with
+     * Search users to start a conversation with (filtered by property connections)
      */
     public function searchUsers(Request $request): JsonResponse
     {
@@ -322,7 +323,11 @@ class MessageController extends Controller
             return response()->json(['users' => []]);
         }
 
+        // Get user IDs that share property connections with current user
+        $connectedUserIds = $this->getUserConnectedUserIds($user);
+
         $users = User::where('id', '!=', $user->id)
+                   ->whereIn('id', $connectedUserIds)
                    ->where(function ($query) use ($search) {
                        // Search by first name
                        $query->where('first_name', 'like', "%{$search}%")
@@ -355,15 +360,20 @@ class MessageController extends Controller
     }
 
     /**
-     * Get online users for messaging
+     * Get online users for messaging (filtered by property connections)
      */
     public function getOnlineUsers(): JsonResponse
     {
         $user = Auth::user();
         
-        // Get users who are online (active in last 5 minutes)
+        // Get users who are online (active in last 5 minutes) AND share property connections
         $fiveMinutesAgo = now()->subMinutes(5);
+        
+        // Get user IDs that share property connections with current user
+        $connectedUserIds = $this->getUserConnectedUserIds($user);
+        
         $onlineUsers = User::where('id', '!=', $user->id)
+                          ->whereIn('id', $connectedUserIds)
                           ->where(function ($query) use ($fiveMinutesAgo) {
                               $query->where('is_online', true)
                                     ->orWhere('last_seen_at', '>=', $fiveMinutesAgo);
@@ -388,6 +398,81 @@ class MessageController extends Controller
                 ];
             }),
         ]);
+    }
+
+    /**
+     * Get user IDs that share property connections with the current user
+     */
+    private function getUserConnectedUserIds($user): array
+    {
+        $connectedUserIds = [];
+        
+        switch ($user->user_type) {
+            case 'tenant':
+                // Tenants can see agents/landlords for properties they've inquired about
+                $propertyIds = Message::where('sender_id', $user->id)
+                                     ->where('type', 'property')
+                                     ->whereNotNull('property_id')
+                                     ->pluck('property_id')
+                                     ->toArray();
+                
+                // Get agents/landlords who received messages about these properties
+                $receiverIds = Message::whereIn('property_id', $propertyIds)
+                                    ->where('sender_id', '!=', $user->id)
+                                    ->pluck('receiver_id')
+                                    ->toArray();
+                
+                // Also get other tenants who inquired about same properties
+                $otherTenantIds = Message::whereIn('property_id', $propertyIds)
+                                        ->where('sender_id', '!=', $user->id)
+                                        ->pluck('sender_id')
+                                        ->toArray();
+                
+                $connectedUserIds = array_unique(array_merge($receiverIds, $otherTenantIds));
+                break;
+                
+            case 'agent':
+                // Agents can see tenants who inquired about properties they manage
+                $managedProperties = Property::where('agent_id', $user->id)->pluck('id')->toArray();
+                
+                // Get tenants who sent messages about these properties
+                $tenantIds = Message::whereIn('property_id', $managedProperties)
+                                   ->where('sender_id', '!=', $user->id)
+                                   ->pluck('sender_id')
+                                   ->toArray();
+                
+                // Also get landlords of these properties
+                $landlordIds = Property::whereIn('id', $managedProperties)
+                                      ->whereNotNull('owner_id')
+                                      ->where('owner_id', '!=', $user->id)
+                                      ->pluck('owner_id')
+                                      ->toArray();
+                
+                $connectedUserIds = array_unique(array_merge($tenantIds, $landlordIds));
+                break;
+                
+            case 'landlord':
+                // Landlords can see tenants who inquired about their properties
+                $ownedProperties = Property::where('owner_id', $user->id)->pluck('id')->toArray();
+                
+                // Get tenants who sent messages about these properties
+                $tenantIds = Message::whereIn('property_id', $ownedProperties)
+                                   ->where('sender_id', '!=', $user->id)
+                                   ->pluck('sender_id')
+                                   ->toArray();
+                
+                // Also get agents managing these properties
+                $agentIds = Property::whereIn('id', $ownedProperties)
+                                   ->whereNotNull('agent_id')
+                                   ->where('agent_id', '!=', $user->id)
+                                   ->pluck('agent_id')
+                                   ->toArray();
+                
+                $connectedUserIds = array_unique(array_merge($tenantIds, $agentIds));
+                break;
+        }
+        
+        return array_unique($connectedUserIds);
     }
 
     /**
