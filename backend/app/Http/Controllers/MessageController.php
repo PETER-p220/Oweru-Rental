@@ -24,6 +24,14 @@ class MessageController extends Controller
         $conversations = Message::getConversationsForUser($user->id);
         $unreadCount = Message::unread($user->id)->count();
 
+        // Sort conversations: online users first, then by recent activity
+        $conversations = $conversations->sortByDesc(function ($conversation) {
+            // Online users get priority (2), offline users get lower priority (1)
+            $onlinePriority = $conversation['user']['is_online'] ? 2 : 1;
+            // Combine with timestamp for proper sorting
+            return $onlinePriority . strtotime($conversation['updated_at']);
+        })->values();
+
         return response()->json([
             'conversations' => $conversations,
             'unread_count' => $unreadCount,
@@ -340,6 +348,42 @@ class MessageController extends Controller
                     'email' => $user->email,
                     'user_type' => $user->user_type,
                     'avatar' => $user->profile_image ?? null,
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * Get online users for messaging
+     */
+    public function getOnlineUsers(): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // Get users who are online (active in last 5 minutes)
+        $fiveMinutesAgo = now()->subMinutes(5);
+        $onlineUsers = User::where('id', '!=', $user->id)
+                          ->where(function ($query) use ($fiveMinutesAgo) {
+                              $query->where('is_online', true)
+                                    ->orWhere('last_seen_at', '>=', $fiveMinutesAgo);
+                          })
+                          ->select(['id', 'first_name', 'last_name', 'email', 'user_type', 'profile_image', 'is_online', 'last_seen_at'])
+                          ->orderBy('is_online', 'desc')
+                          ->orderBy('last_seen_at', 'desc')
+                          ->limit(20)
+                          ->get();
+
+        return response()->json([
+            'users' => $onlineUsers->map(function ($user) use ($fiveMinutesAgo) {
+                $isActuallyOnline = $user->is_online || $user->last_seen_at >= $fiveMinutesAgo;
+                return [
+                    'id' => $user->id,
+                    'name' => trim($user->first_name . ' ' . $user->last_name),
+                    'email' => $user->email,
+                    'user_type' => $user->user_type,
+                    'avatar' => $user->profile_image ?? null,
+                    'is_online' => $isActuallyOnline,
+                    'last_seen_at' => $user->last_seen_at,
                 ];
             }),
         ]);

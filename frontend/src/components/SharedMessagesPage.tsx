@@ -75,6 +75,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
   const [newChatOpen, setNewChatOpen]       = useState(false);
   const [userQuery, setUserQuery]           = useState('');
   const [foundUsers, setFoundUsers]         = useState<any[]>([]);
+  const [showOnlineOnly, setShowOnlineOnly] = useState(true);
   const [replyTo, setReplyTo]               = useState<Message | null>(null);
   const [editing, setEditing]               = useState<{ id: number; content: string } | null>(null);
   const [mobilePaneOpen, setMobilePaneOpen] = useState(false);
@@ -144,13 +145,27 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
 
   /* user search */
   useEffect(() => {
-    if (!userQuery.trim()) { setFoundUsers([]); return; }
+    if (!userQuery.trim()) {
+      if (newChatOpen && showOnlineOnly) {
+        loadOnlineUsers();
+      } else {
+        setFoundUsers([]);
+      }
+      return;
+    }
     const t = setTimeout(async () => {
       const users = await MessagesService.searchUsers(userQuery).catch(() => []);
       setFoundUsers(users);
     }, 300);
     return () => clearTimeout(t);
-  }, [userQuery]);
+  }, [userQuery, newChatOpen, showOnlineOnly]);
+
+  // Load online users when new chat opens
+  useEffect(() => {
+    if (newChatOpen && showOnlineOnly && !userQuery.trim()) {
+      loadOnlineUsers();
+    }
+  }, [newChatOpen, showOnlineOnly]);
 
   const searchForUsers = async (term: string) => {
     if (!term.trim()) { setFoundUsers([]); return; }
@@ -159,6 +174,17 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
       setFoundUsers(users);
     }, 300);
     return () => clearTimeout(t);
+  };
+
+  const loadOnlineUsers = async () => {
+    try {
+      console.log('Loading online users...');
+      const users = await MessagesService.getOnlineUsers();
+      console.log('Online users found:', users);
+      setFoundUsers(users);
+    } catch (error) {
+      console.error('Failed to get online users:', error);
+    }
   };
 
   const testAllUsers = async () => {
@@ -249,29 +275,77 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
           {/* New chat panel */}
           {newChatOpen && (
             <div style={s.newChatPanel}>
+              {/* Toggle for online/all users */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <button
+                  onClick={() => setShowOnlineOnly(true)}
+                  style={{
+                    ...s.toggleBtn,
+                    background: showOnlineOnly ? cfg.accent : '#1e293b',
+                    color: showOnlineOnly ? 'white' : '#94a3b8',
+                    flex: 1,
+                  }}
+                >
+                  <Wifi size={14} style={{ marginRight: 4 }} />
+                  Online Only
+                </button>
+                <button
+                  onClick={() => setShowOnlineOnly(false)}
+                  style={{
+                    ...s.toggleBtn,
+                    background: !showOnlineOnly ? cfg.accent : '#1e293b',
+                    color: !showOnlineOnly ? 'white' : '#94a3b8',
+                    flex: 1,
+                  }}
+                >
+                  <Hash size={14} style={{ marginRight: 4 }} />
+                  All Users
+                </button>
+              </div>
+
               <div style={{ ...s.searchWrap, marginTop: 0 }}>
                 <Search size={14} style={s.searchIcon} />
                 <input
                   style={s.searchInput}
-                  placeholder="Search people..."
+                  placeholder={showOnlineOnly ? "Search online people..." : "Search all people..."}
                   value={userQuery}
                   autoFocus
                   onChange={e => setUserQuery(e.target.value)}
                 />
-                <button
-                  onClick={testAllUsers}
-                  style={{ marginLeft: 8, padding: '6px 12px', background: cfg.accent, color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
-                >
-                  Test All
-                </button>
+                {showOnlineOnly && (
+                  <button
+                    onClick={loadOnlineUsers}
+                    style={{ marginLeft: 8, padding: '6px 12px', background: '#22c55e', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
+                  >
+                    Refresh
+                  </button>
+                )}
+                {!showOnlineOnly && (
+                  <button
+                    onClick={testAllUsers}
+                    style={{ marginLeft: 8, padding: '6px 12px', background: cfg.accent, color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12 }}
+                  >
+                    Test All
+                  </button>
+                )}
               </div>
               {foundUsers.length > 0 && (
                 <div style={s.userResults}>
                   {foundUsers.map(u => (
                     <button key={u.id} style={s.userResult} onClick={() => openConversation(u)}>
-                      <Avatar name={u.name} size={32} accent={cfg.accent} />
-                      <div style={{ marginLeft: 10 }}>
-                        <div style={s.userName}>{u.name}</div>
+                      <div style={{ position: 'relative' }}>
+                        <Avatar name={u.name} size={32} accent={cfg.accent} />
+                        {u.is_online && (
+                          <span style={{ ...s.onlineDot, background: '#22c55e', width: 8, height: 8 }} />
+                        )}
+                      </div>
+                      <div style={{ marginLeft: 10, flex: 1 }}>
+                        <div style={{ ...s.userName, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span>{u.name}</span>
+                          {u.is_online && (
+                            <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 600 }}>Online</span>
+                          )}
+                        </div>
                         <div style={s.userType}>{u.user_type}</div>
                       </div>
                     </button>
@@ -280,6 +354,9 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
               )}
               {userQuery && foundUsers.length === 0 && (
                 <p style={s.noResult}>No users found</p>
+              )}
+              {!userQuery && showOnlineOnly && foundUsers.length === 0 && (
+                <p style={s.noResult}>No online users available</p>
               )}
             </div>
           )}
@@ -613,6 +690,11 @@ const s: Record<string, React.CSSProperties> = {
   clearBtn: {
     position: 'absolute', right: 8, background: 'none', border: 'none',
     cursor: 'pointer', color: '#64748b', padding: 4,
+  },
+  toggleBtn: {
+    padding: '8px 12px', border: 'none', borderRadius: 8, cursor: 'pointer',
+    fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', transition: 'all 0.2s',
   },
   newChatPanel: {
     marginTop: 10, background: '#1e293b', borderRadius: 12, padding: 10,

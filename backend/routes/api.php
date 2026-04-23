@@ -52,6 +52,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/mark-read', [MessageController::class, 'markAsRead']);
         Route::get('/unread-count', [MessageController::class, 'unreadCount']);
         Route::get('/search-users', [MessageController::class, 'searchUsers']);
+        Route::get('/online-users', [MessageController::class, 'getOnlineUsers']);
         Route::get('/all-users', [MessageController::class, 'getAllUsers']);
         Route::post('/property/{propertyId}', [MessageController::class, 'startPropertyConversation']);
         Route::get('/{userId}', [MessageController::class, 'messages']);

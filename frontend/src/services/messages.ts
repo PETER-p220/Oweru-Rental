@@ -182,6 +182,12 @@ class MessagesService {
     return response.users || [];
   }
 
+  // Get online users for messaging
+  static async getOnlineUsers() {
+    const response = await this.request<{ users: User[] }>('messages/online-users');
+    return response.users || [];
+  }
+
   // Test method to get all users (remove in production)
   static async getAllUsers() {
     const response = await this.request<{ users: User[] }>('messages/all-users');
