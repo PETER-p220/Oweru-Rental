@@ -60,6 +60,8 @@ export interface User {
   email: string;
   user_type: string;
   avatar?: string;
+  is_online?: boolean;
+  last_seen_at?: string;
 }
 
 class MessagesService {
@@ -184,8 +186,18 @@ class MessagesService {
 
   // Get online users for messaging
   static async getOnlineUsers() {
-    const response = await this.request<{ users: User[] }>('messages/online-users');
-    return response.users || [];
+    try {
+      const response = await this.request<{ users: User[] }>('messages/online-users');
+      return (response.users || []).map(user => ({
+        ...user,
+        name: user.name || 'Unknown User',
+        user_type: user.user_type || 'Unknown',
+        is_online: user.is_online || false,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch online users:', error);
+      return [];
+    }
   }
 
   // Test method to get all users (remove in production)

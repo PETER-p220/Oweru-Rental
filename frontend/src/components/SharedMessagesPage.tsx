@@ -334,19 +334,19 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                   {foundUsers.map(u => (
                     <button key={u.id} style={s.userResult} onClick={() => openConversation(u)}>
                       <div style={{ position: 'relative' }}>
-                        <Avatar name={u.name} size={32} accent={cfg.accent} />
+                        <Avatar name={u.name || 'Unknown User'} size={32} accent={cfg.accent} />
                         {u.is_online && (
                           <span style={{ ...s.onlineDot, background: '#22c55e', width: 8, height: 8 }} />
                         )}
                       </div>
                       <div style={{ marginLeft: 10, flex: 1 }}>
                         <div style={{ ...s.userName, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span>{u.name}</span>
+                          <span>{u.name || 'Unknown User'}</span>
                           {u.is_online && (
                             <span style={{ fontSize: 10, color: '#22c55e', fontWeight: 600 }}>Online</span>
                           )}
                         </div>
-                        <div style={s.userType}>{u.user_type}</div>
+                        <div style={s.userType}>{u.user_type || 'Unknown'}</div>
                       </div>
                     </button>
                   ))}
@@ -379,6 +379,12 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
           ) : (
             filtered.map(conv => {
               const isActive = selected?.id === conv.id;
+              const userName = conv.user?.name || 'Unknown User';
+              const isOnline = conv.user?.is_online || false;
+              const unreadCount = conv.unread_count || 0;
+              const latestMessage = conv.latest_message || {};
+              const updatedAt = conv.updated_at || new Date().toISOString();
+              
               return (
                 <button
                   key={conv.id}
@@ -390,24 +396,24 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                   onClick={() => { setSelected(conv); setMobilePaneOpen(true); }}
                 >
                   <div style={{ position: 'relative' }}>
-                    <Avatar name={conv.user.name} size={44} accent={cfg.accent} />
-                    {conv.user.is_online && (
+                    <Avatar name={userName} size={44} accent={cfg.accent} />
+                    {isOnline && (
                       <span style={{ ...s.onlineDot, background: '#22c55e' }} />
                     )}
                   </div>
                   <div style={s.convBody}>
                     <div style={s.convRow}>
-                      <span style={{ ...s.convName, fontWeight: conv.unread_count > 0 ? 700 : 500 }}>
-                        {conv.user.name}
+                      <span style={{ ...s.convName, fontWeight: unreadCount > 0 ? 700 : 500 }}>
+                        {userName}
                       </span>
-                      <span style={s.convTime}>{relativeTime(conv.updated_at)}</span>
+                      <span style={s.convTime}>{relativeTime(updatedAt)}</span>
                     </div>
                     <div style={s.convRow}>
-                      <span style={{ ...s.convPreview, fontWeight: conv.unread_count > 0 ? 600 : 400 }}>
-                        {conv.latest_message.type === 'property' ? ' Property inquiry' : conv.latest_message.content || '...'}
+                      <span style={{ ...s.convPreview, fontWeight: unreadCount > 0 ? 600 : 400 }}>
+                        {latestMessage.type === 'property' ? ' Property inquiry' : latestMessage.content || '...'}
                       </span>
-                      {conv.unread_count > 0 && (
-                        <span style={{ ...s.badge, background: cfg.accent, fontSize: 10 }}>{conv.unread_count}</span>
+                      {unreadCount > 0 && (
+                        <span style={{ ...s.badge, background: cfg.accent, fontSize: 10 }}>{unreadCount}</span>
                       )}
                     </div>
                   </div>
@@ -432,17 +438,17 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                   <ChevronLeft size={20} />
                 </button>
                 <div style={{ position: 'relative' }}>
-                  <Avatar name={selected.user.name} size={40} accent={cfg.accent} />
-                  {selected.user.is_online && <span style={{ ...s.onlineDot, background: '#22c55e' }} />}
+                  <Avatar name={selected.user?.name || 'Unknown User'} size={40} accent={cfg.accent} />
+                  {selected.user?.is_online && <span style={{ ...s.onlineDot, background: '#22c55e' }} />}
                 </div>
                 <div>
-                  <div style={s.chatHeaderName}>{selected.user.name}</div>
+                  <div style={s.chatHeaderName}>{selected.user?.name || 'Unknown User'}</div>
                   <div style={s.chatHeaderSub}>
-                    <span style={{ color: selected.user.is_online ? '#22c55e' : '#94a3b8' }}>
-                      {selected.user.is_online ? ' Online' : ' Offline'}
+                    <span style={{ color: selected.user?.is_online ? '#22c55e' : '#94a3b8' }}>
+                      {selected.user?.is_online ? ' Online' : ' Offline'}
                     </span>
                     <span style={{ color: '#cbd5e1', margin: '0 6px' }}>·</span>
-                    <span style={{ color: '#94a3b8', textTransform: 'capitalize' }}>{selected.user.user_type}</span>
+                    <span style={{ color: '#94a3b8', textTransform: 'capitalize' }}>{selected.user?.user_type || 'Unknown'}</span>
                   </div>
                 </div>
               </div>
@@ -460,16 +466,17 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
               {messages.length === 0 ? (
                 <div style={s.centerNote}>
                   <div style={{ fontSize: 40 }}> </div>
-                  <p style={{ color: '#94a3b8', marginTop: 12, fontSize: 14 }}>Say hello to {selected.user.name}!</p>
+                  <p style={{ color: '#94a3b8', marginTop: 12, fontSize: 14 }}>Say hello to {selected.user?.name || 'Unknown User'}!</p>
                 </div>
               ) : (
                 <>
                   {messages.map((msg, idx) => {
                     const isMe = msg.is_from_me;
                     const isEdit = editing?.id === msg.id;
-                    const prevDate = idx > 0 ? new Date(messages[idx - 1].created_at).toDateString() : null;
-                    const thisDate = new Date(msg.created_at).toDateString();
+                    const prevDate = idx > 0 && messages[idx - 1]?.created_at ? new Date(messages[idx - 1].created_at).toDateString() : null;
+                    const thisDate = msg.created_at ? new Date(msg.created_at).toDateString() : new Date().toDateString();
                     const showDate = prevDate !== thisDate;
+                    const senderName = msg.sender?.name || 'Unknown User';
 
                     return (
                       <div key={msg.id}>
@@ -481,7 +488,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                         <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', marginBottom: 4 }}>
                           {!isMe && (
                             <div style={{ marginRight: 8, alignSelf: 'flex-end' }}>
-                              <Avatar name={msg.sender.name} size={28} accent={cfg.accent} />
+                              <Avatar name={senderName} size={28} accent={cfg.accent} />
                             </div>
                           )}
                           <div style={{ maxWidth: '68%' }}>
