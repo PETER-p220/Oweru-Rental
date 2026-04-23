@@ -63,7 +63,7 @@ export interface User {
 }
 
 class MessagesService {
-  private static async request<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
+  private static async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
     const url = `${API_BASE_URL}/api/${cleanEndpoint}`;
 
@@ -101,13 +101,13 @@ class MessagesService {
   // Get all conversations for the current user
   static async getConversations() {
     const response = await this.request<{ conversations: Conversation[]; unread_count: number }>('messages');
-    return response.data;
+    return response;
   }
 
   // Get messages in a conversation
   static async getMessages(userId: number, page = 1) {
     const response = await this.request<{ messages: Message[]; pagination: any }>(`messages/${userId}?page=${page}`);
-    return response.data;
+    return response;
   }
 
   // Send a new message
@@ -123,7 +123,7 @@ class MessagesService {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return response.data;
+    return response;
   }
 
   // Edit a message
@@ -132,7 +132,7 @@ class MessagesService {
       method: 'PATCH',
       body: JSON.stringify({ content }),
     });
-    return response.data;
+    return response;
   }
 
   // Delete a message
@@ -173,21 +173,19 @@ class MessagesService {
   // Get unread count
   static async getUnreadCount() {
     const response = await this.request<{ unread_count: number }>('messages/unread-count');
-    return response.data.unread_count;
+    return response.unread_count;
   }
 
   // Search users to start conversation
   static async searchUsers(search: string) {
     const response = await this.request<{ users: User[] }>(`messages/search-users?search=${search}`);
-    console.log('DEBUG - Search users response:', response);
-    return response.data.users;
+    return response.users || [];
   }
 
   // Test method to get all users (remove in production)
   static async getAllUsers() {
     const response = await this.request<{ users: User[] }>('messages/all-users');
-    console.log('DEBUG - All users response:', response);
-    return response.data.users;
+    return response.users || [];
   }
 
   // Start conversation about a property
@@ -199,7 +197,7 @@ class MessagesService {
         message,
       }),
     });
-    return response.data;
+    return response;
   }
 }
 
