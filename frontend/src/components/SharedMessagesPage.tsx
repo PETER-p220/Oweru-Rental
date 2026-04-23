@@ -24,6 +24,7 @@ const initials = (name: string) =>
   name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
 
 const relativeTime = (iso: string) => {
+  if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60_000);
   if (m < 1)    return 'now';
@@ -33,8 +34,10 @@ const relativeTime = (iso: string) => {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 };
 
-const fullTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+const fullTime = (iso: string) => {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+};
 
 /* Avatar component */
 const Avatar = ({ name, size = 40, src, accent }: { name: string; size?: number; src?: string; accent: string }) => (
@@ -108,9 +111,15 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
       loadConversations();
       if (selected) loadMessages(selected.id);
     }, 20_000);
-    window.addEventListener('online',  () => setOnline(true));
-    window.addEventListener('offline', () => setOnline(false));
-    return () => { clearInterval(t); };
+    const handleOnline  = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+    window.addEventListener('online',  handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('online',  handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, [selected]);
 
   useEffect(() => {
@@ -160,27 +169,15 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
     return () => clearTimeout(t);
   }, [userQuery, newChatOpen, showOnlineOnly]);
 
-  // Load online users when new chat opens
   useEffect(() => {
     if (newChatOpen && showOnlineOnly && !userQuery.trim()) {
       loadOnlineUsers();
     }
   }, [newChatOpen, showOnlineOnly]);
 
-  const searchForUsers = async (term: string) => {
-    if (!term.trim()) { setFoundUsers([]); return; }
-    const t = setTimeout(async () => {
-      const users = await MessagesService.searchUsers(userQuery).catch(() => []);
-      setFoundUsers(users);
-    }, 300);
-    return () => clearTimeout(t);
-  };
-
   const loadOnlineUsers = async () => {
     try {
-      console.log('Loading online users...');
       const users = await MessagesService.getOnlineUsers();
-      console.log('Online users found:', users);
       setFoundUsers(users);
     } catch (error) {
       console.error('Failed to get online users:', error);
@@ -189,9 +186,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
 
   const testAllUsers = async () => {
     try {
-      console.log('Testing all users...');
       const users = await MessagesService.getAllUsers();
-      console.log('All users found:', users);
       setFoundUsers(users);
     } catch (error) {
       console.error('Failed to get all users:', error);
@@ -202,8 +197,17 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
     const conv: Conversation = {
       id: user.id,
       user: user,
-      latest_message: { id: 0, content: '', type: 'text', status: 'sent', created_at: new Date().toISOString(), sender_id: 0, is_edited: false },
-      unread_count: 0, updated_at: new Date().toISOString(),
+      latest_message: {
+        id: 0,
+        content: '',
+        type: 'text',
+        status: 'sent',
+        created_at: new Date().toISOString(),
+        sender_id: 0,
+        is_edited: false,
+      },
+      unread_count: 0,
+      updated_at: new Date().toISOString(),
     };
     setSelected(conv);
     setNewChatOpen(false);
@@ -230,9 +234,13 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
 
   /* filtered conversations */
   const filtered = conversations.filter(c =>
-    c.user.name.toLowerCase().includes(sideSearch.toLowerCase()) ||
-    (c.latest_message?.content?.toLowerCase().includes(sideSearch.toLowerCase()) || false)
+    c.user?.name?.toLowerCase().includes(sideSearch.toLowerCase()) ||
+    (c.latest_message?.content ?? '').toLowerCase().includes(sideSearch.toLowerCase())
   );
+
+  /* safe content helper */
+  const safeContent = (content: string | null | undefined, fallback = '...') =>
+    content != null ? content : fallback;
 
   /* RENDER */
   return (
@@ -276,7 +284,6 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
           {/* New chat panel */}
           {newChatOpen && (
             <div style={s.newChatPanel}>
-              {/* Toggle for online/all users */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                 <button
                   onClick={() => setShowOnlineOnly(true)}
@@ -380,12 +387,12 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
           ) : (
             filtered.map(conv => {
               const isActive = selected?.id === conv.id;
-              const userName = conv.user?.name || 'Unknown User';
-              const isOnline = conv.user?.is_online || false;
-              const unreadCount = conv.unread_count || 0;
-              const latestMessage = conv.latest_message || {};
-              const updatedAt = conv.updated_at || new Date().toISOString();
-              
+              const userName = conv.user?.name ?? 'Unknown User';
+              const isOnline = conv.user?.is_online ?? false;
+              const unreadCount = conv.unread_count ?? 0;
+              const latestMessage = conv.latest_message;
+              const updatedAt = conv.updated_at ?? new Date().toISOString();
+
               return (
                 <button
                   key={conv.id}
@@ -411,7 +418,9 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                     </div>
                     <div style={s.convRow}>
                       <span style={{ ...s.convPreview, fontWeight: unreadCount > 0 ? 600 : 400 }}>
-                        {latestMessage?.type === 'property' ? ' Property inquiry' : latestMessage?.content || '...'}
+                        {latestMessage?.type === 'property'
+                          ? ' Property inquiry'
+                          : safeContent(latestMessage?.content, '...')}
                       </span>
                       {unreadCount > 0 && (
                         <span style={{ ...s.badge, background: cfg.accent, fontSize: 10 }}>{unreadCount}</span>
@@ -439,17 +448,17 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                   <ChevronLeft size={20} />
                 </button>
                 <div style={{ position: 'relative' }}>
-                  <Avatar name={selected.user?.name || 'Unknown User'} size={40} accent={cfg.accent} />
+                  <Avatar name={selected.user?.name ?? 'Unknown User'} size={40} accent={cfg.accent} />
                   {selected.user?.is_online && <span style={{ ...s.onlineDot, background: '#22c55e' }} />}
                 </div>
                 <div>
-                  <div style={s.chatHeaderName}>{selected.user?.name || 'Unknown User'}</div>
+                  <div style={s.chatHeaderName}>{selected.user?.name ?? 'Unknown User'}</div>
                   <div style={s.chatHeaderSub}>
                     <span style={{ color: selected.user?.is_online ? '#22c55e' : '#94a3b8' }}>
                       {selected.user?.is_online ? ' Online' : ' Offline'}
                     </span>
                     <span style={{ color: '#cbd5e1', margin: '0 6px' }}>·</span>
-                    <span style={{ color: '#94a3b8', textTransform: 'capitalize' }}>{selected.user?.user_type || 'Unknown'}</span>
+                    <span style={{ color: '#94a3b8', textTransform: 'capitalize' }}>{selected.user?.user_type ?? 'Unknown'}</span>
                   </div>
                 </div>
               </div>
@@ -466,24 +475,33 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
             <div style={s.messagesArea}>
               {messages.length === 0 ? (
                 <div style={s.centerNote}>
-                  <div style={{ fontSize: 40 }}> </div>
-                  <p style={{ color: '#94a3b8', marginTop: 12, fontSize: 14 }}>Say hello to {selected.user?.name || 'Unknown User'}!</p>
+                  <div style={{ fontSize: 40 }}>👋</div>
+                  <p style={{ color: '#94a3b8', marginTop: 12, fontSize: 14 }}>
+                    Say hello to {selected.user?.name ?? 'Unknown User'}!
+                  </p>
                 </div>
               ) : (
                 <>
                   {messages.map((msg, idx) => {
                     const isMe = msg.is_from_me;
                     const isEdit = editing?.id === msg.id;
-                    const prevDate = idx > 0 && messages[idx - 1]?.created_at ? new Date(messages[idx - 1].created_at).toDateString() : null;
-                    const thisDate = msg.created_at ? new Date(msg.created_at).toDateString() : new Date().toDateString();
+                    const prevDate = idx > 0 && messages[idx - 1]?.created_at
+                      ? new Date(messages[idx - 1].created_at).toDateString()
+                      : null;
+                    const thisDate = msg.created_at
+                      ? new Date(msg.created_at).toDateString()
+                      : new Date().toDateString();
                     const showDate = prevDate !== thisDate;
-                    const senderName = msg.sender?.name || 'Unknown User';
+                    const senderName = msg.sender?.name ?? 'Unknown User';
+                    const msgContent = msg.content ?? '';
 
                     return (
                       <div key={msg.id}>
                         {showDate && (
                           <div style={s.dateDivider}>
-                            <span style={s.datePill}>{thisDate === new Date().toDateString() ? 'Today' : thisDate}</span>
+                            <span style={s.datePill}>
+                              {thisDate === new Date().toDateString() ? 'Today' : thisDate}
+                            </span>
                           </div>
                         )}
                         <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', marginBottom: 4 }}>
@@ -530,24 +548,41 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                                     value={editing.content}
                                     onChange={e => setEditing({ ...editing, content: e.target.value })}
                                     onKeyDown={e => {
-                                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(msg.id, editing.content); }
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        saveEdit(msg.id, editing.content);
+                                      }
                                       if (e.key === 'Escape') setEditing(null);
                                     }}
                                   />
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <button style={{ ...s.editBtn, background: '#22c55e' }} onClick={() => saveEdit(msg.id, editing.content)}><Check size={12} /></button>
-                                    <button style={{ ...s.editBtn, background: '#ef4444' }} onClick={() => setEditing(null)}><X size={12} /></button>
+                                    <button
+                                      style={{ ...s.editBtn, background: '#22c55e' }}
+                                      onClick={() => saveEdit(msg.id, editing.content)}
+                                    >
+                                      <Check size={12} />
+                                    </button>
+                                    <button
+                                      style={{ ...s.editBtn, background: '#ef4444' }}
+                                      onClick={() => setEditing(null)}
+                                    >
+                                      <X size={12} />
+                                    </button>
                                   </div>
                                 </div>
                               ) : (
-                                <p style={s.msgText}>{msg.content || '...'}</p>
+                                <p style={s.msgText}>{msgContent || '...'}</p>
                               )}
 
                               <div style={s.msgMeta}>
                                 <Clock size={10} style={{ marginRight: 3 }} />
                                 {fullTime(msg.created_at)}
                                 {msg.is_edited && <span style={{ marginLeft: 4, opacity: 0.7 }}>· edited</span>}
-                                {isMe && <span style={{ marginLeft: 6 }}><Tick status={msg.status} accent="#fff" /></span>}
+                                {isMe && (
+                                  <span style={{ marginLeft: 6 }}>
+                                    <Tick status={msg.status} accent="#fff" />
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -559,10 +594,18 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                                 </button>
                                 {isMe && (
                                   <>
-                                    <button style={s.msgActionBtn} onClick={() => setEditing({ id: msg.id, content: msg.content || '' })} title="Edit">
+                                    <button
+                                      style={s.msgActionBtn}
+                                      onClick={() => setEditing({ id: msg.id, content: msgContent })}
+                                      title="Edit"
+                                    >
                                       <Edit2 size={12} />
                                     </button>
-                                    <button style={{ ...s.msgActionBtn, color: '#ef4444' }} onClick={() => deleteMsg(msg.id)} title="Delete">
+                                    <button
+                                      style={{ ...s.msgActionBtn, color: '#ef4444' }}
+                                      onClick={() => deleteMsg(msg.id)}
+                                      title="Delete"
+                                    >
                                       <Trash2 size={12} />
                                     </button>
                                   </>
@@ -587,11 +630,19 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                 <div style={s.replyBanner}>
                   <Reply size={13} color={cfg.accent} />
                   <span style={{ marginLeft: 8, fontSize: 13, color: '#94a3b8', flex: 1 }}>
-                    Replying to <strong style={{ color: '#e2e8f0' }}>{replyTo.sender?.name || 'Unknown User'}</strong>
+                    Replying to{' '}
+                    <strong style={{ color: '#e2e8f0' }}>
+                      {replyTo.sender?.name ?? 'Unknown User'}
+                    </strong>
                     {' · '}
-                    <span style={{ opacity: 0.7 }}>{(replyTo?.content || '').slice(0, 60)}{(replyTo?.content?.length || 0) > 60 ? '...' : ''}</span>
+                    <span style={{ opacity: 0.7 }}>
+                      {(replyTo.content ?? '').slice(0, 60)}
+                      {(replyTo.content ?? '').length > 60 ? '...' : ''}
+                    </span>
                   </span>
-                  <button style={s.closeReply} onClick={() => setReplyTo(null)}><X size={14} /></button>
+                  <button style={s.closeReply} onClick={() => setReplyTo(null)}>
+                    <X size={14} />
+                  </button>
                 </div>
               )}
 
@@ -614,11 +665,18 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                   }}
                   onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
                   }}
                 />
                 <button
-                  style={{ ...s.sendBtn, background: draft.trim() ? cfg.accent : '#1e293b', cursor: draft.trim() ? 'pointer' : 'default' }}
+                  style={{
+                    ...s.sendBtn,
+                    background: draft.trim() ? cfg.accent : '#1e293b',
+                    cursor: draft.trim() ? 'pointer' : 'default',
+                  }}
                   onClick={sendMessage}
                   disabled={!draft.trim() || sending}
                 >
@@ -628,7 +686,12 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                   }
                 </button>
               </div>
-              <input ref={fileRef} type="file" style={{ display: 'none' }} accept="image/*,.pdf,.doc,.docx" />
+              <input
+                ref={fileRef}
+                type="file"
+                style={{ display: 'none' }}
+                accept="image/*,.pdf,.doc,.docx"
+              />
             </div>
           </>
         ) : (
@@ -640,7 +703,16 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
             <h2 style={s.emptyTitle}>Your inbox awaits</h2>
             <p style={s.emptySub}>Select a conversation or start a new one</p>
             <button
-              style={{ ...s.sendBtn, background: cfg.accent, padding: '12px 28px', borderRadius: 12, marginTop: 24, fontSize: 14 }}
+              style={{
+                ...s.sendBtn,
+                background: cfg.accent,
+                padding: '12px 28px',
+                borderRadius: 12,
+                marginTop: 24,
+                fontSize: 14,
+                width: 'auto',
+                height: 'auto',
+              }}
               onClick={() => setNewChatOpen(true)}
             >
               <Plus size={16} style={{ marginRight: 8 }} /> New conversation
