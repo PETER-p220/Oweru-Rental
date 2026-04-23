@@ -200,7 +200,8 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
 
   const openConversation = (user: any) => {
     const conv: Conversation = {
-      id: user.id, user,
+      id: user.id,
+      user: user,
       latest_message: { id: 0, content: '', type: 'text', status: 'sent', created_at: new Date().toISOString(), sender_id: 0, is_edited: false },
       unread_count: 0, updated_at: new Date().toISOString(),
     };
