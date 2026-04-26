@@ -256,6 +256,14 @@ const Home = () => {
   const [selectedProperty,   setSelectedProperty]   = useState<any>(null);
   const [savedProperties,    setSavedProperties]    = useState<Set<number>>(new Set());
 
+  // Search filter states
+  const [searchFilters, setSearchFilters] = useState({
+    location: '',
+    propertyType: '',
+    priceRange: '',
+    searchTerm: ''
+  });
+
   const stats = {
     totalProperties: 1247,
     totalUsers:      3842,
@@ -391,6 +399,59 @@ const Home = () => {
     } catch { /* silent */ }
   };
 
+  const handleSearch = () => {
+    // Build query parameters from filters
+    const params = new URLSearchParams();
+    
+    if (searchFilters.location.trim()) {
+      params.append('location', searchFilters.location.trim());
+    }
+    
+    if (searchFilters.propertyType) {
+      params.append('type', searchFilters.propertyType);
+    }
+    
+    if (searchFilters.priceRange) {
+      // Convert price range to min/max values
+      switch (searchFilters.priceRange) {
+        case '0-500':
+          params.append('min_price', '0');
+          params.append('max_price', '500000');
+          break;
+        case '500-1000':
+          params.append('min_price', '500000');
+          params.append('max_price', '1000000');
+          break;
+        case '1000+':
+          params.append('min_price', '1000000');
+          break;
+      }
+    }
+    
+    if (searchFilters.searchTerm.trim()) {
+      params.append('search', searchFilters.searchTerm.trim());
+    }
+    
+    // Navigate to properties page with search parameters
+    const queryString = params.toString();
+    const url = queryString ? `/properties?${queryString}` : '/properties';
+    navigate(url);
+  };
+
+  const handleFilterChange = (filterName: string, value: string) => {
+    setSearchFilters(prev => ({
+      ...prev,
+      [filterName]: value
+    }));
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch();
+    }
+  };
+
   return (
     <div style={{ fontFamily: "'Jost', 'Futura PT', sans-serif", background: '#0F172A', color: '#F8F8F9', minHeight: '100vh', overflowX: 'hidden' }}>
       <style>{`
@@ -472,23 +533,41 @@ const Home = () => {
                 <div style={{ fontSize: 12, color: 'var(--slate)' }}>Find your perfect match</div>
               </div>
             </div>
-            <input type="text" placeholder="Location, district, neighbourhood…" style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--cream)', padding: '10px 14px', marginBottom: 12, fontSize: 14, outline: 'none' }} />
+            <input 
+              type="text" 
+              placeholder="Location, district, neighbourhood…" 
+              value={searchFilters.location}
+              onChange={(e) => handleFilterChange('location', e.target.value)}
+              onKeyPress={handleKeyPress}
+              style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--cream)', padding: '10px 14px', marginBottom: 12, fontSize: 14, outline: 'none' }} 
+            />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <select style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--slate)', padding: '11px 14px', fontSize: 13 }}>
+              <select 
+                value={searchFilters.propertyType}
+                onChange={(e) => handleFilterChange('propertyType', e.target.value)}
+                style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--slate)', padding: '11px 14px', fontSize: 13 }}
+              >
                 <option value="">Property Type</option>
                 <option value="apartment">Apartment</option>
                 <option value="house">House</option>
                 <option value="studio">Studio</option>
                 <option value="villa">Villa</option>
               </select>
-              <select style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--slate)', padding: '11px 14px', fontSize: 13 }}>
+              <select 
+                value={searchFilters.priceRange}
+                onChange={(e) => handleFilterChange('priceRange', e.target.value)}
+                style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--slate)', padding: '11px 14px', fontSize: 13 }}
+              >
                 <option value="">Price Range</option>
                 <option value="0-500">Under 500K TZS</option>
                 <option value="500-1000">500K – 1M TZS</option>
                 <option value="1000+">Above 1M TZS</option>
               </select>
             </div>
-            <button onClick={() => navigate('/properties')} style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', padding: '13px', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <button 
+              onClick={handleSearch}
+              style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', padding: '13px', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
               <Search size={15} /> Search Properties
             </button>
           </div>
