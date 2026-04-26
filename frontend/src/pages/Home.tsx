@@ -1,7 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, MapPin, ArrowRight, ChevronRight,
-  Heart, Building, X,
+  Heart, Building, X, SlidersHorizontal, ChevronDown,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Api from '../services/api';
@@ -12,43 +12,16 @@ const API_BASE     = import.meta.env.VITE_API_URL ?? '';
 
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
-/**
- * Resolve a property image URL correctly.
- *
- * Path formats seen in the wild:
- *   1. Full URL          → https://...  or http://...
- *   2. Absolute path     → /storage/properties/file.jpg
- *   3. storage/ prefix   → storage/properties/file.jpg  (admin-uploaded, avoid double /storage/)
- *   4. Bare filename     → file.jpg  (agent/owner uploaded, needs /storage/ prepended)
- */
 const getImage = (property: any): string => {
-  // Debug: Log the property images structure
-  console.log('Home - Property images for', property.title, ':', property.images);
-  
   if (property.images && property.images.length > 0) {
     const i = property.images[0];
-    console.log('Home - First image raw value:', i);
-    
     if (typeof i === 'string' && i.trim() !== '') {
-      let finalUrl = '';
-      
-      if (i.startsWith('http://') || i.startsWith('https://')) {
-        finalUrl = i;
-      } else if (i.startsWith('/')) {
-        finalUrl = `${VITE_STORAGE}${i}`;
-      } else if (i.startsWith('storage/')) {
-        finalUrl = `${VITE_STORAGE}/${i}`;
-      } else {
-        // bare filename - could be in /storage/ root or /storage/properties/
-        finalUrl = `${VITE_STORAGE}/storage/${i}`;
-      }
-      
-      console.log('Home - Resolved image URL:', finalUrl);
-      return finalUrl;
+      if (i.startsWith('http://') || i.startsWith('https://')) return i;
+      if (i.startsWith('/')) return `${VITE_STORAGE}${i}`;
+      if (i.startsWith('storage/')) return `${VITE_STORAGE}/${i}`;
+      return `${VITE_STORAGE}/storage/${i}`;
     }
   }
-  
-  console.log('Home - Using placeholder for', property.title);
   return PLACEHOLDER;
 };
 
@@ -106,63 +79,46 @@ const BookingForm = ({
   });
   const [loading, setLoading] = useState(false);
 
+  const calculateTotalAmount = () => {
+    if (!formData.check_in || !formData.check_out) return 0;
+    const checkIn  = new Date(formData.check_in);
+    const checkOut = new Date(formData.check_out);
+    const nights   = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    return nights * (property.price || 0);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Validate form
       if (!formData.guest_name || !formData.guest_email || !formData.guest_phone || !formData.check_in || !formData.check_out) {
         alert('Please fill in all required fields');
         setLoading(false);
         return;
       }
-
-      // Create booking request (no authentication required)
       const bookingData = {
-        property_id: property.id,
-        property_title: property.title,
-        customer_name: formData.guest_name,
-        customer_email: formData.guest_email,
-        customer_phone: formData.guest_phone,
-        check_in: formData.check_in,
-        check_out: formData.check_out,
-        guest_count: parseInt(formData.guest_count),
+        property_id: property.id, property_title: property.title,
+        customer_name: formData.guest_name, customer_email: formData.guest_email,
+        customer_phone: formData.guest_phone, check_in: formData.check_in,
+        check_out: formData.check_out, guest_count: parseInt(formData.guest_count),
         special_requests: formData.special_requests,
-        total_amount: calculateTotalAmount(),
-        status: 'pending'
+        total_amount: calculateTotalAmount(), status: 'pending',
       };
-
-      // Call public booking API (no auth required)
       const response = await fetch(`${API_BASE}/api/public/bnb/book`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingData)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingData),
       });
-
       if (response.ok) {
         onSuccess();
       } else {
         const errorData = await response.json();
         alert(errorData.message || 'Failed to submit booking request');
       }
-    } catch (err) {
-      alert('Network error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    } catch { alert('Network error. Please try again.'); }
+    finally { setLoading(false); }
   };
 
-  const calculateTotalAmount = () => {
-    if (!formData.check_in || !formData.check_out) return 0;
-    
-    const checkIn = new Date(formData.check_in);
-    const checkOut = new Date(formData.check_out);
-    const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-    
-    return nights * (property.price || 0);
-  };
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 14px', background: 'var(--navy-900)',
     border: '1px solid var(--border)', color: 'var(--cream)', borderRadius: 6,
@@ -171,34 +127,12 @@ const BookingForm = ({
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        style={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          background: 'none',
-          border: 'none',
-          color: '#94a3b8',
-          cursor: 'pointer',
-          padding: 8,
-          borderRadius: 6,
-          transition: 'all 0.2s'
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
-        onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
-      >
+      <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 8, borderRadius: 6, transition: 'all 0.2s' }}>
         <X size={20} />
       </button>
-
       <form onSubmit={handleSubmit}>
-        <h2 style={{ color: 'var(--cream)', marginBottom: 6, fontSize: 20, fontWeight: 600 }}>
-          Book {property.title}
-        </h2>
-        <p style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 20 }}>
-          {property.location || property.address}
-        </p>
+        <h2 style={{ color: 'var(--cream)', marginBottom: 6, fontSize: 20, fontWeight: 600 }}>Book {property.title}</h2>
+        <p style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 20 }}>{property.location || property.address}</p>
         <input required style={inputStyle} placeholder="Your name" value={formData.guest_name} onChange={(e) => setFormData((p) => ({ ...p, guest_name: e.target.value }))} />
         <input required type="email" style={inputStyle} placeholder="Email address" value={formData.guest_email} onChange={(e) => setFormData((p) => ({ ...p, guest_email: e.target.value }))} />
         <input required style={inputStyle} placeholder="Phone number" value={formData.guest_phone} onChange={(e) => setFormData((p) => ({ ...p, guest_phone: e.target.value }))} />
@@ -207,34 +141,19 @@ const BookingForm = ({
           <input required type="date" style={inputStyle} value={formData.check_out} onChange={(e) => setFormData((p) => ({ ...p, check_out: e.target.value }))} />
         </div>
         <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} placeholder="Special requests (optional)" value={formData.special_requests} onChange={(e) => setFormData((p) => ({ ...p, special_requests: e.target.value }))} />
-        
-        {/* Price Calculation */}
         {formData.check_in && formData.check_out && (
-          <div style={{
-            background: 'var(--navy-900)',
-            border: '1px solid var(--border)',
-            borderRadius: 6,
-            padding: 16,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
+          <div style={{ background: 'var(--navy-900)', border: '1px solid var(--border)', borderRadius: 6, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 14, color: 'var(--slate)', marginBottom: 4 }}>Total Amount</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold)' }}>
-                TZS {calculateTotalAmount().toLocaleString()}
-              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gold)' }}>TZS {calculateTotalAmount().toLocaleString()}</div>
             </div>
             <div style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'right' }}>
               {Math.ceil((new Date(formData.check_out).getTime() - new Date(formData.check_in).getTime()) / (1000 * 60 * 60 * 24))} nights
             </div>
           </div>
         )}
-        
         <div style={{ display: 'flex', gap: 12 }}>
-          <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>
-            Cancel
-          </button>
+          <button type="button" onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', color: 'var(--slate)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
           <button type="submit" disabled={loading} style={{ flex: 2, padding: '12px', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
             {loading ? 'Submitting…' : 'Book Now'}
           </button>
@@ -245,7 +164,9 @@ const BookingForm = ({
 };
 
 const Home = () => {
-  const navigate = useNavigate();
+  const navigate       = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const [featuredProperties, setFeaturedProperties] = useState<any[]>([]);
   const [bnbProperties,      setBnbProperties]      = useState<any[]>([]);
   const [oweruProperties,    setOweruProperties]    = useState<any[]>([]);
@@ -255,14 +176,15 @@ const Home = () => {
   const [showBookingModal,   setShowBookingModal]   = useState(false);
   const [selectedProperty,   setSelectedProperty]   = useState<any>(null);
   const [savedProperties,    setSavedProperties]    = useState<Set<number>>(new Set());
+  const [showAdvFilters,     setShowAdvFilters]     = useState(false);
 
-  // Search filter states
-  const [searchFilters, setSearchFilters] = useState({
-    location: '',
-    propertyType: '',
-    priceRange: '',
-    searchTerm: ''
-  });
+  // ── Filters — mirrors Properties.tsx exactly ──
+  const [location,     setLocation]     = useState(searchParams.get('location') ?? '');
+  const [propertyType, setPropertyType] = useState(searchParams.get('type') ?? '');
+  const [priceRange,   setPriceRange]   = useState('');
+  const [searchTerm,   setSearchTerm]   = useState(searchParams.get('search') ?? '');
+  const [bedrooms,     setBedrooms]     = useState('');
+  const [furnished,    setFurnished]    = useState('');
 
   const stats = {
     totalProperties: 1247,
@@ -281,62 +203,29 @@ const Home = () => {
   const loadOweruProperties = async () => {
     try {
       setOweruLoading(true);
-
-      // Strategy A: filter by type directly
-      const resA = await fetch(
-        `${API_BASE}/api/public/properties?type=oweru_rental&per_page=20`,
-        { headers: { Accept: 'application/json' } },
-      );
-
+      const resA = await fetch(`${API_BASE}/api/public/properties?type=oweru_rental&per_page=20`, { headers: { Accept: 'application/json' } });
       if (resA.ok) {
         const jsonA = await resA.json();
-        const listA: any[] =
-          jsonA?.data?.data ?? jsonA?.data ?? (Array.isArray(jsonA) ? jsonA : []);
-
-        if (listA.length > 0) {
-          setOweruProperties(listA.slice(0, 6));
-          return;
-        }
+        const listA: any[] = jsonA?.data?.data ?? jsonA?.data ?? (Array.isArray(jsonA) ? jsonA : []);
+        if (listA.length > 0) { setOweruProperties(listA.slice(0, 6)); return; }
       }
-
-      // Strategy B: paginate through all pages and collect oweru_rental
       const collected: any[] = [];
-      let currentPage = 1;
-      let lastPage    = 1;
-
+      let currentPage = 1, lastPage = 1;
       do {
-        const res = await fetch(
-          `${API_BASE}/api/public/properties?page=${currentPage}&per_page=50`,
-          { headers: { Accept: 'application/json' } },
-        );
-
+        const res = await fetch(`${API_BASE}/api/public/properties?page=${currentPage}&per_page=50`, { headers: { Accept: 'application/json' } });
         if (!res.ok) break;
-
         const json  = await res.json();
         const items: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
-
-        const pagination = json?.data?.pagination ?? json?.pagination ?? null;
-        if (pagination) {
-          lastPage = pagination.last_page ?? 1;
-        } else if (json?.data?.last_page) {
-          lastPage = json.data.last_page;
-        }
-
-        collected.push(...items.filter(
-          (p) => p.type === 'oweru_rental' || p.isOweru === true,
-        ));
-
+        const pagination    = json?.data?.pagination ?? json?.pagination ?? null;
+        if (pagination) lastPage = pagination.last_page ?? 1;
+        else if (json?.data?.last_page) lastPage = json.data.last_page;
+        collected.push(...items.filter((p) => p.type === 'oweru_rental' || p.isOweru === true));
         if (collected.length >= 6) break;
         currentPage++;
       } while (currentPage <= lastPage && currentPage <= 5);
-
       setOweruProperties(collected.slice(0, 6));
-    } catch (error) {
-      console.error('Error loading Oweru properties:', error);
-      setOweruProperties([]);
-    } finally {
-      setOweruLoading(false);
-    }
+    } catch { setOweruProperties([]); }
+    finally { setOweruLoading(false); }
   };
 
   const loadFeaturedProperties = async () => {
@@ -347,20 +236,14 @@ const Home = () => {
       const json = await res.json();
       const list: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
       setFeaturedProperties(list.slice(0, 6));
-    } catch {
-      setFeaturedProperties([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setFeaturedProperties([]); }
+    finally { setLoading(false); }
   };
 
   const loadBnbProperties = async () => {
     try {
       setBnbLoading(true);
-      for (const url of [
-        `${API_BASE}/api/public/bnb`,
-        `${API_BASE}/api/public/bnb/search`,
-      ]) {
+      for (const url of [`${API_BASE}/api/public/bnb`, `${API_BASE}/api/public/bnb/search`]) {
         const res = await fetch(url, { headers: { Accept: 'application/json' } });
         if (res.ok) {
           const json = await res.json();
@@ -370,19 +253,14 @@ const Home = () => {
         }
       }
       setBnbProperties([]);
-    } catch {
-      setBnbProperties([]);
-    } finally {
-      setBnbLoading(false);
-    }
+    } catch { setBnbProperties([]); }
+    finally { setBnbLoading(false); }
   };
 
   const loadSavedProperties = async () => {
     try {
       const res = await Api.getSavedProperties();
-      const ids = (Array.isArray(res.data) ? res.data : [])
-        .map((item: any) => item.property?.id ?? item.id)
-        .filter(Boolean);
+      const ids = (Array.isArray(res.data) ? res.data : []).map((item: any) => item.property?.id ?? item.id).filter(Boolean);
       setSavedProperties(new Set(ids));
     } catch { /* silent */ }
   };
@@ -399,58 +277,36 @@ const Home = () => {
     } catch { /* silent */ }
   };
 
-  const handleSearch = () => {
-    // Build query parameters from filters
+  // ── Build query params identical to Properties.tsx ──
+  const buildParams = () => {
     const params = new URLSearchParams();
-    
-    if (searchFilters.location.trim()) {
-      params.append('location', searchFilters.location.trim());
-    }
-    
-    if (searchFilters.propertyType) {
-      params.append('type', searchFilters.propertyType);
-    }
-    
-    if (searchFilters.priceRange) {
-      // Convert price range to min/max values
-      switch (searchFilters.priceRange) {
-        case '0-500':
-          params.append('min_price', '0');
-          params.append('max_price', '500000');
-          break;
-        case '500-1000':
-          params.append('min_price', '500000');
-          params.append('max_price', '1000000');
-          break;
-        case '1000+':
-          params.append('min_price', '1000000');
-          break;
-      }
-    }
-    
-    if (searchFilters.searchTerm.trim()) {
-      params.append('search', searchFilters.searchTerm.trim());
-    }
-    
-    // Navigate to properties page with search parameters
-    const queryString = params.toString();
-    const url = queryString ? `/properties?${queryString}` : '/properties';
-    navigate(url);
+    if (location.trim())    params.append('location', location.trim());
+    if (propertyType)       params.append('type', propertyType);
+    if (searchTerm.trim())  params.append('search', searchTerm.trim());
+    if (bedrooms)           params.append('bedrooms', bedrooms);
+    if (furnished)          params.append('furnished', furnished);
+    if (priceRange === '0-500')    { params.append('min_price', '0');       params.append('max_price', '500000'); }
+    if (priceRange === '500-1000') { params.append('min_price', '500000');  params.append('max_price', '1000000'); }
+    if (priceRange === '1000+')    { params.append('min_price', '1000000'); }
+    return params;
   };
 
-  const handleFilterChange = (filterName: string, value: string) => {
-    setSearchFilters(prev => ({
-      ...prev,
-      [filterName]: value
-    }));
+  const handleSearch = () => {
+    const params = buildParams();
+    const qs     = params.toString();
+    navigate(qs ? `/properties?${qs}` : '/properties');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSearch();
-    }
+    if (e.key === 'Enter') { e.preventDefault(); handleSearch(); }
   };
+
+  const clearFilters = () => {
+    setLocation(''); setPropertyType(''); setPriceRange('');
+    setSearchTerm(''); setBedrooms(''); setFurnished('');
+  };
+
+  const activeFilterCount = [propertyType, priceRange, bedrooms, furnished].filter(v => v !== '').length;
 
   return (
     <div style={{ fontFamily: "'Jost', 'Futura PT', sans-serif", background: '#0F172A', color: '#F8F8F9', minHeight: '100vh', overflowX: 'hidden' }}>
@@ -462,20 +318,125 @@ const Home = () => {
           --gold: #C89128; --gold-lt: #D4A843; --gold-dim: rgba(200,145,40,0.12);
           --cream: #F8F8F9; --slate: #94A3B8; --border: rgba(200,145,40,0.18);
         }
-        .hero { position: relative; min-height: 100vh; display: flex; align-items: center; overflow: hidden; background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 60%, #1a2840 100%); }
-        .hero-geo { position: absolute; inset: 0; background-image: repeating-linear-gradient(60deg, transparent, transparent 30px, rgba(200,145,40,0.025) 30px, rgba(200,145,40,0.025) 31px), repeating-linear-gradient(-60deg, transparent, transparent 30px, rgba(200,145,40,0.025) 30px, rgba(200,145,40,0.025) 31px); pointer-events: none; }
-        .hero-glow { position: absolute; right: -10%; top: -20%; width: 60%; height: 80%; background: radial-gradient(ellipse, rgba(200,145,40,0.08) 0%, transparent 65%); pointer-events: none; }
-        .hero-content { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 60px 24px 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; width: 100%; }
+
+        /* ══ HERO ══ */
+        .hero {
+          position: relative;
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          overflow: hidden;
+        }
+
+        /* Architectural photo background */
+        .hero-bg {
+          position: absolute;
+          inset: 0;
+          background-image:
+            url("https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1800&q=80");
+          background-size: cover;
+          background-position: center 40%;
+          background-repeat: no-repeat;
+          transform: scale(1.04);
+          animation: hero-zoom 18s ease-in-out infinite alternate;
+        }
+        @keyframes hero-zoom { from { transform: scale(1.04); } to { transform: scale(1.10); } }
+
+        /* Deep overlay — navy brand tint */
+        .hero-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            115deg,
+            rgba(15,23,42,0.92)  0%,
+            rgba(15,23,42,0.78) 45%,
+            rgba(22,32,53,0.55) 100%
+          );
+        }
+
+        /* Gold accent stripe at top */
+        .hero-top-stripe {
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        /* Geometric grid overlay */
+        .hero-geo {
+          position: absolute;
+          inset: 0;
+          background-image:
+            repeating-linear-gradient(60deg,  transparent, transparent 40px, rgba(200,145,40,0.03) 40px, rgba(200,145,40,0.03) 41px),
+            repeating-linear-gradient(-60deg, transparent, transparent 40px, rgba(200,145,40,0.03) 40px, rgba(200,145,40,0.03) 41px);
+          pointer-events: none;
+        }
+
+        /* Radial glow right side */
+        .hero-glow {
+          position: absolute;
+          right: -5%;
+          top: -15%;
+          width: 55%;
+          height: 85%;
+          background: radial-gradient(ellipse, rgba(200,145,40,0.07) 0%, transparent 65%);
+          pointer-events: none;
+        }
+
+        .hero-content {
+          position: relative;
+          z-index: 2;
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 80px 24px 60px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 60px;
+          align-items: center;
+          width: 100%;
+        }
+
         .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--gold-dim); border: 1px solid var(--border); color: var(--gold); padding: 6px 14px; font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 28px; }
-        .hero-badge-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; flex-shrink: 0; }
-        .hero-title { font-size: clamp(32px, 6vw, 52px); font-weight: 300; line-height: 1.1; letter-spacing: -0.025em; color: var(--cream); margin-bottom: 16px; }
-        .hero-sub { font-size: 15px; font-weight: 300; line-height: 1.7; color: var(--slate); margin-bottom: 30px; }
-        .btn-gold { display: inline-flex; align-items: center; gap: 8px; background: var(--gold); color: var(--navy-900); padding: 14px 26px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-decoration: none; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.2s; }
+        .hero-badge-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; flex-shrink: 0; animation: badge-pulse 2s infinite; }
+        @keyframes badge-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .hero-title { font-size: clamp(32px, 6vw, 56px); font-weight: 300; line-height: 1.08; letter-spacing: -0.03em; color: var(--cream); margin-bottom: 16px; }
+        .hero-title strong { font-weight: 700; color: #fff; }
+        .hero-sub { font-size: 15px; font-weight: 300; line-height: 1.7; color: rgba(248,248,249,0.65); margin-bottom: 36px; max-width: 480px; }
+
+        /* Hero stat pills */
+        .hero-stats { display: flex; gap: 20px; margin-top: 36px; flex-wrap: wrap; }
+        .hero-stat { display: flex; flex-direction: column; gap: 3px; }
+        .hero-stat-num { font-size: 22px; font-weight: 700; color: var(--gold); line-height: 1; }
+        .hero-stat-lbl { font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--slate); }
+
+        /* ── Search card ── */
+        .search-card {
+          background: rgba(22,32,53,0.82);
+          border: 1px solid var(--border);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          padding: 28px;
+          border-radius: 4px;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 32px 64px rgba(0,0,0,0.45);
+        }
+        .search-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--gold), var(--gold-lt)); }
+
+        /* Advanced filters panel */
+        .adv-filters {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.32s ease, opacity 0.25s ease;
+          opacity: 0;
+        }
+        .adv-filters.open { max-height: 160px; opacity: 1; }
+
+        .btn-gold { display: inline-flex; align-items: center; gap: 8px; background: var(--gold); color: var(--navy-900); padding: 14px 26px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-decoration: none; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.2s; border-radius: 3px; }
         .btn-gold:hover { background: var(--gold-lt); gap: 12px; }
-        .btn-outline { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--cream); padding: 13px 26px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-decoration: none; text-transform: uppercase; border: 1px solid rgba(248,248,249,0.2); cursor: pointer; transition: all 0.2s; }
+        .btn-outline { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--cream); padding: 13px 26px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-decoration: none; text-transform: uppercase; border: 1px solid rgba(248,248,249,0.2); cursor: pointer; transition: all 0.2s; border-radius: 3px; }
         .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
-        .search-card { background: var(--navy-800); border: 1px solid var(--border); padding: 28px; position: relative; overflow: hidden; }
-        .search-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); }
+
         .prop-card, .bnb-card, .oweru-card { background: var(--navy-800); border: 1px solid var(--border); overflow: hidden; transition: all 0.3s; cursor: pointer; }
         .prop-card:hover, .bnb-card:hover, .oweru-card:hover { border-color: rgba(200,145,40,0.5); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,23,42,0.6); }
         .section { max-width: 1200px; margin: 0 auto; padding: 80px 48px; }
@@ -490,21 +451,63 @@ const Home = () => {
         @keyframes shimmer { 0%{opacity:0.4} 50%{opacity:0.9} 100%{opacity:0.4} }
         .oweru-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
         .prop-img { width: 100%; display: block; object-fit: cover; }
+
+        /* Filter inputs */
+        .filter-input, .filter-select {
+          width: 100%;
+          background: var(--navy-900);
+          border: 1px solid var(--border);
+          color: var(--cream);
+          padding: 10px 14px;
+          font-size: 13px;
+          outline: none;
+          font-family: inherit;
+          transition: border-color 0.2s;
+        }
+        .filter-input:focus, .filter-select:focus { border-color: rgba(200,145,40,0.5); }
+        .filter-select option { background: var(--navy-900); color: var(--cream); }
+
+        /* Filter toggle button */
+        .filter-toggle {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: transparent;
+          border: 1px solid var(--border);
+          color: var(--slate);
+          padding: 9px 14px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.18s;
+          font-family: inherit;
+          letter-spacing: 0.06em;
+        }
+        .filter-toggle:hover, .filter-toggle.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+        .filter-count { background: var(--gold); color: var(--navy-900); width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+
         @media (max-width: 900px) {
           .hero-content { grid-template-columns: 1fr; gap: 40px; }
           .section { padding: 60px 24px; }
           .section-hdr { grid-template-columns: 1fr; gap: 16px; }
           .section-desc { text-align: left; max-width: 100%; }
+          .hero-stats { gap: 16px; }
         }
       `}</style>
 
       {/* ══════════════════════════════════════════
-          HERO
+          HERO  — professional photo background
       ══════════════════════════════════════════ */}
       <section className="hero">
+        <div className="hero-bg" />
+        <div className="hero-overlay" />
+        <div className="hero-top-stripe" />
         <div className="hero-geo" />
         <div className="hero-glow" />
+
         <div className="hero-content">
+          {/* Left — headline */}
           <div>
             <div className="hero-badge">
               <span className="hero-badge-dot" /> Tanzania's Premier Rental Platform
@@ -518,14 +521,28 @@ const Home = () => {
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <Link to="/properties" className="btn-gold">Browse Properties <ArrowRight size={15} /></Link>
-              <Link to="/register" className="btn-outline">Create Account <ChevronRight size={14} /></Link>
+              <Link to="/register"   className="btn-outline">Create Account <ChevronRight size={14} /></Link>
+            </div>
+
+            {/* Inline stats */}
+            <div className="hero-stats">
+              {[
+                { num: '1,247+', lbl: 'Listings' },
+                { num: '3,842',  lbl: 'Users' },
+                { num: '24 hr',  lbl: 'Response' },
+              ].map(s => (
+                <div key={s.lbl} className="hero-stat">
+                  <span className="hero-stat-num">{s.num}</span>
+                  <span className="hero-stat-lbl">{s.lbl}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Search card */}
+          {/* Right — search card with full filters */}
           <div className="search-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{ width: 38, height: 38, background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--navy-900)' }}>
+              <div style={{ width: 38, height: 38, background: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--navy-900)', borderRadius: 3 }}>
                 <Search size={18} />
               </div>
               <div>
@@ -533,40 +550,92 @@ const Home = () => {
                 <div style={{ fontSize: 12, color: 'var(--slate)' }}>Find your perfect match</div>
               </div>
             </div>
-            <input 
-              type="text" 
-              placeholder="Location, district, neighbourhood…" 
-              value={searchFilters.location}
-              onChange={(e) => handleFilterChange('location', e.target.value)}
+
+            {/* Location */}
+            <input
+              className="filter-input"
+              type="text"
+              placeholder="Location, district, neighbourhood…"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
               onKeyPress={handleKeyPress}
-              style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--cream)', padding: '10px 14px', marginBottom: 12, fontSize: 14, outline: 'none' }} 
+              style={{ marginBottom: 10 }}
             />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <select 
-                value={searchFilters.propertyType}
-                onChange={(e) => handleFilterChange('propertyType', e.target.value)}
-                style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--slate)', padding: '11px 14px', fontSize: 13 }}
-              >
-                <option value="">Property Type</option>
+
+            {/* Keyword / name */}
+            <input
+              className="filter-input"
+              type="text"
+              placeholder="Property name or keyword…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              style={{ marginBottom: 10 }}
+            />
+
+            {/* Type + Price row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <select className="filter-select" value={propertyType} onChange={(e) => setPropertyType(e.target.value)}>
+                <option value="">All Types</option>
                 <option value="apartment">Apartment</option>
                 <option value="house">House</option>
                 <option value="studio">Studio</option>
                 <option value="villa">Villa</option>
+                <option value="commercial">Commercial</option>
               </select>
-              <select 
-                value={searchFilters.priceRange}
-                onChange={(e) => handleFilterChange('priceRange', e.target.value)}
-                style={{ width: '100%', background: 'var(--navy-900)', border: '1px solid var(--border)', color: 'var(--slate)', padding: '11px 14px', fontSize: 13 }}
-              >
-                <option value="">Price Range</option>
+              <select className="filter-select" value={priceRange} onChange={(e) => setPriceRange(e.target.value)}>
+                <option value="">All Prices</option>
                 <option value="0-500">Under 500K TZS</option>
                 <option value="500-1000">500K – 1M TZS</option>
                 <option value="1000+">Above 1M TZS</option>
               </select>
             </div>
-            <button 
+
+            {/* Advanced filter toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <button
+                className={`filter-toggle${showAdvFilters ? ' active' : ''}`}
+                onClick={() => setShowAdvFilters(v => !v)}
+              >
+                <SlidersHorizontal size={12} />
+                More Filters
+                {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
+                <ChevronDown size={11} style={{ transform: showAdvFilters ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }} />
+              </button>
+              {(activeFilterCount > 0 || location || searchTerm) && (
+                <button
+                  onClick={clearFilters}
+                  style={{ background: 'none', border: 'none', color: 'var(--slate)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit' }}
+                >
+                  <X size={11} /> Clear all
+                </button>
+              )}
+            </div>
+
+            {/* Collapsible advanced filters */}
+            <div className={`adv-filters${showAdvFilters ? ' open' : ''}`}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                <select className="filter-select" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)}>
+                  <option value="">Bedrooms</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                </select>
+                <select className="filter-select" value={furnished} onChange={(e) => setFurnished(e.target.value)}>
+                  <option value="">Furnishing</option>
+                  <option value="true">Furnished</option>
+                  <option value="false">Unfurnished</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Search button */}
+            <button
               onClick={handleSearch}
-              style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', padding: '13px', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', padding: '13px', fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 3, transition: 'background 0.2s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
             >
               <Search size={15} /> Search Properties
             </button>
@@ -614,13 +683,7 @@ const Home = () => {
               {featuredProperties.map((p) => (
                 <div key={p.id} className="prop-card" style={{ borderRadius: 12 }}>
                   <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <img
-                      className="prop-img"
-                      src={getImage(p)}
-                      alt={p.title}
-                      style={{ height: 200 }}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
-                    />
+                    <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 200 }} onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                     <div style={{ padding: 20 }}>
                       <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 8 }}>{p.title}</div>
                       <div style={{ color: 'var(--slate)', fontSize: 13, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -631,21 +694,7 @@ const Home = () => {
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); e.preventDefault(); navigate(`/property/${p.id}`); }}
-                        style={{
-                          width:         '100%',
-                          background:    'var(--gold)',
-                          color:         'var(--navy-900)',
-                          border:        'none',
-                          padding:       '13px',
-                          fontWeight:    700,
-                          fontSize:      13,
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                          borderRadius:  6,
-                          cursor:        'pointer',
-                          transition:    'background 0.2s',
-                          marginTop:     16,
-                        }}
+                        style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', padding: '13px', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', borderRadius: 6, cursor: 'pointer', transition: 'background 0.2s', marginTop: 16 }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
                       >
@@ -685,13 +734,7 @@ const Home = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 24 }}>
               {bnbProperties.map((p: any) => (
                 <div key={p.id} className="bnb-card" style={{ borderRadius: 12 }}>
-                  <img
-                    className="prop-img"
-                    src={getImage(p)}
-                    alt={p.title}
-                    style={{ height: 220 }}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
-                  />
+                  <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 220 }} onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                   <div style={{ padding: 20 }}>
                     <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 10 }}>{p.title}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--slate)', fontSize: 13, marginBottom: 10 }}>
@@ -702,25 +745,13 @@ const Home = () => {
                     </div>
                     <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
                       <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedProperty(p); setShowBookingModal(true); }}
-                        style={{
-                          flex: 1,
-                          background: 'var(--gold)',
-                          color: 'var(--navy-900)',
-                          border: 'none',
-                          padding: '12px',
-                          fontWeight: 600,
-                          fontSize: 13,
-                          borderRadius: 6,
-                          cursor: 'pointer',
-                          transition: 'background 0.2s'
-                        }}
+                        onClick={() => { setSelectedProperty(p); setShowBookingModal(true); }}
+                        style={{ flex: 1, background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', padding: '12px', fontWeight: 600, fontSize: 13, borderRadius: 6, cursor: 'pointer', transition: 'background 0.2s' }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
                       >
                         Book Now
                       </button>
-                      
                     </div>
                   </div>
                 </div>
@@ -742,53 +773,22 @@ const Home = () => {
             </div>
             <p className="section-desc">Premium rental properties handpicked and managed by Oweru for exceptional long-term living.</p>
           </div>
-
           {oweruLoading ? (
             <div className="oweru-grid">
               {[0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 360 }} />)}
             </div>
           ) : oweruProperties.length === 0 ? (
-            <EmptyState
-              icon={<Building size={40} />}
-              title="No Oweru packages yet"
-              desc="Premium properties uploaded by the admin will appear here soon."
-            />
+            <EmptyState icon={<Building size={40} />} title="No Oweru packages yet" desc="Premium properties uploaded by the admin will appear here soon." />
           ) : (
             <div className="oweru-grid">
               {oweruProperties.map((p: any) => (
-                <div
-                  key={p.id}
-                  className="oweru-card"
-                  onClick={() => navigate(`/property/${p.id}`)}
-                  style={{ borderRadius: 12 }}
-                >
+                <div key={p.id} className="oweru-card" onClick={() => navigate(`/property/${p.id}`)} style={{ borderRadius: 12 }}>
                   <div style={{ position: 'relative', height: 210, overflow: 'hidden' }}>
-                    <img
-                      className="prop-img"
-                      src={getImage(p)}
-                      alt={p.title}
-                      style={{ height: 210 }}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
-                    />
-                    <div style={{
-                      position:      'absolute',
-                      top:           12,
-                      right:         12,
-                      background:    'var(--gold)',
-                      color:         'var(--navy-900)',
-                      padding:       '5px 12px',
-                      borderRadius:  6,
-                      fontSize:      11,
-                      fontWeight:    700,
-                      letterSpacing: '0.06em',
-                    }}>
-                      OWERU
-                    </div>
+                    <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 210 }} onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
+                    <div style={{ position: 'absolute', top: 12, right: 12, background: 'var(--gold)', color: 'var(--navy-900)', padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, letterSpacing: '0.06em' }}>OWERU</div>
                   </div>
                   <div style={{ padding: 20 }}>
-                    <h3 style={{ fontSize: 17, fontWeight: 600, color: 'var(--cream)', marginBottom: 10, lineHeight: 1.3 }}>
-                      {p.title}
-                    </h3>
+                    <h3 style={{ fontSize: 17, fontWeight: 600, color: 'var(--cream)', marginBottom: 10, lineHeight: 1.3 }}>{p.title}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, color: 'var(--slate)', fontSize: 13 }}>
                       <MapPin size={14} style={{ color: 'var(--gold)', flexShrink: 0 }} />
                       {p.location || p.address || 'Tanzania'}
@@ -799,20 +799,7 @@ const Home = () => {
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate(`/property/${p.id}`); }}
-                      style={{
-                        width:         '100%',
-                        background:    'var(--gold)',
-                        color:         'var(--navy-900)',
-                        border:        'none',
-                        padding:       '13px',
-                        fontWeight:    700,
-                        fontSize:      13,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        borderRadius:  6,
-                        cursor:        'pointer',
-                        transition:    'background 0.2s',
-                      }}
+                      style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', padding: '13px', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', borderRadius: 6, cursor: 'pointer', transition: 'background 0.2s' }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--gold-lt)')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--gold)')}
                     >
@@ -840,9 +827,7 @@ const Home = () => {
               <p style={{ fontSize: 16, color: 'var(--slate)', marginBottom: 36, lineHeight: 1.7 }}>
                 Join thousands of Tanzanians who have found their perfect rental property through Oweru.
               </p>
-              <Link to="/properties" className="btn-gold">
-                Browse All Properties <ArrowRight size={15} />
-              </Link>
+              <Link to="/properties" className="btn-gold">Browse All Properties <ArrowRight size={15} /></Link>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {['Verified landlords & agents', 'Secure payment processing', 'Dedicated tenant support', 'Digital contract management'].map((item) => (
