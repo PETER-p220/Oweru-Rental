@@ -389,19 +389,13 @@ class PaymentController extends Controller
             if ($payResponse->successful()) {
                 Log::info('Split payment initiated successfully', [
                     'recipient_type' => $recipientType,
+                    'amount' => $amount,
+                    'phone' => $phone,
                     'order_id' => $splitOrderId,
-                ]);
-            } else {
-                Log::error('Split payment USSD push failed', [
-                    'recipient_type' => $recipientType,
-                    'response' => $payResponse->body(),
+                    'provider_used' => $selcomProvider,
+                    'original_provider' => $provider,
                 ]);
             }
-        } else {
-            Log::error('Split payment order creation failed', [
-                'recipient_type' => $recipientType,
-                'response' => $createResponse->body(),
-            ]);
         }
     }
 
