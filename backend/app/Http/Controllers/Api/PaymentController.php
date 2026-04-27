@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Models\Property;
+use App\Models\User;
 use App\Services\PaymentProcessingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
@@ -188,6 +191,168 @@ class PaymentController extends Controller
     }
 
     /**
+     * Process payment splitting for first month rent
+     * 30% to Oweru admin, 70% to agent
+     */
+    public function processPaymentSplit(Payment $payment): void
+    {
+        // Only split first month rent payments
+        if ($payment->type !== 'first_month_rent') {
+            return;
+        }
+
+        // Check if already split
+        if ($payment->metadata['payment_split'] ?? false) {
+            return;
+        }
+
+        try {
+            $adminPhone = env('OWERU_ADMIN_PHONE');
+            $property = Property::find($payment->property_id);
+            
+            if (!$property || !$property->agent_id) {
+                Log::error('Cannot split payment: no property or agent found', [
+                    'payment_id' => $payment->id,
+                    'property_id' => $payment->property_id,
+                ]);
+                return;
+            }
+
+            $agent = User::find($property->agent_id);
+            if (!$agent || !$agent->phone) {
+                Log::error('Cannot split payment: agent phone not found', [
+                    'payment_id' => $payment->id,
+                    'agent_id' => $property->agent_id,
+                ]);
+                return;
+            }
+
+            if (!$adminPhone) {
+                Log::error('Cannot split payment: admin phone not configured');
+                return;
+            }
+
+            $totalAmount = $payment->amount;
+            $adminAmount = $totalAmount * 0.30; // 30%
+            $agentAmount = $totalAmount * 0.70; // 70%
+
+            $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
+            $appKey = env('OWERU_APP_KEY');
+
+            if (!$appKey) {
+                Log::error('Missing OWERU_APP_KEY for payment splitting');
+                return;
+            }
+
+            // Process admin payment (30%)
+            $this->initiateSplitPayment($payment, $adminAmount, $adminPhone, 'admin', $baseUrl, $appKey);
+
+            // Process agent payment (70%)
+            $this->initiateSplitPayment($payment, $agentAmount, $agent->phone, 'agent', $baseUrl, $appKey);
+
+            // Mark payment as split
+            $payment->update([
+                'metadata' => array_merge($payment->metadata ?? [], [
+                    'payment_split' => true,
+                    'split_processed_at' => now()->toIso8601String(),
+                    'admin_amount' => $adminAmount,
+                    'agent_amount' => $agentAmount,
+                    'admin_phone' => $adminPhone,
+                    'agent_phone' => $agent->phone,
+                ]),
+            ]);
+
+            Log::info('Payment split processed successfully', [
+                'payment_id' => $payment->id,
+                'total_amount' => $totalAmount,
+                'admin_amount' => $adminAmount,
+                'agent_amount' => $agentAmount,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Payment splitting failed', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Initiate split payment to recipient
+     */
+    private function initiateSplitPayment(
+        Payment $originalPayment,
+        float $amount,
+        string $phoneNumber,
+        string $recipientType,
+        string $baseUrl,
+        string $appKey
+    ): void {
+        $phone = $this->normalizePhone($phoneNumber);
+        $amountFormatted = number_format((int) $amount, 0, '.', '');
+        $splitOrderId = 'SPLIT-' . $originalPayment->id . '-' . $recipientType . '-' . time();
+
+        // Create order for split payment
+        $createPayload = [
+            'order_id' => $splitOrderId,
+            'buyer_name' => $recipientType === 'admin' ? 'Oweru Admin' : 'Agent Payment',
+            'buyer_email' => $recipientType === 'admin' ? 'admin@oweru.com' : 'agent@oweru.com',
+            'buyer_phone' => $phone,
+            'amount' => $amountFormatted,
+            'currency' => 'TZS',
+            'buyer_remarks' => 'Payment split - ' . $recipientType,
+            'merchant_remarks' => 'Oweru Rental Split - ' . $recipientType . ' for payment #' . $originalPayment->id,
+            'no_of_items' => 1,
+        ];
+
+        Log::info('Initiating split payment', [
+            'recipient_type' => $recipientType,
+            'amount' => $amount,
+            'phone' => $phone,
+            'order_id' => $splitOrderId,
+        ]);
+
+        $createResponse = Http::withHeaders([
+            'X-App-Key' => $appKey,
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ])->post($baseUrl . '/create-order-minimal', $createPayload);
+
+        if ($createResponse->successful()) {
+            // Trigger USSD push for split payment
+            $payPayload = [
+                'order_id' => $splitOrderId,
+                'transid' => $splitOrderId,
+                'msisdn' => $phone,
+            ];
+
+            $payResponse = Http::withHeaders([
+                'X-App-Key' => $appKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])->post($baseUrl . '/wallet-payment', $payPayload);
+
+            if ($payResponse->successful()) {
+                Log::info('Split payment initiated successfully', [
+                    'recipient_type' => $recipientType,
+                    'order_id' => $splitOrderId,
+                ]);
+            } else {
+                Log::error('Split payment USSD push failed', [
+                    'recipient_type' => $recipientType,
+                    'response' => $payResponse->body(),
+                ]);
+            }
+        } else {
+            Log::error('Split payment order creation failed', [
+                'recipient_type' => $recipientType,
+                'response' => $createResponse->body(),
+            ]);
+        }
+    }
+
+    /**
      * Handle Selcom payment callback / webhook.
      *
      * POST /api/payment/webhook
@@ -221,6 +386,16 @@ class PaymentController extends Controller
                     'result_code' => $resultCode,
                     'result_message' => $request->input('message'),
                 ]);
+
+                // Find the completed payment and process splitting if it's first month rent
+                $payment = Payment::where('reference', $transid)
+                    ->orWhere('reference', $reference)
+                    ->first();
+
+                if ($payment && $payment->status === 'completed') {
+                    $this->processPaymentSplit($payment);
+                }
+
             } catch (\Exception $e) {
                 Log::error('Error processing payment webhook', ['error' => $e->getMessage()]);
             }

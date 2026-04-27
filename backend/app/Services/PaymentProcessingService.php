@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\Application;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PaymentProcessingService
 {
@@ -204,6 +205,19 @@ class PaymentProcessingService
             // Send payment confirmation notification
             $notification_service = app(NotificationService::class);
             $notification_service->sendPaymentConfirmation($payment);
+
+            // Trigger payment splitting for first month rent
+            if ($payment->type === 'first_month_rent') {
+                try {
+                    $paymentController = app(\App\Http\Controllers\Api\PaymentController::class);
+                    $paymentController->processPaymentSplit($payment);
+                } catch (\Exception $e) {
+                    Log::error('Failed to process payment split', [
+                        'payment_id' => $payment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         });
     }
 
