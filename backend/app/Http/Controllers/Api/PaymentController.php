@@ -123,7 +123,7 @@ class PaymentController extends Controller
                 'TIGO' => 'TIGO',
                 'MPESA' => 'MPESA', 
                 'AIRTEL' => 'AIRTEL',
-                'HALOPESA' => 'HALOPESA', 
+                'HALOPESA' => 'HALO-PESA', 
             ];
             
             $selcomProvider = $providerMap[$validated['provider']] ?? $validated['provider'];
@@ -365,7 +365,7 @@ class PaymentController extends Controller
                 'TIGO' => 'TIGO',
                 'MPESA' => 'MPESA', 
                 'AIRTEL' => 'AIRTEL',
-                'HALOPESA' => 'HALOPESA',
+                'HALOPESA' => 'HALO-PESA',
             ];
             
             $selcomProvider = $providerMap[$provider] ?? $provider;
