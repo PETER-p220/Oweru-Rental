@@ -650,7 +650,7 @@ public function recordShare(Property $property): JsonResponse
                 'tenant_id'   => $tenant->id,
                 'property_id' => $application->property_id,
                 'start_date'  => now(),
-                'end_date'    => null,
+                'end_date'    => now()->addYear(), // Default 1-year contract
                 'rent_amount' => $application->property->price,
                 'status'      => 'active',
                 'terms'       => 'Standard rental agreement created from approved application',

@@ -11,6 +11,7 @@ interface ApplicationItem {
   message?: string;
   created_at?: string;
   rent_paid?: boolean;
+  rejection_reason?: string;
   property?: {
     id?: number;
     title?: string;
@@ -41,21 +42,35 @@ const statusColorMap: Record<string, string> = {
   active:    '#10b981',
 };
 
-const StatusBadge = ({ status }: { status?: string }) => {
+const StatusBadge = ({ status, rejectionReason }: { status?: string; rejectionReason?: string }) => {
   const s = status || 'unknown';
   const color = statusColorMap[s] ?? B.slate;
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '3px 10px',
-      background: `${color}18`, border: `1px solid ${color}40`,
-      color, fontSize: 10, fontWeight: 700,
-      letterSpacing: '0.1em', textTransform: 'uppercase',
-      fontFamily: "'Jost', sans-serif",
-    }}>
-      <span style={{ width: 5, height: 5, borderRadius: '50%', background: color }} />
-      {s.charAt(0).toUpperCase() + s.slice(1)}
-    </span>
+    <div>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        padding: '3px 10px',
+        background: `${color}18`, border: `1px solid ${color}40`,
+        color, fontSize: 10, fontWeight: 700,
+        letterSpacing: '0.1em', textTransform: 'uppercase',
+        fontFamily: "'Jost', sans-serif",
+      }}>
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: color }} />
+        {s.charAt(0).toUpperCase() + s.slice(1)}
+      </span>
+      {s === 'rejected' && rejectionReason && (
+        <div style={{
+          marginTop: 6,
+          fontSize: 11,
+          color: '#dc2626',
+          fontWeight: 400,
+          lineHeight: 1.4,
+          maxWidth: 200,
+        }}>
+          {rejectionReason}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -416,7 +431,7 @@ const ApplicationsPage = () => {
                           {formatCurrency(item.property?.price)}
                         </div>
                       </td>
-                      <td><StatusBadge status={item.status} /></td>
+                      <td><StatusBadge status={item.status} rejectionReason={item.rejection_reason} /></td>
                       <td style={{ maxWidth: 220 }}>
                         <div style={{ color: B.slate, fontSize: 13, lineHeight: 1.55, fontWeight: 300 }}>{item.message || '—'}</div>
                       </td>
@@ -458,7 +473,7 @@ const ApplicationsPage = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: B.gold }}>Status</span>
-                      <StatusBadge status={item.status} />
+                      <StatusBadge status={item.status} rejectionReason={item.rejection_reason} />
                     </div>
                     <div>
                       <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: B.gold, marginBottom: 5 }}>Message</div>
