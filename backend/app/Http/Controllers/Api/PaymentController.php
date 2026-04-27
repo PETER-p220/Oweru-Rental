@@ -45,7 +45,7 @@ class PaymentController extends Controller
             $validated = $request->validate([
                 'amount'         => 'required|numeric|min:100',
                 'phone_number'   => 'required|string|min:10|max:13',
-                'provider'       => 'required|in:TIGO,MPESA,AIRTEL,HALOPESA',
+                'provider'       => 'required|in:TIGO,MPESA,AIRTEL,HALOPESA,HALOPES',
                 'customer_email' => 'required|email',
                 'customer_name'  => 'required|string|max:100',
                 'order_id'       => 'required|string|max:50',
@@ -118,15 +118,27 @@ class PaymentController extends Controller
             }
 
             // ── Step 2: Trigger USSD push ─────────────────────────────────────────
+            // Map provider codes to Selcom expected codes
+            $providerMap = [
+                'TIGO' => 'TIGO',
+                'MPESA' => 'MPESA', 
+                'AIRTEL' => 'AIRTEL',
+                'HALOPESA' => 'HLO', // Try HLO for Halopesa
+                'HALOPES' => 'HLO', // Fallback
+            ];
+            
+            $selcomProvider = $providerMap[$validated['provider']] ?? $validated['provider'];
+            
             $payPayload = [
                 'order_id' => $orderId,
                 'transid'  => $orderId,
                 'msisdn'   => $phone,
-                'provider' => $validated['provider'], // Add provider for USSD routing
+                'provider' => $selcomProvider, // Use mapped provider code
             ];
 
             Log::info('Oweru wallet-payment request', [
                 'payload' => $payPayload,
+                'provider_debug' => $validated['provider'],
             ]);
 
             $payResponse = Http::withHeaders([
@@ -347,12 +359,23 @@ class PaymentController extends Controller
         ])->post($baseUrl . '/create-order-minimal', $createPayload);
 
         if ($createResponse->successful()) {
+            // Map provider codes to Selcom expected codes
+            $providerMap = [
+                'TIGO' => 'TIGO',
+                'MPESA' => 'MPESA', 
+                'AIRTEL' => 'AIRTEL',
+                'HALOPESA' => 'HLO', // Try HLO for Halopesa
+                'HALOPES' => 'HLO', // Fallback
+            ];
+            
+            $selcomProvider = $providerMap[$provider] ?? $provider;
+            
             // Trigger USSD push for split payment
             $payPayload = [
                 'order_id' => $splitOrderId,
                 'transid' => $splitOrderId,
                 'msisdn' => $phone,
-                'provider' => $provider, // Add provider for USSD routing
+                'provider' => $selcomProvider, // Use mapped provider code
             ];
 
             $payResponse = Http::withHeaders([
