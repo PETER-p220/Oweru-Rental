@@ -210,19 +210,38 @@ class PaymentController extends Controller
             $adminPhone = env('OWERU_ADMIN_PHONE');
             $property = Property::find($payment->property_id);
             
-            if (!$property || !$property->agent_id) {
-                Log::error('Cannot split payment: no property or agent found', [
+            if (!$property) {
+                Log::error('Cannot split payment: property not found', [
                     'payment_id' => $payment->id,
                     'property_id' => $payment->property_id,
                 ]);
                 return;
             }
 
-            $agent = User::find($property->agent_id);
-            if (!$agent || !$agent->phone) {
-                Log::error('Cannot split payment: agent phone not found', [
+            // Handle agent properties
+            if ($property->agent_id) {
+                $recipient = User::find($property->agent_id);
+                $recipientType = 'agent';
+                $recipientId = $property->agent_id;
+            }
+            // Handle landlord properties  
+            elseif ($property->owner_id) {
+                $recipient = User::find($property->owner_id);
+                $recipientType = 'landlord';
+                $recipientId = $property->owner_id;
+            }
+            else {
+                Log::error('Cannot split payment: no agent or owner found', [
                     'payment_id' => $payment->id,
-                    'agent_id' => $property->agent_id,
+                    'property_id' => $payment->property_id,
+                ]);
+                return;
+            }
+
+            if (!$recipient || !$recipient->phone) {
+                Log::error("Cannot split payment: {$recipientType} phone not found", [
+                    'payment_id' => $payment->id,
+                    "{$recipientType}_id" => $recipientId,
                 ]);
                 return;
             }
@@ -234,7 +253,7 @@ class PaymentController extends Controller
 
             $totalAmount = $payment->amount;
             $adminAmount = $totalAmount * 0.30; // 30%
-            $agentAmount = $totalAmount * 0.70; // 70%
+            $recipientAmount = $totalAmount * 0.70; // 70%
 
             $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
             $appKey = env('OWERU_APP_KEY');
@@ -247,8 +266,8 @@ class PaymentController extends Controller
             // Process admin payment (30%)
             $this->initiateSplitPayment($payment, $adminAmount, $adminPhone, 'admin', $baseUrl, $appKey);
 
-            // Process agent payment (70%)
-            $this->initiateSplitPayment($payment, $agentAmount, $agent->phone, 'agent', $baseUrl, $appKey);
+            // Process recipient payment (70%) - agent or landlord
+            $this->initiateSplitPayment($payment, $recipientAmount, $recipient->phone, $recipientType, $baseUrl, $appKey);
 
             // Mark payment as split
             $payment->update([
@@ -256,9 +275,10 @@ class PaymentController extends Controller
                     'payment_split' => true,
                     'split_processed_at' => now()->toIso8601String(),
                     'admin_amount' => $adminAmount,
-                    'agent_amount' => $agentAmount,
+                    'recipient_amount' => $recipientAmount,
+                    'recipient_type' => $recipientType,
                     'admin_phone' => $adminPhone,
-                    'agent_phone' => $agent->phone,
+                    'recipient_phone' => $recipient->phone,
                 ]),
             ]);
 
@@ -266,7 +286,8 @@ class PaymentController extends Controller
                 'payment_id' => $payment->id,
                 'total_amount' => $totalAmount,
                 'admin_amount' => $adminAmount,
-                'agent_amount' => $agentAmount,
+                'recipient_amount' => $recipientAmount,
+                'recipient_type' => $recipientType,
             ]);
 
         } catch (\Exception $e) {
