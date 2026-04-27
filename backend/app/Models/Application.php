@@ -15,6 +15,7 @@ class Application extends Model
         'property_id',
         'status',
         'message',
+        'rejection_reason',
         'offered_rent',
         'landlord_notes',
         'applied_at',
