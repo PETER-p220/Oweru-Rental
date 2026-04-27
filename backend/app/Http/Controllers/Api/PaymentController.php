@@ -43,7 +43,7 @@ class PaymentController extends Controller
     {
         try {
             $validated = $request->validate([
-                'amount'         => 'required|numeric|min:1000',
+                'amount'         => 'required|numeric|min:100',
                 'phone_number'   => 'required|string|min:10|max:13',
                 'provider'       => 'required|in:TIGO,MPESA,AIRTEL,HALOPESA',
                 'customer_email' => 'required|email',
