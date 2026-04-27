@@ -122,6 +122,7 @@ class PaymentController extends Controller
                 'order_id' => $orderId,
                 'transid'  => $orderId,
                 'msisdn'   => $phone,
+                'provider' => $validated['provider'], // Add provider for USSD routing
             ];
 
             Log::info('Oweru wallet-payment request', [
@@ -166,6 +167,7 @@ class PaymentController extends Controller
                     'transaction_id' => $orderId,
                     'order_id'       => $orderId,
                     'status'         => 'pending',
+                    'provider'       => $validated['provider'], // Include provider for payment record
                 ],
                 'message' => 'Payment request sent to ' . $validated['phone_number'] . '. Please check your phone and approve the prompt.',
             ]);
@@ -263,11 +265,14 @@ class PaymentController extends Controller
                 return;
             }
 
+            // Get provider from original payment metadata or default to TIGO
+            $provider = $payment->metadata['provider'] ?? 'TIGO';
+
             // Process admin payment (30%)
-            $this->initiateSplitPayment($payment, $adminAmount, $adminPhone, 'admin', $baseUrl, $appKey);
+            $this->initiateSplitPayment($payment, $adminAmount, $adminPhone, 'admin', $provider, $baseUrl, $appKey);
 
             // Process recipient payment (70%) - agent or landlord
-            $this->initiateSplitPayment($payment, $recipientAmount, $recipient->phone, $recipientType, $baseUrl, $appKey);
+            $this->initiateSplitPayment($payment, $recipientAmount, $recipient->phone, $recipientType, $provider, $baseUrl, $appKey);
 
             // Mark payment as split
             $payment->update([
@@ -307,6 +312,7 @@ class PaymentController extends Controller
         float $amount,
         string $phoneNumber,
         string $recipientType,
+        string $provider,
         string $baseUrl,
         string $appKey
     ): void {
@@ -346,6 +352,7 @@ class PaymentController extends Controller
                 'order_id' => $splitOrderId,
                 'transid' => $splitOrderId,
                 'msisdn' => $phone,
+                'provider' => $provider, // Add provider for USSD routing
             ];
 
             $payResponse = Http::withHeaders([
