@@ -188,7 +188,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/agent/lead-stats', [AgentController::class, 'getLeadStats']);
 
         // Applications
-        Route::get('/agent/applications', [AgentController::class, 'getApplications']);
+        Route::get('/agent/applications',                      [AgentController::class, 'getApplications']);
+        Route::patch('/agent/applications/{application}/approve', [AgentController::class, 'approveApplication']);
+        Route::patch('/agent/applications/{application}/reject',  [AgentController::class, 'rejectApplication']);
 
         // Commissions
         Route::get('/agent/my-commissions',   [AgentController::class, 'getMyCommissions']);

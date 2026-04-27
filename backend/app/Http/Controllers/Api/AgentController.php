@@ -3,18 +3,25 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Application;
-use App\Models\Commission;
-use App\Models\Lead;
-use App\Models\Message;
-use App\Models\Property;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
+use App\Models\Property;
+use App\Models\Message;
+use App\Models\Application;
+use App\Models\Tenant;
+use App\Models\Contract;
+use App\Models\Notification;
+use App\Models\Commission;
+use App\Models\SavedProperty;
+use App\Models\BnbProperty;
+use App\Models\BnbBooking;
+use App\Models\BnbReview;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Validator;
 
 class AgentController extends Controller
 {
@@ -594,6 +601,131 @@ public function recordShare(Property $property): JsonResponse
                 'total'        => $applications->total(),
             ],
         ]);
+    }
+
+    /**
+     * Approve an application (agent can approve after site visit fee is paid)
+     */
+    public function approveApplication(Request $request, Application $application): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // Verify this application belongs to a property managed by this agent
+        if ($application->property->agent_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Check if site visit fee has been paid
+        if ($application->payment_status !== 'paid') {
+            return response()->json(['message' => 'Site visit fee must be paid before approval'], 422);
+        }
+
+        // Mark the application as approved
+        $application->update(['status' => 'approved']);
+
+        // Guard: skip tenant/contract creation if the tables don't exist yet
+        if (! $this->tenantTablesAvailable()) {
+            return response()->json(['message' => 'Application approved successfully']);
+        }
+
+        // Avoid creating a duplicate tenant for the same user+property
+        $tenant = Tenant::firstOrCreate(
+            [
+                'user_id'     => $application->user_id,
+                'property_id' => $application->property_id,
+            ],
+            [
+                'move_in_date' => now(),
+                'status'       => 'active',
+            ]
+        );
+
+        // Create a contract only if one doesn't already exist for this tenant+property
+        $contractExists = Contract::where('tenant_id', $tenant->id)
+            ->where('property_id', $application->property_id)
+            ->exists();
+
+        if (! $contractExists) {
+            Contract::create([
+                'tenant_id'   => $tenant->id,
+                'property_id' => $application->property_id,
+                'start_date'  => now(),
+                'end_date'    => null,
+                'rent_amount' => $application->property->price,
+                'status'      => 'active',
+                'terms'       => 'Standard rental agreement created from approved application',
+            ]);
+        }
+
+        // Send in-app notification to the tenant (best-effort — skip if table missing)
+        try {
+            Notification::create([
+                'user_id' => $tenant->user_id,
+                'title'   => 'Application Approved!',
+                'message' => "Your application for {$application->property->title} has been approved. You can now proceed with rent payments.",
+                'type'    => 'application_approved',
+            ]);
+        } catch (\Exception $e) {
+            // Notification table might not exist - continue without failing
+            \Log::warning('Failed to create application approval notification', [
+                'error' => $e->getMessage(),
+                'application_id' => $application->id,
+            ]);
+        }
+
+        return response()->json(['message' => 'Application approved successfully']);
+    }
+
+    /**
+     * Reject an application
+     */
+    public function rejectApplication(Request $request, Application $application): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // Verify this application belongs to a property managed by this agent
+        if ($application->property->agent_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $reason = $request->input('reason', 'Application rejected by agent');
+
+        // Mark the application as rejected
+        $application->update([
+            'status' => 'rejected',
+            'rejection_reason' => $reason,
+        ]);
+
+        // Send in-app notification to the tenant (best-effort — skip if table missing)
+        try {
+            Notification::create([
+                'user_id' => $application->user_id,
+                'title'   => 'Application Rejected',
+                'message' => "Your application for {$application->property->title} was rejected. Reason: {$reason}",
+                'type'    => 'application_rejected',
+            ]);
+        } catch (\Exception $e) {
+            // Notification table might not exist - continue without failing
+            \Log::warning('Failed to create application rejection notification', [
+                'error' => $e->getMessage(),
+                'application_id' => $application->id,
+            ]);
+        }
+
+        return response()->json(['message' => 'Application rejected successfully']);
+    }
+
+    /**
+     * Check if tenant-related tables are available
+     */
+    private function tenantTablesAvailable(): bool
+    {
+        try {
+            \Schema::hasTable('tenants') && \Schema::hasTable('contracts');
+        } catch (\Exception $e) {
+            return false;
+        }
+        return true;
     }
 
     public function getMyCommissions(): JsonResponse

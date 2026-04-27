@@ -688,6 +688,13 @@ class Api {
   static async getLeads()                 { return this.request<any[]>('agent/leads'); }
   static async getLeadStats()             { return this.request<any>('agent/lead-stats'); }
   static async getAgentApplications()     { return this.request<any[]>('agent/applications'); }
+  static async approveAgentApplication(id: number) { return this.request(`agent/applications/${id}/approve`, { method: 'PATCH' }); }
+  static async rejectAgentApplication(id: number, reason: string) {
+    return this.request(`agent/applications/${id}/reject`, {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    });
+  }
   static async getMyCommissions()         { return this.request<any[]>('agent/my-commissions'); }
   static async getAgentCommissionStats()  { return this.request<any>('agent/commission-stats'); }
   static async getPayoutHistory()         { return this.request<any[]>('agent/payouts'); }
