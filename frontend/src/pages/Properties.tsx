@@ -5,7 +5,7 @@ import {
   SlidersHorizontal, X, ChevronDown, LayoutGrid, List,
   CreditCard, LogIn, UserPlus, ShieldCheck, CheckCircle2,
   ArrowRight, Loader2, AlertCircle, Info, CheckCheck, Sparkles,
-  Bookmark,
+  Bookmark, ChevronLeft, ChevronRight, Building2, Home, Users,
 } from 'lucide-react';
 import Api from '../services/api';
 import SelcomService from '../services/selcom';
@@ -20,34 +20,33 @@ interface Property {
   owner?: { id?: number; name?: string; first_name?: string; last_name?: string };
   agent?: { id?: number; name?: string; code?: string };
   dalali?: string;
+  owner_id?: number;
+  agent_id?: number;
 }
 
-/* ─── Toast Types ─── */
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 interface Toast { id: string; type: ToastType; title: string; message?: string; duration?: number; }
 
-/* ─── Hooks ─── */
 function useDebounce<T>(value: T, delay: number): T {
   const [d, setD] = useState(value);
   useEffect(() => { const t = setTimeout(() => setD(value), delay); return () => clearTimeout(t); }, [value, delay]);
   return d;
 }
 
-/* ─── Helpers ─── */
 const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
+const ITEMS_PER_PAGE = 12;
 
 const formatPrice = (p: number | null | undefined): string => {
   if (p == null || isNaN(Number(p))) return 'Price on request';
   return new Intl.NumberFormat('en-TZ', {
-    style: 'currency',
-    currency: 'TZS',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    style: 'currency', currency: 'TZS',
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
   }).format(Number(p));
 };
 
 const typeLabel: Record<string, string> = {
-  apartment: 'Apartment', house: 'House', studio: 'Studio', villa: 'Villa', commercial: 'Commercial',
+  apartment: 'Apartment', house: 'House', studio: 'Studio', villa: 'Villa',
+  commercial: 'Commercial', oweru_rental: 'Oweru Rental',
 };
 
 const getImage = (p: Property): string => {
@@ -58,13 +57,38 @@ const getImage = (p: Property): string => {
   return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='24' fill='%236b7280'%3ENo Image%3C/text%3E%3C/svg%3E`;
 };
 
+/* ─── Determine listing source ─── */
+const getListingSource = (p: Property): 'agent' | 'landlord' | 'admin' => {
+  if (p.agent_id) return 'agent';
+  if (p.type === 'oweru_rental') return 'admin';
+  if (p.owner_id) return 'landlord';
+  return 'landlord';
+};
+
+const sourceLabel: Record<string, string> = {
+  agent: 'Agent', landlord: 'Landlord', admin: 'Oweru Rental',
+};
+
+/* ─── Page numbers helper ─── */
+function getPageNumbers(current: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | '...')[] = [1];
+  if (current > 3) pages.push('...');
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push('...');
+  pages.push(total);
+  return pages;
+}
+
 /* ─── CSS ─── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --navy:#1E3A5F;--navy-2:#2D5282;--navy-faint:rgba(30,58,95,.06);--navy-soft:rgba(30,58,95,.12);
-  --gold:#C9A84C;--gold-faint:rgba(37,99,235,.10);
+  --gold:#C9A84C;--gold-faint:rgba(201,168,76,.10);
   --bg:#F8FAFC;--surface:#FFFFFF;--border:#E2E8F0;
   --muted:#64748B;--hint:#94A3B8;--text:#1E293B;
   --success:#059669;--danger:#DC2626;--warning:#D97706;--info:#0284C7;
@@ -78,9 +102,14 @@ const CSS = `
 .ph-eyebrow{font-family:var(--sans);font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
 .ph-eyebrow::before{content:'';width:20px;height:1px;background:var(--gold);}
 .ph-title{font-family:var(--serif);font-size:clamp(28px,4vw,48px);font-weight:300;line-height:1.08;letter-spacing:-.02em;color:#fff;}
-.ph-title em{font-style:italic;color:rgba(37,99,235,.9);}
+.ph-title em{font-style:italic;color:rgba(201,168,76,.9);}
 .ph-meta{font-family:var(--sans);font-size:13px;font-weight:300;color:rgba(255,255,255,.5);text-align:right;}
 .ph-meta strong{color:var(--gold);font-weight:400;}
+.ph-source-pills{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.ph-pill{font-family:var(--sans);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:20px;}
+.ph-pill-agent{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3);}
+.ph-pill-landlord{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);}
+.ph-pill-admin{background:rgba(93,202,165,.15);color:#5dcaa5;border:1px solid rgba(93,202,165,.3);}
 
 /* ── Search Bar ── */
 .sb{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;box-shadow:0 1px 8px rgba(0,0,0,.06);}
@@ -92,8 +121,17 @@ const CSS = `
 .sb-input::placeholder{color:var(--hint);}
 .sb-clear{background:none;border:none;color:var(--hint);cursor:pointer;padding:0 10px;display:flex;align-items:center;transition:color .15s;}
 .sb-clear:hover{color:var(--text);}
-.sb-select{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);padding:9px 12px;font-family:var(--sans);font-size:13px;outline:none;cursor:pointer;appearance:none;transition:border-color .18s;min-width:130px;}
+.sb-select{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);padding:9px 12px;font-family:var(--sans);font-size:13px;outline:none;cursor:pointer;transition:border-color .18s;min-width:130px;}
 .sb-select:focus{border-color:var(--navy);color:var(--text);}
+
+/* ── Source Filter Tabs ── */
+.source-tabs{display:flex;gap:4px;flex-shrink:0;}
+.source-tab{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--r-sm);font-family:var(--sans);font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .18s;}
+.source-tab:hover:not(.active){border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
+.source-tab.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+.source-tab.active-agent{background:var(--gold);border-color:var(--gold);color:#1a1000;}
+.source-tab.active-admin{background:#0f6e56;border-color:#0f6e56;color:#fff;}
+
 .sb-filter-btn{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);padding:9px 14px;font-family:var(--sans);font-size:13px;cursor:pointer;white-space:nowrap;transition:all .18s;}
 .sb-filter-btn:hover,.sb-filter-btn.active{border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
 .sb-filter-count{background:var(--navy);color:#fff;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;}
@@ -111,7 +149,7 @@ const CSS = `
 .adv-clear:hover{color:var(--danger);border-color:var(--danger);}
 
 /* ── Body / Grid ── */
-.pr-body{max-width:1280px;margin:0 auto;padding:36px 40px 80px;}
+.pr-body{max-width:1280px;margin:0 auto;padding:36px 40px 48px;}
 .pr-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;}
 .pr-grid.list{grid-template-columns:minmax(0,1fr);}
 
@@ -125,11 +163,15 @@ const CSS = `
 .pc:hover .pc-img{transform:scale(1.04);}
 .pc-img-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(15,25,50,.55) 0%,transparent 55%);}
 .pc-badge-featured{position:absolute;top:12px;left:12px;background:var(--gold);color:#1a1000;font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;border-radius:4px;}
-.pc-badge-type{position:absolute;bottom:12px;left:12px;background:rgba(30,58,95,.85);color:rgba(37,99,235,.95);font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;border-radius:4px;backdrop-filter:blur(6px);}
+.pc-badge-type{position:absolute;bottom:12px;left:12px;background:rgba(30,58,95,.85);color:rgba(255,255,255,.95);font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;border-radius:4px;backdrop-filter:blur(6px);}
+.pc-badge-source{position:absolute;top:12px;right:12px;font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:4px;}
+.pc-badge-source.agent{background:rgba(201,168,76,.9);color:#1a1000;}
+.pc-badge-source.landlord{background:rgba(30,58,95,.85);color:#fff;backdrop-filter:blur(6px);}
+.pc-badge-source.admin{background:rgba(15,110,86,.9);color:#fff;}
 .pc-price-overlay{position:absolute;bottom:12px;right:12px;text-align:right;}
 .pc-price-main{font-family:var(--serif);font-size:18px;font-weight:300;color:#fff;letter-spacing:-.01em;}
 .pc-price-period{font-family:var(--sans);font-size:10px;color:rgba(255,255,255,.55);}
-.pc-img-actions{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;opacity:0;transition:opacity .22s;}
+.pc-img-actions{position:absolute;top:12px;right:50px;display:flex;flex-direction:column;gap:4px;opacity:0;transition:opacity .22s;}
 .pc:hover .pc-img-actions{opacity:1;}
 .pc-img-btn{width:30px;height:30px;background:rgba(255,255,255,.92);border:none;border-radius:6px;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
 .pc-img-btn:hover{color:var(--navy);background:#fff;}
@@ -143,34 +185,10 @@ const CSS = `
 .pc-spec-div{width:1px;height:12px;background:var(--border);}
 .pc-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
 .pc-foot-actions{display:flex;align-items:center;gap:6px;}
-
-/* ── Save Button ── */
-.pc-save-btn{
-  height:30px;
-  border-radius:6px;
-  border:1px solid var(--border);
-  background:var(--bg);
-  color:var(--muted);
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:5px;
-  cursor:pointer;
-  transition:all .18s;
-  padding:0 10px;
-  font-family:var(--sans);
-  font-size:12px;
-  font-weight:500;
-  white-space:nowrap;
-}
+.pc-save-btn{height:30px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all .18s;padding:0 10px;font-family:var(--sans);font-size:12px;font-weight:500;white-space:nowrap;}
 .pc-save-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
-.pc-save-btn.saved{
-  color:#fff;
-  border-color:var(--navy);
-  background:var(--navy);
-}
+.pc-save-btn.saved{color:#fff;border-color:var(--navy);background:var(--navy);}
 .pc-save-btn.saved:hover{background:var(--navy-2);border-color:var(--navy-2);}
-
 .pc-foot-btn{height:30px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;padding:0 8px;}
 .pc-foot-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
 .pc-foot-btn.apply{background:var(--navy);border-color:var(--navy);color:#fff;padding:0 14px;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.02em;}
@@ -191,10 +209,25 @@ const CSS = `
 .pr-empty-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
 .err-banner{background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.2);border-radius:var(--r-sm);padding:12px 16px;margin-bottom:24px;font-family:var(--sans);font-size:13px;color:var(--danger);display:flex;align-items:center;justify-content:space-between;}
 .err-retry{background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;font-family:var(--sans);text-decoration:underline;}
-.load-more{display:flex;align-items:center;justify-content:center;margin-top:36px;}
-.load-more-btn{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);padding:11px 28px;font-family:var(--sans);font-size:13px;cursor:pointer;transition:all .18s;}
-.load-more-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
-.load-more-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ── Pagination ── */
+.pag-wrap{margin-top:40px;display:flex;flex-direction:column;align-items:center;gap:16px;}
+.pag-controls{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center;}
+.pag-btn{width:38px;height:38px;border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;}
+.pag-btn:hover:not(:disabled):not(.active){border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
+.pag-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+.pag-btn:disabled{opacity:.35;cursor:not-allowed;}
+.pag-btn.dots{cursor:default;border-color:transparent;background:transparent;font-size:16px;}
+.pag-nav{display:flex;align-items:center;gap:6px;padding:0 16px;height:38px;border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .18s;white-space:nowrap;}
+.pag-nav:hover:not(:disabled){border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
+.pag-nav:disabled{opacity:.35;cursor:not-allowed;}
+.pag-info{font-family:var(--sans);font-size:13px;color:var(--hint);}
+.pag-info strong{color:var(--text);font-weight:500;}
+.pag-jump{display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:13px;color:var(--hint);}
+.pag-jump-input{width:56px;height:36px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;text-align:center;outline:none;font-family:var(--sans);}
+.pag-jump-input:focus{border-color:var(--navy);}
+.pag-jump-btn{height:36px;padding:0 14px;border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .18s;}
+.pag-jump-btn:hover{border-color:var(--navy);color:var(--navy);}
 
 /* ── Toast System ── */
 .toast-portal{position:fixed;top:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;}
@@ -230,8 +263,7 @@ const CSS = `
 @keyframes mFade{from{opacity:0}to{opacity:1}}
 .m-box{background:var(--surface);border-radius:20px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 40px 80px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.08);animation:mSlide .32s cubic-bezier(.16,1,.3,1);}
 @keyframes mSlide{from{transform:translateY(24px) scale(.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
-.m-head-navy{background:linear-gradient(135deg,var(--navy) 0%,#0f2744 100%);padding:24px 24px 20px;border-radius:20px 20px 0 0;position:relative;border-bottom:1px solid rgba(37,99,235,.15);}
-.m-head-navy::after{content:'';position:absolute;inset:0;border-radius:20px 20px 0 0;background:radial-gradient(ellipse at top right,rgba(37,99,235,.08) 0%,transparent 60%);pointer-events:none;}
+.m-head-navy{background:linear-gradient(135deg,var(--navy) 0%,#0f2744 100%);padding:24px 24px 20px;border-radius:20px 20px 0 0;position:relative;border-bottom:1px solid rgba(201,168,76,.15);}
 .m-head-title{font-family:var(--serif);font-size:22px;font-weight:300;color:#fff;margin-bottom:3px;letter-spacing:-.01em;}
 .m-head-sub{font-family:var(--sans);font-size:12px;color:rgba(255,255,255,.45);}
 .m-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.65);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s;z-index:1;}
@@ -248,17 +280,13 @@ const CSS = `
 
 /* ── Auth Modal ── */
 .auth-hero{background:linear-gradient(135deg,var(--navy) 0%,#0f2744 100%);border-radius:20px 20px 0 0;padding:34px 28px 28px;text-align:center;position:relative;overflow:hidden;}
-.auth-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(37,99,235,.08);pointer-events:none;}
-.auth-hero::after{content:'';position:absolute;bottom:-30px;left:-30px;width:120px;height:120px;border-radius:50%;background:rgba(37,99,235,.05);pointer-events:none;}
-.auth-hero-icon{width:58px;height:58px;border-radius:17px;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.28);display:flex;align-items:center;justify-content:center;color:var(--gold);margin:0 auto 18px;position:relative;z-index:1;box-shadow:0 8px 20px rgba(0,0,0,.2);}
+.auth-hero-icon{width:58px;height:58px;border-radius:17px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.28);display:flex;align-items:center;justify-content:center;color:var(--gold);margin:0 auto 18px;position:relative;z-index:1;}
 .auth-hero-title{font-family:var(--serif);font-size:23px;font-weight:300;color:#fff;margin-bottom:7px;position:relative;z-index:1;}
 .auth-hero-desc{font-family:var(--sans);font-size:13px;color:rgba(255,255,255,.5);line-height:1.55;position:relative;z-index:1;max-width:300px;margin:0 auto;}
 .auth-prop-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);border-radius:9px;padding:9px 15px;margin-top:16px;font-family:var(--sans);font-size:12px;color:rgba(255,255,255,.55);position:relative;z-index:1;}
 .auth-prop-pill strong{color:#fff;font-weight:500;}
 .auth-opt{display:flex;align-items:center;gap:14px;padding:15px 16px;border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all .22s;margin-bottom:10px;background:var(--surface);position:relative;overflow:hidden;}
-.auth-opt::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--navy-faint),transparent);opacity:0;transition:opacity .22s;}
 .auth-opt:hover{border-color:var(--navy);transform:translateX(4px);box-shadow:0 4px 16px rgba(30,58,95,.08);}
-.auth-opt:hover::before{opacity:1;}
 .auth-opt:last-child{margin-bottom:0;}
 .auth-opt-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .auth-opt-icon.login{background:var(--navy-faint);color:var(--navy);}
@@ -269,8 +297,7 @@ const CSS = `
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
 
 /* ── Prop Info Card ── */
-.prop-info{background:linear-gradient(135deg,var(--bg) 0%,#EFF4FF 100%);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;position:relative;overflow:hidden;}
-.prop-info::after{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;background:rgba(30,58,95,.04);pointer-events:none;}
+.prop-info{background:linear-gradient(135deg,var(--bg) 0%,#EFF4FF 100%);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;}
 .prop-info-name{font-family:var(--serif);font-size:17px;font-weight:400;color:var(--navy);margin-bottom:12px;line-height:1.3;}
 .prop-info-row{display:flex;align-items:center;gap:7px;font-family:var(--sans);font-size:12px;color:var(--muted);margin-bottom:6px;}
 .prop-info-row:last-child{margin-bottom:0;}
@@ -278,17 +305,11 @@ const CSS = `
 
 /* ── Fee Block ── */
 .fee-block{background:linear-gradient(135deg,var(--navy) 0%,#0f2744 100%);border-radius:12px;padding:22px;margin:18px 0;text-align:center;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(30,58,95,.2);}
-.fee-block::before{content:'';position:absolute;top:-30px;right:-30px;width:110px;height:110px;border-radius:50%;background:rgba(37,99,235,.1);}
-.fee-block::after{content:'';position:absolute;bottom:-20px;left:-20px;width:70px;height:70px;border-radius:50%;background:rgba(37,99,235,.06);}
 .fee-amount{font-family:var(--serif);font-size:30px;font-weight:300;color:#fff;letter-spacing:-.02em;margin-bottom:5px;position:relative;z-index:1;}
 .fee-label{font-family:var(--sans);font-size:11px;color:rgba(255,255,255,.45);position:relative;z-index:1;}
 
 /* ── Payment ── */
 .pay-method{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid var(--navy);border-radius:10px;background:var(--navy-faint);margin-bottom:14px;}
-.pay-method-icon{width:42px;height:42px;border-radius:10px;background:var(--navy-faint);border:1px solid var(--navy-soft);display:flex;align-items:center;justify-content:center;color:var(--navy);}
-.pay-method-name{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text);}
-.pay-method-sub{font-family:var(--sans);font-size:11px;color:var(--hint);}
-.pay-badge{margin-left:auto;background:var(--navy);color:#fff;font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:4px;}
 .pay-secure{display:flex;align-items:center;gap:8px;background:rgba(5,150,105,.05);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:10px 13px;font-family:var(--sans);font-size:12px;color:var(--success);}
 .pay-input{width:100%;padding:12px 15px;border:1px solid var(--border);border-radius:9px;font-size:13px;font-family:var(--sans);background:#fff;outline:none;transition:border-color .18s,box-shadow .18s;color:var(--text);margin-bottom:16px;}
 .pay-input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(30,58,95,.07);}
@@ -297,9 +318,7 @@ const CSS = `
 
 /* ── Success ── */
 .succ-hero{background:linear-gradient(135deg,#064e3b 0%,#065f46 100%);border-radius:20px 20px 0 0;padding:34px 28px 26px;text-align:center;position:relative;overflow:hidden;}
-.succ-hero::before{content:'';position:absolute;top:-30px;right:-30px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.05);}
-.succ-hero::after{content:'';position:absolute;bottom:-20px;left:-20px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.04);}
-.succ-icon{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;color:#fff;margin:0 auto 18px;position:relative;z-index:1;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:succ-pop .5s .1s cubic-bezier(.16,1,.3,1) both;}
+.succ-icon{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;color:#fff;margin:0 auto 18px;position:relative;z-index:1;animation:succ-pop .5s .1s cubic-bezier(.16,1,.3,1) both;}
 @keyframes succ-pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 .succ-title{font-family:var(--serif);font-size:23px;font-weight:300;color:#fff;margin-bottom:7px;position:relative;z-index:1;}
 .succ-sub{font-family:var(--sans);font-size:13px;color:rgba(255,255,255,.55);line-height:1.55;position:relative;z-index:1;max-width:300px;margin:0 auto;}
@@ -307,27 +326,6 @@ const CSS = `
 .succ-step{display:flex;align-items:center;gap:12px;font-family:var(--sans);font-size:13px;color:var(--text);padding:11px 0;border-bottom:1px solid var(--border);}
 .succ-step:last-child{border-bottom:none;}
 .succ-step-icon{width:28px;height:28px;border-radius:8px;background:rgba(5,150,105,.1);color:var(--success);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-
-/* ── Confirm Dialog ── */
-.confirm-overlay{position:fixed;inset:0;z-index:9998;background:rgba(10,18,35,.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;animation:mFade .2s ease;}
-.confirm-box{background:#fff;border-radius:18px;max-width:380px;width:100%;box-shadow:0 30px 70px rgba(0,0,0,.22),0 0 0 1px rgba(0,0,0,.05);animation:mSlide .3s cubic-bezier(.16,1,.3,1);overflow:hidden;}
-.confirm-icon-wrap{padding:30px 28px 18px;text-align:center;}
-.confirm-icon{width:56px;height:56px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;}
-.confirm-icon.error{background:rgba(220,38,38,.1);color:var(--danger);}
-.confirm-icon.warning{background:rgba(217,119,6,.1);color:var(--warning);}
-.confirm-icon.info{background:rgba(2,132,199,.1);color:var(--info);}
-.confirm-icon.success{background:rgba(5,150,105,.1);color:var(--success);}
-.confirm-title{font-family:var(--serif);font-size:20px;font-weight:400;color:var(--text);margin-bottom:8px;}
-.confirm-msg{font-family:var(--sans);font-size:13px;color:var(--hint);line-height:1.6;max-width:280px;margin:0 auto;}
-.confirm-actions{padding:16px 22px 22px;display:flex;gap:10px;}
-.confirm-btn{flex:1;padding:12px 16px;border-radius:10px;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--muted);transition:all .18s;text-align:center;}
-.confirm-btn:hover{border-color:var(--hint);color:var(--text);}
-.confirm-btn.primary{background:var(--danger);border-color:var(--danger);color:#fff;}
-.confirm-btn.primary:hover{background:#b91c1c;border-color:#b91c1c;box-shadow:0 4px 14px rgba(220,38,38,.3);}
-.confirm-btn.primary.warning{background:var(--warning);border-color:var(--warning);}
-.confirm-btn.primary.warning:hover{background:#b45309;border-color:#b45309;}
-.confirm-btn.primary.info{background:var(--info);border-color:var(--info);}
-.confirm-btn.primary.info:hover{background:#0369a1;border-color:#0369a1;}
 
 /* ── Provider Tabs ── */
 .provider-btn{flex:1;padding:11px 8px;border-radius:10px;font-family:var(--sans);font-size:12px;font-weight:500;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .2s;text-align:center;}
@@ -343,16 +341,16 @@ const CSS = `
 /* ── Responsive ── */
 @media(max-width:1100px){.pr-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:768px){
-  .ph-inner,.sb-inner,.pr-body{padding-left:16px;padding-right:16px;}
+  .ph-inner,.sb-inner,.pr-body,.adv-inner{padding-left:16px;padding-right:16px;}
   .pr-grid{grid-template-columns:minmax(0,1fr);}
   .pr-grid.list .pc{flex-direction:column;}
   .pr-grid.list .pc-img-wrap{width:100%;aspect-ratio:4/3;}
   .adv.open{max-height:130px;}
-  .adv-inner{padding:12px 16px 16px;}
   .sb-view-btns{display:none;}
   .m-box{border-radius:16px;}
   .toast-portal{top:16px;right:16px;left:16px;}
   .toast{min-width:0;width:100%;}
+  .pag-jump{display:none;}
 }
 `;
 
@@ -368,17 +366,14 @@ const ToastIcon = ({ type }: { type: ToastType }) => {
 const ToastItem = ({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) => {
   const [removing, setRemoving] = useState(false);
   const dur = toast.duration ?? 5000;
-
   const dismiss = useCallback(() => {
     setRemoving(true);
     setTimeout(() => onRemove(toast.id), 280);
   }, [toast.id, onRemove]);
-
   useEffect(() => {
     const t = setTimeout(dismiss, dur);
     return () => clearTimeout(t);
   }, [dur, dismiss]);
-
   return (
     <div className={`toast ${toast.type}${removing ? ' removing' : ''}`}>
       <div className="toast-icon-wrap"><ToastIcon type={toast.type} /></div>
@@ -400,37 +395,6 @@ const ToastPortal = ({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: str
   </div>
 );
 
-/* ─── Confirm Dialog ─── */
-interface ConfirmConfig {
-  type?: 'error' | 'warning' | 'info' | 'success';
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-}
-const ConfirmDialog = ({ config, onConfirm, onCancel }: {
-  config: ConfirmConfig; onConfirm: () => void; onCancel: () => void;
-}) => {
-  const type = config.type ?? 'warning';
-  const ConfirmIcon = type === 'error' ? AlertCircle : type === 'info' ? Info : type === 'success' ? CheckCircle2 : AlertCircle;
-  return (
-    <div className="confirm-overlay" onClick={onCancel}>
-      <div className="confirm-box" onClick={e => e.stopPropagation()}>
-        <div className="confirm-icon-wrap">
-          <div className={`confirm-icon ${type}`}><ConfirmIcon size={24} /></div>
-          <div className="confirm-title">{config.title}</div>
-          <div className="confirm-msg">{config.message}</div>
-        </div>
-        <div className="confirm-actions">
-          <button className="confirm-btn" onClick={onCancel}>{config.cancelLabel ?? 'Cancel'}</button>
-          <button className={`confirm-btn primary ${type}`} onClick={onConfirm}>{config.confirmLabel ?? 'Confirm'}</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ─── useToast hook ─── */
 function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const addToast = useCallback((t: Omit<Toast, 'id'>) => {
@@ -441,19 +405,6 @@ function useToast() {
     setToasts(p => p.filter(t => t.id !== id));
   }, []);
   return { toasts, addToast, removeToast };
-}
-
-/* ─── useConfirm hook ─── */
-function useConfirm() {
-  const [config, setConfig] = useState<ConfirmConfig | null>(null);
-  const resolveRef = useRef<((v: boolean) => void) | null>(null);
-  const confirm = useCallback((cfg: ConfirmConfig): Promise<boolean> => {
-    setConfig(cfg);
-    return new Promise(res => { resolveRef.current = res; });
-  }, []);
-  const handleConfirm = () => { setConfig(null); resolveRef.current?.(true); };
-  const handleCancel  = () => { setConfig(null); resolveRef.current?.(false); };
-  return { config, confirm, handleConfirm, handleCancel };
 }
 
 /* ─── Skeleton ─── */
@@ -479,20 +430,33 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
 }) => {
   const loc  = property.location || property.address;
   const size = property.size ?? property.area;
+  const source = getListingSource(property);
+
   return (
     <Link to={`/property/${property.id}`} className="pc">
       <div className="pc-img-wrap">
         <img src={getImage(property)} alt={property.title} className="pc-img" />
         <div className="pc-img-overlay" />
         {property.featured && <div className="pc-badge-featured">Featured</div>}
-        {property.type && <div className="pc-badge-type">{typeLabel[property.type] ?? property.type}</div>}
+        {property.type && (
+          <div className="pc-badge-type">{typeLabel[property.type] ?? property.type}</div>
+        )}
+        {/* Source badge — top right */}
+        <span className={`pc-badge-source ${source}`}>{sourceLabel[source]}</span>
+
         <div className="pc-price-overlay">
           <div className="pc-price-main">{formatPrice(property.price)}</div>
           <div className="pc-price-period">/month</div>
         </div>
-        {/* Share button on hover — top right of image */}
         <div className="pc-img-actions">
-          <button className="pc-img-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/property/${property.id}`); }} title="Copy link">
+          <button
+            className="pc-img-btn"
+            onClick={e => {
+              e.preventDefault(); e.stopPropagation();
+              navigator.clipboard.writeText(`${window.location.origin}/property/${property.id}`);
+            }}
+            title="Copy link"
+          >
             <Share2 size={14} />
           </button>
         </div>
@@ -502,14 +466,17 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
         <div className="pc-title">{property.title || 'Untitled Property'}</div>
         {property.description && <div className="pc-desc">{property.description}</div>}
         <div className="pc-specs">
-          {property.bedrooms != null && (<><div className="pc-spec"><Bed size={13} />{property.bedrooms} bed{property.bedrooms !== 1 ? 's' : ''}</div><div className="pc-spec-div" /></>)}
-          {property.bathrooms != null && (<><div className="pc-spec"><Bath size={13} />{property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}</div>{size != null && <div className="pc-spec-div" />}</>)}
+          {property.bedrooms != null && (
+            <><div className="pc-spec"><Bed size={13} />{property.bedrooms} bed{property.bedrooms !== 1 ? 's' : ''}</div><div className="pc-spec-div" /></>
+          )}
+          {property.bathrooms != null && (
+            <><div className="pc-spec"><Bath size={13} />{property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}</div>{size != null && <div className="pc-spec-div" />}</>
+          )}
           {size != null && <div className="pc-spec"><Square size={13} />{size} m²</div>}
         </div>
         <div className="pc-footer">
           <div>{property.furnished && <span className="pc-tag">Furnished</span>}</div>
           <div className="pc-foot-actions">
-            {/* ── Save Button ── */}
             <button
               className={`pc-save-btn${isSaved ? ' saved' : ''}`}
               onClick={onSave}
@@ -533,7 +500,7 @@ const Overlay = ({ onClose, children }: { onClose: () => void; children: React.R
   </div>
 );
 
-/* ─── 1. Auth Gate Modal ─── */
+/* ─── Auth Modal ─── */
 const AuthModal = ({ property, onClose, onLogin, onSignup }: {
   property: Property; onClose: () => void; onLogin: () => void; onSignup: () => void;
 }) => (
@@ -571,7 +538,7 @@ const AuthModal = ({ property, onClose, onLogin, onSignup }: {
   </Overlay>
 );
 
-/* ─── 2. Apply Confirm Modal ─── */
+/* ─── Apply Modal ─── */
 const ApplyModal = ({ property, onClose, onProceed }: {
   property: Property; onClose: () => void; onProceed: () => void;
 }) => (
@@ -606,7 +573,7 @@ const ApplyModal = ({ property, onClose, onProceed }: {
   </Overlay>
 );
 
-/* ─── 3. Payment Modal ─── */
+/* ─── Payment Modal ─── */
 const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber, paymentMethod, setPaymentMethod }: {
   processing: boolean; onClose: () => void; onPay: () => void;
   phoneNumber: string; setPhoneNumber: (value: string) => void;
@@ -629,8 +596,6 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
           { value: 'tigo',   label: 'Tigo Pesa' },
           { value: 'mpesa',  label: 'M-Pesa' },
           { value: 'airtel', label: 'Airtel Money' },
-          // Halotel temporarily disabled - Selcom API returns 406 error
-          // { value: 'halotel', label: 'Halotel Money' },
         ] as { value: 'tigo' | 'mpesa' | 'airtel'; label: string }[]).map(p => (
           <button
             key={p.value}
@@ -666,18 +631,18 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
   </Overlay>
 );
 
-/* ─── 4. Success Modal ─── */
+/* ─── Success Modal ─── */
 const SuccessModal = ({ onClose }: { onClose: () => void }) => (
   <Overlay onClose={onClose}>
     <div className="succ-hero">
       <div className="succ-icon"><CheckCircle2 size={28} /></div>
       <div className="succ-title">Site Visit Booked!</div>
-      <div className="succ-sub">Payment confirmed. The agent has been notified and will contact you shortly to schedule the visit.</div>
+      <div className="succ-sub">Payment confirmed. The agent has been notified and will contact you shortly.</div>
     </div>
     <div className="m-body" style={{ paddingTop: 20 }}>
       <div className="succ-steps-wrap">
         {[
-          { label: 'Site visit fee received & confirmed',     icon: <CheckCheck size={14} /> },
+          { label: 'Site visit fee received & confirmed',      icon: <CheckCheck size={14} /> },
           { label: 'Agent notified instantly via SMS & email', icon: <Sparkles size={14} /> },
           { label: 'Expect a call or message within 24 hours', icon: <CheckCircle2 size={14} /> },
         ].map((s, i) => (
@@ -698,6 +663,7 @@ const SuccessModal = ({ onClose }: { onClose: () => void }) => (
 
 /* ─── Main ─── */
 type ModalStep = 'none' | 'auth' | 'apply' | 'payment' | 'success';
+type SourceFilter = 'all' | 'agent' | 'landlord' | 'admin';
 
 const Properties = () => {
   const navigate = useNavigate();
@@ -706,9 +672,9 @@ const Properties = () => {
   const [priceRange,    setPriceRange]   = useState('');
   const [bedrooms,      setBedrooms]     = useState<number | undefined>();
   const [furnished,     setFurnished]    = useState<boolean | undefined>();
-  const [page,          setPage]         = useState(1);
+  const [sourceFilter,  setSourceFilter] = useState<SourceFilter>('all');
+  const [currentPage,   setCurrentPage]  = useState(1);
   const [loading,       setLoading]      = useState(true);
-  const [loadingMore,   setLoadingMore]  = useState(false);
   const [error,         setError]        = useState('');
   const [savedIds,      setSavedIds]     = useState(new Set<number>());
   const [applications,  setApplications] = useState<any[]>([]);
@@ -721,14 +687,13 @@ const Properties = () => {
   const [paying,        setPaying]       = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
   const [phoneNumber,   setPhoneNumber]   = useState('');
+  const jumpRef = useRef<HTMLInputElement>(null);
 
   const { toasts, addToast, removeToast } = useToast();
-  const { config: confirmConfig, confirm, handleConfirm, handleCancel } = useConfirm();
-  void confirm;
-
   const debouncedSearch = useDebounce(searchTerm, 400);
 
-  useEffect(() => { setPage(1); }, [debouncedSearch, selectedType, priceRange, bedrooms, furnished]);
+  /* Reset to page 1 whenever filters change */
+  useEffect(() => { setCurrentPage(1); }, [debouncedSearch, selectedType, priceRange, bedrooms, furnished, sourceFilter]);
 
   useEffect(() => {
     (async () => {
@@ -750,7 +715,7 @@ const Properties = () => {
   }, [navigate]);
 
   const buildParams = useCallback((pageNum: number) => {
-    const p: Record<string, string> = { page: pageNum.toString() };
+    const p: Record<string, string> = { page: pageNum.toString(), per_page: ITEMS_PER_PAGE.toString() };
     if (debouncedSearch) p.search = debouncedSearch;
     if (selectedType)    p.type   = selectedType;
     if (priceRange === '0-500')    { p.min_price = '0';       p.max_price = '500000'; }
@@ -758,32 +723,52 @@ const Properties = () => {
     if (priceRange === '1000+')    { p.min_price = '1000000'; }
     if (bedrooms)          p.bedrooms  = bedrooms.toString();
     if (furnished != null) p.furnished = furnished ? 'true' : 'false';
+    /* Source filter — tell the backend which bucket we want */
+    if (sourceFilter === 'agent')    p.has_agent    = 'true';
+    if (sourceFilter === 'landlord') p.no_agent     = 'true';
+    if (sourceFilter === 'admin')    p.type         = 'oweru_rental';
     return p;
-  }, [debouncedSearch, selectedType, priceRange, bedrooms, furnished]);
+  }, [debouncedSearch, selectedType, priceRange, bedrooms, furnished, sourceFilter]);
 
   const loadProperties = useCallback(async (pageNum: number) => {
     try {
-      pageNum === 1 ? setLoading(true) : setLoadingMore(true);
+      setLoading(true);
       setError('');
       const res   = await Api.getProperties(buildParams(pageNum));
       const items: Property[] = res.data?.data ?? res.data ?? [];
       const pag: Pagination | null = res.data?.pagination ?? null;
-      setProperties(prev => pageNum === 1 ? items : [...prev, ...items]);
+      setProperties(items);   // always replace — pagination handles pages
       setPagination(pag);
     } catch {
       setError('Failed to load properties. Please try again.');
-      if (pageNum === 1) setProperties([]);
+      setProperties([]);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   }, [buildParams]);
 
-  useEffect(() => { loadProperties(page); }, [page, loadProperties]);
+  useEffect(() => { loadProperties(currentPage); }, [currentPage, loadProperties]);
 
+  /* ── Page helpers ── */
+  const totalPages = pagination ? pagination.last_page : 1;
+  const pageStart  = pagination ? (pagination.current_page - 1) * pagination.per_page + 1 : 0;
+  const pageEnd    = pagination ? Math.min(pagination.current_page * pagination.per_page, pagination.total) : 0;
+
+  const goToPage = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleJump = () => {
+    const val = parseInt(jumpRef.current?.value ?? '');
+    if (!isNaN(val)) goToPage(val);
+  };
+
+  /* ── Save / Apply ── */
   const toggleSave = async (id: number, e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation(); 
-    try {                                
+    e.preventDefault(); e.stopPropagation();
+    try {
       if (savedIds.has(id)) {
         await Api.unsaveProperty(id);
         setSavedIds(p => { const s = new Set(p); s.delete(id); return s; });
@@ -798,7 +783,7 @@ const Properties = () => {
         }
       }
     } catch (err: any) {
-      addToast({ type: 'error', title: 'Action failed', message: err?.message || 'Could not update saved properties. Please try again.' });
+      addToast({ type: 'error', title: 'Action failed', message: err?.message || 'Could not update saved properties.' });
     }
   };
 
@@ -839,23 +824,12 @@ const Properties = () => {
         customer_email: user?.email,
         customer_name: user?.first_name && user?.last_name
           ? `${user.first_name} ${user.last_name}` : user?.first_name || 'Customer',
-        payment_type: 'site_visit' // Add payment type for site visit
+        payment_type: 'site_visit',
       };
-      let paymentSuccessful = false;
-      let transactionId: string | null = null;
-      try {
-        const paymentResponse = await SelcomService.initiateMobileMoneyPayment(paymentData);
-        if (paymentResponse.success && paymentResponse.data?.transaction_id) {
-          paymentSuccessful = true;
-          transactionId = paymentResponse.data.transaction_id;
-          addToast({ type: 'success', title: 'Payment initiated', message: `Check your ${paymentMethod.toUpperCase()} prompt to complete the payment. Ref: ${transactionId}`, duration: 8000 });
-        } else {
-          throw new Error(paymentResponse.message || 'Payment initiation failed');
-        }
-      } catch (selcomError: any) {
-        throw new Error(selcomError?.message || 'Payment failed. Please check your phone number and try again.');
-      }
-      if (paymentSuccessful) {
+      const paymentResponse = await SelcomService.initiateMobileMoneyPayment(paymentData);
+      if (paymentResponse.success && paymentResponse.data?.transaction_id) {
+        const transactionId = paymentResponse.data.transaction_id;
+        addToast({ type: 'success', title: 'Payment initiated', message: `Check your ${paymentMethod.toUpperCase()} prompt. Ref: ${transactionId}`, duration: 8000 });
         await Api.createApplication({ property_id: selProp.id, owner_id: selProp.owner?.id, service_fee: 20000, payment_status: 'paid', payment_method: paymentMethod, transaction_id: transactionId });
         try {
           await Api.createContract({ property_id: selProp.id, owner_id: selProp.owner?.id, tenant_id: tenantId, start_date: new Date().toISOString().split('T')[0], end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], rent_amount: selProp.price, status: 'pending_signature', payment_status: 'service_fee_paid', service_fee_transaction_id: transactionId });
@@ -863,9 +837,11 @@ const Properties = () => {
         if (selProp.agent?.id) {
           try {
             await Api.notifyAgent({ agent_id: selProp.agent.id, property_id: selProp.id, tenant_id: tenantId, message: `Tenant paid service fee via ${paymentMethod.toUpperCase()} for: ${selProp.title}` });
-          } catch (notifyError) { console.warn('Agent notification failed:', notifyError); }
+          } catch { /* silent */ }
         }
         setModal('success');
+      } else {
+        throw new Error(paymentResponse.message || 'Payment initiation failed');
       }
     } catch (err: any) {
       addToast({ type: 'error', title: 'Payment failed', message: err?.message || 'Something went wrong. Please try again.', duration: 7000 });
@@ -878,32 +854,48 @@ const Properties = () => {
 
   const clearFilters = () => {
     setSearchTerm(''); setSelectedType(''); setPriceRange('');
-    setBedrooms(undefined); setFurnished(undefined);
+    setBedrooms(undefined); setFurnished(undefined); setSourceFilter('all');
   };
 
-  const activeFilterCount = [selectedType, priceRange, bedrooms, furnished].filter(v => v != null && v !== '').length;
-  const hasMore = pagination ? pagination.current_page < pagination.last_page : false;
+  const activeFilterCount = [selectedType, priceRange, bedrooms, furnished].filter(v => v != null && v !== '').length
+    + (sourceFilter !== 'all' ? 1 : 0);
+
+  const sourceTabs: { key: SourceFilter; label: string; icon: React.ReactNode }[] = [
+    { key: 'all',      label: 'All listings', icon: <List size={13} /> },
+    { key: 'agent',    label: 'Agent',        icon: <Users size={13} /> },
+    { key: 'landlord', label: 'Landlord',     icon: <Home size={13} /> },
+    { key: 'admin',    label: 'Oweru Rental', icon: <Building2 size={13} /> },
+  ];
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#F8FAFC', minHeight: '100vh' }}>
       <style>{CSS}</style>
       <ToastPortal toasts={toasts} onRemove={removeToast} />
-      {confirmConfig && <ConfirmDialog config={confirmConfig} onConfirm={handleConfirm} onCancel={handleCancel} />}
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="ph">
         <div className="ph-inner">
           <div>
             <div className="ph-eyebrow">Browse listings</div>
             <h1 className="ph-title">Available<br /><em>Properties</em></h1>
+            <div className="ph-source-pills">
+              <span className="ph-pill ph-pill-agent">Agent listings</span>
+              <span className="ph-pill ph-pill-landlord">Landlord listings</span>
+              <span className="ph-pill ph-pill-admin">Oweru Rentals</span>
+            </div>
           </div>
           <div className="ph-meta">
             {loading ? 'Fetching listings…'
               : pagination
-                ? <><strong>{properties.length}</strong> of <strong>{pagination.total}</strong> listings</>
+                ? <><strong>{pagination.total}</strong> total listings</>
                 : <><strong>{properties.length}</strong> listings found</>}
+            {pagination && (
+              <div style={{ marginTop: 5, fontSize: 12, color: 'rgba(255,255,255,.35)' }}>
+                Page <strong style={{ color: 'var(--gold)' }}>{pagination.current_page}</strong> of <strong style={{ color: 'var(--gold)' }}>{pagination.last_page}</strong>
+              </div>
+            )}
             {applications.length > 0 && (
-              <div style={{ marginTop: 5, fontSize: 12, color: 'rgba(37,99,235,.8)' }}>
+              <div style={{ marginTop: 5, fontSize: 12, color: 'rgba(201,168,76,.8)' }}>
                 {applications.length} active application{applications.length !== 1 ? 's' : ''}
               </div>
             )}
@@ -911,12 +903,18 @@ const Properties = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
+      {/* ── Search Bar ── */}
       <div className="sb">
         <div className="sb-inner">
           <div className="sb-search">
             <span className="sb-search-icon"><Search size={14} /></span>
-            <input className="sb-input" type="text" placeholder="Location or property name…" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <input
+              className="sb-input"
+              type="text"
+              placeholder="Location or property name…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
             {searchTerm && <button className="sb-clear" onClick={() => setSearchTerm('')}><X size={13} /></button>}
           </div>
           <select className="sb-select" value={selectedType} onChange={e => setSelectedType(e.target.value)}>
@@ -933,16 +931,41 @@ const Properties = () => {
             <option value="500-1000">500K – 1M TZS</option>
             <option value="1000+">Above 1M TZS</option>
           </select>
+
+          {/* Source filter tabs */}
+          <div className="source-tabs">
+            {sourceTabs.map(tab => {
+              const isActive = sourceFilter === tab.key;
+              const cls = isActive
+                ? tab.key === 'agent' ? 'source-tab active-agent'
+                : tab.key === 'admin' ? 'source-tab active-admin'
+                : 'source-tab active'
+                : 'source-tab';
+              return (
+                <button key={tab.key} className={cls} onClick={() => setSourceFilter(tab.key)}>
+                  {tab.icon}{tab.label}
+                </button>
+              );
+            })}
+          </div>
+
           <button className={`sb-filter-btn${showFilters ? ' active' : ''}`} onClick={() => setShowFilters(v => !v)}>
             <SlidersHorizontal size={13} /> Filters
             {activeFilterCount > 0 && <span className="sb-filter-count">{activeFilterCount}</span>}
             <ChevronDown size={11} style={{ transform: showFilters ? 'rotate(180deg)' : 'none', transition: 'transform .25s' }} />
           </button>
+
+          <button className="sb-filter-btn" onClick={() => loadProperties(currentPage)} title="Refresh">
+            <Search size={13} /> Refresh
+          </button>
+
           <div className="sb-view-btns">
             <button className={`sb-view-btn${viewMode === 'grid' ? ' active' : ''}`} onClick={() => setViewMode('grid')} title="Grid"><LayoutGrid size={15} /></button>
             <button className={`sb-view-btn${viewMode === 'list' ? ' active' : ''}`} onClick={() => setViewMode('list')} title="List"><List size={15} /></button>
           </div>
         </div>
+
+        {/* Advanced filters */}
         <div className={`adv${showFilters ? ' open' : ''}`}>
           <div className="adv-inner">
             <span className="adv-label">Refine</span>
@@ -965,39 +988,31 @@ const Properties = () => {
         </div>
       </div>
 
-      {/* Listings */}
+      {/* ── Listings ── */}
       <div className="pr-body">
         {error && (
           <div className="err-banner">
             {error}
-            <button className="err-retry" onClick={() => loadProperties(1)}>Retry</button>
+            <button className="err-retry" onClick={() => loadProperties(currentPage)}>Retry</button>
           </div>
         )}
+
         {loading ? (
           <div className={`pr-grid${viewMode === 'list' ? ' list' : ''}`}>
-            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+            {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : properties.length > 0 ? (
-          <>
-            <div className={`pr-grid${viewMode === 'list' ? ' list' : ''}`}>
-              {properties.map(p => (
-                <PropertyCard
-                  key={p.id}
-                  property={p}
-                  isSaved={savedIds.has(p.id)}
-                  onSave={e => toggleSave(p.id, e)}
-                  onApply={e => handleApply(p, e)}
-                />
-              ))}
-            </div>
-            {hasMore && (
-              <div className="load-more">
-                <button className="load-more-btn" disabled={loadingMore} onClick={() => setPage(prev => prev + 1)}>
-                  {loadingMore ? 'Loading…' : `Load more · page ${(pagination?.current_page ?? 1) + 1} of ${pagination?.last_page}`}
-                </button>
-              </div>
-            )}
-          </>
+          <div className={`pr-grid${viewMode === 'list' ? ' list' : ''}`}>
+            {properties.map(p => (
+              <PropertyCard
+                key={p.id}
+                property={p}
+                isSaved={savedIds.has(p.id)}
+                onSave={e => toggleSave(p.id, e)}
+                onApply={e => handleApply(p, e)}
+              />
+            ))}
+          </div>
         ) : (
           <div className="pr-grid">
             <div className="pr-empty">
@@ -1010,9 +1025,54 @@ const Properties = () => {
             </div>
           </div>
         )}
+
+        {/* ── Pagination ── */}
+        {!loading && totalPages > 1 && (
+          <div className="pag-wrap">
+            <div className="pag-info">
+              Showing <strong>{pageStart}–{pageEnd}</strong> of <strong>{pagination?.total ?? 0}</strong> properties
+            </div>
+
+            <div className="pag-controls">
+              <button className="pag-nav" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+                <ChevronLeft size={15} /> Prev
+              </button>
+
+              {getPageNumbers(currentPage, totalPages).map((p, i) =>
+                p === '...'
+                  ? <button key={`dots-${i}`} className="pag-btn dots" disabled>…</button>
+                  : <button
+                      key={p}
+                      className={`pag-btn${p === currentPage ? ' active' : ''}`}
+                      onClick={() => goToPage(p as number)}
+                    >
+                      {p}
+                    </button>
+              )}
+
+              <button className="pag-nav" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>
+                Next <ChevronRight size={15} />
+              </button>
+            </div>
+
+            <div className="pag-jump">
+              <span>Go to page</span>
+              <input
+                ref={jumpRef}
+                className="pag-jump-input"
+                type="number"
+                min={1}
+                max={totalPages}
+                defaultValue={currentPage}
+                onKeyDown={e => e.key === 'Enter' && handleJump()}
+              />
+              <button className="pag-jump-btn" onClick={handleJump}>Go</button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ── */}
       {modal === 'auth'    && selProp && <AuthModal    property={selProp} onClose={closeModal} onLogin={handleAuthLogin} onSignup={handleAuthSignup} />}
       {modal === 'apply'   && selProp && <ApplyModal   property={selProp} onClose={closeModal} onProceed={() => setModal('payment')} />}
       {modal === 'payment' && selProp && (
