@@ -15,47 +15,68 @@ class PropertyController extends Controller
 {
     /**
      * Public property listing — no authentication required.
+     * FIXED: added source filters (has_agent / no_agent), dynamic per_page,
+     *        explicit available=true instead of scope, and orderBy created_at desc.
      */
     public function publicIndex(Request $request): JsonResponse
     {
-        $query = Property::with(['owner', 'agent']);
+        $query = Property::with(['owner', 'agent'])
+            ->where('available', true);  // explicit — does not rely on scope
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('location', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('type')) {
-            $query->byType($request->type);
+            $query->where('type', $request->type);
         }
 
         if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
+            $query->where('price', '>=', (float) $request->min_price);
         }
 
         if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
+            $query->where('price', '<=', (float) $request->max_price);
         }
 
         if ($request->filled('location')) {
-            $query->byLocation($request->location);
+            $query->where('location', 'like', '%' . $request->location . '%');
         }
 
-        // FIX: Use >= so "2+ bedrooms" works correctly
+        // Use >= so "2+ bedrooms" works correctly
         if ($request->filled('bedrooms')) {
             $query->where('bedrooms', '>=', (int) $request->bedrooms);
         }
 
-        // FIX: Use $request->has() so an empty string doesn't match
         if ($request->has('furnished') && $request->furnished !== '') {
             $query->where('furnished', filter_var($request->furnished, FILTER_VALIDATE_BOOLEAN));
         }
 
-        $properties = $query->available()->paginate(12);
+        // ── Source filters sent by Properties.tsx ──────────────────────────
+        // sourceFilter='agent'    → has_agent=true
+        // sourceFilter='landlord' → no_agent=true
+        // sourceFilter='admin'    → type=oweru_rental (already handled above via type filter)
+        // sourceFilter='all'      → no extra params — show everything
+        if ($request->get('has_agent') === 'true') {
+            $query->whereNotNull('agent_id');
+        }
+
+        if ($request->get('no_agent') === 'true') {
+            $query->whereNull('agent_id');
+        }
+
+        // Allow frontend to request more items per page (capped at 100)
+        $perPage = min((int) ($request->per_page ?? 12), 100);
+
+        $properties = $query
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
 
         return response()->json([
             'data' => $properties->items(),
@@ -75,53 +96,49 @@ class PropertyController extends Controller
     {
         $property->load(['owner', 'agent']);
 
-        // Log the full request for debugging
         \Log::info('Property publicShow - Full Request', [
             'property_id' => $property->id,
-            'full_url' => $request->fullUrl(),
-            'query_params' => $request->query(),
-            'all_params' => $request->all(),
-            'method' => $request->method(),
-            'ip' => $request->ip()
+            'full_url'    => $request->fullUrl(),
+            'query_params'=> $request->query(),
+            'all_params'  => $request->all(),
+            'method'      => $request->method(),
+            'ip'          => $request->ip(),
         ]);
 
-        // Check if this is a tracking link visit
+        // Track agent link clicks
         if ($request->has('agent') && $request->input('agent') == $property->agent_id) {
-            // Increment click count for tracking - with fallback for missing column
             try {
                 $beforeClicks = $property->clicks ?? 0;
                 $property->increment('clicks');
-                $property->refresh(); // Get updated value
-                
+                $property->refresh();
+
                 \Log::info('Property tracking link clicked - SUCCESS', [
-                    'property_id' => $property->id,
-                    'agent_id' => $request->input('agent'),
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                    'before_clicks' => $beforeClicks,
-                    'after_clicks' => $property->clicks,
-                    'increment_successful' => ($property->clicks > $beforeClicks)
+                    'property_id'         => $property->id,
+                    'agent_id'            => $request->input('agent'),
+                    'ip'                  => $request->ip(),
+                    'user_agent'          => $request->userAgent(),
+                    'before_clicks'       => $beforeClicks,
+                    'after_clicks'        => $property->clicks,
+                    'increment_successful'=> ($property->clicks > $beforeClicks),
                 ]);
             } catch (\Exception $e) {
-                // Column doesn't exist yet, just log the visit
                 \Log::error('Property tracking link click FAILED', [
-                    'property_id' => $property->id,
-                    'agent_id' => $request->input('agent'),
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
-                    'error' => $e->getMessage(),
-                    'current_clicks' => $property->clicks ?? 0
+                    'property_id'   => $property->id,
+                    'agent_id'      => $request->input('agent'),
+                    'ip'            => $request->ip(),
+                    'user_agent'    => $request->userAgent(),
+                    'error'         => $e->getMessage(),
+                    'current_clicks'=> $property->clicks ?? 0,
                 ]);
             }
         } else {
-            // Log when tracking condition fails
             \Log::info('Property tracking link visit - NO TRACKING', [
-                'property_id' => $property->id,
-                'has_agent_param' => $request->has('agent'),
-                'agent_param' => $request->input('agent'),
-                'property_agent_id' => $property->agent_id,
-                'agent_match' => ($request->input('agent') == $property->agent_id),
-                'ip' => $request->ip()
+                'property_id'      => $property->id,
+                'has_agent_param'  => $request->has('agent'),
+                'agent_param'      => $request->input('agent'),
+                'property_agent_id'=> $property->agent_id,
+                'agent_match'      => ($request->input('agent') == $property->agent_id),
+                'ip'               => $request->ip(),
             ]);
         }
 
@@ -135,18 +152,14 @@ class PropertyController extends Controller
     {
         try {
             \Log::info('Public BNB Index: Starting query');
-            
-            // Simple query to get all BNB properties
+
             $properties = BnbProperty::limit(8)->get();
-            
+
             \Log::info('Public BNB Index: Query completed, count: ' . $properties->count());
-            
-            // Transform properties
+
             $transformedProperties = $properties->map(function ($property) {
-                // Simple image handling
                 $images = ['https://picsum.photos/seed/bnb' . $property->id . '/800/600.jpg'];
-                
-                // Try to get real images if they exist
+
                 if ($property->images) {
                     $propertyImages = [];
                     if (is_string($property->images)) {
@@ -157,9 +170,9 @@ class PropertyController extends Controller
                     } elseif (is_array($property->images)) {
                         $propertyImages = $property->images;
                     }
-                    
+
                     if (!empty($propertyImages)) {
-                        $images = array_map(function($img) {
+                        $images = array_map(function ($img) {
                             if (str_starts_with($img, 'http')) {
                                 return $img;
                             }
@@ -167,57 +180,60 @@ class PropertyController extends Controller
                         }, $propertyImages);
                     }
                 }
-                
+
                 return [
-                    'id' => $property->id,
-                    'title' => $property->title ?? 'Property ' . $property->id,
-                    'description' => $property->description ?? 'Beautiful property',
-                    'price' => $property->price ?? 100000,
-                    'location' => $property->location ?? 'Tanzania',
-                    'type' => $property->type ?? 'apartment',
-                    'bedrooms' => $property->bedrooms ?? 2,
-                    'bathrooms' => $property->bathrooms ?? 1,
-                    'max_guests' => $property->max_guests ?? 4,
-                    'images' => $images,
+                    'id'             => $property->id,
+                    'title'          => $property->title ?? 'Property ' . $property->id,
+                    'description'    => $property->description ?? 'Beautiful property',
+                    'price'          => $property->price ?? 100000,
+                    'location'       => $property->location ?? 'Tanzania',
+                    'type'           => $property->type ?? 'apartment',
+                    'bedrooms'       => $property->bedrooms ?? 2,
+                    'bathrooms'      => $property->bathrooms ?? 1,
+                    'max_guests'     => $property->max_guests ?? 4,
+                    'images'         => $images,
                     'average_rating' => 4.5,
-                    'status' => 'available',
-                    'created_at' => $property->created_at?->toISOString() ?? now()->toISOString(),
-                    'updated_at' => $property->updated_at?->toISOString() ?? now()->toISOString(),
+                    'status'         => 'available',
+                    'created_at'     => $property->created_at?->toISOString() ?? now()->toISOString(),
+                    'updated_at'     => $property->updated_at?->toISOString() ?? now()->toISOString(),
                 ];
             })->toArray();
-            
+
             \Log::info('Public BNB Index: Returning ' . count($transformedProperties) . ' properties');
-            
+
             return response()->json($transformedProperties);
-            
+
         } catch (\Exception $e) {
             \Log::error('Public BNB Index Error: ' . $e->getMessage());
-            
-            // Return fallback data
+
             return response()->json([
                 [
-                    'id' => 999,
-                    'title' => 'Sample Property',
-                    'description' => 'This is a sample property',
-                    'price' => 150000,
-                    'location' => 'Dar es Salaam',
-                    'type' => 'apartment',
-                    'bedrooms' => 2,
-                    'bathrooms' => 1,
-                    'max_guests' => 4,
-                    'images' => ['https://picsum.photos/seed/sample/800/600.jpg'],
+                    'id'             => 999,
+                    'title'          => 'Sample Property',
+                    'description'    => 'This is a sample property',
+                    'price'          => 150000,
+                    'location'       => 'Dar es Salaam',
+                    'type'           => 'apartment',
+                    'bedrooms'       => 2,
+                    'bathrooms'      => 1,
+                    'max_guests'     => 4,
+                    'images'         => ['https://picsum.photos/seed/sample/800/600.jpg'],
                     'average_rating' => 4.5,
-                    'status' => 'available',
-                    'created_at' => now()->toISOString(),
-                    'updated_at' => now()->toISOString(),
-                ]
+                    'status'         => 'available',
+                    'created_at'     => now()->toISOString(),
+                    'updated_at'     => now()->toISOString(),
+                ],
             ]);
         }
     }
 
+    /**
+     * Authenticated property listing (used by landlord/agent /properties route).
+     */
     public function index(Request $request): JsonResponse
     {
-        $query = Property::with(['owner', 'agent']);
+        $query = Property::with(['owner', 'agent'])
+            ->where('available', true);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -229,19 +245,19 @@ class PropertyController extends Controller
         }
 
         if ($request->filled('type')) {
-            $query->byType($request->type);
+            $query->where('type', $request->type);
         }
 
         if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
+            $query->where('price', '>=', (float) $request->min_price);
         }
 
         if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
+            $query->where('price', '<=', (float) $request->max_price);
         }
 
         if ($request->filled('location')) {
-            $query->byLocation($request->location);
+            $query->where('location', 'like', '%' . $request->location . '%');
         }
 
         if ($request->filled('bedrooms')) {
@@ -252,7 +268,19 @@ class PropertyController extends Controller
             $query->where('furnished', filter_var($request->furnished, FILTER_VALIDATE_BOOLEAN));
         }
 
-        $properties = $query->available()->paginate(12);
+        if ($request->get('has_agent') === 'true') {
+            $query->whereNotNull('agent_id');
+        }
+
+        if ($request->get('no_agent') === 'true') {
+            $query->whereNull('agent_id');
+        }
+
+        $perPage = min((int) ($request->per_page ?? 12), 100);
+
+        $properties = $query
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
 
         return response()->json([
             'data' => $properties->items(),
@@ -265,22 +293,22 @@ class PropertyController extends Controller
         ]);
     }
 
+    /**
+     * Authenticated property detail.
+     */
     public function show(Property $property, Request $request): JsonResponse
     {
         $property->load(['owner', 'agent', 'applications']);
 
-        // Check if this is a tracking link visit
         if ($request->has('agent') && $request->input('agent') == $property->agent_id) {
-            // Increment click count for tracking - with fallback for missing column
             try {
                 $property->increment('clicks');
             } catch (\Exception $e) {
-                // Column doesn't exist yet, just log the visit
                 \Log::info('Property tracking link clicked (no increment)', [
                     'property_id' => $property->id,
-                    'agent_id' => $request->input('agent'),
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent()
+                    'agent_id'    => $request->input('agent'),
+                    'ip'          => $request->ip(),
+                    'user_agent'  => $request->userAgent(),
                 ]);
             }
         }
@@ -288,6 +316,9 @@ class PropertyController extends Controller
         return response()->json(['data' => $property]);
     }
 
+    /**
+     * Create a property (landlord or agent).
+     */
     public function store(Request $request): JsonResponse
     {
         $data = [
@@ -364,10 +395,8 @@ class PropertyController extends Controller
             'dalali'      => $trackingCode,
         ];
 
-        // FIX: Always set owner_id. Agents must supply owner_id for their listings.
         if ($user->userType === 'agent') {
             $propertyData['agent_id'] = $user->id;
-            // Agent-created listings: owner_id comes from request (required for agents)
             if ($request->filled('owner_id')) {
                 $propertyData['owner_id'] = $request->input('owner_id');
             }
@@ -424,7 +453,7 @@ class PropertyController extends Controller
             ], 422);
         }
 
-        // FIX: Explicitly whitelist updatable fields to prevent owner_id/agent_id/dalali tampering
+        // Whitelist updatable fields — prevents owner_id/agent_id/dalali tampering
         $property->update($request->only([
             'title', 'description', 'price', 'location', 'address',
             'type', 'bedrooms', 'bathrooms', 'area',
@@ -494,7 +523,10 @@ class PropertyController extends Controller
             ->exists();
 
         if ($exists) {
-            return response()->json(['message' => 'Property already saved'], 409);
+            return response()->json([
+                'message'       => 'Property already saved',
+                'already_saved' => true,
+            ], 200);  // 200 not 409 — frontend checks already_saved flag
         }
 
         SavedProperty::create([
@@ -533,6 +565,23 @@ class PropertyController extends Controller
                     ? round(($approvedApplications / $totalApplications) * 100, 2)
                     : 0,
             ],
+        ]);
+    }
+
+    /**
+     * Debug endpoint — REMOVE IN PRODUCTION.
+     * GET /api/debug/properties
+     */
+    public function debugProperties(): JsonResponse
+    {
+        return response()->json([
+            'total_all'          => Property::count(),
+            'total_available'    => Property::where('available', true)->count(),
+            'total_unavailable'  => Property::where('available', false)->count(),
+            'total_null_available' => Property::whereNull('available')->count(),
+            'latest_10'          => Property::latest()->take(10)->get([
+                'id', 'title', 'available', 'owner_id', 'agent_id', 'type', 'created_at',
+            ]),
         ]);
     }
 }
