@@ -334,6 +334,7 @@ const CSS = `
 .provider-btn[data-active='true'].tigo{border-color:#00D4AA;background:rgba(0,212,170,.08);color:#008a6f;}
 .provider-btn[data-active='true'].mpesa{border-color:#00C853;background:rgba(0,200,83,.08);color:#005c26;}
 .provider-btn[data-active='true'].airtel{border-color:#FF6B35;background:rgba(255,107,53,.08);color:#c94212;}
+.provider-btn[data-active='true'].halopesa{border-color:#9C27B0;background:rgba(156,39,176,.08);color:#7B1FA2;}
 .field-label{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--hint);margin-bottom:8px;display:block;}
 
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -577,7 +578,7 @@ const ApplyModal = ({ property, onClose, onProceed }: {
 const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber, paymentMethod, setPaymentMethod }: {
   processing: boolean; onClose: () => void; onPay: () => void;
   phoneNumber: string; setPhoneNumber: (value: string) => void;
-  paymentMethod: 'tigo' | 'mpesa' | 'airtel'; setPaymentMethod: (value: 'tigo' | 'mpesa' | 'airtel') => void;
+  paymentMethod: 'tigo' | 'mpesa' | 'airtel' | 'halopesa'; setPaymentMethod: (value: 'tigo' | 'mpesa' | 'airtel' | 'halopesa') => void;
 }) => (
   <Overlay onClose={() => !processing && onClose()}>
     <div className="m-head-navy">
@@ -592,11 +593,12 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
       </div>
       <label className="field-label">Mobile Money Provider</label>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {([
+        {[
           { value: 'tigo',   label: 'Tigo Pesa' },
           { value: 'mpesa',  label: 'M-Pesa' },
           { value: 'airtel', label: 'Airtel Money' },
-        ] as { value: 'tigo' | 'mpesa' | 'airtel'; label: string }[]).map(p => (
+          { value: 'halopesa', label: 'Halopesa' },
+        ].map((p: any) => (
           <button
             key={p.value}
             className={`provider-btn ${p.value}`}
@@ -685,7 +687,7 @@ const Properties = () => {
   const [modal,         setModal]        = useState<ModalStep>('none');
   const [selProp,       setSelProp]      = useState<Property | null>(null);
   const [paying,        setPaying]       = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
+  const [paymentMethod, setPaymentMethod] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
   const [phoneNumber,   setPhoneNumber]   = useState('');
   const jumpRef = useRef<HTMLInputElement>(null);
 

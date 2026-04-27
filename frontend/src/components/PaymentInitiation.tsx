@@ -18,7 +18,7 @@ interface PaymentInitiationData {
   phone_number: string;
   payment_method?: string;
   service_charge?: number;
-  payment_provider?: 'tigo' | 'mpesa' | 'airtel';
+  payment_provider?: 'tigo' | 'mpesa' | 'airtel' | 'halopesa';
 }
 
 export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
@@ -31,7 +31,7 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
   onSuccess,
 }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
+  const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -171,11 +171,12 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Payment Method
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
                 { value: 'tigo' as const, label: 'Tigo Pesa', color: 'blue' },
                 { value: 'mpesa' as const, label: 'M-Pesa', color: 'green' },
                 { value: 'airtel' as const, label: 'Airtel Money', color: 'red' },
+                { value: 'halopesa' as const, label: 'Halopesa', color: 'purple' },
               ].map((provider) => (
                 <button
                   key={provider.value}
@@ -243,7 +244,7 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
             ) : (
               <>
                 <DollarSign className="w-4 h-4" />
-                Pay Tsh {totalAmount.toLocaleString()} via {paymentProvider === 'tigo' ? 'Tigo Pesa' : paymentProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}
+                Pay Tsh {totalAmount.toLocaleString()} via {paymentProvider === 'tigo' ? 'Tigo Pesa' : paymentProvider === 'mpesa' ? 'M-Pesa' : paymentProvider === 'airtel' ? 'Airtel Money' : 'Halopesa'}
               </>
             )}
           </button>

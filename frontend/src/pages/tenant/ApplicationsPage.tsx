@@ -106,7 +106,7 @@ const ApplicationsPage = () => {
   const [paymentModal, setPaymentModal]       = useState<number | null>(null);
   const [paying, setPaying]                   = useState(false);
   const [phoneNumber, setPhoneNumber]         = useState('');
-  const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel'>('tigo');
+  const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
   const [payResult, setPayResult]             = useState<'success' | 'error' | null>(null);
   const [payMessage, setPayMessage]           = useState('');
 
@@ -346,6 +346,7 @@ const ApplicationsPage = () => {
         .pay-provider-btn[data-active='true'].tigo   { border-color:#00D4AA; background:rgba(0,212,170,.10); color:#00D4AA; }
         .pay-provider-btn[data-active='true'].mpesa  { border-color:#00C853; background:rgba(0,200,83,.10);  color:#00C853; }
         .pay-provider-btn[data-active='true'].airtel { border-color:#FF6B35; background:rgba(255,107,53,.10);color:#FF6B35; }
+        .pay-provider-btn[data-active='true'].halopesa { border-color:#9C27B0; background:rgba(156,39,176,.10);color:#9C27B0; }
       `}</style>
 
       {/* ── Header Panel ── */}
@@ -536,11 +537,12 @@ const ApplicationsPage = () => {
                 Mobile Money Provider
               </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-                {([
+                {[
                   { value: 'tigo',   label: 'Tigo Pesa'    },
                   { value: 'mpesa',  label: 'M-Pesa'       },
                   { value: 'airtel', label: 'Airtel Money'  },
-                ] as { value: 'tigo' | 'mpesa' | 'airtel'; label: string }[]).map(p => (
+                  { value: 'halopesa', label: 'Halopesa'     },
+                ].map((p: any) => (
                   <button
                     key={p.value}
                     className={`pay-provider-btn ${p.value}`}
@@ -566,7 +568,7 @@ const ApplicationsPage = () => {
                 style={{ width: '100%', padding: '12px 14px', background: B.navy900, border: `1px solid ${B.border}`, color: B.cream, borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', marginBottom: 6 }}
               />
               <div style={{ fontSize: 11, color: B.slate, marginBottom: 20 }}>
-                Enter your {paymentProvider === 'tigo' ? 'Tigo Pesa' : paymentProvider === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} registered number
+                Enter your {paymentProvider === 'tigo' ? 'Tigo Pesa' : paymentProvider === 'mpesa' ? 'M-Pesa' : paymentProvider === 'airtel' ? 'Airtel Money' : 'Halopesa'} registered number
               </div>
 
               {/* Security badge */}
