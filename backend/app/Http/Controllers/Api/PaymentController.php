@@ -123,8 +123,8 @@ class PaymentController extends Controller
                 'TIGO' => 'TIGO',
                 'MPESA' => 'MPESA', 
                 'AIRTEL' => 'AIRTEL',
-                'HALOPESA' => 'HLO', // Try HLO for Halopesa
-                'HALOPES' => 'HLO', // Fallback
+                'HALOPESA' => 'HALO', // Try HALO for Halopesa
+                'HALOPES' => 'HALO', // Fallback
             ];
             
             $selcomProvider = $providerMap[$validated['provider']] ?? $validated['provider'];
@@ -150,6 +150,8 @@ class PaymentController extends Controller
             Log::info('Oweru wallet-payment response', [
                 'status' => $payResponse->status(),
                 'body'   => $payResponse->body(),
+                'provider_used' => $selcomProvider,
+                'original_provider' => $validated['provider'],
             ]);
 
             $payData = $payResponse->json();
@@ -364,8 +366,8 @@ class PaymentController extends Controller
                 'TIGO' => 'TIGO',
                 'MPESA' => 'MPESA', 
                 'AIRTEL' => 'AIRTEL',
-                'HALOPESA' => 'HLO', // Try HLO for Halopesa
-                'HALOPES' => 'HLO', // Fallback
+                'HALOPESA' => 'HALO', // Try HALO for Halopesa
+                'HALOPES' => 'HALO', // Fallback
             ];
             
             $selcomProvider = $providerMap[$provider] ?? $provider;
