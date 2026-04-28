@@ -16,32 +16,38 @@ const ROLE_CONFIG = {
   landlord: { accent: '#10B981', label: 'Landlord Inbox', tagline: 'Connect with your tenants' },
 };
 
-const initials = (name: string) =>
+const initials = (name: string) => 
   name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
 
 const relativeTime = (iso: string) => {
   if (!iso) return '';
   const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'now';
-  if (m < 60) return `${m}m`;
-  if (m < 1440) return `${Math.floor(m / 60)}h`;
-  return `${Math.floor(m / 1440)}d`;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'now';
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
+  return `${Math.floor(minutes / 1440)}d`;
 };
 
-const fullTime = (iso: string) =>
+const fullTime = (iso: string) => 
   iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
-const Avatar = ({ name, size = 40, src, accent }: { name: string; size?: number; src?: string; accent: string }) => (
+const Avatar = ({ name, size = 40, accent }: { name: string; size?: number; accent: string }) => (
   <div style={{
-    width: size, height: size, borderRadius: '50%', flexShrink: 0,
-    background: src ? 'transparent' : `linear-gradient(135deg, ${accent}33, ${accent}66)`,
-    border: `2px solid ${accent}44`,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: size * 0.35, fontWeight: 700, color: accent,
-    overflow: 'hidden',
+    width: size,
+    height: size,
+    borderRadius: '50%',
+    background: `linear-gradient(135deg, ${accent}30, ${accent}60)`,
+    border: `2px solid ${accent}40`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: size * 0.38,
+    fontWeight: 700,
+    color: accent,
+    flexShrink: 0,
   }}>
-    {src ? <img src={src} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials(name)}
+    {initials(name)}
   </div>
 );
 
@@ -67,7 +73,6 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   // Load conversations
   const loadConversations = useCallback(async () => {
@@ -76,7 +81,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
       setConversations(data.conversations || []);
       setUnread(data.unread_count || 0);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load conversations", err);
     } finally {
       setLoading(false);
     }
@@ -88,16 +93,17 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
       setMessages(data.messages || []);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load messages", err);
     }
   }, []);
 
   useEffect(() => {
     loadConversations();
+
     const interval = setInterval(() => {
       loadConversations();
       if (selected) loadMessages(selected.id);
-    }, 20000);
+    }, 15000);
 
     const handleOnline = () => setOnline(true);
     const handleOffline = () => setOnline(false);
@@ -113,9 +119,9 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
   }, [selected]);
 
   useEffect(() => {
-    if (!selected) return;
-    loadMessages(selected.id);
-    MessagesService.markAsRead({ sender_id: selected.id });
+    if (selected) {
+      loadMessages(selected.id);
+    }
   }, [selected]);
 
   const sendMessage = async () => {
@@ -123,13 +129,13 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
 
     setSending(true);
     try {
-      const msg = await MessagesService.sendMessage({
+      const newMsg = await MessagesService.sendMessage({
         receiver_id: selected.id,
         content: draft.trim(),
         reply_to_id: replyTo?.id,
       });
 
-      setMessages(prev => [...prev, msg]);
+      setMessages(prev => [...prev, newMsg]);
       setDraft('');
       setReplyTo(null);
       loadConversations();
@@ -138,38 +144,37 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
       console.error(err);
     } finally {
       setSending(false);
-      textareaRef.current?.focus();
     }
   };
 
-  // Search users
+  // User search for new chat
   useEffect(() => {
     if (!userQuery.trim()) {
       setFoundUsers([]);
       return;
     }
 
-    const timeout = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       try {
         const users = await MessagesService.searchUsers(userQuery);
         setFoundUsers(users || []);
       } catch {
         setFoundUsers([]);
       }
-    }, 300);
+    }, 350);
 
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(timer);
   }, [userQuery]);
 
   const openConversation = (user: any) => {
-    const conv: Conversation = {
+    const newConv: Conversation = {
       id: user.id,
-      user,
-      latest_message: { id: 0, content: '', type: 'text', status: 'sent', created_at: new Date().toISOString() } as any,
+      user: user,
+      latest_message: null as any,
       unread_count: 0,
       updated_at: new Date().toISOString(),
     };
-    setSelected(conv);
+    setSelected(newConv);
     setNewChatOpen(false);
     setUserQuery('');
     setFoundUsers([]);
@@ -177,9 +182,9 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
     setMobilePaneOpen(true);
   };
 
-  const filteredConversations = conversations.filter(c =>
-    c.user?.name?.toLowerCase().includes(sideSearch.toLowerCase()) ||
-    c.latest_message?.content?.toLowerCase().includes(sideSearch.toLowerCase())
+  const filteredConversations = conversations.filter(conv =>
+    conv.user?.name?.toLowerCase().includes(sideSearch.toLowerCase()) ||
+    conv.latest_message?.content?.toLowerCase().includes(sideSearch.toLowerCase())
   );
 
   return (
@@ -187,105 +192,88 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
       display: 'flex',
       height: '100vh',
       background: '#0f172a',
-      fontFamily: "'DM Sans', system-ui, sans-serif",
-      color: '#e2e8f0',
-      overflow: 'hidden'
+      fontFamily: "'Inter', 'DM Sans', system-ui, sans-serif",
+      overflow: 'hidden',
+      color: '#e2e8f0'
     }}>
-      {/* Sidebar */}
+
+      {/* ==================== SIDEBAR ==================== */}
       <aside style={{
         width: 340,
-        minWidth: 300,
+        minWidth: 320,
         borderRight: '1px solid #1e293b',
         display: mobilePaneOpen ? 'none' : 'flex',
         flexDirection: 'column',
-        background: '#0f172a'
+        background: '#0f172a',
       }}>
-        {/* Header */}
+        {/* Sidebar Header */}
         <div style={{ padding: '20px 16px', borderBottom: '1px solid #1e293b' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{
-                  background: cfg.accent + '22',
-                  color: cfg.accent,
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: 0.5
-                }}>
-                  {cfg.label}
-                </span>
-                {!online && <WifiOff size={16} color="#ef4444" />}
-              </div>
-              <p style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>{cfg.tagline}</p>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>{cfg.label}</div>
+              <div style={{ color: '#64748b', fontSize: 13 }}>{cfg.tagline}</div>
             </div>
-
-            <button
-              onClick={() => setNewChatOpen(!newChatOpen)}
-              style={{ background: 'none', border: 'none', color: cfg.accent, padding: 8, borderRadius: 8 }}
+            <button 
+              onClick={() => setNewChatOpen(true)}
+              style={{ padding: 8, background: 'none', border: 'none', color: cfg.accent }}
             >
-              <MessageSquarePlus size={22} />
+              <Plus size={24} />
             </button>
           </div>
 
-          {/* Search */}
-          <div style={{ position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: 12, top: 11, color: '#64748b' }} />
+          {/* Search Bar */}
+          <div style={{ position: 'relative', marginTop: 16 }}>
+            <Search size={16} style={{ position: 'absolute', left: 14, top: 13, color: '#64748b' }} />
             <input
-              style={{
-                width: '100%', padding: '10px 12px 10px 40px',
-                background: '#1e293b', border: '1px solid #334155',
-                borderRadius: 10, color: '#e2e8f0', fontSize: 14
-              }}
+              type="text"
               placeholder="Search conversations..."
               value={sideSearch}
               onChange={(e) => setSideSearch(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 14px 12px 46px',
+                background: '#1e293b',
+                border: '1px solid #334155',
+                borderRadius: 12,
+                color: '#e2e8f0',
+                fontSize: 14,
+                outline: 'none'
+              }}
             />
           </div>
         </div>
 
         {/* Conversations List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#64748b' }}>Loading conversations...</div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>Loading messages...</div>
           ) : filteredConversations.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 60, color: '#64748b' }}>
-              No conversations yet
+            <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
+              No conversations found
             </div>
           ) : (
             filteredConversations.map((conv) => {
-              const isActive = selected?.id === conv.id;
+              const isSelected = selected?.id === conv.id;
               return (
-                <button
+                <div
                   key={conv.id}
                   onClick={() => {
                     setSelected(conv);
                     setMobilePaneOpen(true);
                   }}
                   style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    background: isActive ? cfg.accent + '15' : 'transparent',
-                    borderLeft: isActive ? `4px solid ${cfg.accent}` : '4px solid transparent',
-                    border: 'none',
-                    textAlign: 'left',
+                    padding: '14px 16px',
                     display: 'flex',
                     gap: 12,
-                    alignItems: 'center',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    background: isSelected ? cfg.accent + '15' : 'transparent',
+                    borderLeft: isSelected ? `4px solid ${cfg.accent}` : '4px solid transparent',
                   }}
                 >
-                  <div style={{ position: 'relative' }}>
-                    <Avatar name={conv.user?.name || ''} size={48} accent={cfg.accent} />
-                    {conv.user?.is_online && (
-                      <span style={{ position: 'absolute', bottom: 2, right: 2, width: 12, height: 12, background: '#22c55e', borderRadius: '50%', border: '2px solid #0f172a' }} />
-                    )}
-                  </div>
-
+                  <Avatar name={conv.user?.name || 'User'} size={46} accent={cfg.accent} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <div style={{ fontWeight: conv.unread_count ? 600 : 500, fontSize: 15 }}>
+                      <div style={{ fontWeight: 600, fontSize: 15 }}>
                         {conv.user?.name || 'Unknown User'}
                       </div>
                       <div style={{ fontSize: 12, color: '#64748b' }}>
@@ -293,47 +281,24 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                       </div>
                     </div>
                     <div style={{
-                      fontSize: 13,
-                      color: conv.unread_count ? '#e2e8f0' : '#94a3b8',
+                      fontSize: 13.5,
+                      color: conv.unread_count > 0 ? '#cbd5e1' : '#94a3b8',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {conv.latest_message?.content || 'No messages yet'}
+                      {conv.latest_message?.content || 'No message'}
                     </div>
                   </div>
-
-                  {conv.unread_count > 0 && (
-                    <div style={{
-                      background: cfg.accent,
-                      color: 'white',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      minWidth: 20,
-                      height: 20,
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      {conv.unread_count}
-                    </div>
-                  )}
-                </button>
+                </div>
               );
             })
           )}
         </div>
       </aside>
 
-      {/* Chat Area */}
-      <main style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#0a1628',
-        minWidth: 0,
-      }}>
+      {/* ==================== CHAT AREA ==================== */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0a1628' }}>
         {selected ? (
           <>
             {/* Chat Header */}
@@ -346,55 +311,57 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
               justifyContent: 'space-between'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button
+                <button 
                   onClick={() => setMobilePaneOpen(false)}
-                  style={{ display: window.innerWidth < 768 ? 'block' : 'none', background: 'none', border: 'none', color: '#94a3b8' }}
+                  style={{ display: 'none', background: 'none', border: 'none', color: '#94a3b8' }}
+                  className="mobile-back-btn"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={26} />
                 </button>
 
                 <Avatar name={selected.user?.name || ''} size={42} accent={cfg.accent} />
                 <div>
-                  <div style={{ fontWeight: 600 }}>{selected.user?.name}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>{selected.user?.name}</div>
                   <div style={{ fontSize: 12, color: selected.user?.is_online ? '#22c55e' : '#64748b' }}>
                     {selected.user?.is_online ? '● Online' : 'Offline'}
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button style={{ background: 'none', border: 'none', padding: 8 }}><Phone size={20} color="#94a3b8" /></button>
-                <button style={{ background: 'none', border: 'none', padding: 8 }}><Video size={20} color="#94a3b8" /></button>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button style={{ padding: 8, background: 'none', border: 'none' }}><Phone size={20} color="#94a3b8" /></button>
+                <button style={{ padding: 8, background: 'none', border: 'none' }}><Video size={20} color="#94a3b8" /></button>
               </div>
             </div>
 
-            {/* Messages */}
+            {/* Messages Area */}
             <div style={{
               flex: 1,
               overflowY: 'auto',
-              padding: '20px',
+              padding: '24px 20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              gap: 16,
             }}>
               {messages.length === 0 ? (
-                <div style={{ textAlign: 'center', marginTop: 100, color: '#64748b' }}>
-                  Start the conversation
+                <div style={{ textAlign: 'center', marginTop: 80, color: '#64748b' }}>
+                  <p>No messages yet. Say hello!</p>
                 </div>
               ) : (
-                messages.map(msg => (
+                messages.map((msg) => (
                   <div key={msg.id} style={{
                     display: 'flex',
                     justifyContent: msg.is_from_me ? 'flex-end' : 'flex-start'
                   }}>
                     <div style={{
-                      maxWidth: '70%',
-                      background: msg.is_from_me ? cfg.accent : '#1e293b',
-                      padding: '10px 14px',
+                      maxWidth: '75%',
+                      backgroundColor: msg.is_from_me ? cfg.accent : '#1e293b',
+                      padding: '11px 15px',
                       borderRadius: msg.is_from_me ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                      color: msg.is_from_me ? '#fff' : '#e2e8f0',
                     }}>
-                      <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.5 }}>{msg.content}</p>
-                      <div style={{ fontSize: 10, textAlign: 'right', marginTop: 4, opacity: 0.7 }}>
+                      <p style={{ margin: 0, lineHeight: 1.5, fontSize: 15 }}>{msg.content}</p>
+                      <div style={{ fontSize: 11, textAlign: 'right', marginTop: 4, opacity: 0.75 }}>
                         {fullTime(msg.created_at)}
                       </div>
                     </div>
@@ -404,15 +371,17 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
               <div ref={bottomRef} />
             </div>
 
-            {/* Input Area */}
-            <div style={{ padding: '12px 16px', borderTop: '1px solid #1e293b', background: '#0f172a' }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <button style={{ padding: 10 }}><Paperclip size={20} color="#64748b" /></button>
+            {/* Message Input */}
+            <div style={{ padding: '16px 20px', borderTop: '1px solid #1e293b', background: '#0f172a' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                <button style={{ padding: 10 }}><Paperclip size={22} color="#64748b" /></button>
+                
                 <textarea
                   ref={textareaRef}
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Type a message..."
+                  placeholder="Type your message..."
+                  rows={1}
                   style={{
                     flex: 1,
                     background: '#1e293b',
@@ -420,10 +389,11 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                     borderRadius: 12,
                     padding: '12px 16px',
                     color: '#e2e8f0',
+                    fontSize: 15,
                     resize: 'none',
                     minHeight: 48,
-                    maxHeight: 120,
-                    fontSize: 15
+                    maxHeight: 130,
+                    outline: 'none'
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -432,6 +402,7 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                     }
                   }}
                 />
+
                 <button
                   onClick={sendMessage}
                   disabled={!draft.trim() || sending}
@@ -444,15 +415,16 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: draft.trim() ? 'pointer' : 'default'
+                    cursor: draft.trim() ? 'pointer' : 'not-allowed'
                   }}
                 >
-                  <Send size={18} color="#fff" />
+                  <Send size={20} color="#ffffff" />
                 </button>
               </div>
             </div>
           </>
         ) : (
+          /* Empty State */
           <div style={{
             flex: 1,
             display: 'flex',
@@ -462,22 +434,93 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
             color: '#64748b'
           }}>
             <div style={{
-              width: 90,
-              height: 90,
+              width: 100,
+              height: 100,
               borderRadius: 30,
               background: cfg.accent + '15',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: 20
+              marginBottom: 24
             }}>
-              <MessageSquarePlus size={48} color={cfg.accent} />
+              <MessageSquarePlus size={50} color={cfg.accent} />
             </div>
-            <h2 style={{ color: '#e2e8f0', marginBottom: 8 }}>No conversation selected</h2>
-            <p>Select a conversation from the left or start a new one</p>
+            <h2 style={{ color: '#f1f5f9', marginBottom: 8 }}>No conversation selected</h2>
+            <p>Select a conversation from the sidebar or start a new chat</p>
           </div>
         )}
       </main>
+
+      {/* New Chat Modal */}
+      {newChatOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15,23,42,0.95)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#1e293b',
+            borderRadius: 16,
+            width: '90%',
+            maxWidth: 420,
+            padding: 24
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3>New Conversation</h3>
+              <button onClick={() => setNewChatOpen(false)} style={{ background: 'none', border: 'none', color: '#94a3b8' }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={userQuery}
+              onChange={(e) => setUserQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                background: '#0f172a',
+                border: '1px solid #334155',
+                borderRadius: 10,
+                color: '#e2e8f0',
+                marginBottom: 16
+              }}
+            />
+
+            <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+              {foundUsers.map(user => (
+                <button
+                  key={user.id}
+                  onClick={() => openConversation(user)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'transparent',
+                    border: 'none',
+                    textAlign: 'left',
+                    borderRadius: 8,
+                    marginBottom: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}
+                >
+                  <Avatar name={user.name} size={40} accent={cfg.accent} />
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{user.name}</div>
+                    <div style={{ fontSize: 12, color: '#94a3b8' }}>{user.user_type}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
