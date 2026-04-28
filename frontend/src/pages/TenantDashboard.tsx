@@ -123,7 +123,45 @@ const TenantDashboard = () => {
         .td-contract-status.unknown { background: rgba(160,160,160,0.15); color: #9f9587; }
         .td-contract-meta { font-size: 13px; color: #9f9587; line-height: 1.4; }
         .td-contract-rent { font-size: 18px; color: #c9a84c; font-weight: 600; margin-top: 4px; }
-        @media (max-width: 820px) { .td-item { grid-template-columns:1fr; } }
+        
+        /* Enhanced mobile responsiveness */
+        @media (max-width: 1024px) {
+          .td-stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+          .td-actions { gap: 8px; }
+          .td-action { padding: 10px 14px; font-size: 12px; }
+        }
+        
+        @media (max-width: 768px) {
+          .td-stats { grid-template-columns: 1fr; gap: 10px; }
+          .td-stat { padding: 18px; }
+          .td-value { font-size: 28px; }
+          .td-actions { gap: 6px; }
+          .td-action { padding: 8px 12px; font-size: 11px; }
+          .td-item { grid-template-columns:1fr; gap: 12px; }
+          .td-thumb { width: 80px; height: 60px; border-radius: 12px; }
+          .td-title { font-size: 16px; }
+          .td-meta { font-size: 13px; }
+          .td-price { font-size: 20px; }
+          .td-contract { padding: 14px; }
+          .td-contract-title { font-size: 15px; }
+          .td-contract-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+          .td-contract-rent { font-size: 16px; }
+        }
+        
+        @media (max-width: 480px) {
+          .td-wrap { padding: 0 16px; }
+          .td-stat { padding: 16px; border-radius: 18px; }
+          .td-value { font-size: 24px; }
+          .td-actions { gap: 4px; }
+          .td-action { padding: 6px 10px; font-size: 10px; }
+          .td-thumb { width: 72px; height: 54px; border-radius: 10px; }
+          .td-title { font-size: 15px; }
+          .td-meta { font-size: 12px; }
+          .td-price { font-size: 18px; }
+          .td-contract { padding: 12px; border-radius: 14px; }
+          .td-contract-title { font-size: 14px; }
+          .td-contract-rent { font-size: 15px; }
+        }
       `}</style>
 
       <div className="td-wrap">
