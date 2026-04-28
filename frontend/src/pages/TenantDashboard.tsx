@@ -97,24 +97,24 @@ const TenantDashboard = () => {
   return (
     <>
       <style>{`
-        .td-wrap { max-width: 1200px; margin: 0 auto; padding: 20px; background: #f8fafc; min-height: 100vh; }
+        .td-wrap { max-width: 1200px; margin: 0 auto; padding: 20px; background: #0F172A; min-height: 100vh; }
         .td-header { text-align: center; margin-bottom: 40px; }
-        .td-title { font-size: 32px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
-        .td-subtitle { font-size: 16px; color: #64748b; }
-        .td-eyebrow { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #c9a84c; margin-bottom: 24px; display: flex; align-items: center; gap: 8px; font-weight: 600; }
-        .td-eyebrow::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #c9a84c, transparent); }
+        .td-title { font-size: 32px; font-weight: 700; color: #F8F8F9; margin-bottom: 8px; }
+        .td-subtitle { font-size: 16px; color: #94A3B8; }
+        .td-eyebrow { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #C89128; margin-bottom: 24px; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .td-eyebrow::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #C89128, transparent); }
         .td-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
-        .td-stat { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; color: #1e293b; box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.1); transition: all 0.3s ease; position: relative; overflow: hidden; }
-        .td-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #c9a84c, #e8c97a); }
-        .td-stat:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.15); }
-        .td-label { color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 8px; }
-        .td-value { font-size: 32px; margin-top: 8px; color: #1e293b; font-weight: 800; }
+        .td-stat { background: linear-gradient(135deg, #162035 0%, #1E2D4A 100%); border: 1px solid rgba(200,145,40,0.18); border-radius: 16px; padding: 24px; color: #F8F8F9; box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.4); transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .td-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #C89128, #D4A843); }
+        .td-stat:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.5); }
+        .td-label { color: #94A3B8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 8px; }
+        .td-value { font-size: 32px; margin-top: 8px; color: #F8F8F9; font-weight: 800; }
         .td-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 40px; }
         .td-action { display:flex; align-items:center; gap:12px; padding:20px 24px; text-decoration:none; border-radius: 12px; font-size: 15px; font-weight: 600; border: 2px solid transparent; color: #ffffff; transition: all 0.3s ease; position: relative; overflow: hidden; }
         .td-action::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%); }
-        .td-action.primary { background: linear-gradient(135deg, #c9a84c 0%, #e8c97a 100%); border-color: #c9a84c; box-shadow: 0 8px 25px rgba(201,168,76,0.3); }
-        .td-action.primary:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(201,168,76,0.4); }
-        .td-action.secondary { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); border-color: #3b82f6; box-shadow: 0 8px 25px rgba(59,130,246,0.3); }
+        .td-action.primary { background: linear-gradient(135deg, #C89128 0%, #D4A843 100%); border-color: #C89128; box-shadow: 0 8px 25px rgba(200,145,40,0.3); }
+        .td-action.primary:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(200,145,40,0.4); }
+        .td-action.secondary { background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%); border-color: #3B82F6; box-shadow: 0 8px 25px rgba(59,130,246,0.3); }
         .td-action.secondary:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(59,130,246,0.4); }
         .td-action.tertiary { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); border-color: #10b981; box-shadow: 0 8px 25px rgba(16,185,129,0.3); }
         .td-action.tertiary:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(16,185,129,0.4); }
@@ -123,20 +123,23 @@ const TenantDashboard = () => {
         .td-action.quinary { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); border-color: #f59e0b; box-shadow: 0 8px 25px rgba(245,158,11,0.3); }
         .td-action.quinary:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(245,158,11,0.4); }
         .td-list { display:grid; gap:14px; }
-        .td-item { display:grid; grid-template-columns:92px minmax(0,1fr) auto; gap:18px; align-items:center; }
-        .td-thumb { width:92px; height:68px; border-radius:16px; object-fit:cover; background:rgba(255,255,255,0.05); }
-        .td-title { font-size:16px; margin-bottom:4px; color: #171717; font-weight: 600; }
-        .td-meta { color:#6b7280; font-size:13px; line-height:1.5; }
-        .td-contract { background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%); border: 1px solid rgba(37,99,235,0.14); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .td-item { display:grid; grid-template-columns:92px minmax(0,1fr) auto; gap:18px; align-items:center; background: linear-gradient(135deg, #162035 0%, #1E2D4A 100%); border: 1px solid rgba(200,145,40,0.18); border-radius: 16px; padding: 20px; color: #F8F8F9; box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.4); transition: all 0.3s ease; }
+        .td-item:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.5); }
+        .td-thumb { width:92px; height:68px; border-radius:16px; object-fit:cover; background:rgba(200,145,40,0.1); }
+        .td-title { font-size:16px; margin-bottom:4px; color: #F8F8F9; font-weight: 600; }
+        .td-meta { color:#94A3B8; font-size:13px; line-height:1.5; }
+        .td-price { font-size:18px; color: #C89128; white-space:nowrap; font-weight: 700; }
+        .td-contract { background: linear-gradient(135deg, #162035 0%, #1E2D4A 100%); border: 1px solid rgba(200,145,40,0.18); border-radius: 16px; padding: 20px; margin-bottom: 12px; color: #F8F8F9; box-shadow: 0 4px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.4); transition: all 0.3s ease; }
+        .td-contract:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.5); }
         .td-contract-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .td-contract-title { font-size: 16px; font-weight: 600; color: #e8e4dc; }
+        .td-contract-title { font-size: 16px; font-weight: 600; color: #F8F8F9; }
         .td-contract-status { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
-        .td-contract-status.pending { background: rgba(37,99,235,0.2); color: #c9a84c; }
+        .td-contract-status.pending { background: rgba(200,145,40,0.2); color: #C89128; }
         .td-contract-status.active { background: rgba(76,201,76,0.2); color: #4cc94c; }
-        .td-contract-status.signed { background: rgba(76,168,201,0.2); color: #4ca8c9; }
-        .td-contract-status.unknown { background: rgba(160,160,160,0.15); color: #9f9587; }
-        .td-contract-meta { font-size: 13px; color: #9f9587; line-height: 1.4; }
-        .td-contract-rent { font-size: 18px; color: #c9a84c; font-weight: 600; margin-top: 4px; }
+        .td-contract-status.signed { background: rgba(56,189,248,0.2); color: #38bdf8; }
+        .td-contract-status.unknown { background: rgba(148,163,184,0.2); color: #94A3B8; }
+        .td-contract-meta { font-size: 13px; color: #94A3B8; line-height: 1.4; }
+        .td-contract-rent { font-size: 18px; color: #C89128; font-weight: 600; margin-top: 4px; }
         
         /* Enhanced mobile responsiveness */
         @media (max-width: 1024px) {
