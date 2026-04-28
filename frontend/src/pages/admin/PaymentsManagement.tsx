@@ -738,6 +738,65 @@ const PaymentsManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Mobile Responsiveness CSS */}
+      <style>{`
+        @media (max-width: 768px) {
+          /* Improve table scrolling on mobile */
+          table {
+            font-size: 12px;
+          }
+          
+          th, td {
+            padding: 8px !important;
+            white-space: nowrap;
+          }
+          
+          /* Make modal mobile-friendly */
+          .modal-overlay {
+            padding: 16px;
+          }
+          
+          .modal-content {
+            width: 100% !important;
+            max-width: 100% !important;
+            max-height: 90vh;
+            overflow-y: auto;
+          }
+          
+          /* Improve filters on mobile */
+          .filters-container {
+            flex-direction: column !important;
+            gap: 8px !important;
+          }
+          
+          .filter-input {
+            width: 100% !important;
+          }
+          
+          .filter-select {
+            width: 100% !important;
+          }
+          
+          /* Stats grid responsive */
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+          }
+          
+          /* Action buttons mobile-friendly */
+          .action-button {
+            padding: 8px 12px !important;
+            font-size: 12px !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .stats-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

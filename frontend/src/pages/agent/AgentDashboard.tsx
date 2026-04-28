@@ -1,272 +1,169 @@
-import React, { useEffect, useState } from 'react';
-import { Building, Users, TrendingUp, DollarSign, Eye, Link2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Api from '../../services/api';
+import { descriptionStyle, formatCurrency, headingStyle, pageStyle, panelStyle, sectionTitleStyle, statCardStyle, statGridStyle, statLabelStyle, statValueStyle, tableStyle, tableWrapStyle, tdStyle, thStyle } from './agent/agentPageStyles';
 
-interface AgentStats {
-  total_listings?: number;
-  active_leads?: number;
-  monthly_commission?: number;
-  property_views?: number;
-  total_applications?: number;
-}
-
-interface ActivityItem {
-  id: number;
-  type: string;
-  property?: string;
-  property_title?: string;
-  time?: string;
-  created_at?: string;
-  message?: string;
-}
-
-const AgentDashboard = () => {
-  const [stats, setStats] = useState<AgentStats>({});
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
+const AgentDashboard = () => { 
+  const [stats, setStats] = useState<any>(null);
+  const [listings, setListings] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadAgentData = async () => {
+    const load = async () => {
       try {
         setLoading(true);
-        setError('');
-
-        // Fetch agent dashboard data
-        const [statsResponse, activityResponse] = await Promise.all([
-          Api.getAgentDashboard().catch(() => ({ data: {} })), // Handle if endpoint doesn't exist yet
-          Api.getAgentNotifications().catch(() => ({ data: [] })), // Use notifications as activity
+        const [dashboardRes, listingsRes, leadsRes] = await Promise.all([
+          Api.getAgentDashboard(), Api.getMyListings(), Api.getLeads(),
         ]);
-
-        const agentStats = statsResponse.data || {};
-        const activities = Array.isArray(activityResponse.data) ? activityResponse.data : [];
-
-        setStats(agentStats);
-        setRecentActivity(activities.slice(0, 5)); // Show recent 5 activities
+        setStats(dashboardRes.data || {});
+        setListings(Array.isArray(listingsRes.data) ? listingsRes.data.slice(0, 5) : []);
+        setLeads(Array.isArray(leadsRes.data) ? leadsRes.data.slice(0, 5) : []);
       } catch (err: any) {
-        setError(err?.response?.data?.message || 'Failed to load agent dashboard.');
+        setError(err?.response?.data?.message || 'Unable to load agent dashboard.');
       } finally {
         setLoading(false);
       }
     };
-
-    loadAgentData();
+    load();
   }, []);
 
-  // Format stats for display
-  const statsCards = [
-    { 
-      label: 'Total Listings', 
-      value: stats.total_listings?.toString() || '0', 
-      icon: Building, 
-      color: '#f59e0b' 
-    },
-    { 
-      label: 'Active Leads', 
-      value: stats.active_leads?.toString() || '0', 
-      icon: Users, 
-      color: '#60a5fa' 
-    },
-    { 
-      label: 'This Month Commission', 
-      value: stats.monthly_commission ? `${stats.monthly_commission.toLocaleString()} TZS` : '0 TZS', 
-      icon: DollarSign, 
-      color: '#10b981' 
-    },
-    { 
-      label: 'Property Views', 
-      value: stats.property_views?.toString() || '0', 
-      icon: Eye, 
-      color: '#f472b6' 
-    },
-  ];
-
-  // Format activity time
-  const formatTime = (timestamp?: string) => {
-    if (!timestamp) return 'Unknown time';
-    
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffDays > 0) {
-      return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    } else if (diffHours > 0) {
-      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Just now';
-    }
-  };
-
-  // Format activity display
-  const formatActivity = (activity: ActivityItem) => {
-    const property = activity.property_title || activity.property || 'Unknown Property';
-    const time = formatTime(activity.created_at || activity.time);
-    
-    return {
-      ...activity,
-      property,
-      time
-    };
-  };
-
-  if (loading) {
-    return (
-      <div style={{ padding: '20px', color: '#9ca3af' }}>
-        Loading agent dashboard...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ padding: '20px', color: '#ef4444' }}>
-        {error}
-      </div>
-    );
-  }
-
   return (
-    <div style={{ padding: '20px', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={pageStyle}>
       <style>{`
-        .agent-dashboard {
+        .agent-two-col {
           display: grid;
-          gap: 24px;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 20px;
         }
-        .stats-grid {
+
+        .agent-stat-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          grid-template-columns: repeat(4, 1fr);
           gap: 16px;
+          margin-top: 24px;
         }
-        .stat-card {
-          background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px;
-          padding: 20px;
-          display: flex;
-          align-items: center;
-          gap: 16px;
+
+        @media (max-width: 900px) {
+          .agent-two-col {
+            grid-template-columns: 1fr;
+          }
         }
-        .stat-icon {
-          width: 48px;
-          height: 48px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
+
+        @media (max-width: 640px) {
+          .agent-stat-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+          }
         }
-        .stat-content h3 {
-          font-size: 24px;
-          font-weight: 600;
-          margin: 0 0 4px;
-          color: #fff;
-        }
-        .stat-content p {
-          font-size: 12px;
-          color: #9ca3af;
-          margin: 0;
-        }
-        .activity-section {
-          background: #1a1a1a;
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px;
-          padding: 20px;
-        }
-        .activity-header {
-          font-size: 18px;
-          font-weight: 600;
-          margin-bottom: 16px;
-          color: #fff;
-        }
-        .activity-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 0;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .activity-item:last-child {
-          border-bottom: none;
-        }
-        .activity-left {
-          flex: 1;
-        }
-        .activity-type {
-          font-size: 14px;
-          font-weight: 500;
-          color: #fff;
-          margin-bottom: 4px;
-        }
-        .activity-property {
-          font-size: 12px;
-          color: #9ca3af;
-        }
-        .activity-time {
-          font-size: 11px;
-          color: #6b7280;
+
+        @media (max-width: 400px) {
+          .agent-stat-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
 
-      <div className="agent-dashboard">
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>
-            Agent Dashboard
-          </h1>
-          <p style={{ color: '#9ca3af', marginBottom: '24px' }}>
-            Welcome back! Here's your business overview.
-          </p>
+      {/* Overview panel */}
+      <section style={panelStyle}>
+        <div style={sectionTitleStyle}>Agent Workspace</div>
+        <h1 style={headingStyle}>Overview</h1>
+        <p style={{ ...descriptionStyle, marginTop: '8px' }}>
+          Your dashboard reads from the Laravel agent endpoints so listings, leads, and commissions stay aligned with the backend.
+        </p>
+        {error && (
+          <div style={{ marginTop: '14px', padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#dc2626', fontSize: '14px' }}>
+            {error}
+          </div>
+        )}
+        <div className="agent-stat-grid">
+          <div style={statCardStyle('#2563eb')}><div style={statLabelStyle}>Listings</div><div style={statValueStyle}>{loading ? '—' : stats?.total_listings || 0}</div></div>
+          <div style={statCardStyle('#16a34a')}><div style={statLabelStyle}>Active</div><div style={statValueStyle}>{loading ? '—' : stats?.active_listings || 0}</div></div>
+          <div style={statCardStyle('#d97706')}><div style={statLabelStyle}>Leads</div><div style={statValueStyle}>{loading ? '—' : stats?.total_leads || 0}</div></div>
+          <div style={statCardStyle('#7c3aed')}><div style={statLabelStyle}>Commissions</div><div style={statValueStyle}>{loading ? '—' : formatCurrency(stats?.total_commissions)}</div></div>
+        </div>
+      </section>
+
+      {/* Listings + Leads */}
+      <section className="agent-two-col">
+        {/* Recent Listings */}
+        <div style={panelStyle}>
+          <div style={sectionTitleStyle}>Listings</div>
+          <h2 style={{ margin: '0 0 16px', fontSize: '20px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>Recent Listings</h2>
+          <div style={tableWrapStyle}>
+            <table style={tableStyle}>
+              <thead><tr><th style={thStyle}>Property</th><th style={thStyle}>Owner</th><th style={thStyle}>Price</th></tr></thead>
+              <tbody>
+                {listings.length === 0 ? (
+                  <tr><td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>No listings yet.</td></tr>
+                ) : listings.map((item) => (
+                  <tr key={item.id}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <td style={tdStyle}>
+                      <div style={{ fontWeight: 500, color: '#1e293b' }}>{item.title}</div>
+                      <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.location}</div>
+                    </td>
+                    <td style={tdStyle}><div style={{ color: '#475569' }}>{item.owner?.first_name} {item.owner?.last_name}</div></td>
+                    <td style={{ ...tdStyle, fontWeight: 600, color: '#2563eb' }}>{formatCurrency(item.price)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+            <Link to="/dashboard/agent/my-listings" style={{ color: '#2563eb', textDecoration: 'none', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View all listings →</Link>
+          </div>
         </div>
 
-        <div className="stats-grid">
-          {statsCards.map((stat, index) => (
-            <div key={index} className="stat-card">
-              <div 
-                className="stat-icon" 
-                style={{ background: `${stat.color}20` }}
-              >
-                <stat.icon size={24} style={{ color: stat.color }} />
-              </div>
-              <div className="stat-content">
-                <h3>{stat.value}</h3>
-                <p>{stat.label}</p>
-              </div>
-            </div>
-          ))}
+        {/* Recent Leads */}
+        <div style={panelStyle}>
+          <div style={sectionTitleStyle}>Pipeline</div>
+          <h2 style={{ margin: '0 0 16px', fontSize: '20px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>Recent Leads</h2>
+          <div style={tableWrapStyle}>
+            <table style={tableStyle}>
+              <thead><tr><th style={thStyle}>Lead</th><th style={thStyle}>Source</th><th style={thStyle}>Status</th></tr></thead>
+              <tbody>
+                {leads.length === 0 ? (
+                  <tr><td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>No leads yet.</td></tr>
+                ) : leads.map((item) => (
+                  <tr key={item.id}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <td style={tdStyle}>
+                      <div style={{ fontWeight: 500, color: '#1e293b' }}>{item.name || item.user?.first_name || 'Lead'}</div>
+                      <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.email}</div>
+                    </td>
+                    <td style={{ ...tdStyle, color: '#475569', textTransform: 'capitalize' }}>{item.source || 'website'}</td>
+                    <td style={tdStyle}><StatusBadge status={item.status || 'new'} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+            <Link to="/dashboard/agent/leads" style={{ color: '#2563eb', textDecoration: 'none', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View all leads →</Link>
+          </div>
         </div>
-
-        <div className="activity-section">
-          <h2 className="activity-header">Recent Activity</h2>
-          {recentActivity.length > 0 ? (
-            recentActivity.map((activity) => {
-              const formattedActivity = formatActivity(activity);
-              return (
-                <div key={activity.id} className="activity-item">
-                  <div className="activity-left">
-                    <div className="activity-type">
-                      {activity.type || activity.message || 'Activity'}
-                    </div>
-                    <div className="activity-property">{formattedActivity.property}</div>
-                  </div>
-                  <div className="activity-time">{formattedActivity.time}</div>
-                </div>
-              );
-            })
-          ) : (
-            <div style={{ 
-              padding: '40px 20px', 
-              textAlign: 'center', 
-              color: '#9ca3af',
-              fontSize: '14px'
-            }}>
-              No recent activity
-            </div>
-          )}
-        </div>
-      </div>
+      </section>
     </div>
+  );
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const map: Record<string, { bg: string; color: string }> = {
+    new: { bg: '#eff6ff', color: '#2563eb' }, active: { bg: '#f0fdf4', color: '#16a34a' },
+    approved: { bg: '#f0fdf4', color: '#16a34a' }, completed: { bg: '#f0fdf4', color: '#16a34a' },
+    pending: { bg: '#fffbeb', color: '#d97706' }, processing: { bg: '#fffbeb', color: '#d97706' },
+    rejected: { bg: '#fef2f2', color: '#dc2626' }, cancelled: { bg: '#fef2f2', color: '#dc2626' },
+    failed: { bg: '#fef2f2', color: '#dc2626' },
+  };
+  const s = map[status.toLowerCase()] ?? { bg: '#f1f5f9', color: '#64748b' };
+  return (
+    <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', background: s.bg, color: s.color }}>
+      {status}
+    </span>
   );
 };
 

@@ -121,7 +121,6 @@ const Home = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
 
-  // ── Simple search state ──
   const [searchTerm,   setSearchTerm]   = useState('');
   const [propertyType, setPropertyType] = useState('');
   const [priceRange,   setPriceRange]   = useState('');
@@ -195,7 +194,6 @@ const Home = () => {
     } catch { /* silent */ }
   };
 
-  // ── Client-side filter (no navigation) ──
   const filteredProperties = allProperties.filter(p => {
     const term = searchTerm.toLowerCase();
     const matchText = !term ||
@@ -235,6 +233,7 @@ const Home = () => {
           --gold:#C89128; --gold-lt:#D4A843; --gold-dim:rgba(200,145,40,0.12);
           --cream:#F8F8F9; --slate:#94A3B8; --border:rgba(200,145,40,0.18);
         }
+
         /* Hero */
         .hero { position:relative; min-height:100vh; display:flex; align-items:center; overflow:hidden; }
         .hero-bg { position:absolute; inset:0; background-image:url("https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1800&q=80"); background-size:cover; background-position:center 40%; animation:hero-zoom 18s ease-in-out infinite alternate; }
@@ -248,6 +247,7 @@ const Home = () => {
         .hero-title { font-size:clamp(32px,5.5vw,54px); font-weight:300; line-height:1.08; letter-spacing:-0.03em; color:var(--cream); margin-bottom:14px; }
         .hero-title strong { font-weight:700; }
         .hero-sub { font-size:15px; font-weight:300; line-height:1.7; color:rgba(248,248,249,0.62); margin-bottom:32px; }
+
         /* Search card */
         .search-card { background:rgba(22,32,53,0.90); border:1px solid var(--border); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); padding:28px; border-radius:6px; position:relative; overflow:hidden; box-shadow:0 32px 64px rgba(0,0,0,0.5); }
         .search-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--gold),var(--gold-lt)); }
@@ -255,6 +255,8 @@ const Home = () => {
         .s-input:focus,.s-select:focus { border-color:rgba(200,145,40,0.55); }
         .s-input::placeholder { color:var(--slate); }
         .s-select option { background:var(--navy-900); }
+        .s-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+
         /* Buttons */
         .btn-gold { display:inline-flex; align-items:center; gap:8px; background:var(--gold); color:var(--navy-900); padding:14px 26px; font-size:13px; font-weight:700; letter-spacing:0.08em; text-decoration:none; text-transform:uppercase; border:none; cursor:pointer; transition:all 0.2s; border-radius:3px; font-family:inherit; }
         .btn-gold:hover { background:var(--gold-lt); }
@@ -262,11 +264,13 @@ const Home = () => {
         .btn-outline:hover { border-color:var(--gold); color:var(--gold); }
         .btn-ghost { display:inline-flex; align-items:center; gap:8px; background:transparent; color:var(--gold); padding:10px 20px; font-size:13px; font-weight:600; text-decoration:none; text-transform:uppercase; letter-spacing:0.08em; border:1px solid var(--border); cursor:pointer; transition:all 0.2s; font-family:inherit; }
         .btn-ghost:hover { background:var(--gold-dim); }
+
         /* Cards */
         .prop-card,.bnb-card,.oweru-card { background:var(--navy-800); border:1px solid var(--border); overflow:hidden; transition:all 0.3s; cursor:pointer; }
         .prop-card:hover,.bnb-card:hover,.oweru-card:hover { border-color:rgba(200,145,40,0.5); transform:translateY(-4px); box-shadow:0 16px 40px rgba(15,23,42,0.6); }
         .result-card { background:var(--navy-800); border:1px solid var(--border); border-radius:12px; overflow:hidden; transition:all 0.3s; }
         .result-card:hover { border-color:rgba(200,145,40,0.5); transform:translateY(-3px); box-shadow:0 12px 32px rgba(15,23,42,0.5); }
+
         /* Layout */
         .section { max-width:1200px; margin:0 auto; padding:80px 48px; }
         .section-hdr { display:grid; grid-template-columns:1fr auto; gap:40px; align-items:end; margin-bottom:48px; }
@@ -277,11 +281,51 @@ const Home = () => {
         @keyframes shimmer { 0%{opacity:0.4} 50%{opacity:0.9} 100%{opacity:0.4} }
         .prop-img { width:100%; display:block; object-fit:cover; }
         .oweru-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:24px; }
+        .hero-btns { display:flex; gap:14px; flex-wrap:wrap; }
+
+        /* ── RESPONSIVE ── */
         @media(max-width:900px) {
-          .hero-content { grid-template-columns:1fr; gap:40px; }
-          .section { padding:60px 24px; }
-          .section-hdr { grid-template-columns:1fr; gap:16px; }
+          .hero-content { grid-template-columns:1fr; gap:36px; padding:64px 20px 48px; }
+          .section { padding:56px 20px; }
+          .section-hdr { grid-template-columns:1fr; gap:14px; }
+          .s-grid { grid-template-columns:1fr; }
         }
+        @media(max-width:600px) {
+          .hero-content { padding:48px 16px 40px; }
+          .section { padding:44px 16px; }
+          .search-card { padding:20px 16px; }
+          .hero-title { font-size:clamp(26px,8vw,38px); }
+          .hero-sub { font-size:14px; }
+          .btn-gold, .btn-outline { padding:12px 18px; font-size:12px; }
+          .oweru-grid { grid-template-columns:1fr; }
+          .section-hdr { margin-bottom:28px; }
+        }
+
+        /* Stats bar — 4-col on desktop, 2x2 on mobile */
+        .stats-bar { background:var(--navy-800); border-bottom:1px solid var(--border); }
+        .stats-inner { max-width:1200px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr); border-left:1px solid var(--border); }
+        @media(max-width:700px) { .stats-inner { grid-template-columns:repeat(2,1fr); } }
+        .stat-cell { text-align:center; padding:28px 16px; border-right:1px solid var(--border); }
+        @media(max-width:700px) {
+          .stat-cell:nth-child(2) { border-right:none; }
+          .stat-cell:nth-child(3) { border-top:1px solid var(--border); }
+        }
+
+        /* Featured grid */
+        .prop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; }
+        @media(max-width:500px) { .prop-grid { grid-template-columns:1fr; } }
+
+        /* Result cards grid */
+        .result-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; }
+        @media(max-width:500px) { .result-grid { grid-template-columns:1fr; } }
+
+        /* CTA section 2-col → 1-col */
+        .cta-grid { display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center; }
+        @media(max-width:800px) { .cta-grid { grid-template-columns:1fr; gap:40px; } }
+
+        /* BnB grid */
+        .bnb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:24px; }
+        @media(max-width:500px) { .bnb-grid { grid-template-columns:1fr; } }
       `}</style>
 
       {/* ══ HERO ══ */}
@@ -297,7 +341,7 @@ const Home = () => {
             </div>
             <h1 className="hero-title">Find Your<br /><strong>Perfect Rental Property</strong></h1>
             <p className="hero-sub">Connect with trusted landlords and professional agents across Tanzania.</p>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <div className="hero-btns">
               <Link to="/properties" className="btn-gold">Browse All <ArrowRight size={15} /></Link>
               <Link to="/register"   className="btn-outline">Create Account <ChevronRight size={14} /></Link>
             </div>
@@ -315,7 +359,6 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Keyword */}
             <div style={{ position: 'relative', marginBottom: 10 }}>
               <input
                 className="s-input"
@@ -333,8 +376,7 @@ const Home = () => {
               )}
             </div>
 
-            {/* Type + Price */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+            <div className="s-grid">
               <select className="s-select" value={propertyType} onChange={e => setPropertyType(e.target.value)}>
                 <option value="">All Types</option>
                 <option value="apartment">Apartment</option>
@@ -368,7 +410,6 @@ const Home = () => {
       {searchActive && (
         <section id="search-results" style={{ background: 'var(--navy-700)', borderTop: '2px solid var(--gold)', borderBottom: '1px solid var(--border)' }}>
           <div className="section" style={{ paddingTop: 48, paddingBottom: 56 }}>
-            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -386,7 +427,7 @@ const Home = () => {
             </div>
 
             {loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }}>
+              <div className="result-grid">
                 {[0,1,2,3,4,5].map(i => <div key={i} className="skeleton" style={{ height: 320 }} />)}
               </div>
             ) : filteredProperties.length === 0 ? (
@@ -398,7 +439,7 @@ const Home = () => {
               </div>
             ) : (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 20 }}>
+                <div className="result-grid">
                   {filteredProperties.map(p => (
                     <div key={p.id} className="result-card">
                       <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -436,12 +477,12 @@ const Home = () => {
         </section>
       )}
 
-      {/* ══ STATS BAR (hidden during search) ══ */}
+      {/* ══ STATS BAR ══ */}
       {!searchActive && (
-        <div style={{ background: 'var(--navy-800)', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderLeft: '1px solid var(--border)' }}>
+        <div className="stats-bar">
+          <div className="stats-inner">
             {[{ num: '1,247', lbl: 'Active Listings' }, { num: '3,842', lbl: 'Registered Users' }, { num: '892', lbl: 'Available Now' }, { num: '24 hr', lbl: 'Avg. Response' }].map(s => (
-              <div key={s.lbl} style={{ textAlign: 'center', padding: '28px 24px', borderRight: '1px solid var(--border)' }}>
+              <div key={s.lbl} className="stat-cell">
                 <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--gold)', marginBottom: 6 }}>{s.num}</div>
                 <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--slate)' }}>{s.lbl}</div>
               </div>
@@ -462,11 +503,11 @@ const Home = () => {
               <Link to="/properties" className="btn-ghost">View All <ArrowRight size={15} /></Link>
             </div>
             {loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
+              <div className="prop-grid">
                 {[0,1,2].map(i => <div key={i} className="skeleton" style={{ height: 340 }} />)}
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
+              <div className="prop-grid">
                 {allProperties.slice(0, 6).map(p => (
                   <div key={p.id} className="prop-card" style={{ borderRadius: 12 }}>
                     <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -509,7 +550,7 @@ const Home = () => {
               <p style={{ fontSize: 14, fontWeight: 300, color: 'var(--slate)', maxWidth: 280, textAlign: 'right' }}>Handpicked short-term rentals.</p>
             </div>
             {bnbLoading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 24 }}>
+              <div className="bnb-grid">
                 {[0,1,2].map(i => <div key={i} className="skeleton" style={{ height: 380 }} />)}
               </div>
             ) : bnbProperties.length === 0 ? (
@@ -519,7 +560,7 @@ const Home = () => {
                 <p style={{ fontSize: 14 }}>Short-term rentals will appear here soon.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 24 }}>
+              <div className="bnb-grid">
                 {bnbProperties.map((p: any) => (
                   <div key={p.id} className="bnb-card" style={{ borderRadius: 12 }}>
                     <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 220 }}
@@ -598,10 +639,10 @@ const Home = () => {
       {!searchActive && (
         <section style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)' }}>
           <div className="section">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+            <div className="cta-grid">
               <div>
                 <div className="section-tag">Get Started</div>
-                <h2 style={{ fontSize: 'clamp(28px,3.5vw,48px)', fontWeight: 700, color: 'var(--cream)', marginBottom: 16, lineHeight: 1.1 }}>
+                <h2 style={{ fontSize: 'clamp(26px,3.5vw,48px)', fontWeight: 700, color: 'var(--cream)', marginBottom: 16, lineHeight: 1.1 }}>
                   Ready to Find Your <strong>Next Home?</strong>
                 </h2>
                 <p style={{ fontSize: 15, color: 'var(--slate)', marginBottom: 32, lineHeight: 1.7 }}>
@@ -624,8 +665,8 @@ const Home = () => {
 
       {/* ══ BOOKING MODAL ══ */}
       {showBookingModal && selectedProperty && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--navy-800)', border: '1px solid var(--border)', padding: 36, maxWidth: 560, width: '90%', maxHeight: '90vh', overflowY: 'auto', borderRadius: 12 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
+          <div style={{ background: 'var(--navy-800)', border: '1px solid var(--border)', padding: 36, maxWidth: 560, width: '100%', maxHeight: '90vh', overflowY: 'auto', borderRadius: 12 }}>
             <BookingForm
               property={selectedProperty}
               onClose={() => setShowBookingModal(false)}
@@ -637,7 +678,7 @@ const Home = () => {
 
       {/* ══ FOOTER ══ */}
       <footer style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)', padding: '28px 0' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <img src={LOGO} alt="OWERU" style={{ height: 22 }} />
           <div style={{ color: 'var(--slate)', fontSize: 13 }}>&copy; 2026 Oweru. Tanzania.</div>
         </div>

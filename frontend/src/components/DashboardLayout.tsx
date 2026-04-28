@@ -30,86 +30,77 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
                            user?.userRole ||
                            'tenant') as UserRole;
 
-  console.log('DashboardLayout - User object:', user);
-  console.log('DashboardLayout - User object keys:', user ? Object.keys(user) : 'No user');
-  console.log('DashboardLayout - Detected user type:', userType);
-
   const navigation: Record<UserRole, { name: string; icon: any; href: string; color: string; badge?: string }[]> = {
-
     tenant: [
-      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
-      { name: 'Browse Properties',  icon: Search,        href: '/dashboard/tenant/properties',         color: '#60a5fa' },
-      { name: 'My Applications',    icon: FileText,      href: 'applications',        color: '#a78bfa' },
-      { name: 'Saved Properties',   icon: Star,          href: 'saved-properties',    color: '#f59e0b' },
-      { name: 'Digital Contracts',  icon: FileText,      href: 'digital-contracts',            color: '#34d399' },
-      { name: 'Rent Payments',      icon: CreditCard,    href: 'payments',            color: '#10b981' },
-      { name: 'Payment History',    icon: Receipt,       href: 'payment-history',     color: '#6ee7b7' },
-      { name: 'Messages',           icon: MessageSquare, href: 'messages',            color: '#f87171' },
-      { name: 'Notifications',      icon: Bell,          href: 'notifications',       color: '#fb923c' },
+      { name: 'Overview',           icon: Home,          href: '',                              color: '#c9a84c' },
+      { name: 'Browse Properties',  icon: Search,        href: '/dashboard/tenant/properties',  color: '#60a5fa' },
+      { name: 'My Applications',    icon: FileText,      href: 'applications',                  color: '#a78bfa' },
+      { name: 'Saved Properties',   icon: Star,          href: 'saved-properties',              color: '#f59e0b' },
+      { name: 'Digital Contracts',  icon: FileText,      href: 'digital-contracts',             color: '#34d399' },
+      { name: 'Rent Payments',      icon: CreditCard,    href: 'payments',                      color: '#10b981' },
+      { name: 'Payment History',    icon: Receipt,       href: 'payment-history',               color: '#6ee7b7' },
+      { name: 'Messages',           icon: MessageSquare, href: 'messages',                      color: '#f87171' },
+      { name: 'Notifications',      icon: Bell,          href: 'notifications',                 color: '#fb923c' },
     ],
-
     landlord: [
-      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
-      { name: 'My Properties',      icon: Building,      href: 'my-properties',       color: '#f59e0b' },
-      { name: 'Add Property',       icon: Plus,          href: 'add-property',        color: '#34d399' },
-      { name: 'Applications',       icon: FileText,      href: 'applications',        color: '#60a5fa' },
-      { name: 'My Tenants',         icon: Users,         href: 'tenants',             color: '#a78bfa' },
-      { name: 'Digital Contracts',  icon: BookOpen,      href: 'digital-contracts',   color: '#f472b6' },
-      { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection',     color: '#10b981' },
-      { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts',            color: '#6ee7b7' },
-      { name: 'Commission Reports', icon: PieChart,      href: 'commissions',         color: '#fb923c' },
-      { name: 'Analytics',          icon: BarChart3,     href: 'analytics',           color: '#f87171' },
-      { name: 'Messages',           icon: MessageSquare, href: 'messages',            color: '#94a3b8' },
+      { name: 'Overview',           icon: Home,          href: '',                color: '#c9a84c' },
+      { name: 'My Properties',      icon: Building,      href: 'my-properties',   color: '#f59e0b' },
+      { name: 'Add Property',       icon: Plus,          href: 'add-property',    color: '#34d399' },
+      { name: 'Applications',       icon: FileText,      href: 'applications',    color: '#60a5fa' },
+      { name: 'My Tenants',         icon: Users,         href: 'tenants',         color: '#a78bfa' },
+      { name: 'Digital Contracts',  icon: BookOpen,      href: 'digital-contracts', color: '#f472b6' },
+      { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection', color: '#10b981' },
+      { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts',        color: '#6ee7b7' },
+      { name: 'Commission Reports', icon: PieChart,      href: 'commissions',     color: '#fb923c' },
+      { name: 'Analytics',          icon: BarChart3,     href: 'analytics',       color: '#f87171' },
+      { name: 'Messages',           icon: MessageSquare, href: 'messages',        color: '#94a3b8' },
     ],
-
     agent: [
-      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
-      { name: 'My Listings',        icon: Building,      href: 'my-listings',         color: '#f59e0b' },
-      { name: 'Add Listing',        icon: Plus,          href: 'listings/add',        color: '#34d399' },
-      { name: 'Linked Owners',      icon: Landmark,      href: 'linked-owners',       color: '#60a5fa' },
-      { name: 'Share & Track',      icon: Link2,         href: 'tracking',            color: '#a78bfa' },
-      { name: 'QR Codes',           icon: QrCode,        href: 'qr-codes',            color: '#f472b6' },
-      { name: 'Leads & Visitors',   icon: Eye,           href: 'leads',               color: '#38bdf8' },
-      { name: 'Applications',       icon: FileText,      href: 'applications',        color: '#94a3b8' },
-      { name: 'My Commissions',     icon: DollarSign,    href: 'commissions',         color: '#10b981' },
-      { name: 'Payout History',     icon: Receipt,       href: 'payouts',             color: '#6ee7b7' },
-      { name: 'Analytics',          icon: TrendingUp,    href: 'analytics',           color: '#f87171' },
-      { name: 'Messages',           icon: MessageSquare, href: 'messages',            color: '#fb923c' },
+      { name: 'Overview',           icon: Home,          href: '',               color: '#c9a84c' },
+      { name: 'My Listings',        icon: Building,      href: 'my-listings',    color: '#f59e0b' },
+      { name: 'Add Listing',        icon: Plus,          href: 'listings/add',   color: '#34d399' },
+      { name: 'Linked Owners',      icon: Landmark,      href: 'linked-owners',  color: '#60a5fa' },
+      { name: 'Share & Track',      icon: Link2,         href: 'tracking',       color: '#a78bfa' },
+      { name: 'QR Codes',           icon: QrCode,        href: 'qr-codes',       color: '#f472b6' },
+      { name: 'Leads & Visitors',   icon: Eye,           href: 'leads',          color: '#38bdf8' },
+      { name: 'Applications',       icon: FileText,      href: 'applications',   color: '#94a3b8' },
+      { name: 'My Commissions',     icon: DollarSign,    href: 'commissions',    color: '#10b981' },
+      { name: 'Payout History',     icon: Receipt,       href: 'payouts',        color: '#6ee7b7' },
+      { name: 'Analytics',          icon: TrendingUp,    href: 'analytics',      color: '#f87171' },
+      { name: 'Messages',           icon: MessageSquare, href: 'messages',       color: '#fb923c' },
     ],
-
     admin: [
-      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
-      { name: 'Users',              icon: Users,         href: 'users',               color: '#60a5fa' },
-      { name: 'Properties',         icon: Building,      href: 'properties',          color: '#f59e0b' },
+      { name: 'Overview',             icon: Home,        href: '',                   color: '#c9a84c' },
+      { name: 'Users',                icon: Users,       href: 'users',              color: '#60a5fa' },
+      { name: 'Properties',           icon: Building,    href: 'properties',         color: '#f59e0b' },
       { name: 'Add Oweru Properties', icon: Plus,        href: 'add-oweru-property', color: '#c9a84c' },
-      { name: 'BNB Properties',     icon: Hotel,         href: 'bnb-properties',      color: '#f472b6' },
-      { name: 'Transactions',       icon: RefreshCw,     href: 'transactions',        color: '#6ee7b7' },
-      { name: 'Commission',         icon: PieChart,      href: 'commission',          color: '#10b981' },
-      { name: 'Payments',           icon: CreditCard,    href: 'payments',            color: '#f472b6' },
-      { name: 'Contracts',          icon: BookOpen,      href: 'contracts',           color: '#a78bfa' },
-      { name: 'Verification',       icon: ShieldCheck,   href: 'verification',        color: '#34d399' },
-      { name: 'Alerts',             icon: AlertCircle,   href: 'alerts',              color: '#f87171' },
-      { name: 'Settings',           icon: Settings,      href: 'settings',            color: '#fb923c' },
+      { name: 'BNB Properties',       icon: Hotel,       href: 'bnb-properties',     color: '#f472b6' },
+      { name: 'Transactions',         icon: RefreshCw,   href: 'transactions',       color: '#6ee7b7' },
+      { name: 'Commission',           icon: PieChart,    href: 'commission',         color: '#10b981' },
+      { name: 'Payments',             icon: CreditCard,  href: 'payments',           color: '#f472b6' },
+      { name: 'Contracts',            icon: BookOpen,    href: 'contracts',          color: '#a78bfa' },
+      { name: 'Verification',         icon: ShieldCheck, href: 'verification',       color: '#34d399' },
+      { name: 'Alerts',               icon: AlertCircle, href: 'alerts',             color: '#f87171' },
+      { name: 'Settings',             icon: Settings,    href: 'settings',           color: '#fb923c' },
     ],
-
     bnb_owner: [
-      { name: 'Overview',           icon: Home,          href: '',                    color: '#c9a84c' },
-      { name: 'My BNB Properties',  icon: Hotel,         href: 'bnb-properties',       color: '#f472b6' },
-      { name: 'Add Property',       icon: Plus,          href: 'bnb-properties/add',   color: '#34d399' },
-      { name: 'Bookings',           icon: Calendar,      href: 'bnb-bookings',         color: '#60a5fa' },
-      { name: 'Reviews',            icon: Star,          href: 'bnb-reviews',          color: '#f59e0b' },
-      { name: 'Analytics',          icon: BarChart3,     href: 'bnb-analytics',        color: '#a78bfa' },
-      { name: 'Messages',           icon: MessageSquare, href: 'messages',            color: '#f87171' },
-      { name: 'Settings',           icon: Settings,      href: 'settings',            color: '#fb923c' },
+      { name: 'Overview',          icon: Home,          href: '',                  color: '#c9a84c' },
+      { name: 'My BNB Properties', icon: Hotel,         href: 'bnb-properties',    color: '#f472b6' },
+      { name: 'Add Property',      icon: Plus,          href: 'bnb-properties/add', color: '#34d399' },
+      { name: 'Bookings',          icon: Calendar,      href: 'bnb-bookings',      color: '#60a5fa' },
+      { name: 'Reviews',           icon: Star,          href: 'bnb-reviews',       color: '#f59e0b' },
+      { name: 'Analytics',         icon: BarChart3,     href: 'bnb-analytics',     color: '#a78bfa' },
+      { name: 'Messages',          icon: MessageSquare, href: 'messages',          color: '#f87171' },
+      { name: 'Settings',          icon: Settings,      href: 'settings',          color: '#fb923c' },
     ],
   };
 
   const roleConfig: Record<UserRole, { label: string; accent: string; sidebarBg: string; border: string }> = {
-    tenant:   { label: 'Tenant',   accent: '#70c490', sidebarBg: 'linear-gradient(160deg,#0c1610 0%,#111a14 100%)', border: 'rgba(112,196,144,0.12)' },
-    landlord: { label: 'Landlord', accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1507 0%,#1f1a0b 100%)', border: 'rgba(37,99,235,0.12)' },
-    agent:    { label: 'Dalali',   accent: '#38bdf8', sidebarBg: 'linear-gradient(160deg,#05101a 0%,#0c1824 100%)', border: 'rgba(56,189,248,0.12)' },
-    admin:    { label: 'Admin',    accent: '#f87171', sidebarBg: 'linear-gradient(160deg,#1a0505 0%,#1f0c0c 100%)', border: 'rgba(248,113,113,0.12)' },
-    bnb_owner: { label: 'BNB Owner', accent: '#f472b6', sidebarBg: 'linear-gradient(160deg,#2a0f1a 0%,#3f1425 100%)', border: 'rgba(244,114,182,0.12)' },
+    tenant:    { label: 'Tenant',    accent: '#70c490', sidebarBg: 'linear-gradient(160deg,#0c1610 0%,#111a14 100%)', border: 'rgba(112,196,144,0.12)' },
+    landlord:  { label: 'Landlord',  accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1507 0%,#1f1a0b 100%)', border: 'rgba(37,99,235,0.12)'   },
+    agent:     { label: 'Dalali',    accent: '#38bdf8', sidebarBg: 'linear-gradient(160deg,#05101a 0%,#0c1824 100%)', border: 'rgba(56,189,248,0.12)'   },
+    admin:     { label: 'Admin',     accent: '#f87171', sidebarBg: 'linear-gradient(160deg,#1a0505 0%,#1f0c0c 100%)', border: 'rgba(248,113,113,0.12)'  },
+    bnb_owner: { label: 'BNB Owner', accent: '#f472b6', sidebarBg: 'linear-gradient(160deg,#2a0f1a 0%,#3f1425 100%)', border: 'rgba(244,114,182,0.12)'  },
   };
 
   const cfg = roleConfig[userType] ?? roleConfig.tenant;
@@ -133,20 +124,15 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     }
   };
 
-  // ── FIX 1: always use `pathname` from useLocation (not global `location`) ──
-  // ── FIX 2: build absolute paths so active state is always correct          ──
   const getFullPath = (href: string): string => {
     if (href === '') return dashboardRoot;
-    if (href.startsWith('/')) return href;           // already absolute (e.g. /properties)
+    if (href.startsWith('/')) return href;
     return `${dashboardRoot}/${href}`;
   };
 
   const isActive = (href: string): boolean => {
     const fullPath = getFullPath(href);
-    if (href === '') {
-      // Only exact match for Overview so it doesn't light up everything
-      return pathname === fullPath || pathname === '/dashboard';
-    }
+    if (href === '') return pathname === fullPath || pathname === '/dashboard';
     return pathname === fullPath || pathname.startsWith(fullPath + '/');
   };
 
@@ -168,10 +154,10 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { label: 'Insights',   items: ['Analytics','Messages'] },
     ],
     agent: [
-      { label: 'Listings',   items: ['Overview','My Listings','Add Listing','Linked Owners'] },
-      { label: 'Tracking',   items: ['Share & Track','QR Codes','Leads & Visitors','Applications'] },
-      { label: 'Finance',    items: ['My Commissions','Payout History'] },
-      { label: 'Insights',   items: ['Analytics','Messages'] },
+      { label: 'Listings',  items: ['Overview','My Listings','Add Listing','Linked Owners'] },
+      { label: 'Tracking',  items: ['Share & Track','QR Codes','Leads & Visitors','Applications'] },
+      { label: 'Finance',   items: ['My Commissions','Payout History'] },
+      { label: 'Insights',  items: ['Analytics','Messages'] },
     ],
     admin: [
       { label: 'Platform',   items: ['Overview','Users','Properties','Verification'] },
@@ -189,65 +175,15 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const sections = sectionMap[userType] ?? sectionMap.tenant;
 
   const roleQuickLinks: Record<UserRole, {
-    primary: string;
-    primaryLabel: string;
-    primaryIcon: any;
-    secondary: string;
-    secondaryLabel: string;
-    secondaryIcon: any;
-    settings?: string;
-    settingsLabel?: string;
+    primary: string; primaryLabel: string; primaryIcon: any;
+    secondary: string; secondaryLabel: string; secondaryIcon: any;
+    settings?: string; settingsLabel?: string;
   }> = {
-    tenant: {
-      primary: getFullPath('messages'),
-      primaryLabel: 'Messages',
-      primaryIcon: MessageSquare,
-      secondary: getFullPath('notifications'),
-      secondaryLabel: 'Notifications',
-      secondaryIcon: Bell,
-      settings: getFullPath('settings'),
-      settingsLabel: 'Account Settings',
-    },
-    landlord: {
-      primary: getFullPath('tenants'),
-      primaryLabel: 'Tenants',
-      primaryIcon: Users,
-      secondary: getFullPath('my-properties'),
-      secondaryLabel: 'Properties',
-      secondaryIcon: Building,
-      settings: getFullPath('settings'),
-      settingsLabel: 'Account Settings',
-    },
-    agent: {
-      primary: getFullPath('leads'),
-      primaryLabel: 'Leads',
-      primaryIcon: Eye,
-      secondary: getFullPath('tracking'),
-      secondaryLabel: 'Tracking',
-      secondaryIcon: Link2,
-      settings: getFullPath('settings'),
-      settingsLabel: 'Account Settings',
-    },
-    admin: {
-      primary: getFullPath('verification'),
-      primaryLabel: 'Verification',
-      primaryIcon: ShieldCheck,
-      secondary: getFullPath('alerts'),
-      secondaryLabel: 'Alerts',
-      secondaryIcon: AlertCircle,
-      settings: getFullPath('settings'),
-      settingsLabel: 'System Settings',
-    },
-    bnb_owner: {
-      primary: getFullPath('bnb-bookings'),
-      primaryLabel: 'Bookings',
-      primaryIcon: Calendar,
-      secondary: getFullPath('bnb-reviews'),
-      secondaryLabel: 'Reviews',
-      secondaryIcon: Star,
-      settings: getFullPath('settings'),
-      settingsLabel: 'Account Settings',
-    },
+    tenant:    { primary: getFullPath('messages'),     primaryLabel: 'Messages',     primaryIcon: MessageSquare, secondary: getFullPath('notifications'), secondaryLabel: 'Notifications', secondaryIcon: Bell,        settings: getFullPath('settings'), settingsLabel: 'Account Settings' },
+    landlord:  { primary: getFullPath('tenants'),      primaryLabel: 'Tenants',      primaryIcon: Users,         secondary: getFullPath('my-properties'), secondaryLabel: 'Properties',    secondaryIcon: Building,    settings: getFullPath('settings'), settingsLabel: 'Account Settings' },
+    agent:     { primary: getFullPath('leads'),        primaryLabel: 'Leads',        primaryIcon: Eye,           secondary: getFullPath('tracking'),      secondaryLabel: 'Tracking',      secondaryIcon: Link2,       settings: getFullPath('settings'), settingsLabel: 'Account Settings' },
+    admin:     { primary: getFullPath('verification'), primaryLabel: 'Verification', primaryIcon: ShieldCheck,   secondary: getFullPath('alerts'),        secondaryLabel: 'Alerts',        secondaryIcon: AlertCircle, settings: getFullPath('settings'), settingsLabel: 'System Settings'  },
+    bnb_owner: { primary: getFullPath('bnb-bookings'), primaryLabel: 'Bookings',     primaryIcon: Calendar,      secondary: getFullPath('bnb-reviews'),   secondaryLabel: 'Reviews',       secondaryIcon: Star,        settings: getFullPath('settings'), settingsLabel: 'Account Settings' },
   };
 
   const quickLinks = roleQuickLinks[userType] ?? roleQuickLinks.tenant;
@@ -270,21 +206,15 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --gold:    var(--accent-color);
-          --gold-lt: var(--accent-light);
-          --dark:    var(--bg-primary);
-          --dark-2:  var(--bg-secondary);
-          --dark-3:  var(--bg-tertiary);
-          --cream:   var(--text-primary);
-          --muted:   var(--text-secondary);
-          --accent:  ${cfg.accent};
-          --border:  ${cfg.border};
+          --accent: ${cfg.accent};
+          --border: ${cfg.border};
         }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
+        /* ── Sidebar ── */
         .dl-sidebar {
           width: 256px;
           background: ${cfg.sidebarBg};
@@ -315,47 +245,17 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           flex-shrink: 0;
         }
 
-        .dl-logo {
-          text-decoration: none;
-          display: flex;
-          align-items: baseline;
-          gap: 0;
-        }
-
-        .dl-logo-text {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 22px;
-          font-weight: 500;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: var(--cream);
-        }
-
-        .dl-logo-dot {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 26px;
-          font-weight: 300;
-          color: var(--accent);
-          line-height: 1;
-          margin-left: 1px;
-        }
-
-        .dl-tagline {
-          font-size: 9px;
-          font-weight: 400;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--muted);
-          margin-top: 2px;
-        }
+        .dl-logo { text-decoration: none; display: flex; align-items: baseline; }
+        .dl-tagline { font-size: 9px; font-weight: 400; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-secondary, #6b7280); margin-top: 2px; }
 
         .dl-close-btn {
           display: none;
           background: none; border: none;
-          color: var(--muted); cursor: pointer; padding: 4px;
+          color: var(--text-secondary, #6b7280); cursor: pointer; padding: 6px;
           transition: color 0.2s;
+          border-radius: 4px;
         }
-        .dl-close-btn:hover { color: var(--cream); }
+        .dl-close-btn:hover { color: var(--text-primary, #fff); }
 
         .dl-user {
           padding: 18px 24px 16px;
@@ -371,7 +271,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           display: flex; align-items: center; justify-content: center;
           font-family: 'Cormorant Garamond', serif;
           font-size: 15px; font-weight: 500;
-          color: var(--gold);
+          color: var(--accent);
           letter-spacing: 0.04em;
           margin-bottom: 11px;
           flex-shrink: 0;
@@ -380,14 +280,14 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         .dl-user-name {
           font-family: 'Cormorant Garamond', serif;
           font-size: 16px; font-weight: 500;
-          color: var(--cream); letter-spacing: 0.01em;
+          color: var(--text-primary, #fff); letter-spacing: 0.01em;
           margin-bottom: 2px;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         .dl-user-email {
           font-size: 11px; font-weight: 300;
-          color: var(--muted); margin-bottom: 10px;
+          color: var(--text-secondary, #6b7280); margin-bottom: 10px;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
@@ -403,18 +303,14 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         }
 
         .dl-role-dot {
-          width: 5px; height: 5px;
-          border-radius: 50%;
+          width: 5px; height: 5px; border-radius: 50%;
           background: var(--accent);
           flex-shrink: 0;
           box-shadow: 0 0 6px var(--accent);
           animation: glow-pulse 2.5s ease-in-out infinite;
         }
 
-        @keyframes glow-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.45; }
-        }
+        @keyframes glow-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
         .dl-nav { padding: 8px 0 12px; }
 
@@ -425,50 +321,28 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           color: rgba(122,112,96,0.45);
           display: flex; align-items: center; gap: 8px;
         }
-
-        .dl-nav-section::after {
-          content: '';
-          flex: 1; height: 1px;
-          background: linear-gradient(to right, rgba(122,112,96,0.15), transparent);
-        }
+        .dl-nav-section::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, rgba(122,112,96,0.15), transparent); }
 
         .dl-nav-link {
           display: flex; align-items: center; gap: 11px;
           padding: 9px 24px;
           text-decoration: none;
-          color: var(--muted);
+          color: var(--text-secondary, #6b7280);
           font-size: 12.5px; font-weight: 400;
           transition: all 0.18s;
           border-left: 2px solid transparent;
           position: relative;
         }
+        .dl-nav-link:hover { color: var(--nav-color, var(--text-primary, #fff)); background: var(--nav-hover-bg, rgba(255,255,255,0.03)); border-left-color: var(--nav-color, rgba(37,99,235,0.3)); }
+        .dl-nav-link.active { color: var(--nav-color, var(--accent)); background: var(--nav-active-bg, rgba(37,99,235,0.07)); border-left-color: var(--nav-color, var(--accent)); }
 
-        .dl-nav-link:hover {
-          color: var(--nav-color, var(--cream));
-          background: var(--nav-hover-bg, rgba(255,255,255,0.03));
-          border-left-color: var(--nav-color, rgba(37,99,235,0.3));
-        }
-
-        .dl-nav-link.active {
-          color: var(--nav-color, var(--gold));
-          background: var(--nav-active-bg, rgba(37,99,235,0.07));
-          border-left-color: var(--nav-color, var(--gold));
-        }
-
-        .dl-nav-link-icon {
-          width: 16px; height: 16px;
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
+        .dl-nav-link-icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
         .dl-nav-badge {
           margin-left: auto;
-          font-size: 9px; font-weight: 600;
-          letter-spacing: 0.04em;
-          padding: 2px 6px;
-          border-radius: 999px;
-          background: rgba(248,113,113,0.15);
-          color: #f87171;
+          font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
+          padding: 2px 6px; border-radius: 999px;
+          background: rgba(248,113,113,0.15); color: #f87171;
           border: 1px solid rgba(248,113,113,0.2);
         }
 
@@ -483,17 +357,17 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           display: flex; align-items: center; gap: 11px;
           padding: 9px 0;
           background: none; border: none;
-          color: var(--muted);
+          color: var(--text-secondary, #6b7280);
           font-family: 'DM Sans', sans-serif;
           font-size: 12.5px; font-weight: 400;
           cursor: pointer; text-decoration: none;
           transition: color 0.18s; text-align: left;
           border-radius: 2px;
         }
-
-        .dl-sidebar-footer-btn:hover { color: var(--cream); }
+        .dl-sidebar-footer-btn:hover { color: var(--text-primary, #fff); }
         .dl-sidebar-footer-btn.danger:hover { color: #e07070; }
 
+        /* ── Main area ── */
         .dl-main {
           flex: 1;
           display: flex;
@@ -501,7 +375,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           min-height: 100vh;
           overflow: hidden;
           min-width: 0;
-          background: var(--dark);
+          background: var(--bg-primary);
         }
 
         .dl-topbar {
@@ -518,22 +392,18 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           backdrop-filter: blur(12px);
         }
 
-        .dl-topbar-left {
-          display: flex; align-items: center; gap: 14px;
-        }
+        .dl-topbar-left { display: flex; align-items: center; gap: 14px; }
 
         .dl-menu-toggle {
           display: none;
           background: none; border: 1px solid rgba(255,255,255,0.07);
-          color: var(--muted); cursor: pointer;
+          color: var(--text-secondary, #6b7280); cursor: pointer;
           padding: 7px; border-radius: 4px;
-          transition: all 0.2s;
+          transition: all 0.2s; align-items: center; justify-content: center;
         }
-        .dl-menu-toggle:hover { color: var(--cream); border-color: rgba(255,255,255,0.15); }
+        .dl-menu-toggle:hover { color: var(--text-primary, #fff); border-color: rgba(255,255,255,0.15); }
 
-        .dl-breadcrumb {
-          display: flex; align-items: center; gap: 7px;
-        }
+        .dl-breadcrumb { display: flex; align-items: center; gap: 7px; }
 
         .dl-bc-home {
           font-size: 10px; font-weight: 400;
@@ -541,7 +411,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           color: rgba(122,112,96,0.5); text-decoration: none;
           transition: color 0.18s;
         }
-        .dl-bc-home:hover { color: var(--muted); }
+        .dl-bc-home:hover { color: var(--text-secondary, #6b7280); }
 
         .dl-bc-sep { color: rgba(122,112,96,0.25); display: flex; align-items: center; }
 
@@ -551,30 +421,20 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           color: var(--accent);
         }
 
-        .dl-topbar-right {
-          display: flex; align-items: center; gap: 3px;
-        }
+        .dl-topbar-right { display: flex; align-items: center; gap: 3px; }
 
         .dl-topbar-btn {
           width: 34px; height: 34px;
           background: transparent;
           border: 1px solid transparent;
-          color: var(--muted);
+          color: var(--text-secondary, #6b7280);
           display: flex; align-items: center; justify-content: center;
           cursor: pointer; text-decoration: none; border-radius: 4px;
           transition: all 0.18s;
         }
-        .dl-topbar-btn:hover {
-          color: var(--cream);
-          border-color: rgba(255,255,255,0.08);
-          background: rgba(255,255,255,0.04);
-        }
+        .dl-topbar-btn:hover { color: var(--text-primary, #fff); border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); }
 
-        .dl-topbar-divider {
-          width: 1px; height: 18px;
-          background: rgba(255,255,255,0.06);
-          margin: 0 4px;
-        }
+        .dl-topbar-divider { width: 1px; height: 18px; background: rgba(255,255,255,0.06); margin: 0 4px; }
 
         .dl-topbar-role {
           display: flex; align-items: center; gap: 6px;
@@ -585,12 +445,14 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
           background: color-mix(in srgb, var(--accent) 5%, transparent);
           border-radius: 2px;
+          white-space: nowrap;
         }
 
         .dl-content {
           flex: 1;
           padding: 36px 40px;
           overflow-y: auto;
+          overflow-x: hidden;
         }
 
         .dl-overlay {
@@ -600,6 +462,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           backdrop-filter: blur(6px);
         }
 
+        /* ── Tablet breakpoint ── */
         @media (max-width: 960px) {
           .dl-sidebar {
             position: fixed;
@@ -613,6 +476,22 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           .dl-topbar { padding: 0 20px; }
           .dl-content { padding: 24px 20px; }
           .dl-topbar-role { display: none; }
+        }
+
+        /* ── Mobile breakpoint ── */
+        @media (max-width: 480px) {
+          .dl-sidebar { width: min(280px, 88vw); }
+          .dl-topbar { padding: 0 14px; height: 52px; }
+          .dl-content { padding: 16px 14px; }
+          .dl-topbar-divider { display: none; }
+          .dl-topbar-right { gap: 0; }
+          .dl-topbar-btn { width: 32px; height: 32px; }
+          .dl-breadcrumb .dl-bc-current { display: none; }
+          .dl-nav-link { padding: 10px 20px; font-size: 13px; }
+          .dl-nav-section { padding: 14px 20px 4px; }
+          .dl-logo-bar { padding: 16px 20px; }
+          .dl-user { padding: 14px 20px; }
+          .dl-sidebar-footer { padding: 12px 20px 16px; }
         }
       `}</style>
 
@@ -648,9 +527,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         <div className="dl-sidebar-scroll">
           <nav className="dl-nav">
             {sections.map((section) => {
-              const sectionItems = navItems.filter((item) =>
-                section.items.includes(item.name)
-              );
+              const sectionItems = navItems.filter((item) => section.items.includes(item.name));
               if (!sectionItems.length) return null;
               return (
                 <div key={section.label}>
@@ -658,7 +535,6 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
                   {sectionItems.map((item) => (
                     <Link
                       key={item.name}
-                      // ── FIX: always navigate to a fully-resolved absolute path ──
                       to={getFullPath(item.href)}
                       className={`dl-nav-link${isActive(item.href) ? ' active' : ''}`}
                       onClick={() => setSidebarOpen(false)}
@@ -668,13 +544,11 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
                         '--nav-active-bg': `${item.color}18`,
                       } as React.CSSProperties}
                     >
-                      <span className="dl-nav-link-icon" style={{ color: isActive(item.href) ? item.color : 'var(--muted)' }}>
+                      <span className="dl-nav-link-icon" style={{ color: isActive(item.href) ? item.color : undefined }}>
                         <item.icon size={14} />
                       </span>
                       {item.name}
-                      {item.badge && (
-                        <span className="dl-nav-badge">{item.badge}</span>
-                      )}
+                      {item.badge && <span className="dl-nav-badge">{item.badge}</span>}
                     </Link>
                   ))}
                 </div>
@@ -685,7 +559,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
         <div className="dl-sidebar-footer">
           <Link to={settingsPath} className="dl-sidebar-footer-btn" onClick={() => setSidebarOpen(false)}>
-            <Settings size={13} style={{ color: 'var(--muted)' }} />
+            <Settings size={13} style={{ color: 'var(--text-secondary, #6b7280)' }} />
             {settingsLabel}
           </Link>
           <button className="dl-sidebar-footer-btn danger" onClick={handleLogout}>
@@ -703,7 +577,6 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
             <button className="dl-menu-toggle" onClick={() => setSidebarOpen(true)}>
               <Menu size={16} />
             </button>
-
             <nav className="dl-breadcrumb">
               <Link to={`/dashboard/${userType}`} className="dl-bc-home">Dashboard</Link>
               {title && title !== 'Dashboard' && (
@@ -717,31 +590,22 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
           <div className="dl-topbar-right">
             <span className="dl-topbar-role">
-              <span style={{
-                width: 5, height: 5, borderRadius: '50%',
-                background: 'var(--accent)',
-                boxShadow: '0 0 5px var(--accent)',
-                flexShrink: 0,
-              }} />
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 5px var(--accent)', flexShrink: 0 }} />
               {cfg.label}
             </span>
-
             <div className="dl-topbar-divider" />
-
             <Link to={quickLinks.primary} className="dl-topbar-btn" title={quickLinks.primaryLabel}>
               <PrimaryQuickIcon size={14} />
             </Link>
             <Link to={quickLinks.secondary} className="dl-topbar-btn" title={quickLinks.secondaryLabel}>
               <SecondaryQuickIcon size={14} />
             </Link>
-
             <div className="dl-topbar-divider" />
-
             <Link to={settingsPath} className="dl-topbar-btn" title="Settings">
               <Settings size={14} />
             </Link>
             <button
-              className="dl-topbar-btn danger"
+              className="dl-topbar-btn"
               onClick={handleLogout}
               title="Sign out"
               style={{ color: 'rgba(224,112,112,0.5)' }}

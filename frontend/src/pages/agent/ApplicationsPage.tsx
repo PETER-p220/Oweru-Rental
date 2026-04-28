@@ -105,8 +105,10 @@ const ApplicationsPage = () => {
       </section>
       <section style={panelStyle}>
         {error && <div style={{ color: '#e07070', marginBottom: '16px' }}>{error}</div>}
+        
+        {/* Desktop Table View */}
         <div style={tableWrapStyle}>
-          <table style={tableStyle}>
+          <table style={tableStyle} className="desktop-table">
             <thead><tr><th style={thStyle}>Applicant</th><th style={thStyle}>Property</th><th style={thStyle}>Status</th><th style={thStyle}>Payment</th><th style={thStyle}>Date</th><th style={thStyle}>Actions</th></tr></thead>
             <tbody>
               {loading ? <tr><td style={tdStyle} colSpan={6}>Loading applications...</td></tr> : items.length === 0 ? <tr><td style={tdStyle} colSpan={6}>No applications found.</td></tr> : items.map((item) => (
@@ -201,6 +203,121 @@ const ApplicationsPage = () => {
           </table>
         </div>
 
+        {/* Mobile Card View */}
+        <div className="mobile-cards" style={{ display: 'none' }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#8ea0b5' }}>Loading applications...</div>
+          ) : items.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#8ea0b5' }}>No applications found.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {items.map((item) => (
+                <div key={item.id} style={{
+                  backgroundColor: '#1e293b',
+                  border: '1px solid #334155',
+                  borderRadius: '8px',
+                  padding: '16px',
+                }}>
+                  {/* Applicant Info */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '500', color: '#f1f5f9', marginBottom: '4px' }}>
+                      {item.user?.first_name} {item.user?.last_name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#8ea0b5', marginBottom: '2px' }}>{item.user?.email}</div>
+                    <div style={{ fontSize: '12px', color: '#8ea0b5' }}>{item.user?.phone}</div>
+                  </div>
+
+                  {/* Property Info */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '14px', color: '#f1f5f9', marginBottom: '4px' }}>{item.property?.title}</div>
+                    <div style={{ fontSize: '12px', color: '#8ea0b5', marginBottom: '2px' }}>{formatCurrency(item.property?.price)}/month</div>
+                    <div style={{ fontSize: '12px', color: '#8ea0b5' }}>{item.property?.location}</div>
+                  </div>
+
+                  {/* Status & Payment */}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                    <span style={getStatusBadge(item.status)}>
+                      {item.status}
+                    </span>
+                    <span style={{
+                      ...getStatusBadge(item.payment_status === 'paid' ? 'approved' : 'pending'),
+                      fontSize: '10px',
+                    }}>
+                      {item.payment_status || 'pending'}
+                    </span>
+                  </div>
+
+                  {/* Rejection Reason */}
+                  {item.rejection_reason && (
+                    <div style={{ fontSize: '11px', color: '#dc2626', marginBottom: '8px' }}>
+                      {item.rejection_reason}
+                    </div>
+                  )}
+
+                  {/* Date */}
+                  <div style={{ fontSize: '11px', color: '#8ea0b5', marginBottom: '12px' }}>
+                    {formatDate(item.created_at)}
+                  </div>
+
+                  {/* Actions */}
+                  <div>
+                    {item.status === 'pending' && item.payment_status === 'paid' ? (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => handleApprove(item.id)}
+                          disabled={actionLoading === item.id}
+                          style={{
+                            padding: '8px 16px',
+                            fontSize: '12px',
+                            backgroundColor: '#059669',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: actionLoading === item.id ? 'not-allowed' : 'pointer',
+                            opacity: actionLoading === item.id ? 0.6 : 1,
+                            flex: 1,
+                          }}
+                        >
+                          {actionLoading === item.id ? 'Approving...' : 'Approve'}
+                        </button>
+                        <button
+                          onClick={() => setShowRejectModal(item.id)}
+                          disabled={actionLoading === item.id}
+                          style={{
+                            padding: '8px 16px',
+                            fontSize: '12px',
+                            backgroundColor: '#dc2626',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: actionLoading === item.id ? 'not-allowed' : 'pointer',
+                            opacity: actionLoading === item.id ? 0.6 : 1,
+                            flex: 1,
+                          }}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    ) : item.status === 'pending' && item.payment_status !== 'paid' ? (
+                      <div style={{ fontSize: '11px', color: '#d97706' }}>
+                        Awaiting payment
+                      </div>
+                    ) : item.status === 'approved' ? (
+                      <div style={{ fontSize: '11px', color: '#059669' }}>
+                        ✓ Approved
+                      </div>
+                    ) : item.status === 'rejected' ? (
+                      <div style={{ fontSize: '11px', color: '#dc2626' }}>
+                        ✗ Rejected
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Reject Modal */}
         {showRejectModal && (
           <div style={{
@@ -278,6 +395,18 @@ const ApplicationsPage = () => {
           </div>
         )}
       </section>
+
+      {/* Mobile Responsiveness CSS */}
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-table {
+            display: none !important;
+          }
+          .mobile-cards {
+            display: block !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

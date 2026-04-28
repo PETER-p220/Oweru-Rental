@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Settings, Bell, Shield, Moon, Sun } from 'lucide-react';
-import Api from '../services/api';
+import { Settings } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -39,15 +38,15 @@ const SettingsPage: React.FC = () => {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
         <div style={{ color: '#ef4444', marginBottom: '16px' }}>{error}</div>
-        <button 
+        <button
           onClick={loadUserData}
-          style={{ 
-            padding: '8px 16px', 
-            background: '#3b82f6', 
-            color: 'white', 
-            border: 'none', 
+          style={{
+            padding: '8px 16px',
+            background: '#3b82f6',
+            color: 'white',
+            border: 'none',
             borderRadius: '4px',
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           Retry
@@ -57,29 +56,97 @@ const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '32px', color: 'var(--text-primary)' }}>
-        Settings
-      </h2>
-      
-      <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+    <div className="settings-container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <style>{`
+        .settings-container {
+          padding: 24px 32px;
+        }
+
+        .settings-title {
+          font-size: 24px;
+          font-weight: 600;
+          margin-bottom: 32px;
+          color: var(--text-primary, #fff);
+        }
+
+        .settings-description {
+          font-size: 16px;
+          color: var(--text-secondary, #9ca3af);
+          margin-bottom: 24px;
+        }
+
+        .settings-actions {
+          display: flex;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+
+        .settings-back-btn {
+          padding: 12px 20px;
+          background: #3b82f6;
+          color: white;
+          text-decoration: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+          .settings-container {
+            padding: 16px;
+          }
+
+          .settings-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+          }
+
+          .settings-description {
+            font-size: 14px;
+            margin-bottom: 18px;
+          }
+
+          .settings-actions {
+            flex-direction: column;
+            gap: 12px;
+          }
+
+          .settings-back-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 12px 16px;
+            font-size: 14px;
+            box-sizing: border-box;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .settings-title {
+            font-size: 18px;
+          }
+
+          .settings-description {
+            font-size: 13px;
+          }
+
+          .settings-back-btn {
+            font-size: 13px;
+          }
+        }
+      `}</style>
+
+      <h2 className="settings-title">Settings</h2>
+
+      <p className="settings-description">
         Manage your account settings and preferences.
       </p>
 
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-        <Link 
-          to="/dashboard"
-          style={{ 
-            padding: '12px 20px', 
-            background: '#3b82f6', 
-            color: 'white', 
-            textDecoration: 'none', 
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '500'
-          }}
-        >
-          <Settings size={16} style={{ marginRight: '8px' }} />
+      <div className="settings-actions">
+        <Link to="/dashboard" className="settings-back-btn">
+          <Settings size={16} />
           Back to Dashboard
         </Link>
       </div>

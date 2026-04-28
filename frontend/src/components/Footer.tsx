@@ -75,7 +75,7 @@ const Footer = () => {
           background: var(--gold-dim);
         }
 
-        /* Main grid */
+        /* ── Main 4-column grid ── */
         .ft-main {
           max-width: 1200px;
           margin: 0 auto;
@@ -133,7 +133,7 @@ const Footer = () => {
 
         .ft-col-lbl::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-        .ft-links { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+        .ft-links { list-style: none; display: flex; flex-direction: column; gap: 2px; padding: 0; margin: 0; }
 
         .ft-links a {
           font-size: 14px;
@@ -206,7 +206,7 @@ const Footer = () => {
           color: rgba(148,163,184,0.4);
         }
 
-        .ft-legal { display: flex; gap: 0; }
+        .ft-legal { display: flex; gap: 0; flex-wrap: wrap; }
 
         .ft-legal a {
           font-size: 11px;
@@ -218,6 +218,7 @@ const Footer = () => {
           border-right: 1px solid var(--border);
           transition: color 0.2s;
           text-transform: uppercase;
+          white-space: nowrap;
         }
 
         .ft-legal a:first-child { padding-left: 0; }
@@ -233,6 +234,7 @@ const Footer = () => {
           letter-spacing: 0.16em;
           color: rgba(148,163,184,0.4);
           text-transform: uppercase;
+          white-space: nowrap;
         }
 
         .loc-dot {
@@ -240,20 +242,129 @@ const Footer = () => {
           background: var(--gold);
           border-radius: 50%;
           animation: blink 2s infinite;
+          flex-shrink: 0;
         }
 
+        /* ── Tablet: 2+2 column layout ── */
         @media (max-width: 900px) {
-          .ft-top-inner { padding: 20px 24px; }
-          .ft-main { grid-template-columns: 1fr 1fr; gap: 36px; padding: 40px 24px; }
-          .ft-bottom { padding: 20px 24px; flex-direction: column; align-items: flex-start; gap: 12px; }
+          .ft-top-inner {
+            padding: 18px 24px;
+          }
+
+          .ft-main {
+            grid-template-columns: 1fr 1fr;
+            gap: 32px 24px;
+            padding: 36px 24px 36px;
+          }
+
           .ft-divide { margin: 0 24px; }
+
+          .ft-bottom {
+            padding: 20px 24px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+          }
         }
 
-        @media (max-width: 560px) {
-          .ft-main { grid-template-columns: 1fr; }
-          .ft-tagline { display: none; }
-          .ft-legal { flex-wrap: wrap; gap: 8px; }
-          .ft-legal a { border-right: none; padding: 0; }
+        /* ── Mobile: keep 4 columns but compact ── */
+        @media (max-width: 600px) {
+          .ft-top-inner {
+            padding: 14px 16px;
+          }
+
+          /* 4 columns preserved — first col (About) spans full width on its own row,
+             then Navigate | Services in row 2, Contact full width in row 3 */
+          .ft-main {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 28px 20px;
+            padding: 28px 16px 32px;
+          }
+
+          /* About spans both columns */
+          .ft-main > div:nth-child(1) {
+            grid-column: 1 / -1;
+          }
+
+          /* Contact spans both columns */
+          .ft-main > div:nth-child(4) {
+            grid-column: 1 / -1;
+          }
+
+          .ft-about-text {
+            font-size: 13px;
+            max-width: 100%;
+            margin-bottom: 16px;
+          }
+
+          .ft-col-lbl {
+            font-size: 8px;
+            margin-bottom: 14px;
+          }
+
+          .ft-links a {
+            font-size: 13px;
+            padding: 5px 0;
+          }
+
+          .ft-contacts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+          }
+
+          .ft-contact-text {
+            font-size: 12px;
+          }
+
+          .ft-divide { margin: 0 16px; }
+
+          .ft-bottom {
+            padding: 18px 16px;
+            gap: 14px;
+          }
+
+          .ft-copy {
+            font-size: 11px;
+          }
+
+          .ft-legal {
+            gap: 0;
+          }
+
+          .ft-legal a {
+            font-size: 10px;
+            padding: 0 10px;
+          }
+
+          .ft-legal a:first-child { padding-left: 0; }
+
+          .ft-location {
+            font-size: 9px;
+          }
+        }
+
+        /* ── Very small phones ── */
+        @media (max-width: 380px) {
+          .ft-main {
+            grid-template-columns: 1fr 1fr;
+            gap: 22px 14px;
+            padding: 22px 12px 24px;
+          }
+
+          .ft-contacts {
+            grid-template-columns: 1fr;
+          }
+
+          .ft-links a {
+            font-size: 12px;
+          }
+
+          .ft-cert {
+            font-size: 8px;
+            padding: 5px 10px;
+          }
         }
       `}</style>
 
@@ -279,7 +390,7 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Main grid */}
+      {/* Main grid — 4 cols desktop, 2+2 tablet, About+Nav+Svc+Contact mobile */}
       <div className="ft-main">
 
         {/* About */}
@@ -298,11 +409,11 @@ const Footer = () => {
           <div className="ft-col-lbl">Navigate</div>
           <ul className="ft-links">
             {[
-              { label: 'About Us',     to: '/about' },
-              { label: 'How It Works', to: '/how-it-works' },
+              { label: 'About Us',      to: '/about' },
+              { label: 'How It Works',  to: '/how-it-works' },
               { label: 'For Landlords', to: '/landlords' },
-              { label: 'For Agents',   to: '/agents' },
-              { label: 'For Tenants',  to: '/tenants' },
+              { label: 'For Agents',    to: '/agents' },
+              { label: 'For Tenants',   to: '/tenants' },
             ].map(l => (
               <li key={l.label}>
                 <Link to={l.to}>
@@ -318,7 +429,13 @@ const Footer = () => {
         <div>
           <div className="ft-col-lbl">Services</div>
           <ul className="ft-links">
-            {['Property Listing', 'Tenant Screening', 'Payment Processing', 'Maintenance Services', 'Legal Support'].map(s => (
+            {[
+              'Property Listing',
+              'Tenant Screening',
+              'Payment Processing',
+              'Maintenance Services',
+              'Legal Support',
+            ].map(s => (
               <li key={s}>
                 <a href="#">
                   <ArrowUpRight size={11} className="lk-arrow" />

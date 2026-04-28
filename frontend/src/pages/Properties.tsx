@@ -57,7 +57,6 @@ const getImage = (p: Property): string => {
   return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='24' fill='%236b7280'%3ENo Image%3C/text%3E%3C/svg%3E`;
 };
 
-/* ─── Determine listing source ─── */
 const getListingSource = (p: Property): 'agent' | 'landlord' | 'admin' => {
   if (p.agent_id) return 'agent';
   if (p.type === 'oweru_rental') return 'admin';
@@ -69,7 +68,6 @@ const sourceLabel: Record<string, string> = {
   agent: 'Agent', landlord: 'Landlord', admin: 'Oweru Rental',
 };
 
-/* ─── Page numbers helper ─── */
 function getPageNumbers(current: number, total: number): (number | '...')[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages: (number | '...')[] = [1];
@@ -82,7 +80,6 @@ function getPageNumbers(current: number, total: number): (number | '...')[] {
   return pages;
 }
 
-/* ─── CSS ─── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -114,19 +111,19 @@ const CSS = `
 /* ── Search Bar ── */
 .sb{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;box-shadow:0 1px 8px rgba(0,0,0,.06);}
 .sb-inner{max-width:1280px;margin:0 auto;padding:12px 40px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.sb-search{flex:1;min-width:220px;display:flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;transition:border-color .18s;}
+.sb-search{flex:1;min-width:180px;display:flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;transition:border-color .18s;}
 .sb-search:focus-within{border-color:var(--navy);}
 .sb-search-icon{padding:0 10px;color:var(--hint);display:flex;align-items:center;flex-shrink:0;}
 .sb-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:13px;padding:9px 10px 9px 0;}
 .sb-input::placeholder{color:var(--hint);}
 .sb-clear{background:none;border:none;color:var(--hint);cursor:pointer;padding:0 10px;display:flex;align-items:center;transition:color .15s;}
 .sb-clear:hover{color:var(--text);}
-.sb-select{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);padding:9px 12px;font-family:var(--sans);font-size:13px;outline:none;cursor:pointer;transition:border-color .18s;min-width:130px;}
+.sb-select{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);padding:9px 12px;font-family:var(--sans);font-size:13px;outline:none;cursor:pointer;transition:border-color .18s;min-width:120px;}
 .sb-select:focus{border-color:var(--navy);color:var(--text);}
 
 /* ── Source Filter Tabs ── */
-.source-tabs{display:flex;gap:4px;flex-shrink:0;}
-.source-tab{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--r-sm);font-family:var(--sans);font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .18s;}
+.source-tabs{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0;}
+.source-tab{display:flex;align-items:center;gap:5px;padding:7px 10px;border-radius:var(--r-sm);font-family:var(--sans);font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .18s;}
 .source-tab:hover:not(.active){border-color:var(--navy);color:var(--navy);background:var(--navy-faint);}
 .source-tab.active{background:var(--navy);border-color:var(--navy);color:#fff;}
 .source-tab.active-agent{background:var(--gold);border-color:var(--gold);color:#1a1000;}
@@ -142,7 +139,7 @@ const CSS = `
 
 /* ── Adv Filters ── */
 .adv{background:var(--bg);border-bottom:1px solid var(--border);max-height:0;overflow:hidden;transition:max-height .3s ease;}
-.adv.open{max-height:80px;}
+.adv.open{max-height:100px;}
 .adv-inner{max-width:1280px;margin:0 auto;padding:12px 40px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .adv-label{font-family:var(--sans);font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--hint);margin-right:4px;flex-shrink:0;}
 .adv-clear{display:flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);padding:7px 12px;font-family:var(--sans);font-size:12px;cursor:pointer;transition:all .18s;margin-left:auto;}
@@ -158,7 +155,7 @@ const CSS = `
 .pc:hover{box-shadow:0 8px 28px rgba(30,58,95,.10);transform:translateY(-2px);border-color:rgba(30,58,95,.2);}
 .pr-grid.list .pc{flex-direction:row;}
 .pc-img-wrap{position:relative;overflow:hidden;aspect-ratio:4/3;flex-shrink:0;}
-.pr-grid.list .pc-img-wrap{width:260px;aspect-ratio:auto;}
+.pr-grid.list .pc-img-wrap{width:240px;aspect-ratio:auto;}
 .pc-img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;}
 .pc:hover .pc-img{transform:scale(1.04);}
 .pc-img-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(15,25,50,.55) 0%,transparent 55%);}
@@ -231,7 +228,7 @@ const CSS = `
 
 /* ── Toast System ── */
 .toast-portal{position:fixed;top:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;}
-.toast{pointer-events:all;display:flex;align-items:flex-start;gap:13px;background:#fff;border-radius:14px;padding:14px 16px 14px 14px;min-width:320px;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06),inset 0 0 0 1px rgba(0,0,0,.06);animation:toastIn .38s cubic-bezier(.16,1,.3,1) forwards;position:relative;overflow:hidden;}
+.toast{pointer-events:all;display:flex;align-items:flex-start;gap:13px;background:#fff;border-radius:14px;padding:14px 16px 14px 14px;min-width:300px;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06),inset 0 0 0 1px rgba(0,0,0,.06);animation:toastIn .38s cubic-bezier(.16,1,.3,1) forwards;position:relative;overflow:hidden;}
 .toast.removing{animation:toastOut .28s ease forwards;}
 @keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(110%);opacity:0}}
@@ -259,7 +256,7 @@ const CSS = `
 @keyframes toastProgress{from{width:100%}to{width:0%}}
 
 /* ── Modal System ── */
-.m-overlay{position:fixed;inset:0;z-index:1000;background:rgba(10,18,35,.72);backdrop-filter:blur(8px) saturate(1.4);display:flex;align-items:center;justify-content:center;padding:20px;animation:mFade .22s ease;}
+.m-overlay{position:fixed;inset:0;z-index:1000;background:rgba(10,18,35,.72);backdrop-filter:blur(8px) saturate(1.4);display:flex;align-items:center;justify-content:center;padding:16px;animation:mFade .22s ease;}
 @keyframes mFade{from{opacity:0}to{opacity:1}}
 .m-box{background:var(--surface);border-radius:20px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 40px 80px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.08);animation:mSlide .32s cubic-bezier(.16,1,.3,1);}
 @keyframes mSlide{from{transform:translateY(24px) scale(.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
@@ -328,7 +325,7 @@ const CSS = `
 .succ-step-icon{width:28px;height:28px;border-radius:8px;background:rgba(5,150,105,.1);color:var(--success);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
 /* ── Provider Tabs ── */
-.provider-btn{flex:1;padding:11px 8px;border-radius:10px;font-family:var(--sans);font-size:12px;font-weight:500;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .2s;text-align:center;}
+.provider-btn{flex:1;padding:11px 6px;border-radius:10px;font-family:var(--sans);font-size:11px;font-weight:500;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .2s;text-align:center;}
 .provider-btn:hover{border-color:var(--hint);color:var(--text);}
 .provider-btn:disabled{opacity:.4;cursor:not-allowed;}
 .provider-btn[data-active='true'].tigo{border-color:#00D4AA;background:rgba(0,212,170,.08);color:#008a6f;}
@@ -339,19 +336,38 @@ const CSS = `
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── Responsive ── */
-@media(max-width:1100px){.pr-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .pr-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
 @media(max-width:768px){
-  .ph-inner,.sb-inner,.pr-body,.adv-inner{padding-left:16px;padding-right:16px;}
+  .ph-inner{padding:36px 20px 28px;}
+  .sb-inner{padding:10px 16px;}
+  .pr-body{padding:24px 16px 36px;}
+  .adv-inner{padding:10px 16px 14px;}
   .pr-grid{grid-template-columns:minmax(0,1fr);}
   .pr-grid.list .pc{flex-direction:column;}
   .pr-grid.list .pc-img-wrap{width:100%;aspect-ratio:4/3;}
-  .adv.open{max-height:130px;}
+  .adv.open{max-height:160px;}
   .sb-view-btns{display:none;}
   .m-box{border-radius:16px;}
-  .toast-portal{top:16px;right:16px;left:16px;}
+  .m-body{padding:18px 18px 8px;}
+  .m-footer{padding:10px 18px 18px;}
+  .toast-portal{top:12px;right:12px;left:12px;}
   .toast{min-width:0;width:100%;}
   .pag-jump{display:none;}
+  .source-tabs{gap:3px;}
+  .source-tab{padding:6px 8px;font-size:10px;}
+}
+@media(max-width:480px){
+  .ph-inner{padding:28px 16px 22px;}
+  .sb-inner{gap:6px;}
+  .sb-select{min-width:100px;font-size:12px;padding:8px 8px;}
+  .sb-filter-btn{padding:8px 10px;font-size:12px;}
+  .pr-grid{gap:14px;}
+  .pag-controls{gap:3px;}
+  .pag-btn{width:32px;height:32px;font-size:12px;}
+  .pag-nav{padding:0 10px;font-size:12px;}
 }
 `;
 
@@ -442,9 +458,7 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
         {property.type && (
           <div className="pc-badge-type">{typeLabel[property.type] ?? property.type}</div>
         )}
-        {/* Source badge — top right */}
         <span className={`pc-badge-source ${source}`}>{sourceLabel[source]}</span>
-
         <div className="pc-price-overlay">
           <div className="pc-price-main">{formatPrice(property.price)}</div>
           <div className="pc-price-period">/month</div>
@@ -592,7 +606,7 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
         <div className="fee-label">Site visit fee · non-refundable</div>
       </div>
       <label className="field-label">Mobile Money Provider</label>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
           { value: 'tigo',   label: 'Tigo Pesa' },
           { value: 'mpesa',  label: 'M-Pesa' },
@@ -694,7 +708,6 @@ const Properties = () => {
   const { toasts, addToast, removeToast } = useToast();
   const debouncedSearch = useDebounce(searchTerm, 400);
 
-  /* Reset to page 1 whenever filters change */
   useEffect(() => { setCurrentPage(1); }, [debouncedSearch, selectedType, priceRange, bedrooms, furnished, sourceFilter]);
 
   useEffect(() => {
@@ -725,10 +738,9 @@ const Properties = () => {
     if (priceRange === '1000+')    { p.min_price = '1000000'; }
     if (bedrooms)          p.bedrooms  = bedrooms.toString();
     if (furnished != null) p.furnished = furnished ? 'true' : 'false';
-    /* Source filter — tell the backend which bucket we want */
-    if (sourceFilter === 'agent')    p.has_agent    = 'true';
-    if (sourceFilter === 'landlord') p.no_agent     = 'true';
-    if (sourceFilter === 'admin')    p.type         = 'oweru_rental';
+    if (sourceFilter === 'agent')    p.has_agent = 'true';
+    if (sourceFilter === 'landlord') p.no_agent  = 'true';
+    if (sourceFilter === 'admin')    p.type      = 'oweru_rental';
     return p;
   }, [debouncedSearch, selectedType, priceRange, bedrooms, furnished, sourceFilter]);
 
@@ -739,7 +751,7 @@ const Properties = () => {
       const res   = await Api.getProperties(buildParams(pageNum));
       const items: Property[] = res.data?.data ?? res.data ?? [];
       const pag: Pagination | null = res.data?.pagination ?? null;
-      setProperties(items);   // always replace — pagination handles pages
+      setProperties(items);
       setPagination(pag);
     } catch {
       setError('Failed to load properties. Please try again.');
@@ -751,7 +763,6 @@ const Properties = () => {
 
   useEffect(() => { loadProperties(currentPage); }, [currentPage, loadProperties]);
 
-  /* ── Page helpers ── */
   const totalPages = pagination ? pagination.last_page : 1;
   const pageStart  = pagination ? (pagination.current_page - 1) * pagination.per_page + 1 : 0;
   const pageEnd    = pagination ? Math.min(pagination.current_page * pagination.per_page, pagination.total) : 0;
@@ -767,7 +778,6 @@ const Properties = () => {
     if (!isNaN(val)) goToPage(val);
   };
 
-  /* ── Save / Apply ── */
   const toggleSave = async (id: number, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     try {
@@ -863,10 +873,10 @@ const Properties = () => {
     + (sourceFilter !== 'all' ? 1 : 0);
 
   const sourceTabs: { key: SourceFilter; label: string; icon: React.ReactNode }[] = [
-    { key: 'all',      label: 'All listings', icon: <List size={13} /> },
-    { key: 'agent',    label: 'Agent',        icon: <Users size={13} /> },
-    { key: 'landlord', label: 'Landlord',     icon: <Home size={13} /> },
-    { key: 'admin',    label: 'Oweru Rental', icon: <Building2 size={13} /> },
+    { key: 'all',      label: 'All',      icon: <List size={12} /> },
+    { key: 'agent',    label: 'Agent',    icon: <Users size={12} /> },
+    { key: 'landlord', label: 'Landlord', icon: <Home size={12} /> },
+    { key: 'admin',    label: 'Oweru',    icon: <Building2 size={12} /> },
   ];
 
   return (
@@ -958,7 +968,7 @@ const Properties = () => {
           </button>
 
           <button className="sb-filter-btn" onClick={() => loadProperties(currentPage)} title="Refresh">
-            <Search size={13} /> Refresh
+            <Search size={13} />
           </button>
 
           <div className="sb-view-btns">
@@ -1034,12 +1044,10 @@ const Properties = () => {
             <div className="pag-info">
               Showing <strong>{pageStart}–{pageEnd}</strong> of <strong>{pagination?.total ?? 0}</strong> properties
             </div>
-
             <div className="pag-controls">
               <button className="pag-nav" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
                 <ChevronLeft size={15} /> Prev
               </button>
-
               {getPageNumbers(currentPage, totalPages).map((p, i) =>
                 p === '...'
                   ? <button key={`dots-${i}`} className="pag-btn dots" disabled>…</button>
@@ -1051,12 +1059,10 @@ const Properties = () => {
                       {p}
                     </button>
               )}
-
               <button className="pag-nav" onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages}>
                 Next <ChevronRight size={15} />
               </button>
             </div>
-
             <div className="pag-jump">
               <span>Go to page</span>
               <input
