@@ -133,6 +133,34 @@ const SavedProperties = () => {
         }
         .sp-btn-remove:hover { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.4); }
 
+        /* Mobile responsiveness */
+        @media (max-width: 1024px) {
+          .sp-card { grid-template-columns: 88px 1fr; gap: 14px; padding: 16px; }
+          .sp-card > div:nth-child(3) { grid-column: 1 / -1; order: 3; }
+          .sp-card > div:nth-child(4) { grid-column: 1 / -1; order: 4; }
+          .sp-btn-view, .sp-btn-remove { padding: 10px 16px; font-size: 12px; }
+        }
+
+        @media (max-width: 768px) {
+          .sp-card { grid-template-columns: 80px 1fr; gap: 12px; padding: 14px; }
+          .sp-card > div:nth-child(3) { grid-column: 1 / -1; order: 3; }
+          .sp-card > div:nth-child(4) { grid-column: 1 / -1; order: 4; }
+          .sp-btn-view, .sp-btn-remove { padding: 8px 14px; font-size: 11px; }
+          .sp-modal { max-width: 95vw; max-height: 95vh; }
+          .sp-modal-body { padding: 20px 24px 28px; }
+        }
+
+        @media (max-width: 480px) {
+          .sp-card { grid-template-columns: 72px 1fr; gap: 10px; padding: 12px; }
+          .sp-card > div:nth-child(3) { grid-column: 1 / -1; order: 3; }
+          .sp-card > div:nth-child(4) { grid-column: 1 / -1; order: 4; }
+          .sp-btn-view, .sp-btn-remove { padding: 6px 12px; font-size: 10px; }
+          .sp-modal { max-width: 98vw; max-height: 98vh; }
+          .sp-modal-body { padding: 16px 20px 24px; }
+          .sp-panel { padding: 20px 16px; }
+          .sp-tag { font-size: 9px; }
+        }
+
         /* Modal */
         .sp-modal-overlay {
           position: fixed; inset: 0;
