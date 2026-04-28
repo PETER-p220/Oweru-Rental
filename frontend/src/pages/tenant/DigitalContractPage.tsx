@@ -1,20 +1,27 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   FileText, Download, Eye, Send, AlertCircle, CheckCircle,
-  MapPin, PenTool, X, Clock, FileCheck, Shield, ChevronDown, ChevronUp,
+  MapPin, PenTool, X, Clock, FileCheck, Shield, ChevronDown, ChevronUp, Loader2,
 } from 'lucide-react';
 import Api from '../../services/api';
-import {
-  buttonStyle, descriptionStyle, formatDate, formatCurrency,
-  headingStyle, inputStyle, pageStyle, palette, panelStyle, sectionTitleStyle,
-  statusPillStyle, tableStyle, tableWrapStyle, tdStyle, thStyle, textareaStyle,
-} from '../landlord/landlordPageStyles';
+import { formatDate, formatCurrency } from './tenantPageStyles';
 
 // ---------------------------------------------------------------------------
-// Palette safety — tenant page re-uses landlord styles where accent is "amber".
-// Alias to GOLD so every reference below is safe regardless of which key exists.
+// Color Palette - Oweru Brand
 // ---------------------------------------------------------------------------
-const GOLD: string = (palette as any).gold ?? (palette as any).amber ?? '#c9a84c';
+
+const B = {
+  navy900: '#0F172A',
+  navy800: '#162035',
+  navy700: '#1E2D4A',
+  gold:    '#C89128',
+  goldLt:  '#D4A843',
+  goldDim: 'rgba(200,145,40,0.12)',
+  cream:   '#F8F8F9',
+  slate:   '#94A3B8',
+  border:  'rgba(200,145,40,0.18)',
+  borderF: 'rgba(200,145,40,0.08)',
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -90,11 +97,11 @@ const STATUS_META: Record<string, { label: string; color: string; icon: React.Re
     desc:  'Mkataba ulikataliwa. Wasiliana na mpangishaji.',
   },
 };
-const getStatusMeta = (s: string) =>
-  STATUS_META[s] ?? { label: s.replace(/_/g, ' '), color: palette.muted, icon: null, desc: '' };
 
-// Accordion sections — signature is intentionally absent here.
-// It is always rendered as a separate, always-visible block below the accordions.
+const getStatusMeta = (s: string) =>
+  STATUS_META[s] ?? { label: s.replace(/_/g, ' '), color: B.slate, icon: null, desc: '' };
+
+// Accordion sections
 const FIELD_SECTIONS: { title: string; ids: string[] }[] = [
   {
     title: 'Taarifa za Mpangaji',
@@ -127,8 +134,7 @@ const FIELD_SECTIONS: { title: string; ids: string[] }[] = [
 const ALL_SECTION_IDS = new Set(FIELD_SECTIONS.flatMap(s => s.ids));
 
 // ---------------------------------------------------------------------------
-// Signature Pad — separate component so its canvas is always freshly mounted
-// and DPI scaling is applied immediately after paint.
+// Signature Pad Component
 // ---------------------------------------------------------------------------
 
 interface SignaturePadProps {
@@ -143,29 +149,24 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
   const drawing   = useRef(false);
   const [padError, setPadError] = useState('');
 
-  // Scale canvas pixels to match CSS size × device pixel ratio.
-  // This fixes two bugs: (1) strokes appear offset on retina, (2) getImageData
-  // reports the wrong pixels so "hasInk" always returns false.
   const initCanvas = useCallback(() => {
     const cv = canvasRef.current;
     if (!cv) return;
     const dpr  = Math.max(window.devicePixelRatio ?? 1, 1);
     const rect = cv.getBoundingClientRect();
-    if (rect.width === 0) return; // not yet painted — will retry on resize
+    if (rect.width === 0) return;
     cv.width  = Math.round(rect.width  * dpr);
     cv.height = Math.round(rect.height * dpr);
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.strokeStyle = GOLD;
+    ctx.strokeStyle = B.gold;
     ctx.lineWidth   = 2.5;
     ctx.lineCap     = 'round';
     ctx.lineJoin    = 'round';
   }, []);
 
   useEffect(() => {
-    // Small delay so the browser has painted the element and getBoundingClientRect
-    // returns the real dimensions.
     const t = window.setTimeout(initCanvas, 40);
     window.addEventListener('resize', initCanvas);
     return () => { window.clearTimeout(t); window.removeEventListener('resize', initCanvas); };
@@ -210,7 +211,6 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
     const cv = canvasRef.current; if (!cv) return;
     const ctx = cv.getContext('2d'); if (!ctx) return;
     const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
-    // Any alpha > 10 counts as ink (accounts for anti-aliasing)
     const hasInk = d.some((v, i) => i % 4 === 3 && v > 10);
     if (!hasInk) { setPadError('Tafadhali chora sahihi yako kwanza.'); return; }
     onSave(cv.toDataURL('image/png'));
@@ -222,14 +222,13 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
-            <div style={sectionTitleStyle}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, display: 'inline-block', marginRight: 6 }} />
-              Sahihi ya Kidijitali
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: B.gold, marginBottom: 4 }}>
+              SAHIHI YA KIDIJITALI
             </div>
-            <h3 style={{ ...headingStyle, fontSize: 18, marginTop: 4 }}>Chora Sahihi Yako</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: B.cream, margin: 0 }}>Chora Sahihi Yako</h3>
           </div>
           <button
-            style={{ ...buttonStyle('secondary'), padding: 8, borderRadius: 8 }}
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: 8, borderRadius: 8 }}
             onClick={onCancel}
             aria-label="Funga"
           >
@@ -237,13 +236,13 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
           </button>
         </div>
 
-        <p style={{ color: palette.muted, fontSize: 13, marginBottom: 14 }}>
+        <p style={{ color: B.slate, fontSize: 13, marginBottom: 14 }}>
           Chora sahihi yako kwenye sanduku hapa chini kwa kutumia kidole au panya.
         </p>
 
-        {/* Canvas — CSS dimensions fixed; actual pixel dimensions set by initCanvas */}
+        {/* Canvas */}
         <div style={{
-          border: `1.5px solid ${GOLD}55`, borderRadius: 12,
+          border: `1.5px solid ${B.gold}55`, borderRadius: 12,
           overflow: 'hidden', background: 'rgba(255,255,255,0.025)',
         }}>
           <canvas
@@ -262,16 +261,16 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
 
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
           <button
-            style={{ ...buttonStyle('secondary'), padding: '8px 18px', color: '#dc2626', borderColor: 'rgba(220,38,38,0.3)' }}
+            style={{ background: 'transparent', border: `1px solid rgba(220,38,68,0.3)`, color: '#dc2626', padding: '8px 18px', borderRadius: 8 }}
             onClick={clear}
           >
             Futa
           </button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button style={{ ...buttonStyle('secondary'), padding: '8px 16px' }} onClick={onCancel}>
+            <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '8px 16px', borderRadius: 8 }} onClick={onCancel}>
               Ghairi
             </button>
-            <button style={{ ...buttonStyle('primary'), padding: '8px 22px' }} onClick={save}>
+            <button style={{ background: B.gold, border: 'none', color: B.navy900, padding: '8px 22px', borderRadius: 8, fontWeight: 600 }} onClick={save}>
               Hifadhi Sahihi
             </button>
           </div>
@@ -282,7 +281,7 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
 };
 
 // ---------------------------------------------------------------------------
-// Contract Signing / View Modal
+// Contract Signing Modal
 // ---------------------------------------------------------------------------
 
 interface SigningModalProps {
@@ -321,13 +320,13 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
     const shared = { disabled: isReadOnly, required: field.required };
     switch (field.type) {
       case 'text':
-        return <input style={{ ...inputStyle, width: '100%' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <input style={{ width: '100%', background: B.navy900, border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '12px', borderRadius: 8, outline: 'none' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       case 'date':
-        return <input type="date" style={{ ...inputStyle, width: '100%' }} value={val} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <input type="date" style={{ width: '100%', background: B.navy900, border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '12px', borderRadius: 8, outline: 'none' }} value={val} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       case 'number':
-        return <input type="number" style={{ ...inputStyle, width: '100%' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <input type="number" style={{ width: '100%', background: B.navy900, border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '12px', borderRadius: 8, outline: 'none' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       case 'textarea':
-        return <textarea style={{ ...textareaStyle, width: '100%', minHeight: 80 }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <textarea style={{ width: '100%', minHeight: 80, background: B.navy900, border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '12px', borderRadius: 8, outline: 'none', resize: 'vertical' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       default:
         return null;
     }
@@ -356,22 +355,21 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
 
   return (
     <div style={overlay}>
-      <div style={{ ...panelStyle, maxWidth: 820, width: '100%', maxHeight: '94vh', overflowY: 'auto' }}>
+      <div style={{ background: B.navy800, border: `1px solid ${B.border}`, maxWidth: 820, width: '100%', maxHeight: '94vh', overflowY: 'auto', borderRadius: 16 }}>
 
-        {/* ── Header ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, padding: '24px 24px 0' }}>
           <div>
-            <div style={sectionTitleStyle}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, display: 'inline-block', marginRight: 6 }} />
-              {contract.status === 'pending_signature' ? 'Sahihi Mkataba' : 'Angalia Mkataba'}
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: B.gold, marginBottom: 4 }}>
+              {contract.status === 'pending_signature' ? 'SAHIHI MKATABA' : 'ANGALIA MKATABA'}
             </div>
-            <h2 style={{ ...headingStyle, fontSize: 20, marginTop: 6 }}>{contract.title}</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: B.cream, margin: '0 0 6px' }}>{contract.title}</h2>
             {contract.property && (
-              <p style={{ color: palette.muted, fontSize: 13, marginTop: 4, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                <MapPin size={12} style={{ color: GOLD }} />
+              <p style={{ color: B.slate, fontSize: 13, margin: 0, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                <MapPin size={12} style={{ color: B.gold }} />
                 {[contract.property.title, contract.property.location].filter(Boolean).join(' — ')}
                 {contract.property.price && (
-                  <span style={{ color: GOLD, fontWeight: 600, marginLeft: 4 }}>
+                  <span style={{ color: B.gold, fontWeight: 600, marginLeft: 4 }}>
                     {formatCurrency(contract.property.price)}/mwezi
                   </span>
                 )}
@@ -379,252 +377,251 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
             )}
           </div>
           <button
-            style={{ ...buttonStyle('secondary'), padding: 8, borderRadius: 8, flexShrink: 0 }}
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: 8, borderRadius: 8, flexShrink: 0 }}
             onClick={onClose} aria-label="Funga"
           >
             <X size={16} />
           </button>
         </div>
 
-        {/* ── Status Banner ── */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
-          borderRadius: 10, marginBottom: 20,
-          background: `${sm.color}18`, border: `1px solid ${sm.color}38`,
-          color: sm.color, fontSize: 14, fontWeight: 600,
-        }}>
-          {sm.icon} {sm.label}
-          {sm.desc && (
-            <span style={{ color: palette.muted, fontSize: 12, fontWeight: 400, marginLeft: 4 }}>
-              — {sm.desc}
-            </span>
-          )}
-        </div>
-
-        {/* ── File Download Bar ── */}
-        {hasFile(contract) && (
+        <div style={{ padding: '0 24px 24px' }}>
+          {/* Status Banner */}
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: `${GOLD}12`, border: `1px solid ${GOLD}30`,
-            borderRadius: 10, padding: '12px 16px', marginBottom: 20,
+            display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+            borderRadius: 10, marginBottom: 20,
+            background: `${sm.color}18`, border: `1px solid ${sm.color}38`,
+            color: sm.color, fontSize: 14, fontWeight: 600,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <FileText size={18} style={{ color: GOLD }} />
-              <div>
-                <div style={{ color: palette.cream, fontSize: 14, fontWeight: 600 }}>{fileLabel(contract)}</div>
-                <div style={{ color: palette.muted, fontSize: 12 }}>Hati ya mkataba — pakua ili kusoma vizuri</div>
+            {sm.icon} {sm.label}
+            {sm.desc && (
+              <span style={{ color: B.slate, fontSize: 12, fontWeight: 400, marginLeft: 4 }}>
+                — {sm.desc}
+              </span>
+            )}
+          </div>
+
+          {/* File Download Bar */}
+          {hasFile(contract) && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: `${B.goldDim}`, border: `1px solid ${B.gold}30`,
+              borderRadius: 10, padding: '12px 16px', marginBottom: 20,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <FileText size={18} style={{ color: B.gold }} />
+                <div>
+                  <div style={{ color: B.cream, fontSize: 14, fontWeight: 600 }}>{fileLabel(contract)}</div>
+                  <div style={{ color: B.slate, fontSize: 12 }}>Hati ya mkataba — pakua ili kusoma vizuri</div>
+                </div>
               </div>
+              <button
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '6px 14px', fontSize: 12, borderRadius: 8 }}
+                onClick={() => onDownload(contract.id, contract.file_name || 'mkataba.pdf')}
+              >
+                <Download size={12} /> Pakua
+              </button>
             </div>
-            <button
-              style={{ ...buttonStyle('secondary'), padding: '6px 14px', fontSize: 12, borderRadius: 8 }}
-              onClick={() => onDownload(contract.id, contract.file_name || 'mkataba.pdf')}
-            >
-              <Download size={12} /> Pakua
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* ── Fields ── */}
-        {visibleFields.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px 0', color: palette.muted }}>
-            <FileCheck size={36} style={{ opacity: 0.3, display: 'block', margin: '0 auto 12px' }} />
-            <div style={{ fontSize: 14 }}>Mkataba huu hauna sehemu za kujaza.</div>
-            {hasFile(contract) && <div style={{ fontSize: 12, marginTop: 6 }}>Pakua hati ili kusoma maudhui yote.</div>}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* Fields */}
+          {visibleFields.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: B.slate }}>
+              <FileCheck size={36} style={{ opacity: 0.3, display: 'block', margin: '0 auto 12px' }} />
+              <div style={{ fontSize: 14 }}>Mkataba huu hauna sehemu za kujaza.</div>
+              {hasFile(contract) && <div style={{ fontSize: 12, marginTop: 6 }}>Pakua hati ili kusoma maudhui yote.</div>}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
 
-            {/* Accordion sections for data fields */}
-            {activeSections.map(section => {
-              const fields   = getSectionFields(section);
-              const isOpen   = activeSection === section.title;
-              const filled   = fields.filter(f => fieldValues[f.id]?.trim() || f.tenant_value || f.value);
-              const required = fields.filter(f => f.required);
-              const complete = required.every(f => fieldValues[f.id]?.trim());
+              {/* Accordion sections */}
+              {activeSections.map(section => {
+                const fields   = getSectionFields(section);
+                const isOpen   = activeSection === section.title;
+                const filled   = fields.filter(f => fieldValues[f.id]?.trim() || f.tenant_value || f.value);
+                const required = fields.filter(f => f.required);
+                const complete = required.every(f => fieldValues[f.id]?.trim());
 
-              return (
-                <div key={section.title} style={{
-                  border: `1px solid ${isOpen ? `${GOLD}30` : 'rgba(255,255,255,0.07)'}`,
-                  borderRadius: 12, overflow: 'hidden', marginBottom: 4, transition: 'border-color 0.2s',
-                }}>
-                  <button
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '14px 18px', border: 'none', cursor: 'pointer', color: palette.cream,
-                      background: isOpen ? `${GOLD}0e` : 'rgba(255,255,255,0.02)',
-                    }}
-                    onClick={() => setActiveSection(isOpen ? null : section.title)}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontWeight: 600, fontSize: 14 }}>{section.title}</span>
-                      <span style={{
-                        fontSize: 11, borderRadius: 6, padding: '2px 8px',
-                        color:      complete ? '#16a34a'              : palette.muted,
-                        background: complete ? 'rgba(22,163,74,0.12)' : 'rgba(255,255,255,0.05)',
-                      }}>
-                        {filled.length}/{fields.length}
-                      </span>
+                return (
+                  <div key={section.title} style={{
+                    border: `1px solid ${isOpen ? `${B.gold}30` : 'rgba(255,255,255,0.07)'}`,
+                    borderRadius: 12, overflow: 'hidden', marginBottom: 4, transition: 'border-color 0.2s',
+                  }}>
+                    <button
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '14px 18px', border: 'none', cursor: 'pointer', color: B.cream,
+                        background: isOpen ? `${B.goldDim}` : 'rgba(255,255,255,0.02)',
+                      }}
+                      onClick={() => setActiveSection(isOpen ? null : section.title)}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontWeight: 600, fontSize: 14 }}>{section.title}</span>
+                        <span style={{
+                          fontSize: 11, borderRadius: 6, padding: '2px 8px',
+                          color:      complete ? '#16a34a'              : B.slate,
+                          background: complete ? 'rgba(22,163,74,0.12)' : 'rgba(255,255,255,0.05)',
+                        }}>
+                          {filled.length}/{fields.length}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {complete && <CheckCircle size={14} style={{ color: '#16a34a' }} />}
+                        {isOpen ? <ChevronUp size={16} style={{ color: B.slate }} /> : <ChevronDown size={16} style={{ color: B.slate }} />}
+                      </div>
+                    </button>
+
+                    {isOpen && (
+                      <div style={{ padding: '16px 18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        {fields.map(field => (
+                          <div key={field.id}>
+                            <label style={{ display: 'block', marginBottom: 7, color: B.cream, fontSize: 13, fontWeight: 600 }}>
+                              {field.label}
+                              {field.required && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
+                            </label>
+                            {renderInput(field)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Ungrouped fields */}
+              {ungroupedFields.length > 0 && (
+                <div style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 4 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: B.cream }}>Sehemu Nyingine</div>
+                  {ungroupedFields.map(field => (
+                    <div key={field.id}>
+                      <label style={{ display: 'block', marginBottom: 7, color: B.cream, fontSize: 13, fontWeight: 600 }}>
+                        {field.label}{field.required && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
+                      </label>
+                      {renderInput(field)}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {complete && <CheckCircle size={14} style={{ color: '#16a34a' }} />}
-                      {isOpen ? <ChevronUp size={16} style={{ color: palette.muted }} /> : <ChevronDown size={16} style={{ color: palette.muted }} />}
-                    </div>
-                  </button>
+                  ))}
+                </div>
+              )}
 
-                  {isOpen && (
-                    <div style={{ padding: '16px 18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      {fields.map(field => (
-                        <div key={field.id}>
-                          <label style={{ display: 'block', marginBottom: 7, color: palette.cream, fontSize: 13, fontWeight: 600 }}>
-                            {field.label}
-                            {field.required && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
-                          </label>
-                          {renderInput(field)}
-                        </div>
-                      ))}
-                    </div>
+              {/* Signature block */}
+              <div
+                id="sig-block"
+                style={{
+                  border: signatureDataUrl
+                    ? '1.5px solid rgba(22,163,74,0.4)'
+                    : `1.5px solid ${B.gold}55`,
+                  borderRadius: 12,
+                  padding: '20px 18px',
+                  marginTop: 6,
+                  background: signatureDataUrl
+                    ? 'rgba(22,163,74,0.05)'
+                    : `${B.goldDim}`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                  <PenTool size={16} style={{ color: B.gold }} />
+                  <span style={{ fontWeight: 700, fontSize: 14, color: B.cream }}>
+                    Sahihi ya Mpangaji
+                    {!isReadOnly && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
+                  </span>
+                  {signatureDataUrl && (
+                    <span style={{ marginLeft: 'auto', color: '#16a34a', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <CheckCircle size={13} /> Imewekwa
+                    </span>
                   )}
                 </div>
-              );
-            })}
 
-            {/* Ungrouped data fields */}
-            {ungroupedFields.length > 0 && (
-              <div style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 4 }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: palette.cream }}>Sehemu Nyingine</div>
-                {ungroupedFields.map(field => (
-                  <div key={field.id}>
-                    <label style={{ display: 'block', marginBottom: 7, color: palette.cream, fontSize: 13, fontWeight: 600 }}>
-                      {field.label}{field.required && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
-                    </label>
-                    {renderInput(field)}
+                {signatureDataUrl ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                    <div style={{
+                      border: `1px solid ${B.gold}35`, borderRadius: 8,
+                      background: 'rgba(255,255,255,0.03)', padding: '8px 12px',
+                    }}>
+                      <img
+                        src={signatureDataUrl}
+                        alt="Sahihi yako"
+                        style={{ display: 'block', maxHeight: 70, maxWidth: 260 }}
+                      />
+                    </div>
+                    {!isReadOnly && (
+                      <button
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '8px 16px', fontSize: 13, borderRadius: 8 }}
+                        onClick={() => setShowSignPad(true)}
+                      >
+                        <PenTool size={13} /> Badilisha Sahihi
+                      </button>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* ── Signature block — ALWAYS VISIBLE, outside all accordions ── */}
-            <div
-              id="sig-block"
-              style={{
-                border: signatureDataUrl
-                  ? '1.5px solid rgba(22,163,74,0.4)'
-                  : `1.5px solid ${GOLD}55`,
-                borderRadius: 12,
-                padding: '20px 18px',
-                marginTop: 6,
-                background: signatureDataUrl
-                  ? 'rgba(22,163,74,0.05)'
-                  : `${GOLD}09`,
-              }}
-            >
-              {/* Section label */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <PenTool size={16} style={{ color: GOLD }} />
-                <span style={{ fontWeight: 700, fontSize: 14, color: palette.cream }}>
-                  Sahihi ya Mpangaji
-                  {!isReadOnly && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
-                </span>
-                {signatureDataUrl && (
-                  <span style={{ marginLeft: 'auto', color: '#16a34a', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <CheckCircle size={13} /> Imewekwa
-                  </span>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <p style={{ color: B.slate, fontSize: 13, margin: 0 }}>
+                      Bonyeza kitufe hapa chini ili kutoa sahihi yako ya kidijitali.
+                      Sahihi ni <strong style={{ color: B.cream }}>lazima</strong> kabla ya kuwasilisha mkataba.
+                    </p>
+                    {!isReadOnly && (
+                      <button
+                        style={{ background: B.gold, border: 'none', color: B.navy900, padding: '12px 24px', alignSelf: 'flex-start', borderRadius: 8, fontWeight: 600 }}
+                        onClick={() => setShowSignPad(true)}
+                      >
+                        <PenTool size={15} /> Toa Sahihi Yako
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
-
-              {signatureDataUrl ? (
-                /* ── Signature preview ── */
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                  <div style={{
-                    border: `1px solid ${GOLD}35`, borderRadius: 8,
-                    background: 'rgba(255,255,255,0.03)', padding: '8px 12px',
-                  }}>
-                    <img
-                      src={signatureDataUrl}
-                      alt="Sahihi yako"
-                      style={{ display: 'block', maxHeight: 70, maxWidth: 260 }}
-                    />
-                  </div>
-                  {!isReadOnly && (
-                    <button
-                      style={{ ...buttonStyle('secondary'), padding: '8px 16px', fontSize: 13 }}
-                      onClick={() => setShowSignPad(true)}
-                    >
-                      <PenTool size={13} /> Badilisha Sahihi
-                    </button>
-                  )}
-                </div>
-              ) : (
-                /* ── Prompt to sign ── */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <p style={{ color: palette.muted, fontSize: 13, margin: 0 }}>
-                    Bonyeza kitufe hapa chini ili kutoa sahihi yako ya kidijitali.
-                    Sahihi ni <strong style={{ color: palette.cream }}>lazima</strong> kabla ya kuwasilisha mkataba.
-                  </p>
-                  {!isReadOnly && (
-                    <button
-                      style={{ ...buttonStyle('primary'), padding: '12px 24px', alignSelf: 'flex-start' }}
-                      onClick={() => setShowSignPad(true)}
-                    >
-                      <PenTool size={15} /> Toa Sahihi Yako
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
-          </div>
-        )}
-
-        {/* ── Inline error ── */}
-        {modalError && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            color: '#dc2626', fontSize: 13,
-            background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)',
-            borderRadius: 8, padding: '10px 14px', marginTop: 16,
-          }}>
-            <AlertCircle size={14} /> {modalError}
-          </div>
-        )}
-
-        {/* ── Footer ── */}
-        <div style={{
-          display: 'flex', gap: 12, justifyContent: 'flex-end',
-          marginTop: 24, paddingTop: 16,
-          borderTop: '1px solid rgba(255,255,255,0.06)',
-          flexWrap: 'wrap',
-        }}>
-          <button style={{ ...buttonStyle('secondary'), padding: '10px 20px' }} onClick={onClose}>
-            Funga
-          </button>
-          {contract.status === 'pending_signature' && (
-            <button
-              style={{ ...buttonStyle('primary'), padding: '10px 28px' }}
-              onClick={handleSubmit}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  Inawasilisha…
-                </>
-              ) : (
-                <><Send size={15} /> Wasilisha Mkataba</>
-              )}
-            </button>
           )}
+
+          {/* Error */}
+          {modalError && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              color: '#dc2626', fontSize: 13,
+              background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)',
+              borderRadius: 8, padding: '10px 14px', marginTop: 16,
+            }}>
+              <AlertCircle size={14} /> {modalError}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div style={{
+            display: 'flex', gap: 12, justifyContent: 'flex-end',
+            marginTop: 24, paddingTop: 16,
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            flexWrap: 'wrap',
+          }}>
+            <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '10px 20px', borderRadius: 8 }} onClick={onClose}>
+              Funga
+            </button>
+            {contract.status === 'pending_signature' && (
+              <button
+                style={{ background: B.gold, border: 'none', color: B.navy900, padding: '10px 28px', borderRadius: 8, fontWeight: 600 }}
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
+                    Inawasilisha…
+                  </>
+                ) : (
+                  <><Send size={15} /> Wasilisha Mkataba</>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Signature Pad — rendered as a separate layer above the modal ── */}
+      {/* Signature Pad */}
       {showSignPad && (
         <SignaturePad
           overlayStyle={overlay}
-          cardStyle={panelStyle}
+          cardStyle={{ background: B.navy800, border: `1px solid ${B.border}`, borderRadius: 16 }}
           onSave={(dataUrl) => {
             setSignatureDataUrl(dataUrl);
             setShowSignPad(false);
-            setModalError(''); // clear "please sign" error once signature is provided
+            setModalError('');
           }}
           onCancel={() => setShowSignPad(false)}
         />
@@ -634,7 +631,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
 };
 
 // ---------------------------------------------------------------------------
-// Main Tenant Page
+// Main Page Component
 // ---------------------------------------------------------------------------
 
 const DigitalContractPage = () => {
@@ -712,151 +709,305 @@ const DigitalContractPage = () => {
   const needsSigning = contracts.filter(c => c.status === 'pending_signature');
 
   return (
-    <div style={{ ...pageStyle, padding: '0' }}>
+    <div className="dc-container">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
+        * { box-sizing: border-box; }
 
-      {/* ── Header ── */}
-      <section style={{ ...panelStyle, position: 'relative' }}>
-        <div style={{
-          position: 'absolute', top: 0, left: 32, right: 32, height: '2px',
-          background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`,
-        }} />
-        <div style={sectionTitleStyle}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: GOLD, display: 'inline-block', marginRight: 6 }} />
-          Eneo la Mpangaji
-        </div>
-        <h1 style={headingStyle}>Mikataba ya Kidijitali</h1>
-        <p style={descriptionStyle}>Angalia, jaza, na sahihi mikataba yako ya kukodisha mtandaoni.</p>
+        .dc-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 32px 24px;
+          background: #0F172A;
+          min-height: 100vh;
+        }
 
+        .dc-header {
+          text-align: center;
+          margin-bottom: 56px;
+        }
+
+        .dc-title {
+          font-size: clamp(36px, 5vw, 56px);
+          font-weight: 800;
+          color: #FFFFFF;
+          margin-bottom: 16px;
+          letter-spacing: -0.03em;
+          line-height: 1.1;
+        }
+
+        .dc-subtitle {
+          font-size: 18px;
+          color: #94A3B8;
+          font-weight: 400;
+          margin-bottom: 32px;
+        }
+
+        .dc-alert {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(200,145,40,0.1);
+          border: 1px solid rgba(200,145,40,0.2);
+          padding: 16px 24px;
+          border-radius: 12px;
+          color: #C89128;
+          font-weight: 600;
+          font-size: 14px;
+          max-width: 600px;
+          margin: 0 auto;
+        }
+
+        .dc-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+          gap: 32px;
+        }
+
+        .dc-card {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 24px;
+          overflow: hidden;
+          transition: all 0.3s ease;
+          position: relative;
+        }
+        .dc-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+          border-color: rgba(200,145,40,0.3);
+        }
+
+        .dc-card-header {
+          padding: 24px 24px 20px;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .dc-card-title {
+          font-size: 20px;
+          font-weight: 700;
+          color: #FFFFFF;
+          margin-bottom: 8px;
+          line-height: 1.3;
+        }
+
+        .dc-card-property {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #94A3B8;
+          font-size: 15px;
+        }
+
+        .dc-card-body {
+          padding: 20px 24px;
+        }
+
+        .dc-status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 100px;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: '0.05em';
+          text-transform: uppercase;
+        }
+
+        .dc-card-footer {
+          padding: 20px 24px;
+          border-top: 1px solid rgba(255,255,255,0.05);
+          display: flex;
+          gap: 12px;
+        }
+
+        .dc-btn {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px 20px;
+          border-radius: 12px;
+          font-family: 'Inter', sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          border: none;
+        }
+
+        .dc-btn-primary {
+          background: #C89128;
+          color: #FFFFFF;
+        }
+        .dc-btn-primary:hover {
+          background: #D4A843;
+          transform: translateY(-1px);
+        }
+
+        .dc-btn-secondary {
+          background: rgba(255,255,255,0.05);
+          color: #FFFFFF;
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+        .dc-btn-secondary:hover {
+          background: rgba(255,255,255,0.08);
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+          .dc-container { padding: 20px 16px; }
+          .dc-title { font-size: 32px; }
+          .dc-subtitle { font-size: 16px; }
+          .dc-grid { grid-template-columns: 1fr; gap: 24px; }
+          .dc-card-header { padding: 20px; }
+          .dc-card-body { padding: 20px; }
+          .dc-card-footer { padding: 20px; }
+        }
+
+        @media (max-width: 480px) {
+          .dc-container { padding: 16px 12px; }
+          .dc-title { font-size: 28px; }
+          .dc-subtitle { font-size: 15px; }
+          .dc-card-header { padding: 16px; }
+          .dc-card-body { padding: 16px; }
+          .dc-card-footer { padding: 16px; flex-direction: column; }
+          .dc-btn { width: 100%; }
+        }
+      `}</style>
+
+      {/* Header */}
+      <div className="dc-header">
+        <h1 className="dc-title">Digital Contracts</h1>
+        <p className="dc-subtitle">View, fill, and sign your rental contracts online</p>
+        
         {needsSigning.length > 0 && (
-          <div style={{
-            marginTop: 20, display: 'flex', alignItems: 'center', gap: 12,
-            background: 'rgba(201,168,76,0.1)', border: `1px solid ${GOLD}45`,
-            borderRadius: 10, padding: '14px 18px',
-          }}>
-            <PenTool size={18} style={{ color: GOLD, flexShrink: 0 }} />
+          <div className="dc-alert">
+            <PenTool size={20} />
             <div>
-              <div style={{ color: palette.cream, fontWeight: 600, fontSize: 14 }}>
-                Unahitajika kusaini {needsSigning.length === 1 ? 'mkataba' : `mikataba ${needsSigning.length}`}
-              </div>
-              <div style={{ color: palette.muted, fontSize: 12, marginTop: 2 }}>
-                Bonyeza kitufe cha <strong style={{ color: GOLD }}>&ldquo;Saini&rdquo;</strong> kwenye mkataba husika hapa chini.
-              </div>
+              <div>You need to sign {needsSigning.length === 1 ? 'a contract' : `${needsSigning.length} contracts`}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Click the "Sign" button on the relevant contract below</div>
             </div>
           </div>
         )}
-      </section>
+      </div>
 
-      {/* ── Contract list ── */}
-      <section style={panelStyle}>
+      {/* Error/Success Messages */}
+      {(error || success) && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, fontSize: 14,
+          color:      success ? '#16a34a'              : '#dc2626',
+          background: success ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.08)',
+          border:     `1px solid ${success ? 'rgba(22,163,74,0.25)' : 'rgba(220,38,38,0.25)'}`,
+          borderRadius: 12, padding: '16px 20px', marginBottom: 32, maxWidth: 800, margin: '0 auto 32px',
+        }}>
+          {success ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+          {success || error}
+        </div>
+      )}
 
-        {(error || success) && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, fontSize: 14,
-            color:      success ? '#16a34a'              : '#dc2626',
-            background: success ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.08)',
-            border:     `1px solid ${success ? 'rgba(22,163,74,0.25)' : 'rgba(220,38,38,0.25)'}`,
-            borderRadius: 10, padding: '14px 18px', marginBottom: 20,
-          }}>
-            {success ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-            {success || error}
+      {/* Loading State */}
+      {loading && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, color: '#94A3B8', minHeight: '200px' }}>
+          <Loader2 size={24} style={{ animation: 'spin 0.8s linear infinite' }} />
+          <span>Loading contracts...</span>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && contracts.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '80px 20px', color: '#94A3B8' }}>
+          <div style={{ width: 80, height: 80, background: 'rgba(200,145,40,0.1)', border: '1px solid rgba(200,145,40,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', borderRadius: '50%' }}>
+            <Shield size={36} style={{ color: '#C89128' }} />
           </div>
-        )}
-
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: palette.muted, padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: `2px solid ${GOLD}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            Inapakia mikataba…
+          <div style={{ fontSize: 24, fontWeight: 600, color: '#FFFFFF', marginBottom: 12 }}>No contracts yet</div>
+          <div style={{ fontSize: 16, opacity: 0.7, maxWidth: 400, margin: '0 auto' }}>
+            Your landlord hasn't created any contracts yet. Contracts will appear here once they're available.
           </div>
+        </div>
+      )}
 
-        ) : contracts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: palette.muted }}>
-            <Shield size={52} style={{ opacity: 0.2, margin: '0 auto 16px', display: 'block', color: GOLD }} />
-            <div style={{ fontSize: 16, fontWeight: 600, color: palette.cream }}>Hakuna mikataba ya sasa</div>
-            <div style={{ fontSize: 13, opacity: 0.7, marginTop: 6, maxWidth: 360, margin: '6px auto 0' }}>
-              Mpangishaji wako bado hakutumia mkataba. Mikataba itaonekana hapa mara tu inapokufikia.
-            </div>
-          </div>
+      {/* Contracts Grid */}
+      {!loading && contracts.length > 0 && (
+        <div className="dc-grid">
+          {contracts.map(contract => {
+            const sm = getStatusMeta(contract.status);
+            const fCount = parseFields(contract.fields).filter(f => !f.landlordOnly && f.type !== 'signature').length;
+            
+            return (
+              <div key={contract.id} className="dc-card">
+                <div className="dc-card-header">
+                  <div className="dc-card-title">{contract.title}</div>
+                  <div className="dc-card-property">
+                    <MapPin size={16} />
+                    {contract.property?.title ?? `Property #${contract.property_id}`}
+                  </div>
+                  {contract.property?.location && (
+                    <div style={{ color: '#94A3B8', fontSize: 13, marginTop: 4, paddingLeft: 24 }}>
+                      {contract.property.location}
+                    </div>
+                  )}
+                </div>
 
-        ) : (
-          <div style={tableWrapStyle}>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  {['Mkataba', 'Mali / Nyumba', 'Tarehe', 'Hali', 'Vitendo'].map(h => (
-                    <th key={h} style={thStyle}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {contracts.map(c => {
-                  const sm     = getStatusMeta(c.status);
-                  const fCount = parseFields(c.fields).filter(f => !f.landlordOnly && f.type !== 'signature').length;
-                  return (
-                    <tr
-                      key={c.id}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.025)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                <div className="dc-card-body">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                    <div className="dc-status-badge" style={{
+                      background: `${sm.color}18`,
+                      border: `1px solid ${sm.color}40`,
+                      color: sm.color
+                    }}>
+                      {sm.icon} {sm.label}
+                    </div>
+                    {contract.property?.price && (
+                      <div style={{ fontSize: 18, fontWeight: 700, color: '#C89128' }}>
+                        {formatCurrency(contract.property.price)}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 12, color: '#94A3B8' }}>
+                    {fileLabel(contract) && <span>📄 {fileLabel(contract)}</span>}
+                    {fCount > 0 && <span>{fCount} fields to fill</span>}
+                    <span>📅 {formatDate(contract.created_at)}</span>
+                  </div>
+                </div>
+
+                <div className="dc-card-footer">
+                  {hasFile(contract) && (
+                    <button
+                      className="dc-btn dc-btn-secondary"
+                      onClick={() => downloadContract(contract.id, contract.file_name || 'contract.pdf')}
                     >
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 600, color: palette.cream }}>{c.title}</div>
-                        {fileLabel(c) && <div style={{ color: palette.muted, fontSize: 12, marginTop: 3 }}>📄 {fileLabel(c)}</div>}
-                        {fCount > 0 && <div style={{ color: GOLD, fontSize: 11, marginTop: 2 }}>{fCount} sehemu za kujaza</div>}
-                      </td>
+                      <Download size={16} /> Download
+                    </button>
+                  )}
+                  {contract.status === 'pending_signature' && (
+                    <button
+                      className="dc-btn dc-btn-primary"
+                      onClick={() => { setError(''); setSuccess(''); setSelectedContract(contract); }}
+                    >
+                      <PenTool size={16} /> Sign
+                    </button>
+                  )}
+                  {['pending_review', 'approved', 'rejected'].includes(contract.status) && (
+                    <button
+                      className="dc-btn dc-btn-secondary"
+                      onClick={() => { setError(''); setSuccess(''); setSelectedContract(contract); }}
+                    >
+                      <Eye size={16} /> View
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-                      <td style={tdStyle}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: palette.cream, fontWeight: 600 }}>
-                          <MapPin size={12} style={{ color: GOLD, flexShrink: 0 }} />
-                          {c.property?.title ?? `Mali #${c.property_id}`}
-                        </div>
-                        {c.property?.location && <div style={{ color: palette.muted, fontSize: 12, marginTop: 2, paddingLeft: 17 }}>{c.property.location}</div>}
-                        {c.property?.price && <div style={{ color: GOLD, fontSize: 12, fontWeight: 600, marginTop: 2, paddingLeft: 17 }}>{formatCurrency(c.property.price)}/mwezi</div>}
-                      </td>
-
-                      <td style={{ ...tdStyle, color: palette.muted, fontSize: 13 }}>{formatDate(c.created_at)}</td>
-
-                      <td style={tdStyle}>
-                        <span style={{ ...statusPillStyle(sm.color), display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                          {sm.icon} {sm.label}
-                        </span>
-                      </td>
-
-                      <td style={tdStyle}>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {hasFile(c) && (
-                            <button
-                              style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: 12, borderRadius: 8 }}
-                              onClick={() => downloadContract(c.id, c.file_name || 'mkataba.pdf')}
-                            >
-                              <Download size={11} /> Pakua
-                            </button>
-                          )}
-                          {c.status === 'pending_signature' && (
-                            <button
-                              style={{ ...buttonStyle('primary'), padding: '5px 10px', fontSize: 12, borderRadius: 8 }}
-                              onClick={() => { setError(''); setSuccess(''); setSelectedContract(c); }}
-                            >
-                              <PenTool size={11} /> Saini
-                            </button>
-                          )}
-                          {['pending_review', 'approved', 'rejected'].includes(c.status) && (
-                            <button
-                              style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: 12, borderRadius: 8 }}
-                              onClick={() => { setError(''); setSuccess(''); setSelectedContract(c); }}
-                            >
-                              <Eye size={11} /> Angalia
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
+      {/* Contract Modal */}
       {selectedContract && (
         <ContractSigningModal
           contract={selectedContract}
@@ -866,8 +1017,6 @@ const DigitalContractPage = () => {
           submitting={submitting}
         />
       )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
