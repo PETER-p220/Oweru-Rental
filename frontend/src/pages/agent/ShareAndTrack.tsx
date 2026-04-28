@@ -11,10 +11,6 @@ import {
   statGridStyle,
   statLabelStyle,
   statValueStyle,
-  tableStyle,
-  tableWrapStyle,
-  tdStyle,
-  thStyle,
 } from './agentPageStyles';
 
 // ── Inline icon components ────────────────────────────────────────────────────
@@ -50,6 +46,13 @@ const WaIcon = () => (
   </svg>
 );
 
+const LinkIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+  </svg>
+);
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface TrackingLink {
@@ -61,22 +64,19 @@ interface TrackingLink {
   created_at: string;
 }
 
-// How often (ms) to silently refresh click/share counts in the background
 const POLL_INTERVAL_MS = 15_000;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const ShareAndTrack = () => {
-  const [links, setLinks]           = useState<TrackingLink[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError]           = useState('');
-  const [search, setSearch]         = useState('');
+  const [links, setLinks]             = useState<TrackingLink[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [refreshing, setRefreshing]   = useState(false);
+  const [error, setError]             = useState('');
+  const [search, setSearch]           = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  // Track which row just had its link copied: id → true | undefined
-  const [copied, setCopied]         = useState<Record<number, boolean>>({});
+  const [copied, setCopied]           = useState<Record<number, boolean>>({});
 
-  // Keep a ref so the polling interval can always call the latest fetchLinks
   const fetchLinksRef = useRef<() => Promise<void>>(() => fetchLinks(true));
 
   const fetchLinks = useCallback(async (silent = false) => {
@@ -89,7 +89,6 @@ const ShareAndTrack = () => {
       setLastUpdated(new Date());
       setError('');
     } catch (err: any) {
-      // Only surface errors on the initial (non-silent) load
       if (!silent) {
         setError(err?.response?.data?.message || 'Unable to load tracking links.');
       }
@@ -99,19 +98,13 @@ const ShareAndTrack = () => {
     }
   }, []);
 
-  // Store latest fetchLinks in ref for the interval to use
   useEffect(() => {
     fetchLinksRef.current = () => fetchLinks(true);
   }, [fetchLinks]);
 
-  // Initial load + polling
   useEffect(() => {
     fetchLinks(false);
-
-    const interval = setInterval(() => {
-      fetchLinksRef.current?.();
-    }, POLL_INTERVAL_MS);
-
+    const interval = setInterval(() => { fetchLinksRef.current?.(); }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchLinks]);
 
@@ -125,258 +118,257 @@ const ShareAndTrack = () => {
   const totalClicks = links.reduce((sum, item) => sum + Number(item.clicks || 0), 0);
   const totalShares = links.reduce((sum, item) => sum + Number(item.shares || 0), 0);
 
-  // Copy link to clipboard, record as share, then immediately refresh counts
   const handleCopy = async (item: TrackingLink) => {
     try {
-      // Fallback for browsers that don't support clipboard API
-      const copyToClipboard = async (text: string) => {
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(text);
-        } else {
-          // Fallback for older browsers or HTTP
-          const textArea = document.createElement('textarea');
-          textArea.value = text;
-          textArea.style.position = 'fixed';
-          textArea.style.left = '-999999px';
-          textArea.style.top = '-999999px';
-          document.body.appendChild(textArea);
-          textArea.focus();
-          textArea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textArea);
-        }
-      };
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(item.tracking_url);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = item.tracking_url;
+        textArea.style.cssText = 'position:fixed;left:-999999px;top:-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
 
-      await copyToClipboard(item.tracking_url);
-
-      // Optimistically increment shares in local state
       setLinks((prev) =>
         prev.map((l) => l.id === item.id ? { ...l, shares: l.shares + 1 } : l)
       );
-
-      // Record on server, then pull fresh counts right away
       await Api.recordShare(item.id);
-      fetchLinks(true);   // silent refresh — updates real click count too
+      fetchLinks(true);
 
-      // Show checkmark feedback for 2 s
       setCopied((prev) => ({ ...prev, [item.id]: true }));
       setTimeout(() => setCopied((prev) => ({ ...prev, [item.id]: false })), 2000);
     } catch {
-      // Clipboard not available — just show the URL selected
+      // clipboard unavailable
     }
   };
 
-  // Share via WhatsApp, record the share, then refresh counts
   const handleWhatsApp = async (item: TrackingLink) => {
     setLinks((prev) =>
       prev.map((l) => l.id === item.id ? { ...l, shares: l.shares + 1 } : l)
     );
     await Api.recordShare(item.id);
-    fetchLinks(true);   // silent refresh
+    fetchLinks(true);
     window.open(
       `https://wa.me/?text=${encodeURIComponent(`Check out this property: ${item.tracking_url}`)}`,
       '_blank'
     );
   };
 
-  // Manual refresh button handler
-  const handleManualRefresh = () => fetchLinks(true);
-
   return (
     <div style={pageStyle}>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+
       {/* ── Header ── */}
       <section style={panelStyle}>
         <div style={sectionTitleStyle}>Agent Workspace</div>
         <h1 style={headingStyle}>Share & Track</h1>
         <p style={descriptionStyle}>
-          Tracking links for your listings. Every click on the link is counted automatically.
-          Use Copy or WhatsApp to share — each share is recorded too.
-          Counts refresh every {POLL_INTERVAL_MS / 1000} seconds automatically.
+          Tracking links for your listings. Clicks are counted automatically.
+          Copy or WhatsApp to share — each share is recorded.
+          Counts refresh every {POLL_INTERVAL_MS / 1000}s.
         </p>
-        <div style={{ ...statGridStyle, marginTop: '22px' }}>
+        <div style={{ ...statGridStyle, marginTop: '16px', gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <div style={statCardStyle('#38bdf8')}>
             <div style={statLabelStyle}>Links</div>
             <div style={statValueStyle}>{links.length}</div>
           </div>
           <div style={statCardStyle('#22c55e')}>
-            <div style={statLabelStyle}>Total Clicks</div>
+            <div style={statLabelStyle}>Clicks</div>
             <div style={statValueStyle}>{totalClicks}</div>
           </div>
           <div style={statCardStyle('#f59e0b')}>
-            <div style={statLabelStyle}>Total Shares</div>
+            <div style={statLabelStyle}>Shares</div>
             <div style={statValueStyle}>{totalShares}</div>
           </div>
         </div>
       </section>
 
-      {/* ── Table ── */}
+      {/* ── Cards ── */}
       <section style={panelStyle}>
         {/* Search + refresh row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', alignItems: 'center' }}>
           <input
-            style={{ ...inputStyle, maxWidth: '340px' }}
-            placeholder="Search properties..."
+            style={{ ...inputStyle, flex: 1, minWidth: 0, fontSize: '14px' }}
+            placeholder="Search properties…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-
-          {/* Manual refresh button */}
           <button
-            onClick={handleManualRefresh}
+            onClick={() => fetchLinks(true)}
             disabled={refreshing}
-            title="Refresh counts"
+            title="Refresh"
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              fontSize: '12px', fontWeight: 500,
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontSize: '12px',
+              fontWeight: 500,
               color: refreshing ? '#6b7280' : '#38bdf8',
               background: 'rgba(56,189,248,0.08)',
               border: '1px solid rgba(56,189,248,0.2)',
-              borderRadius: '6px', padding: '6px 12px',
+              borderRadius: '8px',
+              padding: '8px 12px',
               cursor: refreshing ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
             }}
           >
             <RefreshIcon spinning={refreshing} />
             {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>
-
-          {/* Last-updated timestamp */}
-          {lastUpdated && (
-            <span style={{ fontSize: '11px', color: '#6b7280' }}>
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </span>
-          )}
         </div>
 
-        {error && <div style={{ color: '#e07070', marginBottom: '16px' }}>{error}</div>}
+        {/* Last updated */}
+        {lastUpdated && (
+          <p style={{ fontSize: '11px', color: '#6b7280', margin: '0 0 12px' }}>
+            Updated: {lastUpdated.toLocaleTimeString()}
+          </p>
+        )}
 
-        {/* Spin keyframe injected once */}
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        {error && <div style={{ color: '#f87171', marginBottom: '12px', fontSize: '13px' }}>{error}</div>}
 
-        <div style={tableWrapStyle}>
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Property</th>
-                <th style={thStyle}>Tracking URL</th>
-                <th style={thStyle}>Clicks</th>
-                <th style={thStyle}>Shares</th>
-                <th style={thStyle}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td style={tdStyle} colSpan={5}>Loading tracking links…</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td style={tdStyle} colSpan={5}>No tracking links found.</td></tr>
-              ) : (
-                filtered.map((item) => (
-                  <tr key={item.id}>
+        {/* Card list */}
+        {loading ? (
+          <div style={{ textAlign: 'center', color: '#94a3b8', padding: '32px 0', fontSize: '14px' }}>
+            Loading tracking links…
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#94a3b8', padding: '32px 0', fontSize: '14px' }}>
+            No tracking links found.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {filtered.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '10px',
+                  padding: '14px',
+                  backgroundColor: 'rgba(0,0,0,0.15)',
+                }}
+              >
+                {/* Property title */}
+                <div style={{ fontWeight: 500, fontSize: '14px', marginBottom: '6px' }}>
+                  {item.title}
+                </div>
 
-                    {/* Property title */}
-                    <td style={tdStyle}>
-                      <span style={{ fontSize: '13px', fontWeight: 500 }}>{item.title}</span>
-                    </td>
+                {/* Tracking URL */}
+                <a
+                  href={item.tracking_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setTimeout(() => fetchLinks(true), 2000)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    fontSize: '12px',
+                    color: '#38bdf8',
+                    textDecoration: 'none',
+                    marginBottom: '12px',
+                    overflow: 'hidden',
+                  }}
+                  title={item.tracking_url}
+                >
+                  <LinkIcon />
+                  <span style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {item.tracking_url}
+                  </span>
+                </a>
 
-                    {/* Tracking URL — truncated, opens in new tab */}
-                    <td style={tdStyle}>
-                      <a
-                        href={item.tracking_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          fontSize: '12px',
-                          color: '#38bdf8',
-                          textDecoration: 'none',
-                          display: 'block',
-                          maxWidth: '260px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={item.tracking_url}
-                        // After opening the link (which triggers a backend click increment),
-                        // schedule a refresh so the count updates shortly after
-                        onClick={() => setTimeout(() => fetchLinks(true), 2000)}
-                      >
-                        {item.tracking_url}
-                      </a>
-                    </td>
+                {/* Stats row */}
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  marginBottom: '12px',
+                }}>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    color: '#38bdf8',
+                    background: 'rgba(56,189,248,0.08)',
+                    border: '1px solid rgba(56,189,248,0.2)',
+                    borderRadius: '6px',
+                    padding: '3px 10px',
+                  }}>
+                    {item.clicks || 0} clicks
+                  </span>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    color: '#f59e0b',
+                    background: 'rgba(245,158,11,0.08)',
+                    border: '1px solid rgba(245,158,11,0.2)',
+                    borderRadius: '6px',
+                    padding: '3px 10px',
+                  }}>
+                    {item.shares || 0} shares
+                  </span>
+                </div>
 
-                    {/* Click count */}
-                    <td style={tdStyle}>
-                      <span style={{
-                        display: 'inline-block',
-                        fontSize: '12px', fontWeight: 500,
-                        color: '#38bdf8',
-                        background: 'rgba(56,189,248,0.08)',
-                        border: '1px solid rgba(56,189,248,0.2)',
-                        borderRadius: '4px', padding: '2px 10px',
-                      }}>
-                        {item.clicks || 0}
-                      </span>
-                    </td>
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => handleCopy(item)}
+                    style={{
+                      flex: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: copied[item.id] ? '#22c55e' : '#c9a84c',
+                      background: copied[item.id] ? 'rgba(34,197,94,0.08)' : 'rgba(201,168,76,0.08)',
+                      border: `1px solid ${copied[item.id] ? 'rgba(34,197,94,0.25)' : 'rgba(201,168,76,0.25)'}`,
+                      borderRadius: '8px',
+                      padding: '9px 0',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {copied[item.id] ? <><CheckIcon /> Copied!</> : <><CopyIcon /> Copy</>}
+                  </button>
 
-                    {/* Share count */}
-                    <td style={tdStyle}>
-                      <span style={{
-                        display: 'inline-block',
-                        fontSize: '12px', fontWeight: 500,
-                        color: '#f59e0b',
-                        background: 'rgba(245,158,11,0.08)',
-                        border: '1px solid rgba(245,158,11,0.2)',
-                        borderRadius: '4px', padding: '2px 10px',
-                      }}>
-                        {item.shares || 0}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
-                    <td style={tdStyle}>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {/* Copy link */}
-                        <button
-                          onClick={() => handleCopy(item)}
-                          title="Copy link"
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            fontSize: '12px', fontWeight: 500,
-                            color: copied[item.id] ? '#22c55e' : '#c9a84c',
-                            background: copied[item.id] ? 'rgba(34,197,94,0.08)' : 'rgba(201,168,76,0.08)',
-                            border: `1px solid ${copied[item.id] ? 'rgba(34,197,94,0.2)' : 'rgba(201,168,76,0.2)'}`,
-                            borderRadius: '6px', padding: '6px 12px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                          }}
-                        >
-                          {copied[item.id] ? <><CheckIcon /> Copied!</> : <><CopyIcon /> Copy</>}
-                        </button>
-
-                        {/* WhatsApp share */}
-                        <button
-                          onClick={() => handleWhatsApp(item)}
-                          title="Share via WhatsApp"
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            fontSize: '12px', fontWeight: 500,
-                            color: '#25d366',
-                            background: 'rgba(37,211,102,0.08)',
-                            border: '1px solid rgba(37,211,102,0.2)',
-                            borderRadius: '6px', padding: '6px 12px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <WaIcon /> WhatsApp
-                        </button>
-                      </div>
-                    </td>
-
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                  <button
+                    onClick={() => handleWhatsApp(item)}
+                    style={{
+                      flex: 1,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      color: '#25d366',
+                      background: 'rgba(37,211,102,0.08)',
+                      border: '1px solid rgba(37,211,102,0.25)',
+                      borderRadius: '8px',
+                      padding: '9px 0',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <WaIcon /> WhatsApp
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
