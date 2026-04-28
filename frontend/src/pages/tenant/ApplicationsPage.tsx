@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2, ShieldCheck, Phone, Info } from 'lucide-react';
+import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2, ShieldCheck, ArrowRight, Phone } from 'lucide-react';
 import Api from '../../services/api';
 import SelcomService from '../../services/selcom';
 import { formatCurrency, formatDate } from './tenantPageStyles';
 
-// ── Types ──────────────────────────────────────────────────────────────────
 interface ApplicationItem {
   id: number;
   status?: string;
@@ -21,7 +20,6 @@ interface ApplicationItem {
   };
 }
 
-// ── Strict Color Adherence ──────────────────────────────────────────────────
 const B = {
   navy900: '#0F172A',
   navy800: '#162035',
@@ -44,7 +42,6 @@ const statusColorMap: Record<string, string> = {
   active:    '#10b981',
 };
 
-// ── Components ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status, rejectionReason }: { status?: string; rejectionReason?: string }) => {
   const s = status || 'unknown';
   const color = statusColorMap[s] ?? B.slate;
@@ -61,15 +58,15 @@ const StatusBadge = ({ status, rejectionReason }: { status?: string; rejectionRe
         fontWeight: 700,
         letterSpacing: '0.08em', 
         textTransform: 'uppercase',
-        borderRadius: '2px', // Professional sharp finish
+        borderRadius: '9999px',
         fontFamily: "'Jost', sans-serif",
       }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-        {s}
+        {s.charAt(0).toUpperCase() + s.slice(1)}
       </span>
       {s === 'rejected' && rejectionReason && (
-        <div style={{ marginTop: 8, fontSize: 11, color: '#f87171', lineHeight: 1.4, display: 'flex', gap: 6 }}>
-          <Info size={12} /> {rejectionReason}
+        <div style={{ marginTop: 8, fontSize: 12, color: '#f87171', lineHeight: 1.4 }}>
+          {rejectionReason}
         </div>
       )}
     </div>
@@ -86,7 +83,8 @@ const parseRent = (price?: number | string): number => {
 
 const makeOrderId = (appId: number) => `RENT-${appId}-${Date.now()}`;
 
-// ── Main Page ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+
 const ApplicationsPage = () => {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +93,7 @@ const ApplicationsPage = () => {
   const [searchParams] = useSearchParams();
   const propertyId = searchParams.get('property');
 
+  // Payment modal state
   const [paymentModal, setPaymentModal] = useState<number | null>(null);
   const [paying, setPaying] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -107,47 +106,70 @@ const ApplicationsPage = () => {
   }, [propertyId]);
 
   useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const res = await Api.getTenantApplications();
+        setApplications(Array.isArray(res.data) ? res.data : []);
+      } catch (err: any) {
+        setError(err?.response?.data?.message || 'Unable to load applications.');
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchApplications();
   }, []);
 
-  const fetchApplications = async () => {
-    try {
-      setLoading(true);
-      const res = await Api.getTenantApplications();
-      setApplications(Array.isArray(res.data) ? res.data : []);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Unable to load applications.');
-    } finally {
-      setLoading(false);
-    }
+  const refreshApplications = async () => {
+    const res = await Api.getTenantApplications();
+    setApplications(Array.isArray(res.data) ? res.data : []);
   };
 
   const handleApplyForProperty = async (id: string) => {
     try {
+      if (!id || isNaN(parseInt(id))) throw new Error('Invalid property ID');
       await Api.createApplication({
         property_id: parseInt(id),
-        message: 'I am interested in this property.',
+        message: 'I am interested in this property and would like to schedule a viewing.',
       });
+      alert('Application submitted successfully!');
       window.history.replaceState({}, '', window.location.pathname);
-      await fetchApplications();
+      await refreshApplications();
     } catch (err: any) {
-      alert(err?.response?.data?.message || 'Failed to submit application.');
+      alert(err?.response?.data?.message || err?.message || 'Failed to submit application.');
     }
   };
 
   const handlePayRent = async (appId: number) => {
+    // ... (your existing payment logic remains unchanged)
     if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
       setPayResult('error');
-      setPayMessage('Please enter a valid phone number.');
+      setPayMessage('Please enter a valid phone number (at least 10 digits).');
       return;
     }
 
     const application = applications.find(app => app.id === appId);
     const rentAmount = parseRent(application?.property?.price);
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+    if (!rentAmount) {
+      setPayResult('error');
+      setPayMessage('Unable to determine rent amount for this application.');
+      return;
+    }
+
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const tenantId = user?.id;
+
+    if (!tenantId) {
+      setPayResult('error');
+      setPayMessage('Your session may have expired. Please log in again.');
+      return;
+    }
+
+    const orderId = makeOrderId(appId);
     setPaying(true);
     setPayResult(null);
+    setPayMessage('');
 
     try {
       const paymentResponse = await SelcomService.initiateMobileMoneyPayment({
@@ -155,29 +177,33 @@ const ApplicationsPage = () => {
         phone_number: phoneNumber,
         provider: paymentProvider,
         property_id: application?.property?.id ?? appId,
-        tenant_id: user.id,
+        tenant_id: tenantId,
         payment_type: 'rent_payment',
-        customer_email: user.email ?? '',
-        customer_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Tenant',
+        customer_email: user?.email ?? '',
+        customer_name: user?.first_name && user?.last_name 
+          ? `${user.first_name} ${user.last_name}` 
+          : user?.first_name ?? 'Tenant',
       });
 
-      if (!paymentResponse.success || !paymentResponse.data) {
+      if (!paymentResponse.success || !paymentResponse.data?.transaction_id) {
         throw new Error(paymentResponse.message || 'Payment initiation failed');
       }
+
+      const transactionId = paymentResponse.data.transaction_id;
 
       await Api.updateApplicationPaymentStatus(appId, {
         payment_status: 'paid',
         payment_method: paymentProvider,
-        transaction_id: paymentResponse.data.transaction_id,
+        transaction_id: transactionId,
         amount_paid: rentAmount,
       });
 
       setPayResult('success');
-      setPayMessage(`Payment request sent! Ref: ${paymentResponse.data.transaction_id}`);
-      await fetchApplications();
+      setPayMessage(`Payment request sent! Check your ${paymentProvider.toUpperCase()} prompt. Ref: ${transactionId}`);
+      await refreshApplications();
     } catch (err: any) {
       setPayResult('error');
-      setPayMessage(err?.message || 'Payment failed.');
+      setPayMessage(err?.message || 'Failed to process rent payment.');
     } finally {
       setPaying(false);
     }
@@ -186,227 +212,412 @@ const ApplicationsPage = () => {
   const openPaymentModal = (appId: number) => {
     setPaymentModal(appId);
     setPayResult(null);
+    setPayMessage('');
+    setPhoneNumber('');
+  };
+
+  const closePaymentModal = () => {
+    if (paying) return;
+    setPaymentModal(null);
+    setPayResult(null);
+    setPayMessage('');
+    setPhoneNumber('');
   };
 
   const filtered = useMemo(() => 
-    applications.filter(item => 
-      `${item.property?.title} ${item.property?.location}`.toLowerCase().includes(search.toLowerCase())
-    ), [applications, search]
+    applications.filter(item => {
+      const hay = `${item.property?.title || ''} ${item.property?.location || ''} ${item.message || ''}`.toLowerCase();
+      return hay.includes(search.toLowerCase());
+    }), 
+    [applications, search]
   );
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    applications.forEach(a => {
+      const s = a.status || 'unknown';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    return counts;
+  }, [applications]);
 
   const activeApp = paymentModal ? applications.find(a => a.id === paymentModal) : null;
   const modalAmount = activeApp ? parseRent(activeApp.property?.price) : 0;
 
   return (
-    <div style={{ fontFamily: "'Jost', sans-serif", background: B.navy900, color: B.cream, minHeight: '100vh' }}>
+    <div style={{ 
+      fontFamily: "'Jost', 'Futura PT', sans-serif", 
+      background: B.navy900, 
+      color: B.cream, 
+      minHeight: '100vh',
+      paddingBottom: '80px'
+    }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .app-container { max-width: 900px; margin: 0 auto; padding: 20px; }
-        
-        .nav-header {
+        .ap-panel {
           background: ${B.navy800};
           border: 1px solid ${B.border};
-          padding: 30px;
-          margin-bottom: 24px;
-          position: relative;
+          border-radius: 16px;
+          padding: 24px;
+          margin: 16px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        .search-wrap {
-          position: relative;
-          margin-top: 20px;
-        }
-
-        .search-input {
+        .ap-search {
           width: 100%;
           background: ${B.navy900};
           border: 1px solid ${B.border};
           color: ${B.cream};
-          padding: 12px 12px 12px 40px;
+          padding: 14px 16px 14px 48px;
+          border-radius: 12px;
+          font-size: 15px;
           outline: none;
+          transition: all 0.2s;
+        }
+        .ap-search:focus {
+          border-color: ${B.gold};
+          box-shadow: 0 0 0 3px ${B.gold}20;
         }
 
-        .app-item {
+        .mobile-card {
           background: ${B.navy800};
           border: 1px solid ${B.border};
+          border-radius: 16px;
+          padding: 20px;
           margin-bottom: 16px;
-          display: flex;
-          flex-direction: column;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .mobile-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 15px 35px rgba(200,145,40,0.08);
         }
 
-        .app-body { padding: 20px; }
-        
-        .app-footer {
-          background: ${B.navy900};
-          border-top: 1px solid ${B.borderF};
-          padding: 16px 20px;
-        }
-
-        .label-xs {
-          font-size: 10px;
-          color: ${B.gold};
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          font-weight: 700;
-          margin-bottom: 4px;
-        }
-
-        .btn-pay {
-          width: 100%;
-          background: ${B.gold};
-          color: ${B.navy900};
-          border: none;
-          padding: 14px;
-          font-weight: 700;
-          text-transform: uppercase;
-          cursor: pointer;
-        }
-
-        .provider-btn {
-          background: ${B.navy900};
-          border: 1px solid ${B.border};
-          color: ${B.slate};
-          padding: 10px;
+        .pay-provider-btn {
+          flex: 1;
+          padding: 12px 10px;
           font-size: 12px;
-          cursor: pointer;
+          font-weight: 600;
+          border: 2px solid ${B.border};
+          background: ${B.navy900};
+          color: ${B.cream};
+          border-radius: 10px;
+          transition: all 0.2s;
         }
-        .provider-btn.active {
-          border-color: ${B.gold};
-          color: ${B.gold};
-          background: ${B.goldDim};
-        }
+        .pay-provider-btn[data-active='true'].tigo    { border-color: #00D4AA; background: rgba(0,212,170,.12); color: #00D4AA; }
+        .pay-provider-btn[data-active='true'].mpesa   { border-color: #00C853; background: rgba(0,200,83,.12);  color: #00C853; }
+        .pay-provider-btn[data-active='true'].airtel  { border-color: #FF6B35; background: rgba(255,107,53,.12); color: #FF6B35; }
+        .pay-provider-btn[data-active='true'].halopesa{ border-color: #9C27B0; background: rgba(156,39,176,.12); color: #9C27B0; }
       `}</style>
 
-      <div className="app-container">
-        {/* Header Section */}
-        <div className="nav-header">
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: B.gold }} />
-          <div className="label-xs">Personal Dashboard</div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, margin: '4px 0' }}>My Applications</h1>
-          
-          <div className="search-wrap">
-            <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: B.slate }} />
-            <input 
-              className="search-input"
-              placeholder="Search by property or location..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
+      {/* Header */}
+      <div className="ap-panel">
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(to right, ${B.gold}, ${B.goldLt})`, borderRadius: '16px 16px 0 0' }} />
+        
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em', color: B.gold, marginBottom: 6 }}>TENANT PORTAL</div>
+          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', margin: 0 }}>My Applications</h1>
+          <p style={{ color: B.slate, marginTop: 6, fontSize: 14.5 }}>Track and manage all your rental applications</p>
         </div>
 
-        {/* List Section */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '50px' }}><Loader2 style={{ animation: 'spin 1s linear infinite', color: B.gold, margin: '0 auto' }} /></div>
-        ) : filtered.map(item => (
-          <div key={item.id} className="app-item">
-            <div className="app-body">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{item.property?.title}</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: B.slate, fontSize: 13, marginTop: 4 }}>
-                    <MapPin size={14} /> {item.property?.location}
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: B.gold }}>{formatCurrency(item.property?.price)}</div>
-                  <div style={{ fontSize: 9, color: B.slate }}>PER MONTH</div>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 24 }}>
-                <div>
-                  <div className="label-xs">Status</div>
-                  <StatusBadge status={item.status} rejectionReason={item.rejection_reason} />
-                </div>
-                <div>
-                  <div className="label-xs">Applied On</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                    <Clock size={14} style={{ color: B.slate }} /> {formatDate(item.created_at)}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="app-footer">
-              {item.status === 'approved' && !item.rent_paid ? (
-                <button className="btn-pay" onClick={() => openPaymentModal(item.id)}>
-                  <DollarSign size={16} style={{ marginRight: 8 }} /> Proceed to Payment
-                </button>
-              ) : item.rent_paid ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#10b981', fontWeight: 700, fontSize: 14 }}>
-                  <CheckCircle size={18} /> Rent Paid Successfully
-                </div>
-              ) : (
-                <div style={{ fontSize: 12, color: B.slate }}>
-                  Waiting for property manager's decision...
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+        <div style={{ position: 'relative' }}>
+          <Search size={18} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: B.slate }} />
+          <input 
+            className="ap-search" 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+            placeholder="Search properties or locations..." 
+          />
+        </div>
       </div>
 
-      {/* Payment Modal */}
-      {paymentModal && activeApp && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.95)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: B.navy800, border: `1px solid ${B.border}`, width: '100%', maxWidth: 400 }}>
-            <div style={{ padding: 24, borderBottom: `1px solid ${B.border}`, background: B.navy900 }}>
-              <div className="label-xs">Secure Checkout</div>
-              <h2 style={{ margin: 0, fontSize: 20 }}>Pay Monthly Rent</h2>
+      {/* Applications List - Mobile Optimized */}
+      <div style={{ padding: '0 16px' }}>
+        {error && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#f87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', padding: '14px 16px', borderRadius: 12, marginBottom: 20 }}>
+            <AlertCircle size={18} /> {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '100px 20px', color: B.slate }}>
+            <Loader2 size={28} style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
+            <div>Loading your applications...</div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '90px 20px', color: B.slate }}>
+            <ClipboardList size={48} style={{ margin: '0 auto 20px', opacity: 0.6 }} />
+            <div style={{ fontSize: 18, fontWeight: 600, color: B.cream, marginBottom: 8 }}>No applications yet</div>
+            <div style={{ maxWidth: 280, margin: '0 auto', lineHeight: 1.6 }}>
+              Start exploring properties and submit your first application.
             </div>
-            
-            <div style={{ padding: 24 }}>
-              <div style={{ background: B.navy900, padding: 16, marginBottom: 20 }}>
-                <div style={{ fontSize: 12, color: B.slate }}>Amount Due</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: B.gold }}>Tsh {modalAmount.toLocaleString()}</div>
+          </div>
+        ) : (
+          <div>
+            {filtered.map(item => (
+              <div key={item.id} className="mobile-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 16.5, lineHeight: 1.3 }}>
+                      {item.property?.title || 'Untitled Property'}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: B.slate, fontSize: 13, marginTop: 6 }}>
+                      <MapPin size={14} />
+                      {item.property?.location || 'Location not specified'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 18, color: B.gold }}>
+                    {formatCurrency(item.property?.price)}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <StatusBadge status={item.status} rejectionReason={item.rejection_reason} />
+                  <div style={{ fontSize: 12.5, color: B.slate, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Clock size={13} /> {formatDate(item.created_at)}
+                  </div>
+                </div>
+
+                {item.message && (
+                  <div style={{ 
+                    background: B.navy900, 
+                    borderRadius: 10, 
+                    padding: '12px 14px', 
+                    fontSize: 13.5, 
+                    color: B.slate, 
+                    lineHeight: 1.55,
+                    marginBottom: 18 
+                  }}>
+                    "{item.message}"
+                  </div>
+                )}
+
+                <div>
+                  {item.status === 'approved' && !item.rent_paid ? (
+                    <button 
+                      onClick={() => openPaymentModal(item.id)}
+                      style={{
+                        width: '100%',
+                        background: B.gold,
+                        color: B.navy900,
+                        border: 'none',
+                        padding: '14px',
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        fontSize: 14.5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        boxShadow: '0 4px 15px rgba(200,145,40,0.3)'
+                      }}
+                    >
+                      <DollarSign size={18} /> Pay Rent Now
+                    </button>
+                  ) : item.rent_paid ? (
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      gap: 8, 
+                      background: 'rgba(16,185,129,0.1)', 
+                      color: '#10b981', 
+                      padding: '12px', 
+                      borderRadius: 12,
+                      fontWeight: 600 
+                    }}>
+                      <CheckCircle size={18} /> Rent Paid Successfully
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Payment Modal - Professional & Clean */}
+      {paymentModal && activeApp && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15,23,42,0.92)', backdropFilter: 'blur(12px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2000, padding: '20px 16px'
+        }}>
+          <div style={{
+            background: B.navy800,
+            border: `1px solid ${B.border}`,
+            borderRadius: 20,
+            width: '100%',
+            maxWidth: 420,
+            maxHeight: '94vh',
+            overflow: 'hidden',
+            boxShadow: '0 30px 70px rgba(0,0,0,0.5)'
+          }}>
+            {/* Header */}
+            <div style={{ 
+              background: `linear-gradient(135deg, ${B.navy900}, #1a2a44)`, 
+              padding: '24px 24px 20px',
+              borderBottom: `1px solid ${B.border}`
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: B.gold, marginBottom: 4 }}>SECURE PAYMENT</div>
+              <div style={{ fontSize: 22, fontWeight: 700 }}>Pay Monthly Rent</div>
+              <div style={{ color: B.slate, fontSize: 13, marginTop: 4 }}>Powered by Selcom • Oweru</div>
+            </div>
+
+            <div style={{ padding: '24px' }}>
+              {/* Property Summary */}
+              <div style={{ 
+                background: B.navy900, 
+                borderRadius: 14, 
+                padding: 16, 
+                marginBottom: 24,
+                border: `1px solid ${B.borderF}`
+              }}>
+                <div style={{ fontWeight: 600, fontSize: 15.5 }}>{activeApp.property?.title}</div>
+                {activeApp.property?.location && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: B.slate, marginTop: 6, fontSize: 13 }}>
+                    <MapPin size={15} /> {activeApp.property.location}
+                  </div>
+                )}
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${B.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: B.slate, fontSize: 13 }}>Amount Due</span>
+                  <span style={{ fontSize: 22, fontWeight: 700, color: B.gold }}>
+                    Tsh {modalAmount.toLocaleString()}
+                  </span>
+                </div>
               </div>
 
-              <div className="label-xs" style={{ marginBottom: 10 }}>Select Provider</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
-                {['tigo', 'mpesa', 'airtel', 'halopesa'].map(p => (
-                  <button 
-                    key={p} 
-                    className={`provider-btn ${paymentProvider === p ? 'active' : ''}`}
-                    onClick={() => setPaymentProvider(p as any)}
-                  >
-                    {p.toUpperCase()}
-                  </button>
-                ))}
+              {/* Provider Selection */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: B.slate, marginBottom: 10 }}>PAYMENT PROVIDER</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {[
+                    { value: 'tigo', label: 'Tigo Pesa' },
+                    { value: 'mpesa', label: 'M-Pesa' },
+                    { value: 'airtel', label: 'Airtel Money' },
+                    { value: 'halopesa', label: 'Halopesa' },
+                  ].map((p) => (
+                    <button
+                      key={p.value}
+                      className={`pay-provider-btn ${p.value}`}
+                      data-active={paymentProvider === p.value ? 'true' : 'false'}
+                      onClick={() => setPaymentProvider(p.value as any)}
+                      disabled={paying}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="label-xs" style={{ marginBottom: 10 }}>Phone Number</div>
-              <div style={{ position: 'relative', marginBottom: 24 }}>
-                <Phone size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: B.slate }} />
-                <input 
-                  style={{ width: '100%', background: B.navy900, border: `1px solid ${B.border}`, color: B.cream, padding: '12px 12px 12px 36px', outline: 'none' }}
-                  placeholder="07XXXXXXXX"
-                  value={phoneNumber}
-                  onChange={e => setPhoneNumber(e.target.value)}
-                />
+              {/* Phone Input */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: B.slate, marginBottom: 8 }}>PHONE NUMBER</div>
+                <div style={{ position: 'relative' }}>
+                  <Phone size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: B.slate }} />
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="0712 345 678"
+                    disabled={paying}
+                    style={{
+                      width: '100%',
+                      padding: '14px 14px 14px 52px',
+                      background: B.navy900,
+                      border: `1px solid ${B.border}`,
+                      borderRadius: 12,
+                      color: B.cream,
+                      fontSize: 16,
+                      outline: 'none'
+                    }}
+                  />
+                </div>
               </div>
 
+              {/* Security */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 10, 
+                background: 'rgba(16,185,129,0.08)', 
+                border: '1px solid rgba(16,185,129,0.25)', 
+                borderRadius: 12, 
+                padding: '12px 16px',
+                marginBottom: 24,
+                fontSize: 13,
+                color: '#34d399'
+              }}>
+                <ShieldCheck size={18} /> 256-bit SSL Secured • Trusted by Selcom
+              </div>
+
+              {/* Result Messages */}
               {payResult && (
-                <div style={{ padding: 12, background: `${payResult === 'success' ? '#10b981' : '#ef4444'}20`, color: payResult === 'success' ? '#10b981' : '#ef4444', fontSize: 13, marginBottom: 20 }}>
-                  {payMessage}
+                <div style={{
+                  padding: '14px 16px',
+                  borderRadius: 12,
+                  marginBottom: 20,
+                  display: 'flex',
+                  gap: 12,
+                  background: payResult === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                  border: `1px solid ${payResult === 'success' ? '#10b98150' : '#ef444450'}`,
+                  color: payResult === 'success' ? '#34d399' : '#f87171'
+                }}>
+                  {payResult === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+                  <span style={{ fontSize: 13.5, lineHeight: 1.5 }}>{payMessage}</span>
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 10 }}>
+              {/* Buttons */}
+              <div style={{ display: 'flex', gap: 12 }}>
                 <button 
-                  onClick={() => setPaymentModal(null)}
-                  style={{ flex: 1, padding: 14, background: 'transparent', border: `1px solid ${B.border}`, color: B.cream, fontWeight: 600 }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={() => handlePayRent(paymentModal)}
+                  onClick={closePaymentModal} 
                   disabled={paying}
-                  style={{ flex: 2, background: B.gold, color: B.navy900, border: 'none', padding: 14, fontWeight: 700 }}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    background: B.navy900,
+                    border: `1px solid ${B.border}`,
+                    color: B.cream,
+                    borderRadius: 12,
+                    fontWeight: 600,
+                    cursor: paying ? 'not-allowed' : 'pointer',
+                    opacity: paying ? 0.6 : 1
+                  }}
                 >
-                  {paying ? 'Processing...' : 'Confirm Pay'}
+                  {payResult === 'success' ? 'Done' : 'Cancel'}
                 </button>
+
+                {payResult !== 'success' && (
+                  <button
+                    onClick={() => handlePayRent(paymentModal)}
+                    disabled={paying || !phoneNumber || phoneNumber.length < 10}
+                    style={{
+                      flex: 1.8,
+                      padding: '14px',
+                      background: paying ? `${B.gold}aa` : B.gold,
+                      color: B.navy900,
+                      border: 'none',
+                      borderRadius: 12,
+                      fontWeight: 700,
+                      fontSize: 15,
+                      cursor: paying || !phoneNumber || phoneNumber.length < 10 ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      boxShadow: paying ? 'none' : '0 6px 20px rgba(200,145,40,0.35)'
+                    }}
+                  >
+                    {paying ? (
+                      <> <Loader2 size={18} style={{ animation: 'spin 0.9s linear infinite' }} /> Processing... </>
+                    ) : (
+                      <> <DollarSign size={18} /> Pay Tsh {modalAmount.toLocaleString()} </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
