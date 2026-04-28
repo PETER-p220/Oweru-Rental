@@ -343,6 +343,20 @@ const PropertyDetail = () => {
           }
         }
         
+        /* Mobile layout improvements */
+        @media (max-width: 900px) {
+          .pd-main-grid {
+            grid-template-columns: 1fr !important;
+            gap: 20px !important;
+          }
+        }
+        
+        @media (max-width: 600px) {
+          .pd-main-grid {
+            gap: 16px !important;
+          }
+        }
+        
         /* Mobile viewport fix */
         @viewport {
           width: device-width;
@@ -387,7 +401,7 @@ const PropertyDetail = () => {
             </Link>
 
             {/* Two-column layout */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 24, alignItems: 'start' }}>
+            <div className="pd-main-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 24, alignItems: 'start' }}>
 
               {/* ═══ LEFT COLUMN ═══ */}
               <div>
