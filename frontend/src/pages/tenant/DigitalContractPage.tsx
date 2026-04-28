@@ -57,11 +57,11 @@ const parseFields = (raw: any): ContractField[] => {
   return [];
 };
 
-const isVisible = (c: DigitalContract) => c.status !== 'draft';
 const fileLabel = (c: DigitalContract) => c.file_name ?? c.file_url?.split('/').pop();
 const hasFile = (c: DigitalContract) => !!(c.file_url || c.file_name);
 
 const STATUS_META: Record<string, { label: string; color: string; icon: React.ReactNode; desc: string }> = {
+  draft:             { label: 'Ratiba', color: '#94A3B8', icon: <FileText size={14} />, desc: 'Mkataba bado katika hatua ya maandalizi.' },
   pending_signature: { label: 'Inasubiri Sahihi Yako', color: '#c9a84c', icon: <PenTool size={14} />, desc: 'Jaza sehemu zote kisha toa sahihi yako.' },
   pending_review:    { label: 'Inakaguliwa na Mpangishaji', color: '#3b82f6', icon: <Clock size={14} />, desc: 'Mpangishaji anakagua mkataba wako.' },
   approved:          { label: 'Imeidhinishwa', color: '#16a34a', icon: <CheckCircle size={14} />, desc: 'Mkataba wako umekubaliwa.' },
@@ -291,7 +291,7 @@ const DigitalContractPage = () => {
         fields: parseFields(c.fields),
         file_url: c.file_url || c.file_path || undefined,
       }));
-      setContracts(normalised.filter(isVisible));
+      setContracts(normalised); // Display all contracts including drafts
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Imeshindwa kupakia mikataba.');
     } finally {
