@@ -313,11 +313,13 @@ const Home = () => {
 
         /* Featured grid */
         .prop-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; }
-        @media(max-width:500px) { .prop-grid { grid-template-columns:1fr; } }
+        @media(max-width:768px) { .prop-grid { grid-template-columns:repeat(2,1fr); gap:16px; } }
+        @media(max-width:480px) { .prop-grid { grid-template-columns:1fr; gap:14px; } }
 
         /* Result cards grid */
         .result-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; }
-        @media(max-width:500px) { .result-grid { grid-template-columns:1fr; } }
+        @media(max-width:768px) { .result-grid { grid-template-columns:repeat(2,1fr); gap:16px; } }
+        @media(max-width:480px) { .result-grid { grid-template-columns:1fr; gap:14px; } }
 
         /* CTA section 2-col → 1-col */
         .cta-grid { display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center; }
@@ -500,7 +502,9 @@ const Home = () => {
                 <div className="section-tag">Featured Listings</div>
                 <h2 className="section-title">Popular <span>Properties</span></h2>
               </div>
-              <Link to="/properties" className="btn-ghost">View All <ArrowRight size={15} /></Link>
+              {allProperties.length > 6 && (
+                <Link to="/properties" className="btn-ghost">View All <ArrowRight size={15} /></Link>
+              )}
             </div>
             {loading ? (
               <div className="prop-grid">
