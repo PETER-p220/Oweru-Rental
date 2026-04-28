@@ -101,18 +101,18 @@ const TenantDashboard = () => {
         .td-eyebrow { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #c9a84c; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
         .td-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(37,99,235,0.15); }
         .td-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 40px; }
-        .td-stat, .td-item { background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%); border: 1px solid rgba(37,99,235,0.14); border-radius: 22px; padding: 22px; color: #e8e4dc; }
-        .td-label { color: #9f9587; font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; }
-        .td-value { font-size: 32px; margin-top: 8px; }
+        .td-stat, .td-item { background: #ffffff; border: 1px solid rgba(37,99,235,0.14); border-radius: 12px; padding: 16px; color: #171717; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .td-label { color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; }
+        .td-value { font-size: 28px; margin-top: 6px; color: #171717; font-weight: 700; }
         .td-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 32px; }
-        .td-action { display:inline-flex; align-items:center; gap:8px; padding:12px 16px; text-decoration:none; border-radius:999px; font-size:13px; font-weight:600; border:1px solid rgba(255,255,255,0.1); color:#e8e4dc; background:rgba(255,255,255,0.04); }
+        .td-action { display:inline-flex; align-items:center; gap:8px; padding:12px 16px; text-decoration:none; border-radius:999px; font-size:13px; font-weight:600; border:1px solid rgba(255,255,255,0.1); color:#171717; background:rgba(255,255,255,0.04); }
         .td-action.primary { color:#17120a; background:#c9a84c; border-color:#c9a84c; }
         .td-list { display:grid; gap:14px; }
         .td-item { display:grid; grid-template-columns:92px minmax(0,1fr) auto; gap:18px; align-items:center; }
         .td-thumb { width:92px; height:68px; border-radius:16px; object-fit:cover; background:rgba(255,255,255,0.05); }
-        .td-title { font-size:18px; margin-bottom:6px; }
-        .td-meta { color:#9f9587; font-size:14px; line-height:1.6; }
-        .td-price { font-size:22px; color:#c9a84c; white-space:nowrap; }
+        .td-title { font-size:16px; margin-bottom:4px; color: #171717; font-weight: 600; }
+        .td-meta { color:#6b7280; font-size:13px; line-height:1.5; }
+        .td-price { font-size:18px; color:#c9a84c; white-space:nowrap; font-weight: 700; }
         .td-contract { background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%); border: 1px solid rgba(37,99,235,0.14); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
         .td-contract-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .td-contract-title { font-size: 16px; font-weight: 600; color: #e8e4dc; }
@@ -132,9 +132,10 @@ const TenantDashboard = () => {
         }
         
         @media (max-width: 768px) {
-          .td-stats { grid-template-columns: 1fr; gap: 10px; }
-          .td-stat { padding: 18px; }
-          .td-value { font-size: 28px; }
+          .td-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+          .td-stat { padding: 12px; }
+          .td-value { font-size: 20px; }
+          .td-label { font-size: 9px; }
           .td-actions { gap: 6px; }
           .td-action { padding: 8px 12px; font-size: 11px; }
           .td-item { grid-template-columns:1fr; gap: 12px; }
@@ -149,9 +150,11 @@ const TenantDashboard = () => {
         }
         
         @media (max-width: 480px) {
-          .td-wrap { padding: 0 16px; }
-          .td-stat { padding: 16px; border-radius: 18px; }
-          .td-value { font-size: 24px; }
+          .td-wrap { padding: 0 12px; }
+          .td-stats { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+          .td-stat { padding: 10px; border-radius: 10px; }
+          .td-value { font-size: 18px; }
+          .td-label { font-size: 8px; }
           .td-actions { gap: 4px; }
           .td-action { padding: 6px 10px; font-size: 10px; }
           .td-thumb { width: 72px; height: 54px; border-radius: 10px; }
