@@ -29,7 +29,6 @@ const B = {
   goldDim: 'rgba(200,145,40,0.12)',
   cream:   '#F8F8F9',
   slate:   '#94A3B8',
-  blue:    '#3B82F6',
   border:  'rgba(200,145,40,0.18)',
   borderF: 'rgba(200,145,40,0.08)',
 };
@@ -50,16 +49,15 @@ const StatusBadge = ({ status, rejectionReason }: { status?: string; rejectionRe
     <div>
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
-        padding: '6px 12px',
-        background: `${color}15`, 
-        border: `1px solid ${color}30`,
-        color, 
-        fontSize: '10px', 
+        padding: '6px 14px',
+        background: `${color}15`,
+        border: `1px solid ${color}35`,
+        color,
+        fontSize: '11px',
         fontWeight: 700,
-        letterSpacing: '0.08em', 
+        letterSpacing: '0.06em',
         textTransform: 'uppercase',
         borderRadius: '9999px',
-        fontFamily: "'Jost', sans-serif",
       }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
         {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -101,10 +99,12 @@ const ApplicationsPage = () => {
   const [payResult, setPayResult] = useState<'success' | 'error' | null>(null);
   const [payMessage, setPayMessage] = useState('');
 
+  // Auto-apply from URL
   useEffect(() => {
     if (propertyId) handleApplyForProperty(propertyId);
   }, [propertyId]);
 
+  // Load applications
   useEffect(() => {
     const fetchApplications = async () => {
       try {
@@ -140,8 +140,7 @@ const ApplicationsPage = () => {
   };
 
   const handlePayRent = async (appId: number) => {
-    // ... (your existing payment logic remains unchanged)
-    if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
+    if (!phoneNumber.trim() || phoneNumber.length < 10) {
       setPayResult('error');
       setPayMessage('Please enter a valid phone number (at least 10 digits).');
       return;
@@ -166,7 +165,6 @@ const ApplicationsPage = () => {
       return;
     }
 
-    const orderId = makeOrderId(appId);
     setPaying(true);
     setPayResult(null);
     setPayMessage('');
@@ -203,7 +201,7 @@ const ApplicationsPage = () => {
       await refreshApplications();
     } catch (err: any) {
       setPayResult('error');
-      setPayMessage(err?.message || 'Failed to process rent payment.');
+      setPayMessage(err?.message || 'Failed to process rent payment. Please try again.');
     } finally {
       setPaying(false);
     }
@@ -224,34 +222,19 @@ const ApplicationsPage = () => {
     setPhoneNumber('');
   };
 
-  const filtered = useMemo(() => 
+  // Filtering
+  const filtered = useMemo(() =>
     applications.filter(item => {
       const hay = `${item.property?.title || ''} ${item.property?.location || ''} ${item.message || ''}`.toLowerCase();
       return hay.includes(search.toLowerCase());
-    }), 
-    [applications, search]
+    }), [applications, search]
   );
-
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    applications.forEach(a => {
-      const s = a.status || 'unknown';
-      counts[s] = (counts[s] || 0) + 1;
-    });
-    return counts;
-  }, [applications]);
 
   const activeApp = paymentModal ? applications.find(a => a.id === paymentModal) : null;
   const modalAmount = activeApp ? parseRent(activeApp.property?.price) : 0;
 
   return (
-    <div style={{ 
-      fontFamily: "'Jost', 'Futura PT', sans-serif", 
-      background: B.navy900, 
-      color: B.cream, 
-      minHeight: '100vh',
-      paddingBottom: '80px'
-    }}>
+    <div style={{ fontFamily: "'Jost', sans-serif", background: B.navy900, color: B.cream, minHeight: '100vh' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -260,229 +243,234 @@ const ApplicationsPage = () => {
           background: ${B.navy800};
           border: 1px solid ${B.border};
           border-radius: 16px;
-          padding: 24px;
-          margin: 16px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+          padding: 28px;
+          margin: 20px;
+        }
+
+        table.ap-table {
+          width: 100%;
+          border-collapse: collapse;
+          background: ${B.navy800};
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        table.ap-table thead th {
+          background: ${B.navy900};
+          color: ${B.gold};
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          padding: 16px 20px;
+          text-align: left;
+          border-bottom: 1px solid ${B.border};
+        }
+
+        table.ap-table tbody td {
+          padding: 18px 20px;
+          border-bottom: 1px solid ${B.borderF};
+          vertical-align: middle;
+          font-size: 14.5px;
+        }
+
+        table.ap-table tbody tr:hover {
+          background: rgba(200, 145, 40, 0.05);
         }
 
         .ap-search {
           width: 100%;
+          padding: 14px 16px 14px 52px;
           background: ${B.navy900};
           border: 1px solid ${B.border};
-          color: ${B.cream};
-          padding: 14px 16px 14px 48px;
           border-radius: 12px;
+          color: ${B.cream};
           font-size: 15px;
           outline: none;
-          transition: all 0.2s;
         }
         .ap-search:focus {
           border-color: ${B.gold};
-          box-shadow: 0 0 0 3px ${B.gold}20;
         }
-
-        .mobile-card {
-          background: ${B.navy800};
-          border: 1px solid ${B.border};
-          border-radius: 16px;
-          padding: 20px;
-          margin-bottom: 16px;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .mobile-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 15px 35px rgba(200,145,40,0.08);
-        }
-
-        .pay-provider-btn {
-          flex: 1;
-          padding: 12px 10px;
-          font-size: 12px;
-          font-weight: 600;
-          border: 2px solid ${B.border};
-          background: ${B.navy900};
-          color: ${B.cream};
-          border-radius: 10px;
-          transition: all 0.2s;
-        }
-        .pay-provider-btn[data-active='true'].tigo    { border-color: #00D4AA; background: rgba(0,212,170,.12); color: #00D4AA; }
-        .pay-provider-btn[data-active='true'].mpesa   { border-color: #00C853; background: rgba(0,200,83,.12);  color: #00C853; }
-        .pay-provider-btn[data-active='true'].airtel  { border-color: #FF6B35; background: rgba(255,107,53,.12); color: #FF6B35; }
-        .pay-provider-btn[data-active='true'].halopesa{ border-color: #9C27B0; background: rgba(156,39,176,.12); color: #9C27B0; }
       `}</style>
 
-      {/* Header */}
+      {/* Header Panel */}
       <div className="ap-panel">
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(to right, ${B.gold}, ${B.goldLt})`, borderRadius: '16px 16px 0 0' }} />
-        
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em', color: B.gold, marginBottom: 6 }}>TENANT PORTAL</div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', margin: 0 }}>My Applications</h1>
-          <p style={{ color: B.slate, marginTop: 6, fontSize: 14.5 }}>Track and manage all your rental applications</p>
-        </div>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: B.gold, borderRadius: '16px 16px 0 0' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.15em', color: B.gold }}>TENANT WORKSPACE</div>
+            <h1 style={{ fontSize: 32, fontWeight: 700, margin: '8px 0 6px', letterSpacing: '-0.02em' }}>
+              My Applications
+            </h1>
+            <p style={{ color: B.slate, fontSize: 15 }}>Track and manage all your rental applications in one place.</p>
+          </div>
 
-        <div style={{ position: 'relative' }}>
-          <Search size={18} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: B.slate }} />
-          <input 
-            className="ap-search" 
-            value={search} 
-            onChange={e => setSearch(e.target.value)} 
-            placeholder="Search properties or locations..." 
-          />
+          <div style={{ position: 'relative', minWidth: 340 }}>
+            <Search size={18} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: B.slate, pointerEvents: 'none' }} />
+            <input
+              className="ap-search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by property, location or message..."
+            />
+          </div>
         </div>
       </div>
 
-      {/* Applications List - Mobile Optimized */}
-      <div style={{ padding: '0 16px' }}>
+      {/* Table Panel */}
+      <div className="ap-panel">
+        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 24, letterSpacing: '-0.01em' }}>All Applications</h2>
+
         {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#f87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', padding: '14px 16px', borderRadius: 12, marginBottom: 20 }}>
-            <AlertCircle size={18} /> {error}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#f87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', padding: '14px 18px', borderRadius: 12, marginBottom: 24 }}>
+            <AlertCircle size={20} /> {error}
           </div>
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '100px 20px', color: B.slate }}>
-            <Loader2 size={28} style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
+          <div style={{ textAlign: 'center', padding: '100px 0', color: B.slate }}>
+            <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', marginBottom: 16 }} />
             <div>Loading your applications...</div>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '90px 20px', color: B.slate }}>
+          <div style={{ textAlign: 'center', padding: '100px 20px', color: B.slate }}>
             <ClipboardList size={48} style={{ margin: '0 auto 20px', opacity: 0.6 }} />
-            <div style={{ fontSize: 18, fontWeight: 600, color: B.cream, marginBottom: 8 }}>No applications yet</div>
-            <div style={{ maxWidth: 280, margin: '0 auto', lineHeight: 1.6 }}>
-              Start exploring properties and submit your first application.
-            </div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: B.cream }}>No applications found</div>
+            <p style={{ maxWidth: 300, margin: '12px auto 0' }}>You haven't submitted any rental applications yet.</p>
           </div>
         ) : (
-          <div>
-            {filtered.map(item => (
-              <div key={item.id} className="mobile-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 16.5, lineHeight: 1.3 }}>
-                      {item.property?.title || 'Untitled Property'}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: B.slate, fontSize: 13, marginTop: 6 }}>
-                      <MapPin size={14} />
-                      {item.property?.location || 'Location not specified'}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 18, color: B.gold }}>
-                    {formatCurrency(item.property?.price)}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <StatusBadge status={item.status} rejectionReason={item.rejection_reason} />
-                  <div style={{ fontSize: 12.5, color: B.slate, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Clock size={13} /> {formatDate(item.created_at)}
-                  </div>
-                </div>
-
-                {item.message && (
-                  <div style={{ 
-                    background: B.navy900, 
-                    borderRadius: 10, 
-                    padding: '12px 14px', 
-                    fontSize: 13.5, 
-                    color: B.slate, 
-                    lineHeight: 1.55,
-                    marginBottom: 18 
-                  }}>
-                    "{item.message}"
-                  </div>
-                )}
-
-                <div>
-                  {item.status === 'approved' && !item.rent_paid ? (
-                    <button 
-                      onClick={() => openPaymentModal(item.id)}
-                      style={{
-                        width: '100%',
-                        background: B.gold,
-                        color: B.navy900,
-                        border: 'none',
-                        padding: '14px',
-                        borderRadius: 12,
-                        fontWeight: 700,
-                        fontSize: 14.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        boxShadow: '0 4px 15px rgba(200,145,40,0.3)'
-                      }}
-                    >
-                      <DollarSign size={18} /> Pay Rent Now
-                    </button>
-                  ) : item.rent_paid ? (
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      gap: 8, 
-                      background: 'rgba(16,185,129,0.1)', 
-                      color: '#10b981', 
-                      padding: '12px', 
-                      borderRadius: 12,
-                      fontWeight: 600 
-                    }}>
-                      <CheckCircle size={18} /> Rent Paid Successfully
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ))}
+          <div style={{ overflowX: 'auto' }}>
+            <table className="ap-table">
+              <thead>
+                <tr>
+                  <th>PROPERTY</th>
+                  <th>LOCATION</th>
+                  <th>MONTHLY RENT</th>
+                  <th>STATUS</th>
+                  <th>APPLIED ON</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <div style={{ fontWeight: 600, fontSize: 15.5 }}>
+                        {item.property?.title || 'Untitled Property'}
+                      </div>
+                      {item.message && (
+                        <div style={{ fontSize: 13, color: B.slate, marginTop: 6, lineHeight: 1.5 }}>
+                          {item.message.length > 85 ? item.message.substring(0, 85) + '...' : item.message}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: B.slate }}>
+                        <MapPin size={16} /> {item.property?.location || '—'}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 700, color: B.gold, fontSize: 16.5 }}>
+                        {formatCurrency(item.property?.price)}
+                      </div>
+                    </td>
+                    <td>
+                      <StatusBadge status={item.status} rejectionReason={item.rejection_reason} />
+                    </td>
+                    <td style={{ color: B.slate, fontSize: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Clock size={15} />
+                        {formatDate(item.created_at)}
+                      </div>
+                    </td>
+                    <td>
+                      {item.status === 'approved' && !item.rent_paid ? (
+                        <button
+                          onClick={() => openPaymentModal(item.id)}
+                          style={{
+                            background: B.gold,
+                            color: B.navy900,
+                            border: 'none',
+                            padding: '10px 20px',
+                            borderRadius: 8,
+                            fontWeight: 700,
+                            fontSize: 13.5,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 7,
+                            boxShadow: '0 4px 12px rgba(200,145,40,0.25)'
+                          }}
+                        >
+                          <DollarSign size={17} /> Pay Rent
+                        </button>
+                      ) : item.rent_paid ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontWeight: 600 }}>
+                          <CheckCircle size={18} /> Paid
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
-      {/* Payment Modal - Professional & Clean */}
+      {/* ====================== PAYMENT MODAL ====================== */}
       {paymentModal && activeApp && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15,23,42,0.92)', backdropFilter: 'blur(12px)',
+          background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(12px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 2000, padding: '20px 16px'
+          zIndex: 2000, padding: '20px'
         }}>
           <div style={{
             background: B.navy800,
             border: `1px solid ${B.border}`,
             borderRadius: 20,
             width: '100%',
-            maxWidth: 420,
+            maxWidth: 440,
             maxHeight: '94vh',
             overflow: 'hidden',
-            boxShadow: '0 30px 70px rgba(0,0,0,0.5)'
+            boxShadow: '0 30px 80px rgba(0,0,0,0.5)'
           }}>
-            {/* Header */}
-            <div style={{ 
-              background: `linear-gradient(135deg, ${B.navy900}, #1a2a44)`, 
-              padding: '24px 24px 20px',
+            {/* Modal Header */}
+            <div style={{
+              background: `linear-gradient(135deg, ${B.navy900} 0%, #1a2a44 100%)`,
+              padding: '24px 28px 20px',
               borderBottom: `1px solid ${B.border}`
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: B.gold, marginBottom: 4 }}>SECURE PAYMENT</div>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>Pay Monthly Rent</div>
-              <div style={{ color: B.slate, fontSize: 13, marginTop: 4 }}>Powered by Selcom • Oweru</div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.2px', color: B.gold }}>SECURE PAYMENT</div>
+              <div style={{ fontSize: 23, fontWeight: 700, marginTop: 4 }}>Pay Monthly Rent</div>
+              <div style={{ color: B.slate, fontSize: 13.5, marginTop: 4 }}>Powered by Selcom Gateway</div>
             </div>
 
-            <div style={{ padding: '24px' }}>
-              {/* Property Summary */}
-              <div style={{ 
-                background: B.navy900, 
-                borderRadius: 14, 
-                padding: 16, 
-                marginBottom: 24,
-                border: `1px solid ${B.borderF}`
+            <div style={{ padding: '28px' }}>
+              {/* Property Info */}
+              <div style={{
+                background: B.navy900,
+                border: `1px solid ${B.borderF}`,
+                borderRadius: 14,
+                padding: 18,
+                marginBottom: 24
               }}>
-                <div style={{ fontWeight: 600, fontSize: 15.5 }}>{activeApp.property?.title}</div>
+                <div style={{ fontWeight: 600, fontSize: 16 }}>{activeApp.property?.title}</div>
                 {activeApp.property?.location && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: B.slate, marginTop: 6, fontSize: 13 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: B.slate, marginTop: 8 }}>
                     <MapPin size={15} /> {activeApp.property.location}
                   </div>
                 )}
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${B.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: B.slate, fontSize: 13 }}>Amount Due</span>
+                <div style={{
+                  marginTop: 16,
+                  paddingTop: 16,
+                  borderTop: `1px solid ${B.border}`,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ color: B.slate }}>Amount Due</span>
                   <span style={{ fontSize: 22, fontWeight: 700, color: B.gold }}>
                     Tsh {modalAmount.toLocaleString()}
                   </span>
@@ -490,21 +478,31 @@ const ApplicationsPage = () => {
               </div>
 
               {/* Provider Selection */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: B.slate, marginBottom: 10 }}>PAYMENT PROVIDER</div>
+              <div style={{ marginBottom: 22 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: B.slate, marginBottom: 10 }}>MOBILE MONEY PROVIDER</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {[
                     { value: 'tigo', label: 'Tigo Pesa' },
                     { value: 'mpesa', label: 'M-Pesa' },
                     { value: 'airtel', label: 'Airtel Money' },
                     { value: 'halopesa', label: 'Halopesa' },
-                  ].map((p) => (
+                  ].map((p: any) => (
                     <button
                       key={p.value}
                       className={`pay-provider-btn ${p.value}`}
                       data-active={paymentProvider === p.value ? 'true' : 'false'}
-                      onClick={() => setPaymentProvider(p.value as any)}
+                      onClick={() => setPaymentProvider(p.value)}
                       disabled={paying}
+                      style={{
+                        padding: '12px 10px',
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        border: `2px solid ${B.border}`,
+                        background: B.navy900,
+                        color: B.cream,
+                        borderRadius: 10,
+                        cursor: paying ? 'not-allowed' : 'pointer'
+                      }}
                     >
                       {p.label}
                     </button>
@@ -512,7 +510,7 @@ const ApplicationsPage = () => {
                 </div>
               </div>
 
-              {/* Phone Input */}
+              {/* Phone Number */}
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: B.slate, marginBottom: 8 }}>PHONE NUMBER</div>
                 <div style={{ position: 'relative' }}>
@@ -520,12 +518,12 @@ const ApplicationsPage = () => {
                   <input
                     type="tel"
                     value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={e => setPhoneNumber(e.target.value)}
                     placeholder="0712 345 678"
                     disabled={paying}
                     style={{
                       width: '100%',
-                      padding: '14px 14px 14px 52px',
+                      padding: '14px 14px 14px 54px',
                       background: B.navy900,
                       border: `1px solid ${B.border}`,
                       borderRadius: 12,
@@ -537,43 +535,33 @@ const ApplicationsPage = () => {
                 </div>
               </div>
 
-              {/* Security */}
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 10, 
-                background: 'rgba(16,185,129,0.08)', 
-                border: '1px solid rgba(16,185,129,0.25)', 
-                borderRadius: 12, 
-                padding: '12px 16px',
-                marginBottom: 24,
-                fontSize: 13,
-                color: '#34d399'
+              {/* Security Note */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',
+                borderRadius: 12, padding: '12px 16px', marginBottom: 24, color: '#34d399', fontSize: 13
               }}>
-                <ShieldCheck size={18} /> 256-bit SSL Secured • Trusted by Selcom
+                <ShieldCheck size={18} /> Secured by Selcom • 256-bit encrypted
               </div>
 
-              {/* Result Messages */}
-              {payResult && (
-                <div style={{
-                  padding: '14px 16px',
-                  borderRadius: 12,
-                  marginBottom: 20,
-                  display: 'flex',
-                  gap: 12,
-                  background: payResult === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                  border: `1px solid ${payResult === 'success' ? '#10b98150' : '#ef444450'}`,
-                  color: payResult === 'success' ? '#34d399' : '#f87171'
-                }}>
-                  {payResult === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
-                  <span style={{ fontSize: 13.5, lineHeight: 1.5 }}>{payMessage}</span>
+              {/* Payment Result */}
+              {payResult === 'success' && (
+                <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid #10b98150', color: '#34d399', padding: '14px 16px', borderRadius: 12, marginBottom: 20, display: 'flex', gap: 12 }}>
+                  <CheckCircle size={20} style={{ flexShrink: 0 }} />
+                  <span>{payMessage}</span>
+                </div>
+              )}
+              {payResult === 'error' && (
+                <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid #ef444450', color: '#f87171', padding: '14px 16px', borderRadius: 12, marginBottom: 20, display: 'flex', gap: 12 }}>
+                  <AlertCircle size={20} style={{ flexShrink: 0 }} />
+                  <span>{payMessage}</span>
                 </div>
               )}
 
-              {/* Buttons */}
+              {/* Action Buttons */}
               <div style={{ display: 'flex', gap: 12 }}>
-                <button 
-                  onClick={closePaymentModal} 
+                <button
+                  onClick={closePaymentModal}
                   disabled={paying}
                   style={{
                     flex: 1,
@@ -583,11 +571,10 @@ const ApplicationsPage = () => {
                     color: B.cream,
                     borderRadius: 12,
                     fontWeight: 600,
-                    cursor: paying ? 'not-allowed' : 'pointer',
-                    opacity: paying ? 0.6 : 1
+                    cursor: paying ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  {payResult === 'success' ? 'Done' : 'Cancel'}
+                  {payResult === 'success' ? 'Close' : 'Cancel'}
                 </button>
 
                 {payResult !== 'success' && (
@@ -595,7 +582,7 @@ const ApplicationsPage = () => {
                     onClick={() => handlePayRent(paymentModal)}
                     disabled={paying || !phoneNumber || phoneNumber.length < 10}
                     style={{
-                      flex: 1.8,
+                      flex: 1.7,
                       padding: '14px',
                       background: paying ? `${B.gold}aa` : B.gold,
                       color: B.navy900,
@@ -607,14 +594,18 @@ const ApplicationsPage = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: 8,
-                      boxShadow: paying ? 'none' : '0 6px 20px rgba(200,145,40,0.35)'
+                      gap: 8
                     }}
                   >
                     {paying ? (
-                      <> <Loader2 size={18} style={{ animation: 'spin 0.9s linear infinite' }} /> Processing... </>
+                      <>
+                        <Loader2 size={18} style={{ animation: 'spin 0.9s linear infinite' }} />
+                        Sending Prompt...
+                      </>
                     ) : (
-                      <> <DollarSign size={18} /> Pay Tsh {modalAmount.toLocaleString()} </>
+                      <>
+                        <DollarSign size={18} /> Pay Tsh {modalAmount.toLocaleString()}
+                      </>
                     )}
                   </button>
                 )}
