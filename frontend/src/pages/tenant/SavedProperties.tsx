@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, MapPin, Bed, Bath, Square, ChevronLeft, ChevronRight, Tag, Bookmark, Search, Heart } from 'lucide-react';
+import { X, MapPin, Bed, Bath, Square, ChevronLeft, ChevronRight, Tag, Bookmark, Search, Heart, Eye } from 'lucide-react';
 import Api from '../../services/api';
 import { formatCurrency } from './tenantPageStyles';
 
@@ -58,61 +58,258 @@ const SavedProperties = () => {
   const openProperty = (property: any) => { setSelectedProperty(property); setActiveImageIndex(0); setShowModal(true); };
 
   return (
-    <div style={{ fontFamily: "'Jost', 'Futura PT', sans-serif", background: B.navy900, color: B.cream, minHeight: '100vh' }}>
+    <div className="sp-container">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
 
-        .sp-panel {
-          background: ${B.navy800};
-          border: 1px solid ${B.border};
-          padding: 32px;
-          margin-bottom: 24px;
-          position: relative;
-          overflow: hidden;
+        .sp-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 24px;
+          background: linear-gradient(135deg, #0F172A 0%, #162035 100%);
+          min-height: 100vh;
         }
 
-        .sp-tag {
-          font-size: 10px; font-weight: 600;
-          letter-spacing: 0.24em; text-transform: uppercase;
-          color: ${B.gold};
-          margin-bottom: 10px;
-          display: flex; align-items: center; gap: 8px;
+        .sp-header {
+          text-align: center;
+          margin-bottom: 48px;
+          position: relative;
         }
-        .sp-tag::before { content: ''; width: 20px; height: 1px; background: ${B.gold}; }
+
+        .sp-header::after {
+          content: '';
+          position: absolute;
+          bottom: -20px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 60px;
+          height: 3px;
+          background: linear-gradient(90deg, #C89128, #D4A843);
+          border-radius: 2px;
+        }
+
+        .sp-title {
+          font-size: clamp(32px, 4vw, 48px);
+          font-weight: 800;
+          color: #F8F8F9;
+          margin-bottom: 12px;
+          letter-spacing: -0.02em;
+          background: linear-gradient(135deg, #F8F8F9 0%, #C89128 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .sp-subtitle {
+          font-size: 16px;
+          color: #94A3B8;
+          font-weight: 400;
+          margin-bottom: 24px;
+        }
+
+        .sp-stats {
+          display: flex;
+          justify-content: center;
+          gap: 24px;
+          margin-bottom: 32px;
+        }
+
+        .sp-stat-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(200,145,40,0.12);
+          border: 1px solid rgba(200,145,40,0.18);
+          padding: 8px 16px;
+          border-radius: 12px;
+          color: #C89128;
+          font-weight: 600;
+          font-size: 14px;
+        }
+
+        .sp-search-container {
+          max-width: 500px;
+          margin: 0 auto 48px;
+          position: relative;
+        }
 
         .sp-search {
-          width: 100%; max-width: 380px;
-          background: ${B.navy900};
-          border: 1px solid ${B.border};
-          color: ${B.cream};
-          padding: 10px 14px 10px 38px;
+          width: 100%;
+          background: linear-gradient(135deg, #162035 0%, #1E2D4A 100%);
+          border: 2px solid rgba(200,145,40,0.18);
+          color: #F8F8F9;
+          padding: 16px 20px 16px 52px;
           font-family: 'Jost', sans-serif;
-          font-size: 14px; font-weight: 400;
+          font-size: 16px;
+          font-weight: 500;
+          border-radius: 16px;
           outline: none;
-          transition: border-color 0.2s;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
-        .sp-search::placeholder { color: rgba(148,163,184,0.4); }
-        .sp-search:focus { border-color: ${B.gold}; }
+        .sp-search::placeholder { color: rgba(148,163,184,0.5); }
+        .sp-search:focus { 
+          border-color: #C89128; 
+          box-shadow: 0 8px 30px rgba(200,145,40,0.2), 0 4px 20px rgba(0,0,0,0.3);
+          transform: translateY(-2px);
+        }
+
+        .sp-search-icon {
+          position: absolute;
+          left: 20px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #C89128;
+          pointer-events: none;
+        }
+
+        .sp-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: 24px;
+          margin-bottom: 48px;
+        }
 
         .sp-card {
-          padding: 18px;
-          background: ${B.navy900};
-          border: 1px solid ${B.borderF};
-          display: grid;
-          grid-template-columns: 88px 1fr auto auto;
-          gap: 16px;
-          align-items: center;
-          margin-bottom: 1px;
-          transition: border-color 0.2s, background 0.2s;
+          background: linear-gradient(135deg, #162035 0%, #1E2D4A 100%);
+          border: 1px solid rgba(200,145,40,0.18);
+          border-radius: 20px;
+          overflow: hidden;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          position: relative;
         }
-        .sp-card:hover { border-color: rgba(200,145,40,0.35); background: rgba(200,145,40,0.03); }
+        .sp-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, #C89128, #D4A843);
+        }
+        .sp-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 12px 40px rgba(200,145,40,0.25), 0 8px 30px rgba(0,0,0,0.4);
+          border-color: rgba(200,145,40,0.35);
+        }
+
+        .sp-card-image {
+          width: 100%;
+          height: 200px;
+          object-fit: cover;
+          transition: transform 0.3s ease;
+        }
+        .sp-card:hover .sp-card-image {
+          transform: scale(1.05);
+        }
+
+        .sp-card-content {
+          padding: 20px;
+        }
+
+        .sp-card-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: #F8F8F9;
+          margin-bottom: 8px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .sp-card-location {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: #94A3B8;
+          font-size: 14px;
+          margin-bottom: 12px;
+        }
+
+        .sp-card-features {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 16px;
+          color: #94A3B8;
+          font-size: 13px;
+        }
+
+        .sp-card-feature {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .sp-card-price {
+          font-size: 24px;
+          font-weight: 800;
+          color: #C89128;
+          margin-bottom: 16px;
+          letter-spacing: -0.02em;
+        }
+
+        .sp-card-actions {
+          display: flex;
+          gap: 12px;
+        }
+
+        .sp-btn-view {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: linear-gradient(135deg, #C89128 0%, #D4A843 100%);
+          color: #F8F8F9;
+          padding: 12px 20px;
+          font-family: 'Jost', sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(200,145,40,0.3);
+        }
+        .sp-btn-view:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(200,145,40,0.4);
+        }
+
+        .sp-btn-remove {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: rgba(239,68,68,0.1);
+          color: #f87171;
+          padding: 12px 16px;
+          font-family: 'Jost', sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          border: 1px solid rgba(239,68,68,0.2);
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .sp-btn-remove:hover {
+          background: rgba(239,68,68,0.2);
+          border-color: rgba(239,68,68,0.4);
+          transform: translateY(-1px);
+        }
 
         .sp-btn-view {
           display: inline-flex; align-items: center; gap: 6px;
           background: ${B.goldDim}; color: ${B.gold};
           padding: 8px 14px;
+          font-size: 13px; font-weight: 600;
           font-family: 'Jost', sans-serif;
           font-size: 11px; font-weight: 700;
           letter-spacing: 0.1em; text-transform: uppercase;
@@ -283,49 +480,161 @@ const SavedProperties = () => {
             <div style={{ fontSize: 13, fontWeight: 300 }}>Browse properties and save your favorites.</div>
           </div>
         ) : (
-          <div style={{ border: `1px solid ${B.border}`, overflow: 'hidden' }}>
+          <div className="sp-grid">
             {filtered.map(({ id, property }) => (
               <div key={id} className="sp-card">
-                {/* Thumbnail */}
-                <div style={{ width: 88, height: 66, overflow: 'hidden', flexShrink: 0, border: `1px solid ${B.borderF}` }}>
-                  <img
-                    src={getImage(property)}
-                    alt={property?.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => { (e.target as HTMLImageElement).src = `https://picsum.photos/seed/property${property?.id ?? id}/400/300.jpg`; }}
-                  />
-                </div>
+                {/* Image */}
+                <img
+                  src={getImage(property)}
+                  alt={property?.title}
+                  className="sp-card-image"
+                  onError={(e) => { (e.target as HTMLImageElement).src = `https://picsum.photos/seed/property${property?.id ?? id}/400/300.jpg`; }}
+                />
 
-                {/* Info */}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: B.cream, marginBottom: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                {/* Content */}
+                <div className="sp-card-content">
+                  <div className="sp-card-title">
                     {property?.title || 'Untitled property'}
                   </div>
-                  <div style={{ color: B.slate, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5 }}>
-                    <MapPin size={11} /> {property?.location || 'No location'}
+                  <div className="sp-card-location">
+                    <MapPin size={14} />
+                    {property?.location || 'No location'}
                   </div>
-                  <div style={{ display: 'flex', gap: 12, color: B.slate, fontSize: 12, fontWeight: 300 }}>
-                    {property?.bedrooms  && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Bed size={11} /> {property.bedrooms} bed</span>}
-                    {property?.bathrooms && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Bath size={11} /> {property.bathrooms} bath</span>}
-                    {property?.area      && <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Square size={11} /> {property.area} sqm</span>}
+                  <div className="sp-card-features">
+                    {property?.bedrooms && (
+                      <div className="sp-card-feature">
+                        <Bed size={12} /> {property.bedrooms} bed
+                      </div>
+                    )}
+                    {property?.bathrooms && (
+                      <div className="sp-card-feature">
+                        <Bath size={12} /> {property.bathrooms} bath
+                      </div>
+                    )}
+                    {property?.area && (
+                      <div className="sp-card-feature">
+                        <Square size={12} /> {property.area} sqm
+                      </div>
+                    )}
                   </div>
-                </div>
-
-                {/* Price */}
-                <div style={{ fontWeight: 700, color: B.gold, fontSize: 17, letterSpacing: '-0.02em', whiteSpace: 'nowrap' as const }}>
-                  {formatCurrency(property?.price)}
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="sp-btn-view" onClick={() => openProperty(property)}>View</button>
-                  <button className="sp-btn-remove" onClick={() => Api.unsaveProperty(property?.id || id).then(load)}>Remove</button>
+                  <div className="sp-card-price">
+                    {formatCurrency(property?.price)}
+                  </div>
+                  <div className="sp-card-actions">
+                    <button className="sp-btn-view" onClick={() => openProperty(property)}>
+                      <Eye size={14} /> View
+                    </button>
+                    <button className="sp-btn-remove" onClick={() => Api.unsaveProperty(property?.id || id).then(load)}>
+                      <Heart size={14} /> Remove
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* ── Header ── */}
+      <div className="sp-header">
+        <h1 className="sp-title">Saved Properties</h1>
+        <p className="sp-subtitle">Your favorite properties in one place</p>
+        
+        {items.length > 0 && (
+          <div className="sp-stats">
+            <div className="sp-stat-item">
+              <Bookmark size={16} /> {items.length} Saved
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Search ── */}
+      <div className="sp-search-container">
+        <Search className="sp-search-icon" />
+        <input
+          className="sp-search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search your saved properties..."
+        />
+      </div>
+
+      {/* ── Results ── */}
+      {loading && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px', color: B.slate }}>
+          <div style={{ width: 24, height: 24, border: `2px solid ${B.border}`, borderTopColor: B.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        </div>
+      )}
+
+      {error && (
+        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#f87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '12px' }}>
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && filtered.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: B.slate }}>
+          <Heart size={48} style={{ color: B.gold, opacity: 0.3, margin: '0 auto 20px' }} />
+          <div style={{ fontSize: 20, fontWeight: 600, color: B.cream, marginBottom: 8 }}>No saved properties</div>
+          <div style={{ fontSize: 14, opacity: 0.7 }}>Start browsing and save your favorite properties</div>
+        </div>
+      )}
+
+      {!loading && !error && filtered.length > 0 && (
+        <div className="sp-grid">
+          {filtered.map(({ id, property }) => (
+            <div key={id} className="sp-card">
+              {/* Image */}
+              <img
+                src={getImage(property)}
+                alt={property?.title}
+                className="sp-card-image"
+                onError={(e) => { (e.target as HTMLImageElement).src = `https://picsum.photos/seed/property${property?.id ?? id}/400/300.jpg`; }}
+              />
+
+              {/* Content */}
+              <div className="sp-card-content">
+                <div className="sp-card-title">
+                  {property?.title || 'Untitled property'}
+                </div>
+                <div className="sp-card-location">
+                  <MapPin size={14} />
+                  {property?.location || 'No location'}
+                </div>
+                <div className="sp-card-features">
+                  {property?.bedrooms && (
+                    <div className="sp-card-feature">
+                      <Bed size={12} /> {property.bedrooms} bed
+                    </div>
+                  )}
+                  {property?.bathrooms && (
+                    <div className="sp-card-feature">
+                      <Bath size={12} /> {property.bathrooms} bath
+                    </div>
+                  )}
+                  {property?.area && (
+                    <div className="sp-card-feature">
+                      <Square size={12} /> {property.area} sqm
+                    </div>
+                  )}
+                </div>
+                <div className="sp-card-price">
+                  {formatCurrency(property?.price)}
+                </div>
+                <div className="sp-card-actions">
+                  <button className="sp-btn-view" onClick={() => openProperty(property)}>
+                    <Eye size={14} /> View
+                  </button>
+                  <button className="sp-btn-remove" onClick={() => Api.unsaveProperty(property?.id || id).then(load)}>
+                    <Heart size={14} /> Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Modal ── */}
       {showModal && selectedProperty && (() => {
