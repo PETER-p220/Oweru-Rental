@@ -125,6 +125,7 @@ const Home = () => {
   const [propertyType, setPropertyType] = useState('');
   const [priceRange,   setPriceRange]   = useState('');
   const [searchActive, setSearchActive] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
     loadAllProperties();
@@ -219,6 +220,15 @@ const Home = () => {
   const clearSearch = () => {
     setSearchTerm(''); setPropertyType(''); setPriceRange('');
     setSearchActive(false);
+    setActiveFilter('all');
+  };
+
+  const scrollToSection = (sectionId: string) => {         
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveFilter(sectionId);
+    }
   };
 
   const hasFilters = searchTerm || propertyType || priceRange;
@@ -300,6 +310,13 @@ const Home = () => {
           .oweru-grid { grid-template-columns:1fr; }
           .section-hdr { margin-bottom:28px; }
         }
+
+        /* Quick filters */
+        .quick-filters { position:sticky; top:0; z-index:100; background:var(--navy-800); border-bottom:1px solid var(--border); }
+        .filter-btn { display:flex; align-items:center; gap:6px; padding:10px 16px; background:transparent; color:var(--cream); border:1px solid var(--border); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+        .filter-btn:hover { border-color:var(--gold); color:var(--gold); }
+        .filter-btn.active { background:var(--gold); color:var(--navy-900); border-color:var(--gold); }
+        .filter-icon { font-size:16px; }
 
         /* Stats bar — 4-col on desktop, 2x2 on mobile */
         .stats-bar { background:var(--navy-800); border-bottom:1px solid var(--border); }
@@ -410,6 +427,45 @@ const Home = () => {
         </div>
       </section>
 
+      {/* ══ QUICK FILTERS ══ */}
+      {!searchActive && (
+        <section style={{ background: 'var(--navy-800)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 100 }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              {[
+                { id: 'all', label: 'All Properties', icon: '🏠' },
+                { id: 'featured', label: 'Featured', icon: '⭐' },
+                { id: 'bnb', label: 'Airbnbs', icon: '🏝️' },
+                { id: 'oweru', label: 'Oweru Special', icon: '👑' },
+              ].map(filter => (
+                <button
+                  key={filter.id}
+                  onClick={() => scrollToSection(filter.id === 'all' ? 'search-results' : filter.id === 'featured' ? 'featured' : filter.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '10px 16px',
+                    background: activeFilter === filter.id ? 'var(--gold)' : 'transparent',
+                    color: activeFilter === filter.id ? 'var(--navy-900)' : 'var(--cream)',
+                    border: `1px solid ${activeFilter === filter.id ? 'var(--gold)' : 'var(--border)'}`,
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>{filter.icon}</span>
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ══ SEARCH RESULTS ══ */}
       {searchActive && (
         <section id="search-results" style={{ background: 'var(--navy-700)', borderTop: '2px solid var(--gold)', borderBottom: '1px solid var(--border)' }}>
@@ -497,7 +553,16 @@ const Home = () => {
 
       {/* ══ FEATURED LISTINGS ══ */}
       {!searchActive && (
-        <section style={{ background: 'var(--navy-900)' }}>
+        <section id="featured" style={{ background: 'var(--navy-900)', position: 'relative' }}>
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'url("https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1800&q=80")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.1,
+            pointerEvents: 'none'
+          }} />
           <div className="section">
             <div className="section-hdr">
               <div>
@@ -546,7 +611,16 @@ const Home = () => {
 
       {/* ══ BNB SECTION ══ */}
       {!searchActive && (
-        <section style={{ background: 'var(--navy-800)', borderTop: '1px solid var(--border)' }}>
+        <section id="bnb" style={{ background: 'var(--navy-800)', borderTop: '1px solid var(--border)', position: 'relative' }}>
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'url("https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1800&q=80")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.1,
+            pointerEvents: 'none'
+          }} />
           <div className="section">
             <div className="section-hdr">
               <div>
@@ -594,7 +668,16 @@ const Home = () => {
 
       {/* ══ OWERU PACKAGES ══ */}
       {!searchActive && (
-        <section style={{ background: 'linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%)', borderTop: '1px solid var(--border)' }}>
+        <section id="oweru" style={{ background: 'linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%)', borderTop: '1px solid var(--border)', position: 'relative' }}>
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'url("https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=1800&q=80")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.1,
+            pointerEvents: 'none'
+          }} />
           <div className="section">
             <div className="section-hdr">
               <div>

@@ -10,7 +10,7 @@ interface StatusConfig {
   color: string;
   bg: string;
   border: string;
-  icon: any; // Lucide icon component
+  icon: any; // Lucide icon component           
 }
 
 const statusConfig: Record<ApplicationStatus, StatusConfig> = {
