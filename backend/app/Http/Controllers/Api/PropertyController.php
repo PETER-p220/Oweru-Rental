@@ -176,7 +176,7 @@ class PropertyController extends Controller
                             if (str_starts_with($img, 'http')) {
                                 return $img;
                             }
-                            return 'http://rental.oweru.com/storage/' . ltrim($img, '/');
+                            return 'https://rental.oweru.com/storage/' . ltrim($img, '/');
                         }, $propertyImages);
                     }
                 }

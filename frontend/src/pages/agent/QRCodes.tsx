@@ -39,7 +39,7 @@ const QRCodes = () => {
 
   const generateQRCode = async (propertyId: number) => {
     try {
-      const trackingUrl = `http://rental.oweru.com/property/${propertyId}?agent=8`;
+      const trackingUrl = `https://rental.oweru.com/property/${propertyId}?agent=8`;
       const qrDataUrl = await QRCode.toDataURL(trackingUrl, {
         color: { dark: '#f8fafc', light: '#1e293b' },
         width: 200,
@@ -231,7 +231,7 @@ const QRCodes = () => {
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          `http://rental.oweru.com/property/${item.property.id}?agent=8`
+                          `https://rental.oweru.com/property/${item.property.id}?agent=8`
                         );
                         alert('Tracking URL copied!');
                       }}

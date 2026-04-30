@@ -1,6 +1,6 @@
 import { TOKEN_KEY } from './api';
 
-const API_BASE_URL = 'http://rental.oweru.com';
+const API_BASE_URL = 'https://rental.oweru.com';
 
 export interface Message {
   id: number;
