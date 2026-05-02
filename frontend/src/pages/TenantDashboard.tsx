@@ -224,7 +224,16 @@ const TenantDashboard = () => {
           {properties.map((property) => (
             <div key={property.id} className="td-item">
               {property.images && property.images.length > 0 && property.images[0]
-                ? <img className="td-thumb" src={imageUrl(property.images[0])} alt={property.title || 'Property'} />
+                ? <img 
+                    className="td-thumb" 
+                    src={imageUrl(property.images[0])} 
+                    alt={property.title || 'Property'} 
+                    loading="lazy" 
+                    decoding="async"
+                    width="80"
+                    height="60"
+                    style={{ backgroundColor: '#1a1a1a' }}
+                  />
                 : <div className="td-thumb" />}
               <div>
                 <div className="td-title">{property.title || 'Untitled property'}</div>

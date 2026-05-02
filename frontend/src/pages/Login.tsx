@@ -532,7 +532,7 @@ const Login = () => {
           <div className="lg-panel">
 
             <Link to="/" className="lg-logo">
-              <img src={LOGO} alt="OWERU" style={{ height: '36px', width: 'auto' }} />
+              <img src={LOGO} alt="OWERU" style={{ height: '36px', width: 'auto' }} loading="lazy" decoding="async" />
             </Link>
 
             <div className="lg-heading">

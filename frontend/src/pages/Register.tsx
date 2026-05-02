@@ -262,7 +262,7 @@ const Register = () => {
         <div className="rg-panel">
 
           <Link to="/" className="rg-logo">
-            <img src={LOGO} alt="OWERU" style={{ height: '32px', width: 'auto' }} />
+            <img src={LOGO} alt="OWERU" style={{ height: '36px', width: 'auto' }} loading="lazy" decoding="async" />
           </Link>
 
           {/* Step progress */}

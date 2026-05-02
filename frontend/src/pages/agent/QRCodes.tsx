@@ -145,13 +145,17 @@ const QRCodes = () => {
                       <img
                         src={qrCodes[item.property.id]}
                         alt={`QR for ${item.property.title}`}
+                        loading="lazy"
+                        decoding="async"
+                        width="200"
+                        height="200"
                         style={{
-                          width: '72px',
-                          height: '72px',
-                          borderRadius: '6px',
-                          border: '1px solid #475569',
-                          background: '#f8fafc',
-                          display: 'block',
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          background: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
                         }}
                       />
                     ) : (

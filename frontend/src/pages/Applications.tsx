@@ -558,7 +558,16 @@ const Applications = () => {
                   <div className="ap-card-top">
                     {/* Property thumb */}
                     {app.property.images?.[0]
-                      ? <img src={app.property.images[0]} alt={app.property.title} className="ap-prop-thumb" />
+                      ? <img 
+                          src={app.property.images[0]} 
+                          alt={app.property.title} 
+                          className="ap-prop-thumb" 
+                          loading="lazy" 
+                          decoding="async"
+                          width="120"
+                          height="90"
+                          style={{ backgroundColor: '#0e0e0e' }}
+                        />
                       : <div className="ap-prop-thumb" />
                     }
 

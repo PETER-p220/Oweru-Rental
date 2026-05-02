@@ -180,11 +180,20 @@ const PropertiesManagement = () => {
       <img
         src={resolveImage(property)}
         alt={property.title}
+        loading="lazy"
+        decoding="async"
+        width="180"
+        height="135"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          backgroundColor: '#141414'
+        }}
         onError={(e) => {
           // If the resolved URL 404s, swap to SVG placeholder
           (e.currentTarget as HTMLImageElement).src = resolveImage({ ...property, images: [] });
         }}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
       />
     </div>
   );
@@ -424,10 +433,16 @@ const PropertiesManagement = () => {
                   <img
                     src={resolveImage(p)}
                     alt={p.title}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = resolveImage({ ...p, images: [] });
+                    loading="lazy"
+                    decoding="async"
+                    width="100"
+                    height="80"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      backgroundColor: '#141414'
                     }}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   />
                 </div>
                 {/* Content */}

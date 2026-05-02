@@ -683,6 +683,7 @@ const Home = () => {
                       <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                         <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 190 }}
                           loading="lazy" decoding="async"
+                          width="600" height="450"
                           onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                         <div style={{ padding: 18 }}>
                           {p.type && <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: 5 }}>{p.type}</div>}
@@ -764,6 +765,7 @@ const Home = () => {
                     <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 200 }}
                         loading="lazy" decoding="async"
+                        width="600" height="450"
                         onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                       <div style={{ padding: 20 }}>
                         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 8 }}>{p.title}</div>
@@ -820,6 +822,7 @@ const Home = () => {
                   <div key={p.id} className="bnb-card" style={{ borderRadius: 12 }}>
                     <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 220 }}
                       loading="lazy" decoding="async"
+                      width="600" height="450"
                       onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                     <div style={{ padding: 20 }}>
                       <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 10 }}>{p.title}</h3>
@@ -871,6 +874,7 @@ const Home = () => {
                     <div style={{ position: 'relative', height: 210, overflow: 'hidden' }}>
                       <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 210 }}
                         loading="lazy" decoding="async"
+                        width="600" height="450"
                         onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                       <div style={{ position: 'absolute', top: 12, right: 12, background: 'var(--gold)', color: 'var(--navy-900)', padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>OWERU</div>
                     </div>

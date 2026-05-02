@@ -342,6 +342,9 @@ const PropertyDetail = () => {
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity .3s' }}
                       loading="lazy"
                       decoding="async"
+                      width="1200"
+                      height="630"
+                      fetchPriority="high"
                     />
                     {/* Bottom gradient */}
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,.65) 0%, transparent 50%)' }} />
@@ -358,7 +361,6 @@ const PropertyDetail = () => {
                       </>
                     )}
 
-                   
                     {/* Featured badge */}
                     {property.featured && (
                       <div style={{ position: 'absolute', top: 14, left: 14, background: t.gold, color: t.navy900, padding: '4px 10px', borderRadius: 4, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -391,6 +393,8 @@ const PropertyDetail = () => {
                             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                             loading="lazy"
                             decoding="async"
+                            width="120"
+                            height="90"
                           />
                         </div>
                       ))}

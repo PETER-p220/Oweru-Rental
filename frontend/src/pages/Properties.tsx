@@ -60,7 +60,16 @@ const getImage = (p: Property): string => {
     const i = p.images[0];
     return i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`;
   }
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='450' viewBox='0 0 600 450'%3E%3Crect width='600' height='450' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
+};
+
+const getImageSrcSet = (p: Property): string => {
+  if (!p.images?.length) return '';
+  const base = p.images[0].startsWith('http') 
+    ? p.images[0] 
+    : `${VITE_STORAGE}/storage/${p.images[0]}`;
+  
+  return `${base}?w=400 400w, ${base}?w=800 800w, ${base}?w=1200 1200w`;
 };
 
 const getListingSource = (p: Property): 'agent' | 'landlord' | 'admin' => {
@@ -244,7 +253,7 @@ const CSS = `
 .pr-grid.list .pc{flex-direction:row;}
 .pc-img-wrap{position:relative;overflow:hidden;aspect-ratio:4/3;flex-shrink:0;}
 .pr-grid.list .pc-img-wrap{width:240px;aspect-ratio:auto;}
-.pc-img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;}
+.pc-img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;background:var(--navy-700);}
 .pc:hover .pc-img{transform:scale(1.04);}
 .pc-img-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(9,15,29,.7) 0%,transparent 55%);}
 .pc-badge-featured{
@@ -703,7 +712,19 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
   return (
     <Link to={`/property/${property.id}`} className="pc">
       <div className="pc-img-wrap">
-        <img src={getImage(property)} alt={property.title} className="pc-img" loading="lazy" decoding="async" />
+        <img 
+  src={getImage(property)} 
+  srcSet={getImageSrcSet(property)}
+  sizes="(max-width: 768px) 100vw, (max-width: 1100px) 50vw, 33vw"
+  width="600" 
+  height="450"
+  alt={property.title} 
+  className="pc-img" 
+  loading="lazy" 
+  decoding="async"
+  fetchPriority="auto"
+  style={{ objectFit: 'cover', backgroundColor: 'var(--navy-700)' }}
+/>
         <div className="pc-img-overlay" />
         {property.featured && <div className="pc-badge-featured">Featured</div>}
         {property.type && (
