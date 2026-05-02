@@ -58,16 +58,29 @@ const typeLabel: Record<string, string> = {
 const getImage = (p: Property): string => {
   if (p.images?.length) {
     const i = p.images[0];
-    return i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`;
+    if (i.startsWith('http')) {
+      return i; // Full URL already
+    }
+    if (i.startsWith('storage/')) {
+      return `${VITE_STORAGE}/${i}`; // Path like "storage/properties/image.jpg"
+    }
+    return `${VITE_STORAGE}/storage/${i}`; // Path like "properties/image.jpg" or just filename
   }
   return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='450' viewBox='0 0 600 450'%3E%3Crect width='600' height='450' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
 };
 
 const getImageSrcSet = (p: Property): string => {
   if (!p.images?.length) return '';
-  const base = p.images[0].startsWith('http') 
-    ? p.images[0] 
-    : `${VITE_STORAGE}/storage/${p.images[0]}`;
+  const i = p.images[0];
+  let base: string;
+  
+  if (i.startsWith('http')) {
+    base = i; // Full URL already
+  } else if (i.startsWith('storage/')) {
+    base = `${VITE_STORAGE}/${i}`; // Path like "storage/properties/image.jpg"
+  } else {
+    base = `${VITE_STORAGE}/storage/${i}`; // Path like "properties/image.jpg" or just filename
+  }
   
   return `${base}?w=400 400w, ${base}?w=800 800w, ${base}?w=1200 1200w`;
 };

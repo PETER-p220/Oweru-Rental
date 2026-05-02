@@ -15,6 +15,7 @@ use App\Models\SavedProperty;
 use App\Models\BnbProperty;
 use App\Models\BnbBooking;
 use App\Models\BnbReview;
+use App\Models\Lead;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
