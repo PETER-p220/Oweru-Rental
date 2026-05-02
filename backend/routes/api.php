@@ -312,6 +312,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Verification
         Route::get('/admin/verification/requests', [AdminController::class, 'getVerificationRequests']);
         Route::get('/admin/verification/stats',    [AdminController::class, 'getVerificationStats']);
+        Route::patch('/admin/verification/requests/{userId}/status', [AdminController::class, 'updateVerificationStatus']);
 
         // Alerts
         Route::get('/admin/alerts',       [AdminController::class, 'getAlerts']);

@@ -177,6 +177,32 @@ const AdminDashboard = () => {
     }).format(n);
   };
 
+  const formatLargeCurrency = (amount: number) => {
+    const n = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+    if (!n) return 'TZS 0';
+    
+    // Define abbreviations
+    const abbreviations = [
+      { value: 1e9, symbol: 'B' }, // Billion
+      { value: 1e6, symbol: 'M' }, // Million  
+      { value: 1e3, symbol: 'K' }, // Thousand
+    ];
+    
+    // Find the right abbreviation
+    for (const { value, symbol } of abbreviations) {
+      if (n >= value) {
+        const formatted = (n / value).toFixed(1);
+        return `TZS ${formatted}${symbol}`;
+      }
+    }
+    
+    // If less than 1000, use regular formatting
+    return new Intl.NumberFormat('en-TZ', {
+      style: 'currency', currency: 'TZS',
+      minimumFractionDigits: 0, maximumFractionDigits: 0,
+    }).format(n);
+  };
+
   const getActivityIcon = (type: string) =>
     ({ user: <Users size={16} />, property: <Building size={16} />,
        application: <CheckCircle size={16} />, payment: <CreditCard size={16} /> }[type]
@@ -321,7 +347,7 @@ const AdminDashboard = () => {
         {[
           { label: 'Total Users',          value: stats.totalUsers,                    icon: Users,      bg: t.gold   },
           { label: 'Total Properties',     value: stats.totalProperties,               icon: Building,   bg: t.green  },
-          { label: 'Total Revenue',        value: formatCurrency(stats.totalRevenue),  icon: DollarSign, bg: '#2563eb' },
+          { label: 'Total Revenue',        value: formatLargeCurrency(stats.totalRevenue),  icon: DollarSign, bg: '#2563eb' },
           { label: 'Active Listings',      value: stats.activeListings,               icon: TrendingUp, bg: t.green  },
           { label: 'Pending Applications', value: stats.pendingApplications || 0,      icon: AlertCircle, bg: t.gold  },
         ].map(({ label, value, icon: Icon, bg }) => (

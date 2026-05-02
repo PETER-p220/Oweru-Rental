@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -973,6 +974,64 @@ class AdminController extends Controller
             'topVerificationType' => 'identity',
             'urgentRequests' => User::whereNull('email_verified_at')->where('created_at', '<=', now()->subDays(7))->count(),
         ]]);
+    }
+
+    public function updateVerificationStatus(Request $request, $userId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:approved,rejected',
+            'reason' => 'sometimes|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::find($userId);
+        
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        try {
+            if ($request->status === 'approved') {
+                $user->email_verified_at = now();
+                $user->save();
+                
+                Log::info('User verification approved', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'approved_by' => Auth::id(),
+                ]);
+            } elseif ($request->status === 'rejected') {
+                // For rejection, you might want to set a flag or send notification
+                // For now, we'll just log it
+                Log::info('User verification rejected', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'rejected_by' => Auth::id(),
+                    'reason' => $request->reason,
+                ]);
+                
+                // Optionally, you could delete the user or mark as rejected
+                // $user->delete();
+            }
+
+            return response()->json([
+                'message' => "Verification request {$request->status} successfully",
+                'data' => [
+                    'user_id' => $user->id,
+                    'status' => $request->status,
+                    'email_verified_at' => $user->email_verified_at,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update verification status: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to update verification status'], 500);
+        }
     }
 
     public function getAlerts(Request $request): JsonResponse
