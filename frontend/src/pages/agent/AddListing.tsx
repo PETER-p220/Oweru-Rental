@@ -120,9 +120,6 @@ const AddListing: React.FC = () => {
     if (!formData.location.trim()) return 'Location is required';
     if (!formData.bedrooms || formData.bedrooms <= 0) return 'Bedrooms must be greater than 0';
     if (!formData.bathrooms || formData.bathrooms <= 0) return 'Bathrooms must be greater than 0';
-    if (!formData.area || formData.area <= 0) return 'Area must be greater than 0';
-    return '';
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
