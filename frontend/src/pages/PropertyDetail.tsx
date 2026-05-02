@@ -132,7 +132,6 @@ const PropertyDetail = () => {
     const f: { icon: any; label: string; value: string }[] = [];
     if (p.bedrooms > 0)  f.push({ icon: Bed,    label: 'Bedrooms',  value: String(p.bedrooms) });
     if (p.bathrooms > 0) f.push({ icon: Bath,   label: 'Bathrooms', value: String(p.bathrooms) });
-    if (p.area)          f.push({ icon: Square, label: 'Area',      value: `${p.area} sqm` });
     if (p.type)          f.push({ icon: Home,   label: 'Type',      value: p.type.charAt(0).toUpperCase() + p.type.slice(1) });
     return f;
   };
