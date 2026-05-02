@@ -115,7 +115,6 @@ const AddProperty = () => {
     
     if (step === 2) {
       if (!formData.price || Number(formData.price) <= 0) errs.push('Price must be greater than 0');
-      if (!formData.area || Number(formData.area) <= 0) errs.push('Area must be greater than 0');
     }
     
     if (step === 3) {
