@@ -32,7 +32,6 @@ const AddProperty = () => {
     price: '',
     bedrooms: 1,
     bathrooms: 1,
-    area: '',
     
     // Step 3: Features
     amenities: [] as string[],
@@ -225,7 +224,6 @@ const AddProperty = () => {
           type: isOweruProperty ? 'oweru_rental' : formData.type,
           bedrooms: formData.bedrooms,
           bathrooms: formData.bathrooms,
-          area: formData.area,
           featured: formData.featured,
           latitude: formData.latitude,
           longitude: formData.longitude,
