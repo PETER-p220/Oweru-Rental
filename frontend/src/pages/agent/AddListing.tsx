@@ -15,9 +15,9 @@ interface PropertyData {
   featured: boolean;
   available: boolean;
   images: string[];
-  owner_id: number; // Add owner_id to interface
-  landlord_name: string; // Landlord's name for agent reference
-  landlord_phone: string; // Landlord's phone for agent reference
+  owner_id: number;
+  landlord_name: string;
+  landlord_phone: string;
 }
 
 const AddListing: React.FC = () => {
@@ -39,9 +39,9 @@ const AddListing: React.FC = () => {
     featured: false,
     available: true,
     images: [],
-    owner_id: user?.id || 0, // Add owner_id field
-    landlord_name: '', // Landlord's name for agent reference
-    landlord_phone: '' // Landlord's phone for agent reference
+    owner_id: user?.id || 0,
+    landlord_name: '',
+    landlord_phone: ''
   });
 
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
@@ -53,8 +53,6 @@ const AddListing: React.FC = () => {
       try {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-        
-        // Update owner_id when user is loaded
         if (parsedUser?.id) {
           setFormData(prev => ({
             ...prev,
@@ -68,12 +66,9 @@ const AddListing: React.FC = () => {
   }, []);
 
   const propertyTypes = [
-    { value: 'apartment', label: 'Apartment' },
     { value: 'house', label: 'House' },
-    { value: 'villa', label: 'Villa' },
-    { value: 'condominium', label: 'Condo' }, // Changed from 'condo'
-    { value: 'studio', label: 'Studio' },
-    { value: 'penthouse', label: 'Penthouse' }
+    { value: 'villa', label: 'Master-bedroom' },
+    { value: 'condominium', label: 'Single room' }, 
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -88,16 +83,12 @@ const AddListing: React.FC = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter(file => {
-      // Check file type
       if (!file.type.startsWith('image/')) return false;
-      
-      // Check file size (2MB = 2048KB)
-      const maxSizeInBytes = 2 * 1024 * 1024; // 2MB
+      const maxSizeInBytes = 2 * 1024 * 1024;
       if (file.size > maxSizeInBytes) {
         setError(`File ${file.name} is too large. Maximum size is 2MB.`);
         return false;
       }
-      
       return true;
     });
     
@@ -108,7 +99,6 @@ const AddListing: React.FC = () => {
     
     setUploadedImages(prev => [...prev, ...validFiles]);
     
-    // Create previews
     validFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -119,11 +109,8 @@ const AddListing: React.FC = () => {
   };
 
   const removeImage = (index: number) => {
-    const newUploadedImages = uploadedImages.filter((_, i) => i !== index);
-    const newImagePreviews = imagePreviews.filter((_, i) => i !== index);
-    
-    setUploadedImages(newUploadedImages);
-    setImagePreviews(newImagePreviews);
+    setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+    setImagePreviews(imagePreviews.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
@@ -150,31 +137,25 @@ const AddListing: React.FC = () => {
     setError('');
 
     try {
-      // Create FormData for file upload
       const formDataToSend = new FormData();
       
-      // Add all form fields
       Object.keys(formData).forEach(key => {
         if (key !== 'images') {
           formDataToSend.append(key, String(formData[key as keyof PropertyData]));
         }
       });
       
-      // Add uploaded images
       uploadedImages.forEach((file, index) => {
         formDataToSend.append(`images[${index}]`, file);
       });
 
-      // Determine API endpoint based on user type
       let response;
       if (user?.userType === 'agent') {
-        // Debug: Log what we're sending
         console.log('🏠 Creating agent listing with data:', {
           ...Object.fromEntries(formDataToSend.entries()),
           owner_id: user?.id,
           user_id: user?.id
         });
-        
         response = await Api.agentCreateProperty(formDataToSend);
       } else {
         response = await Api.createProperty(formDataToSend);
@@ -254,8 +235,8 @@ const AddListing: React.FC = () => {
 
         :root {
           --gold: #c9a84c;
-          --gold-light: rgba(37,99,235,0.1);
-          --gold-border: rgba(37,99,235,0.25);
+          --gold-light: rgba(201,168,76,0.1);
+          --gold-border: rgba(201,168,76,0.25);
           --success: #70c490;
           --success-light: rgba(112,196,144,0.1);
           --success-border: rgba(112,196,144,0.25);
@@ -264,7 +245,7 @@ const AddListing: React.FC = () => {
           --error-border: rgba(224,112,112,0.25);
           --dark: #0a0a0a;
           --dark-secondary: #111;
-          --border: rgba(37,99,235,0.12);
+          --border: rgba(201,168,76,0.15);
           --text-primary: #f5f0e8;
           --text-secondary: #8a8070;
         }
@@ -285,7 +266,7 @@ const AddListing: React.FC = () => {
           gap: 8px;
           color: var(--text-secondary);
           text-decoration: none;
-          font-family: "'DM Sans', sans-serif";
+          font-family: 'DM Sans', sans-serif;
           font-size: 13px;
           font-weight: 300;
           margin-bottom: 20px;
@@ -297,7 +278,7 @@ const AddListing: React.FC = () => {
         }
 
         .al-title {
-          font-family: "'Cormorant Garamond', Georgia, serif";
+          font-family: 'Cormorant Garamond', Georgia, serif;
           font-size: 36px;
           font-weight: 300;
           color: var(--text-primary);
@@ -306,7 +287,7 @@ const AddListing: React.FC = () => {
         }
 
         .al-subtitle {
-          font-family: "'DM Sans', sans-serif";
+          font-family: 'DM Sans', sans-serif;
           font-size: 14px;
           color: var(--text-secondary);
           font-weight: 300;
@@ -325,7 +306,7 @@ const AddListing: React.FC = () => {
         }
 
         .al-section-title {
-          font-family: "'Cormorant Garamond', Georgia, serif";
+          font-family: 'Cormorant Garamond', Georgia, serif;
           font-size: 24px;
           font-weight: 300;
           color: var(--text-primary);
@@ -359,7 +340,7 @@ const AddListing: React.FC = () => {
         }
 
         .al-label {
-          font-family: "'DM Sans', sans-serif";
+          font-family: 'DM Sans', sans-serif;
           font-size: 12px;
           font-weight: 500;
           color: var(--text-secondary);
@@ -374,11 +355,13 @@ const AddListing: React.FC = () => {
           border: 1px solid var(--border);
           color: var(--text-primary);
           padding: 12px 16px;
-          font-family: "'DM Sans', sans-serif";
+          font-family: 'DM Sans', sans-serif;
           font-size: 14px;
           font-weight: 300;
           border-radius: 8px;
           transition: all 0.2s;
+          appearance: none;
+          -webkit-appearance: none;
         }
 
         .al-input:focus,
@@ -386,7 +369,21 @@ const AddListing: React.FC = () => {
         .al-select:focus {
           outline: none;
           border-color: var(--gold);
-          background: rgba(37,99,235,0.02);
+          background: rgba(201,168,76,0.03);
+        }
+
+        /* Dropdown options — explicit dark background + light text for cross-browser visibility */
+        .al-select option {
+          background-color: #1c1c1c;
+          color: #f5f0e8;
+          padding: 10px 12px;
+          font-size: 14px;
+        }
+
+        .al-select option:checked,
+        .al-select option:hover {
+          background-color: #2a2218;
+          color: #c9a84c;
         }
 
         .al-textarea {
@@ -407,62 +404,10 @@ const AddListing: React.FC = () => {
         }
 
         .al-checkbox-label {
-          font-family: "'DM Sans', sans-serif";
+          font-family: 'DM Sans', sans-serif;
           font-size: 14px;
           color: var(--text-primary);
           font-weight: 300;
-        }
-
-        .al-image-upload {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 16px;
-        }
-
-        .al-image-input-group {
-          position: relative;
-        }
-
-        .al-image-input {
-          background: var(--dark);
-          border: 1px solid var(--border);
-          color: var(--text-primary);
-          padding: 8px 12px;
-          font-family: "'DM Sans', sans-serif";
-          font-size: 12px;
-          font-weight: 300;
-          border-radius: 6px;
-          width: 100%;
-          transition: all 0.2s;
-        }
-
-        .al-image-input:focus {
-          outline: none;
-          border-color: var(--gold);
-        }
-
-        .al-image-preview {
-          width: 100%;
-          height: 80px;
-          background: var(--dark);
-          border: 1px solid var(--border);
-          border-radius: 6px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-top: 8px;
-          overflow: hidden;
-        }
-
-        .al-image-preview img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .al-image-preview-placeholder {
-          color: var(--text-secondary);
-          font-size: 24px;
         }
 
         .al-actions {
@@ -477,7 +422,7 @@ const AddListing: React.FC = () => {
           align-items: center;
           gap: 8px;
           padding: 12px 24px;
-          font-family: "'DM Sans', sans-serif";
+          font-family: 'DM Sans', sans-serif;
           font-size: 14px;
           font-weight: 500;
           border-radius: 8px;
@@ -519,7 +464,7 @@ const AddListing: React.FC = () => {
           color: var(--error);
           padding: 16px;
           border-radius: 8px;
-          font-family: "'DM Sans', sans-serif";
+          font-family: 'DM Sans', sans-serif;
           font-size: 14px;
           margin-bottom: 24px;
         }
@@ -537,6 +482,10 @@ const AddListing: React.FC = () => {
           .al-title {
             font-size: 28px;
           }
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
 
@@ -672,7 +621,6 @@ const AddListing: React.FC = () => {
                   required
                 />
               </div>
-             
             </div>
           </div>
 
@@ -712,7 +660,7 @@ const AddListing: React.FC = () => {
             </div>
           </div>
 
-          {/* Landlord Information - For Agent Reference */}
+          {/* Landlord Information */}
           <div className="al-section">
             <h2 className="al-section-title">
               <User size={20} />
@@ -776,7 +724,6 @@ const AddListing: React.FC = () => {
             <div className="al-form-group">
               <label className="al-label">Upload Images (up to 6 images)</label>
               
-              {/* File Upload Area */}
               <div style={{
                 border: '2px dashed var(--border)',
                 borderRadius: '12px',
@@ -789,7 +736,7 @@ const AddListing: React.FC = () => {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = 'var(--gold)';
-                e.currentTarget.style.background = 'rgba(37,99,235,0.02)';
+                e.currentTarget.style.background = 'rgba(201,168,76,0.03)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = 'var(--border)';
@@ -809,12 +756,11 @@ const AddListing: React.FC = () => {
                     Click to upload images
                   </div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                    PNG, JPG, GIF up to 10MB each • Maximum 6 images
+                    PNG, JPG, GIF up to 2MB each • Maximum 6 images
                   </div>
                 </label>
               </div>
 
-              {/* Image Previews */}
               {imagePreviews.length > 0 && (
                 <div style={{
                   display: 'grid',
@@ -834,11 +780,7 @@ const AddListing: React.FC = () => {
                       <img
                         src={preview}
                         alt={`Property ${index + 1}`}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover'
-                        }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                       <button
                         type="button"
@@ -913,7 +855,14 @@ const AddListing: React.FC = () => {
             <button type="submit" className="al-btn al-btn-primary" disabled={loading}>
               {loading ? (
                 <>
-                  <div style={{ width: 16, height: 16, border: '2px solid var(--dark)', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  <div style={{
+                    width: 16,
+                    height: 16,
+                    border: '2px solid var(--dark)',
+                    borderTop: '2px solid transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite'
+                  }} />
                   Creating Listing...
                 </>
               ) : (
@@ -926,12 +875,6 @@ const AddListing: React.FC = () => {
           </div>
         </form>
       </div>
-
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </>
   );
 };

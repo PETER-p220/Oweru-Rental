@@ -822,7 +822,7 @@ const BnbProperties = () => {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <h2 style={{ ...serif, fontSize: 24, color: t.gold, margin: 0 }}>
-                Add New BNB Property
+                Add New Property
               </h2>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -1123,10 +1123,10 @@ const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSucces
             }}
           >
             <option value="apartment">Apartment</option>
-            <option value="house">House</option>
-            <option value="villa">Villa</option>
-            <option value="studio">Studio</option>
-            <option value="condo">Condo</option>
+            <option value="house">Hotel</option>
+            <option value="villa">Guest</option>
+            <option value="studio">Villa</option>
+            <option value="condo">Airbnb</option>
           </select>
         </div>
       </div>
