@@ -1,476 +1,293 @@
 import { useState, useEffect } from 'react';
 import {
-  Search, Filter, Download, Eye, Edit, Trash2, Plus,
+  Search, Download, Eye, ChevronDown, ChevronUp,
   Calendar, User, CheckCircle, XCircle, Clock, AlertCircle,
-  TrendingUp, BarChart3, PieChart, RefreshCw, ChevronDown, ChevronUp,
-  ShieldCheck, Mail, Phone, MapPin, FileText, Camera, Upload
+  RefreshCw, ShieldCheck, FileText, Camera,
 } from 'lucide-react';
 import Api from '../../services/api';
 
-/* ─────────────────────────────────────────────────────────────
-   VERIFICATION MANAGEMENT STYLE TOKENS
-───────────────────────────────────────────────────────────── */
+/* ─── TOKENS — matches Home & PropertyDetail ─── */
 const t = {
-  gold:    '#c9a84c',
-  goldLt:  '#e8c97a',
-  dark:    '#080808',
-  dark2:   '#0e0e0e',
-  dark3:   '#141414',
-  cream:   '#e8e4dc',
-  muted:   '#7a7060',
-  border:  'rgba(201,168,76,0.12)',
+  navy900: '#0F172A',
+  navy800: '#162035',
+  navy700: '#1E2D4A',
+  gold:    '#C89128',
+  goldLt:  '#D4A843',
+  goldDim: 'rgba(200,145,40,0.12)',
+  cream:   '#F8F8F9',
+  slate:   '#94A3B8',
+  border:  'rgba(200,145,40,0.18)',
   green:   '#10b981',
   red:     '#ef4444',
   blue:    '#38bdf8',
   orange:  '#f59e0b',
 } as const;
 
-const body: React.CSSProperties = { fontFamily: 'DM Sans, sans-serif' };
-const serif: React.CSSProperties = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
+const body: React.CSSProperties  = { fontFamily: "'Jost', sans-serif" };
+const serif: React.CSSProperties = { fontFamily: "'Jost', sans-serif", fontWeight: 700 };
 
 const card: React.CSSProperties = {
-  backgroundColor: t.dark2,
+  backgroundColor: t.navy800,
   border: `1px solid ${t.border}`,
   borderRadius: 12,
   padding: '20px',
 };
 
-const button: React.CSSProperties = {
+const btn = (color: string, bg?: string): React.CSSProperties => ({
   ...body,
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   padding: '10px 16px',
-  borderRadius: 8,
-  fontSize: 14,
-  fontWeight: 500,
+  borderRadius: 6,
+  fontSize: 13,
+  fontWeight: 600,
   cursor: 'pointer',
-  border: 'none',
+  border: `1px solid ${color}30`,
+  backgroundColor: bg ?? `${color}15`,
+  color,
   transition: 'all 0.2s',
+  letterSpacing: '0.04em',
+});
+
+const inputStyle: React.CSSProperties = {
+  ...body,
+  width: '100%',
+  padding: '10px 14px',
+  backgroundColor: t.navy700,
+  border: `1px solid ${t.border}`,
+  borderRadius: 6,
+  color: t.cream,
+  fontSize: 13,
+  outline: 'none',
 };
 
-/* ─────────────────────────────────────────────────────────────
-   VERIFICATION MANAGEMENT COMPONENT
-───────────────────────────────────────────────────────────── */
-const VerificationManagement = () => {
-  const [verificationRequests, setVerificationRequests] = useState<Array<{
-    id: number;
-    user_id: number;
-    type: string;
-    status: string;
-    documents: Array<{
-      type: string;
-      url: string;
-      verified: boolean;
-    }>;
-    notes: string;
-    admin_notes: string;
-    created_at: string;
-    updated_at: string;
-    user?: {
-      name: string;
-      email: string;
-      phone: string;
-      user_type: string;
-    };
-  }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [selectedRequest, setSelectedRequest] = useState<{
-    id: number;
-    user_id: number;
-    type: string;
-    status: string;
-    documents: Array<{
-      type: string;
-      url: string;
-      verified: boolean;
-    }>;
-    notes: string;
-    admin_notes: string;
-    created_at: string;
-    updated_at: string;
-    user?: {
-      name: string;
-      email: string;
-      phone: string;
-      user_type: string;
-    };
-  } | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [sortBy, setSortBy] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+type VerificationRequest = {
+  id: number;
+  user_id: number;
+  type: string;
+  status: string;
+  documents: Array<{ type: string; url: string; verified: boolean }>;
+  notes: string;
+  admin_notes: string;
+  created_at: string;
+  updated_at: string;
+  user?: { name: string; email: string; phone: string; user_type: string };
+};
 
-  useEffect(() => {
-    loadVerificationRequests();
-  }, [searchTerm, statusFilter, typeFilter, sortBy, sortOrder]);
+const VerificationManagement = () => {
+  const [verificationRequests, setVerificationRequests] = useState<VerificationRequest[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [searchTerm, setSearchTerm]   = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter]   = useState('all');
+  const [selectedRequest, setSelectedRequest] = useState<VerificationRequest | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [sortBy, setSortBy]           = useState('created_at');
+  const [sortOrder, setSortOrder]     = useState<'asc' | 'desc'>('desc');
+
+  useEffect(() => { loadVerificationRequests(); }, [searchTerm, statusFilter, typeFilter, sortBy, sortOrder]);
 
   const loadVerificationRequests = async () => {
     try {
       setLoading(true);
-      
       const filters: any = {};
       if (searchTerm) filters.search = searchTerm;
       if (statusFilter !== 'all') filters.status = statusFilter;
       if (typeFilter !== 'all') filters.type = typeFilter;
-
       const response = await Api.getVerificationRequests(filters);
       setVerificationRequests(response.data || []);
-    } catch (error) {
-      console.error('Failed to load verification requests:', error);
-      setVerificationRequests([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setVerificationRequests([]); }
+    finally { setLoading(false); }
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-TZ', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  const formatDate = (d: string) => d
+    ? new Date(d).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' })
+    : 'N/A';
 
-  const formatTimeAgo = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  const formatTimeAgo = (d: string) => {
+    if (!d) return 'N/A';
+    const ms = Date.now() - new Date(d).getTime();
+    const h = Math.floor(ms / 3600000);
+    const days = Math.floor(h / 24);
+    if (days > 0) return `${days}d ago`;
+    if (h > 0) return `${h}h ago`;
     return 'Just now';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return t.green;
-      case 'pending': return t.orange;
-      case 'rejected': return t.red;
-      case 'in_review': return t.blue;
-      default: return t.muted;
-    }
+  const statusColor = (s: string) =>
+    s === 'approved' ? t.green : s === 'pending' ? t.orange : s === 'rejected' ? t.red : s === 'in_review' ? t.blue : t.slate;
+
+  const StatusIcon = ({ status }: { status: string }) => {
+    if (status === 'approved') return <CheckCircle size={14} />;
+    if (status === 'pending')  return <Clock size={14} />;
+    if (status === 'rejected') return <XCircle size={14} />;
+    if (status === 'in_review') return <Eye size={14} />;
+    return <AlertCircle size={14} />;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved': return <CheckCircle size={16} />;
-      case 'pending': return <Clock size={16} />;
-      case 'rejected': return <XCircle size={16} />;
-      case 'in_review': return <Eye size={16} />;
-      default: return <AlertCircle size={16} />;
-    }
+  const TypeIcon = ({ type }: { type: string }) => {
+    if (type === 'identity') return <User size={14} />;
+    return <ShieldCheck size={14} />;
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'identity': return <User size={16} />;
-      case 'property': return <ShieldCheck size={16} />;
-      case 'agent': return <ShieldCheck size={16} />;
-      case 'business': return <ShieldCheck size={16} />;
-      default: return <FileText size={16} />;
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'identity': return 'Identity Verification';
-      case 'property': return 'Property Ownership';
-      case 'agent': return 'Agent License';
-      case 'business': return 'Business Registration';
-      default: return type;
-    }
-  };
+  const typeLabel = (type: string) => ({
+    identity: 'Identity Verification',
+    property: 'Property Ownership',
+    agent:    'Agent License',
+    business: 'Business Registration',
+  }[type] ?? type);
 
   const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('desc');
-    }
+    if (sortBy === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(field); setSortOrder('desc'); }
   };
 
-  const sortedRequests = [...verificationRequests].sort((a: any, b: any) => {
-    const aValue = a[sortBy];
-    const bValue = b[sortBy];
-    const modifier = sortOrder === 'asc' ? 1 : -1;
-    
-    if (aValue < bValue) return -1 * modifier;
-    if (aValue > bValue) return 1 * modifier;
-    return 0;
-  });
+  const filteredRequests = [...verificationRequests]
+    .sort((a: any, b: any) => {
+      const mod = sortOrder === 'asc' ? 1 : -1;
+      return a[sortBy] < b[sortBy] ? -mod : a[sortBy] > b[sortBy] ? mod : 0;
+    })
+    .filter(r =>
+      (!searchTerm ||
+        r.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.type?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      (statusFilter === 'all' || r.status === statusFilter) &&
+      (typeFilter === 'all' || r.type === typeFilter)
+    );
 
-  const filteredRequests = sortedRequests.filter((request: any) => {
-    const matchesSearch = !searchTerm || 
-      request.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.type?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
-    const matchesType = typeFilter === 'all' || request.type === typeFilter;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  const handleViewDetails = (request: any) => {
-    setSelectedRequest(request);
-    setShowDetails(true);
+  const handleApprove = async (id: number) => {
+    try { await (Api as any).updateVerificationStatus?.(id, 'approved'); loadVerificationRequests(); setShowDetails(false); }
+    catch { console.error('Approve failed'); }
   };
 
-  const handleApprove = async (requestId: number) => {
-    try {
-      // API call to approve verification
-      await Api.updateVerificationStatus?.(requestId, 'approved');
-      loadVerificationRequests();
-      setShowDetails(false);
-    } catch (error) {
-      console.error('Failed to approve request:', error);
-    }
-  };
-
-  const handleReject = async (requestId: number, reason: string) => {
-    try {
-      // API call to reject verification
-      await Api.updateVerificationStatus?.(requestId, 'rejected', reason);
-      loadVerificationRequests();
-      setShowDetails(false);
-    } catch (error) {
-      console.error('Failed to reject request:', error);
-    }
+  const handleReject = async (id: number, reason: string) => {
+    try { await (Api as any).updateVerificationStatus?.(id, 'rejected', reason); loadVerificationRequests(); setShowDetails(false); }
+    catch { console.error('Reject failed'); }
   };
 
   const handleExport = () => {
-    // CSV export logic
     const csv = [
       ['ID', 'User', 'Type', 'Status', 'Documents', 'Created', 'Updated'],
-      ...filteredRequests.map((r: any) => [
-        r.id,
-        r.user?.name || 'N/A',
-        r.type,
-        r.status,
-        r.documents?.length || 0,
-        r.created_at,
-        r.updated_at
-      ])
+      ...filteredRequests.map(r => [r.id, r.user?.name ?? 'N/A', r.type, r.status, r.documents?.length ?? 0, r.created_at, r.updated_at]),
     ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = `verification-requests-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    window.URL.revokeObjectURL(url);
   };
 
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        padding: '60px',
-        backgroundColor: t.dark2,
-        borderRadius: 12,
-        border: `1px solid ${t.border}`
-      }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          border: `3px solid ${t.border}`,
-          borderTop: `3px solid ${t.gold}`,
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-        }} />
-      </div>
-    );
-  }
+  /* ── stat counts ── */
+  const counts = {
+    pending:   filteredRequests.filter(r => r.status === 'pending').length,
+    approved:  filteredRequests.filter(r => r.status === 'approved').length,
+    rejected:  filteredRequests.filter(r => r.status === 'rejected').length,
+    in_review: filteredRequests.filter(r => r.status === 'in_review').length,
+  };
+
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80 }}>
+      <div style={{ width: 40, height: 40, border: `3px solid ${t.border}`, borderTop: `3px solid ${t.gold}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+    <div style={{ padding: '24px', maxWidth: 1400, margin: '0 auto', background: t.navy900, minHeight: '100vh' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        :root {
+          --navy-900: #0F172A; --navy-800: #162035; --navy-700: #1E2D4A;
+          --gold: #C89128; --gold-dim: rgba(200,145,40,0.12);
+          --cream: #F8F8F9; --slate: #94A3B8; --border: rgba(200,145,40,0.18);
+        }
+        .vm-action-btn { transition: filter .15s, transform .15s; }
+        .vm-action-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+        .vm-action-btn:active { transform: scale(.97); }
+        .vm-row { border-bottom: 1px solid var(--border); transition: background .18s; }
+        .vm-row:hover { background: var(--gold-dim); }
+        .vm-row:last-child { border-bottom: none; }
+        .vm-sort-th { cursor: pointer; user-select: none; }
+        .vm-sort-th:hover { color: var(--gold) !important; }
+        .vm-input:focus { border-color: var(--gold) !important; }
+        .vm-select option { background: #1E2D4A; color: #F8F8F9; }
+        .section-tag {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-size: 10px; font-weight: 600; letter-spacing: 0.22em;
+          text-transform: uppercase; color: var(--gold);
+          background: var(--gold-dim); padding: 4px 12px;
+          border: 1px solid var(--border); font-family: 'Jost', sans-serif;
+        }
+      `}</style>
+
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.cream, margin: '0 0 8px' }}>
+          <div className="section-tag" style={{ marginBottom: 10 }}>Admin Panel</div>
+          <h1 style={{ ...serif, fontSize: 'clamp(22px,3vw,32px)', color: t.cream, margin: '0 0 6px' }}>
             Verification Management
           </h1>
-          <p style={{ ...body, fontSize: 16, color: t.muted, margin: 0 }}>
+          <p style={{ ...body, fontSize: 14, color: t.slate, margin: 0 }}>
             Manage and review user verification requests
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={handleExport}
-            style={{ ...button, backgroundColor: `${t.green}20`, color: t.green }}
-          >
-            <Download size={16} />
-            Export CSV
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={handleExport} className="vm-action-btn" style={btn(t.green)}>
+            <Download size={15} /> Export CSV
           </button>
-          <button
-            onClick={loadVerificationRequests}
-            style={{ ...button, backgroundColor: `${t.blue}20`, color: t.blue }}
-          >
-            <RefreshCw size={16} />
-            Refresh
+          <button onClick={loadVerificationRequests} className="vm-action-btn" style={btn(t.blue)}>
+            <RefreshCw size={15} /> Refresh
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: 20, 
-        marginBottom: 32 
-      }}>
-        <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ 
-              width: 48, height: 48, 
-              background: `${t.orange}20`,
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Clock size={24} style={{ color: t.orange }} />
-            </div>
-            <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Pending</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
-                {filteredRequests.filter((r: any) => r.status === 'pending').length}
+      {/* ── Stats ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+        {[
+          { label: 'Pending',   count: counts.pending,   color: t.orange, Icon: Clock        },
+          { label: 'Approved',  count: counts.approved,  color: t.green,  Icon: CheckCircle  },
+          { label: 'Rejected',  count: counts.rejected,  color: t.red,    Icon: XCircle      },
+          { label: 'In Review', count: counts.in_review, color: t.blue,   Icon: Eye          },
+        ].map(({ label, count, color, Icon }) => (
+          <div key={label} style={{ ...card, position: 'relative', overflow: 'hidden' }}>
+            {/* gold top accent */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: color, borderRadius: '12px 12px 0 0' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 44, height: 44, background: `${color}18`, border: `1px solid ${color}30`, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon size={20} style={{ color }} />
+              </div>
+              <div>
+                <div style={{ ...body, fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.slate, marginBottom: 4 }}>{label}</div>
+                <div style={{ ...serif, fontSize: 26, color: t.cream, lineHeight: 1 }}>{count}</div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ 
-              width: 48, height: 48, 
-              background: `${t.green}20`,
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <CheckCircle size={24} style={{ color: t.green }} />
-            </div>
-            <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Approved</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
-                {filteredRequests.filter((r: any) => r.status === 'approved').length}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ 
-              width: 48, height: 48, 
-              background: `${t.red}20`,
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <XCircle size={24} style={{ color: t.red }} />
-            </div>
-            <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Rejected</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
-                {filteredRequests.filter((r: any) => r.status === 'rejected').length}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ 
-              width: 48, height: 48, 
-              background: `${t.blue}20`,
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Eye size={24} style={{ color: t.blue }} />
-            </div>
-            <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>In Review</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
-                {filteredRequests.filter((r: any) => r.status === 'in_review').length}
-              </div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Filters */}
-      <div style={card}>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ 
-                position: 'absolute', 
-                left: 12, 
-                top: '50%', 
-                transform: 'translateY(-50%)',
-                color: t.muted 
-              }} />
-              <input
-                type="text"
-                placeholder="Search verification requests..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  ...body,
-                  width: '100%',
-                  padding: '10px 12px 10px 40px',
-                  backgroundColor: t.dark3,
-                  border: `1px solid ${t.border}`,
-                  borderRadius: 8,
-                  color: t.cream,
-                  fontSize: 14,
-                }}
-              />
-            </div>
+      {/* ── Filters ── */}
+      <div style={{ ...card, marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Search */}
+          <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: t.slate }} />
+            <input
+              type="text"
+              placeholder="Search by name, email or type…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="vm-input"
+              style={{ ...inputStyle, paddingLeft: 38 }}
+            />
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              ...body,
-              padding: '10px 12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-              minWidth: 120,
-            }}
-          >
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="vm-select" style={{ ...inputStyle, width: 'auto', minWidth: 130 }}>
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
             <option value="in_review">In Review</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
           </select>
-
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            style={{
-              ...body,
-              padding: '10px 12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-              minWidth: 120,
-            }}
-          >
+          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="vm-select" style={{ ...inputStyle, width: 'auto', minWidth: 130 }}>
             <option value="all">All Types</option>
             <option value="identity">Identity</option>
             <option value="property">Property</option>
@@ -480,409 +297,252 @@ const VerificationManagement = () => {
         </div>
       </div>
 
-      {/* Verification Requests Table */}
-      <div style={card}>
+      {/* ── Table ── */}
+      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+        {/* Gold accent line */}
+        <div style={{ height: 2, background: t.gold }} />
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  userSelect: 'none'
-                }} onClick={() => handleSort('id')}>
-                  ID {sortBy === 'id' && (sortOrder === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>User</th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Type</th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Status</th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Documents</th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  userSelect: 'none'
-                }} onClick={() => handleSort('created_at')}>
-                  Created {sortBy === 'created_at' && (sortOrder === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Actions</th>
+              <tr style={{ borderBottom: `1px solid ${t.border}`, background: t.navy700 }}>
+                {[
+                  { label: 'ID',      field: 'id',         sortable: true  },
+                  { label: 'User',    field: 'user',       sortable: false },
+                  { label: 'Type',    field: 'type',       sortable: false },
+                  { label: 'Status',  field: 'status',     sortable: false },
+                  { label: 'Docs',    field: 'documents',  sortable: false },
+                  { label: 'Created', field: 'created_at', sortable: true  },
+                  { label: 'Action',  field: '',           sortable: false },
+                ].map(col => (
+                  <th
+                    key={col.label}
+                    className={col.sortable ? 'vm-sort-th' : ''}
+                    onClick={col.sortable ? () => handleSort(col.field) : undefined}
+                    style={{
+                      ...body,
+                      padding: '12px 14px',
+                      textAlign: 'left',
+                      color: sortBy === col.field ? t.gold : t.slate,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {col.label}
+                      {col.sortable && sortBy === col.field && (
+                        sortOrder === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+                      )}
+                    </span>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ 
-                    ...body, 
-                    padding: '40px', 
-                    textAlign: 'center', 
-                    color: t.muted 
-                  }}>
+                  <td colSpan={7} style={{ ...body, padding: '48px 20px', textAlign: 'center', color: t.slate }}>
+                    <Search size={32} style={{ color: t.gold, opacity: 0.4, marginBottom: 12, display: 'block', margin: '0 auto 12px' }} />
                     No verification requests found
                   </td>
                 </tr>
-              ) : (
-                filteredRequests.map((request: any) => (
-                  <tr key={request.id} style={{ borderBottom: `1px solid ${t.border}` }}>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      #{request.id}
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      <div>
-                        <div>{request.user?.name || 'N/A'}</div>
-                        <div style={{ fontSize: 12, color: t.muted }}>
-                          {request.user?.email || 'N/A'}
-                        </div>
-                        <div style={{ fontSize: 12, color: t.muted }}>
-                          {request.user?.user_type || 'N/A'}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {getTypeIcon(request.type)}
-                        <span>{getTypeLabel(request.type)}</span>
-                      </div>
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 8,
-                        color: getStatusColor(request.status)
-                      }}>
-                        {getStatusIcon(request.status)}
-                        <span>{request.status}</span>
-                      </div>
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <FileText size={16} />
-                        <span>{request.documents?.length || 0} files</span>
-                      </div>
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      <div>
-                        <div>{formatDate(request.created_at)}</div>
-                        <div style={{ fontSize: 12, color: t.muted }}>
-                          {formatTimeAgo(request.created_at)}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ ...body, padding: '12px' }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                          onClick={() => handleViewDetails(request)}
-                          style={{
-                            ...button,
-                            padding: '6px',
-                            backgroundColor: `${t.blue}20`,
-                            color: t.blue,
-                            borderRadius: 6,
-                          }}
-                          title="View Details"
-                        >
-                          <Eye size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ) : filteredRequests.map(request => (
+                <tr key={request.id} className="vm-row">
+                  {/* ID */}
+                  <td style={{ ...body, padding: '13px 14px', color: t.slate, fontSize: 13 }}>
+                    <span style={{ fontFamily: 'monospace', color: t.gold }}>#{request.id}</span>
+                  </td>
+
+                  {/* User */}
+                  <td style={{ ...body, padding: '13px 14px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: t.cream }}>{request.user?.name || 'N/A'}</div>
+                    <div style={{ fontSize: 11, color: t.slate, marginTop: 2 }}>{request.user?.email || 'N/A'}</div>
+                    <div style={{ fontSize: 10, color: t.slate, marginTop: 1, textTransform: 'capitalize', letterSpacing: '0.06em' }}>{request.user?.user_type || ''}</div>
+                  </td>
+
+                  {/* Type */}
+                  <td style={{ ...body, padding: '13px 14px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: t.goldDim, border: `1px solid ${t.border}`, borderRadius: 4, padding: '4px 9px', fontSize: 11, fontWeight: 600, color: t.gold }}>
+                      <TypeIcon type={request.type} />
+                      {typeLabel(request.type)}
+                    </div>
+                  </td>
+
+                  {/* Status */}
+                  <td style={{ ...body, padding: '13px 14px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: `${statusColor(request.status)}15`, border: `1px solid ${statusColor(request.status)}30`, borderRadius: 4, padding: '4px 9px', fontSize: 11, fontWeight: 600, color: statusColor(request.status), textTransform: 'capitalize' }}>
+                      <StatusIcon status={request.status} />
+                      {request.status.replace('_', ' ')}
+                    </div>
+                  </td>
+
+                  {/* Docs */}
+                  <td style={{ ...body, padding: '13px 14px', color: t.slate, fontSize: 13 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <FileText size={13} style={{ color: t.gold }} />
+                      {request.documents?.length || 0} file{(request.documents?.length || 0) !== 1 ? 's' : ''}
+                    </div>
+                  </td>
+
+                  {/* Created */}
+                  <td style={{ ...body, padding: '13px 14px' }}>
+                    <div style={{ fontSize: 13, color: t.cream }}>{formatDate(request.created_at)}</div>
+                    <div style={{ fontSize: 11, color: t.slate, marginTop: 2 }}>{formatTimeAgo(request.created_at)}</div>
+                  </td>
+
+                  {/* Action */}
+                  <td style={{ padding: '13px 14px' }}>
+                    <button
+                      onClick={() => { setSelectedRequest(request); setShowDetails(true); }}
+                      className="vm-action-btn"
+                      style={{ ...btn(t.blue), padding: '7px 12px', fontSize: 12 }}
+                      title="View Details"
+                    >
+                      <Eye size={13} /> Review
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Verification Details Modal */}
+      {/* ── Details Modal ── */}
       {showDetails && selectedRequest && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: 20,
-        }}>
-          <div style={{ ...card, maxWidth: 800, width: '100%', maxHeight: '80vh', overflowY: 'auto', position: 'relative' }}>
-            <button
-              onClick={() => setShowDetails(false)}
-              style={{
-                position: 'absolute',
-                top: 14,
-                right: 14,
-                background: 'none',
-                border: 'none',
-                color: t.muted,
-                cursor: 'pointer',
-              }}
-            >
-              <XCircle size={18} />
-            </button>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.92)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}
+          onClick={e => { if (e.target === e.currentTarget) setShowDetails(false); }}
+        >
+          <div style={{ ...card, maxWidth: 760, width: '100%', maxHeight: '85vh', overflowY: 'auto', position: 'relative', padding: 0 }}>
+            {/* Gold top accent */}
+            <div style={{ height: 3, background: t.gold, borderRadius: '12px 12px 0 0' }} />
 
-            <h2 style={{ ...serif, fontSize: 20, fontWeight: 600, color: t.cream, margin: '0 0 20px' }}>
-              Verification Request Details
-            </h2>
-
-            <div style={{ display: 'grid', gap: 20 }}>
-              {/* Request Information */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Request Information
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Request ID:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>#{selectedRequest.id}</div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Type:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {getTypeLabel(selectedRequest.type)}
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Status:</div>
-                    <div style={{ 
-                      ...body, 
-                      fontSize: 14, 
-                      color: getStatusColor(selectedRequest.status),
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8
-                    }}>
-                      {getStatusIcon(selectedRequest.status)}
-                      {selectedRequest.status}
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Created:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {formatDate(selectedRequest.created_at)} ({formatTimeAgo(selectedRequest.created_at)})
-                    </div>
-                  </div>
+            <div style={{ padding: '28px 28px 24px' }}>
+              {/* Modal header */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+                <div>
+                  <div className="section-tag" style={{ marginBottom: 8 }}>Request #{selectedRequest.id}</div>
+                  <h2 style={{ ...serif, fontSize: 22, color: t.cream, margin: 0 }}>
+                    Verification Details
+                  </h2>
                 </div>
+                <button onClick={() => setShowDetails(false)} style={{ background: 'none', border: 'none', color: t.slate, cursor: 'pointer', padding: 6, display: 'flex', borderRadius: 6 }}>
+                  <XCircle size={20} />
+                </button>
               </div>
 
-              {/* User Information */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  User Information
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Name:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedRequest.user?.name || 'N/A'}
-                    </div>
+              <div style={{ display: 'grid', gap: 24 }}>
+
+                {/* Two-column summary */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  {/* Request info */}
+                  <div style={{ background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 8, padding: '16px' }}>
+                    <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.gold, marginBottom: 14 }}>Request Info</div>
+                    {[
+                      { label: 'Type',    value: typeLabel(selectedRequest.type) },
+                      { label: 'Status',  value: selectedRequest.status.replace('_', ' '), color: statusColor(selectedRequest.status) },
+                      { label: 'Created', value: formatDate(selectedRequest.created_at) },
+                      { label: 'Updated', value: formatDate(selectedRequest.updated_at) },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid rgba(200,145,40,0.07)` }}>
+                        <span style={{ ...body, fontSize: 12, color: t.slate }}>{label}</span>
+                        <span style={{ ...body, fontSize: 12, fontWeight: 600, color: color ?? t.cream, textTransform: 'capitalize' }}>{value}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Email:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedRequest.user?.email || 'N/A'}
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Phone:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedRequest.user?.phone || 'N/A'}
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>User Type:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedRequest.user?.user_type || 'N/A'}
-                    </div>
+
+                  {/* User info */}
+                  <div style={{ background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 8, padding: '16px' }}>
+                    <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.gold, marginBottom: 14 }}>User Info</div>
+                    {[
+                      { label: 'Name',      value: selectedRequest.user?.name      || 'N/A' },
+                      { label: 'Email',     value: selectedRequest.user?.email     || 'N/A' },
+                      { label: 'Phone',     value: selectedRequest.user?.phone     || 'N/A' },
+                      { label: 'User Type', value: selectedRequest.user?.user_type || 'N/A' },
+                    ].map(({ label, value }) => (
+                      <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid rgba(200,145,40,0.07)` }}>
+                        <span style={{ ...body, fontSize: 12, color: t.slate }}>{label}</span>
+                        <span style={{ ...body, fontSize: 12, fontWeight: 600, color: t.cream, textTransform: 'capitalize', textAlign: 'right', maxWidth: '60%', wordBreak: 'break-word' }}>{value}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Documents */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Submitted Documents
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  {selectedRequest.documents?.map((doc: any, index: number) => (
-                    <div key={index} style={{
-                      padding: 12,
-                      backgroundColor: t.dark3,
-                      borderRadius: 8,
-                      border: `1px solid ${t.border}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12
-                    }}>
-                      <div style={{
-                        width: 40,
-                        height: 40,
-                        backgroundColor: `${t.blue}20`,
-                        borderRadius: 6,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <Camera size={20} style={{ color: t.blue }} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ ...body, fontSize: 14, color: t.cream, fontWeight: 500 }}>
-                          {doc.type.replace('_', ' ').toUpperCase()}
+                {/* Documents */}
+                <div>
+                  <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.gold, marginBottom: 12 }}>Submitted Documents</div>
+                  {(!selectedRequest.documents || selectedRequest.documents.length === 0) ? (
+                    <div style={{ ...body, fontSize: 13, color: t.slate, padding: '16px', background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 8, textAlign: 'center' }}>No documents submitted</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {selectedRequest.documents.map((doc, i) => (
+                        <div key={i} style={{ padding: '12px 14px', background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 36, height: 36, background: `${t.blue}18`, border: `1px solid ${t.blue}30`, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Camera size={16} style={{ color: t.blue }} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ ...body, fontSize: 13, fontWeight: 600, color: t.cream }}>
+                              {doc.type.replace(/_/g, ' ').toUpperCase()}
+                            </div>
+                            <div style={{ ...body, fontSize: 11, marginTop: 2, color: doc.verified ? t.green : t.orange }}>
+                              {doc.verified ? '✓ Verified' : '⏳ Pending verification'}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => window.open(doc.url, '_blank')}
+                            className="vm-action-btn"
+                            style={{ ...btn(t.blue), padding: '6px 12px', fontSize: 12, flexShrink: 0 }}
+                          >
+                            <Eye size={12} /> View
+                          </button>
                         </div>
-                        <div style={{ ...body, fontSize: 12, color: t.muted }}>
-                          {doc.verified ? (
-                            <span style={{ color: t.green }}>✓ Verified</span>
-                          ) : (
-                            <span style={{ color: t.orange }}>⏳ Not verified</span>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => window.open(doc.url, '_blank')}
-                        style={{
-                          ...button,
-                          padding: '6px 12px',
-                          backgroundColor: `${t.blue}20`,
-                          color: t.blue,
-                          borderRadius: 6,
-                          fontSize: 12,
-                        }}
-                      >
-                        <Eye size={12} />
-                        View
-                      </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  {[
+                    { label: 'User Notes',  value: selectedRequest.notes       || 'No notes provided'  },
+                    { label: 'Admin Notes', value: selectedRequest.admin_notes || 'No admin notes'      },
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.slate, marginBottom: 6 }}>{label}</div>
+                      <div style={{ ...body, fontSize: 13, color: t.cream, padding: '10px 12px', background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 6, lineHeight: 1.6 }}>{value}</div>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              {/* Notes */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Notes & Comments
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
+                {/* Review actions — only for pending */}
+                {selectedRequest.status === 'pending' && (
                   <div>
-                    <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>User Notes:</div>
-                    <div style={{ 
-                      ...body, 
-                      fontSize: 14, 
-                      color: t.cream,
-                      padding: 8,
-                      backgroundColor: t.dark3,
-                      borderRadius: 6,
-                      border: `1px solid ${t.border}`
-                    }}>
-                      {selectedRequest.notes || 'No notes provided'}
+                    <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.gold, marginBottom: 14 }}>Review Actions</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <button
+                        onClick={() => handleApprove(selectedRequest.id)}
+                        className="vm-action-btn"
+                        style={{ ...btn(t.green), padding: '13px', fontSize: 13, fontWeight: 700 }}
+                      >
+                        <CheckCircle size={15} /> Approve Request
+                      </button>
+                      <button
+                        onClick={() => {
+                          const reason = prompt('Please provide a reason for rejection:');
+                          if (reason) handleReject(selectedRequest.id, reason);
+                        }}
+                        className="vm-action-btn"
+                        style={{ ...btn(t.red), padding: '13px', fontSize: 13, fontWeight: 700 }}
+                      >
+                        <XCircle size={15} /> Reject Request
+                      </button>
                     </div>
                   </div>
-                  <div>
-                    <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>Admin Notes:</div>
-                    <div style={{ 
-                      ...body, 
-                      fontSize: 14, 
-                      color: t.cream,
-                      padding: 8,
-                      backgroundColor: t.dark3,
-                      borderRadius: 6,
-                      border: `1px solid ${t.border}`
-                    }}>
-                      {selectedRequest.admin_notes || 'No admin notes'}
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
-
-              {/* Actions */}
-              {selectedRequest.status === 'pending' && (
-                <div>
-                  <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                    Review Actions
-                  </h3>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <button
-                      onClick={() => handleApprove(selectedRequest.id)}
-                      style={{
-                        ...button,
-                        backgroundColor: `${t.green}20`,
-                        color: t.green,
-                        flex: 1
-                      }}
-                    >
-                      <CheckCircle size={16} />
-                      Approve Request
-                    </button>
-                    <button
-                      onClick={() => {
-                        const reason = prompt('Please provide reason for rejection:');
-                        if (reason) {
-                          handleReject(selectedRequest.id, reason);
-                        }
-                      }}
-                      style={{
-                        ...button,
-                        backgroundColor: `${t.red}20`,
-                        color: t.red,
-                        flex: 1
-                      }}
-                    >
-                      <XCircle size={16} />
-                      Reject Request
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

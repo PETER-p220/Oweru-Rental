@@ -53,12 +53,9 @@ const AddListing: React.FC = () => {
   }, []);
 
   const propertyTypes = [
-    { value: 'apartment', label: 'Apartment' },
+    { value: 'Master-bedroom', label: 'Master-bedroom' },
     { value: 'house', label: 'House' },
-    { value: 'villa', label: 'Villa' },
-    { value: 'condo', label: 'Condo' },
-    { value: 'studio', label: 'Studio' },
-    { value: 'penthouse', label: 'Penthouse' }
+    { value: 'Single-room', label: 'Single-room' }
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

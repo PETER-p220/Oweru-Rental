@@ -7,7 +7,7 @@ export interface Property {
   bedrooms: number;
   bathrooms: number;
   area: number;
-  type: 'apartment' | 'house' | 'studio';
+  type: 'Master-bedroom' | 'house' | 'Single-room';
   furnished: boolean;
   images: string[];
   amenities: string[];

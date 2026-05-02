@@ -29,16 +29,24 @@ class AgentController extends Controller
     {
         $user = Auth::user();
 
-        return response()->json(['data' => [
-            'total_listings'     => Property::where('agent_id', $user->id)->count(),
-            'active_listings'    => Property::where('agent_id', $user->id)->where('available', true)->count(),
-            'total_leads'        => $this->leadTablesAvailable()
-                ? Lead::where('agent_id', $user->id)->count()
-                : 0,
-            'total_commissions'  => $this->commissionTablesAvailable()
-                ? Commission::where('agent_id', $user->id)->sum('amount')
-                : 0,
-        ]]);
+        try {
+            return response()->json(['data' => [
+                'total_listings'     => Property::where('agent_id', $user->id)->count(),
+                'active_listings'    => Property::where('agent_id', $user->id)->where('available', true)->count(),
+                'total_leads'        => Lead::where('agent_id', $user->id)->count(),
+                'total_commissions'  => $this->commissionTablesAvailable()
+                    ? Commission::where('agent_id', $user->id)->sum('amount')
+                    : 0,
+            ]]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get dashboard data: ' . $e->getMessage());
+            return response()->json(['data' => [
+                'total_listings'     => 0,
+                'active_listings'    => 0,
+                'total_leads'        => 0,
+                'total_commissions'  => 0,
+            ]]);
+        }
     }
 
     public function getMyListings(): JsonResponse
@@ -447,23 +455,13 @@ public function recordShare(Property $property): JsonResponse
 
     public function getLeads(): JsonResponse
     {
-        Log::info('🔍 getLeads called for user: ' . (Auth::user()?->id ?? 'unknown'));
-        
-        if (! $this->leadTablesAvailable()) {
-            Log::info('❌ Lead tables not available, returning sample data');
-            return $this->getSampleLeads();
-        }
-
         $user = Auth::user();
-        Log::info('👤 User authenticated: ' . $user->id);
         
         try {
             $leads = Lead::with('property', 'user')
                 ->where('agent_id', $user->id)
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
-
-            Log::info('📊 Real leads found: ' . $leads->count());
 
             return response()->json([
                 'data' => $leads->items(),
@@ -475,8 +473,17 @@ public function recordShare(Property $property): JsonResponse
                 ],
             ]);
         } catch (\Exception $e) {
-            Log::info('🔄 Using sample data due to: ' . $e->getMessage());
-            return $this->getSampleLeads();
+            Log::error('Failed to get leads: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to load leads',
+                'data' => [],
+                'pagination' => [
+                    'current_page' => 1,
+                    'last_page'    => 1,
+                    'per_page'     => 20,
+                    'total'        => 0,
+                ],
+            ], 500);
         }
     }
 
@@ -548,15 +555,7 @@ public function recordShare(Property $property): JsonResponse
 
     public function getLeadStats(): JsonResponse
     {
-        Log::info('🔍 getLeadStats called for user: ' . (Auth::user()?->id ?? 'unknown'));
-        
-        if (! $this->leadTablesAvailable()) {
-            Log::info('❌ Lead tables not available, returning sample stats');
-            return $this->getSampleStats();
-        }
-
         $user = Auth::user();
-        Log::info('👤 User authenticated for stats: ' . $user->id);
         
         try {
             $totalLeads = Lead::where('agent_id', $user->id)->count();
@@ -568,8 +567,6 @@ public function recordShare(Property $property): JsonResponse
                 ->count();
             $conversionRate = $totalLeads > 0 ? ($convertedLeads / $totalLeads) * 100 : 0;
 
-            Log::info('📊 Real stats calculated: total=' . $totalLeads . ', new=' . $newLeads . ', converted=' . $convertedLeads);
-
             return response()->json(['data' => [
                 'total_leads'      => $totalLeads,
                 'new_leads'        => $newLeads,
@@ -577,8 +574,122 @@ public function recordShare(Property $property): JsonResponse
                 'conversion_rate'  => round($conversionRate, 1),
             ]]);
         } catch (\Exception $e) {
-            Log::info('🔄 Using sample stats due to: ' . $e->getMessage());
-            return $this->getSampleStats();
+            Log::error('Failed to get lead stats: ' . $e->getMessage());
+            return response()->json(['data' => [
+                'total_leads'      => 0,
+                'new_leads'        => 0,
+                'converted_leads'  => 0,
+                'conversion_rate'  => 0,
+            ]]);
+        }
+    }
+
+    /**
+     * Return sample stats when lead tables are not available
+     */
+    private function getSampleStats(): JsonResponse
+    {
+        $sampleStats = [
+            'total_leads'      => 15,
+            'new_leads'        => 3,
+            'converted_leads'  => 8,
+            'conversion_rate'  => 53.3,
+        ];
+
+        Log::info('📊 Returning sample stats: ' . json_encode($sampleStats));
+
+        return response()->json(['data' => $sampleStats]);
+    }
+
+    public function createLead(Request $request, Property $property): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'name'        => 'required|string|max:255',
+            'email'       => 'required|email|max:255',
+            'phone'       => 'nullable|string|max:20',
+            'message'     => 'nullable|string|max:2000',
+            'source'      => 'sometimes|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+        
+        try {
+            $lead = Lead::create([
+                'agent_id'    => $property->agent_id,
+                'property_id' => $property->id,
+                'user_id'     => Auth::check() ? Auth::id() : null,
+                'name'        => $request->name,
+                'email'       => $request->email,
+                'phone'       => $request->phone,
+                'message'     => $request->message,
+                'source'      => $request->source ?? 'website',
+                'status'      => 'new',
+            ]);
+
+            Log::info('Lead created successfully', [
+                'lead_id'     => $lead->id,
+                'property_id' => $property->id,
+                'agent_id'    => $property->agent_id,
+                'name'        => $request->name,
+                'email'       => $request->email,
+            ]);
+
+            return response()->json([
+                'message' => 'Lead created successfully',
+                'data'    => $lead->load('property'),
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to create lead: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to create lead',
+            ], 500);
+        }
+    }
+
+    public function updateLeadStatus(Request $request, Lead $lead): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // Verify the lead belongs to this agent
+        if ($lead->agent_id !== $user->id) {    
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:new,contacted,interested,converted,closed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $lead->update(['status' => $request->status]);
+
+            Log::info('Lead status updated', [
+                'lead_id' => $lead->id,
+                'old_status' => $lead->getOriginal('status'),
+                'new_status' => $request->status,
+                'agent_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'message' => 'Lead status updated successfully',
+                'data'    => $lead->load('property', 'user'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update lead status: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to update lead status',
+            ], 500);
         }
     }
 

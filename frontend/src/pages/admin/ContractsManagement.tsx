@@ -1,463 +1,278 @@
 import { useState, useEffect } from 'react';
 import {
-  Search, Filter, Download, Eye, Edit, Trash2, Plus,
-  Calendar, FileText, CheckCircle, XCircle, Clock,
-  AlertCircle, TrendingUp, BarChart3, PieChart,
-  RefreshCw, ChevronDown, ChevronUp, User, Building,
-  DollarSign, BookOpen, ShieldCheck, Mail
+  Search, Download, Eye, FileText, CheckCircle, XCircle,
+  Clock, AlertCircle, RefreshCw, ChevronDown, ChevronUp,
+  Building, DollarSign,
 } from 'lucide-react';
 import Api from '../../services/api';
 
-/* ─────────────────────────────────────────────────────────────
-   CONTRACTS MANAGEMENT STYLE TOKENS
-───────────────────────────────────────────────────────────── */
+/* ─── TOKENS — matches Home page exactly ─── */
 const t = {
-  gold:    '#c9a84c',
-  goldLt:  '#e8c97a',
-  dark:    '#080808',
-  dark2:   '#0e0e0e',
-  dark3:   '#141414',
-  cream:   '#e8e4dc',
-  muted:   '#7a7060',
-  border:  'rgba(37,99,235,0.12)',
+  navy900: '#0F172A',
+  navy800: '#162035',
+  navy700: '#1E2D4A',
+  gold:    '#C89128',
+  goldLt:  '#D4A843',
+  goldDim: 'rgba(200,145,40,0.12)',
+  cream:   '#F8F8F9',
+  slate:   '#94A3B8',
+  border:  'rgba(200,145,40,0.18)',
   green:   '#10b981',
   red:     '#ef4444',
   blue:    '#38bdf8',
   orange:  '#f59e0b',
 } as const;
 
-const body: React.CSSProperties = { fontFamily: 'DM Sans, sans-serif' };
-const serif: React.CSSProperties = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
+const body: React.CSSProperties  = { fontFamily: "'Jost', sans-serif" };
+const serif: React.CSSProperties = { fontFamily: "'Jost', sans-serif", fontWeight: 700 };
 
 const card: React.CSSProperties = {
-  backgroundColor: t.dark2,
+  backgroundColor: t.navy800,
   border: `1px solid ${t.border}`,
   borderRadius: 12,
-  padding: '20px',
+  padding: 20,
 };
 
-const button: React.CSSProperties = {
+const inp: React.CSSProperties = {
   ...body,
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-  padding: '10px 16px',
-  borderRadius: 8,
-  fontSize: 14,
-  fontWeight: 500,
-  cursor: 'pointer',
-  border: 'none',
-  transition: 'all 0.2s',
+  width: '100%',
+  padding: '10px 13px',
+  background: t.navy700,
+  border: `1px solid ${t.border}`,
+  borderRadius: 6,
+  color: t.cream,
+  fontSize: 13,
+  outline: 'none',
 };
 
-/* ─────────────────────────────────────────────────────────────
-   CONTRACTS MANAGEMENT COMPONENT
-───────────────────────────────────────────────────────────── */
-const ContractsManagement = () => {
-  const [contracts, setContracts] = useState<Array<{
-    id: number;
-    tenant_id: number;
-    property_id: number;
-    landlord_id: number;
-    agent_id: number;
-    start_date: string;
-    end_date: string;
-    rent_amount: number;
-    deposit_amount: number;
-    status: string;
-    type: string;
-    terms: string;
-    tenant_signature: string;
-    landlord_signature: string;
-    agent_signature: string;
-    created_at: string;
-    updated_at: string;
-    tenant?: { 
-      name: string; 
-      email: string;
-      phone: string;
-    };
-    property?: { 
-      title: string; 
-      address: string;
-      type: string;
-      bedrooms: number;
-      bathrooms: number;
-    };
-    landlord?: { 
-      name: string; 
-      email: string;
-      phone: string;
-    };
-    agent?: { 
-      name: string; 
-      email: string;
-      phone: string;
-    };
-  }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [selectedContract, setSelectedContract] = useState<{
-    id: number;
-    tenant_id: number;
-    property_id: number;
-    landlord_id: number;
-    agent_id: number;
-    start_date: string;
-    end_date: string;
-    rent_amount: number;
-    deposit_amount: number;
-    status: string;
-    type: string;
-    terms: string;
-    tenant_signature: string;
-    landlord_signature: string;
-    agent_signature: string;
-    created_at: string;
-    updated_at: string;
-    tenant?: { 
-      name: string; 
-      email: string;
-      phone: string;
-    };
-    property?: { 
-      title: string; 
-      address: string;
-      type: string;
-      bedrooms: number;
-      bathrooms: number;
-    };
-    landlord?: { 
-      name: string; 
-      email: string;
-      phone: string;
-    };
-    agent?: { 
-      name: string; 
-      email: string;
-      phone: string;
-    };
-  } | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [sortBy, setSortBy] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+const btn = (color: string): React.CSSProperties => ({
+  ...body,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+  padding: '10px 16px',
+  background: `${color}15`,
+  border: `1px solid ${color}28`,
+  color,
+  borderRadius: 6,
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'all .18s',
+  letterSpacing: '0.04em',
+});
 
-  useEffect(() => {
-    loadContracts();
-  }, [searchTerm, statusFilter, typeFilter, sortBy, sortOrder]);
+type Contract = {
+  id: number;
+  tenant_id: number; property_id: number; landlord_id: number; agent_id: number;
+  start_date: string; end_date: string;
+  rent_amount: number; deposit_amount: number;
+  status: string; type: string; terms: string;
+  tenant_signature: string; landlord_signature: string; agent_signature: string;
+  created_at: string; updated_at: string;
+  tenant?:   { name: string; email: string; phone: string };
+  property?: { title: string; address: string; type: string; bedrooms: number; bathrooms: number };
+  landlord?: { name: string; email: string; phone: string };
+  agent?:    { name: string; email: string; phone: string };
+};
+
+const statusColor = (s: string) =>
+  s === 'active' ? t.green : s === 'pending' ? t.orange : s === 'expired' || s === 'terminated' ? t.red : s === 'draft' ? t.blue : t.slate;
+
+const StatusIcon = ({ status }: { status: string }) => {
+  if (status === 'active')   return <CheckCircle size={13} />;
+  if (status === 'pending')  return <Clock size={13} />;
+  if (status === 'draft')    return <FileText size={13} />;
+  return <XCircle size={13} />;
+};
+
+const formatCurrency = (n: number) =>
+  new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(n || 0);
+
+const formatDate = (d: string) =>
+  d ? new Date(d).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+
+/* ── Detail row reused in modal ── */
+const DRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderBottom: 'rgba(200,145,40,0.07) 1px solid' }}>
+    <span style={{ ...body, fontSize: 12, color: t.slate, flexShrink: 0, width: 130 }}>{label}</span>
+    <span style={{ ...body, fontSize: 13, color: t.cream, textAlign: 'right', flex: 1 }}>{children}</span>
+  </div>
+);
+
+const ContractsManagement = () => {
+  const [contracts,         setContracts]         = useState<Contract[]>([]);
+  const [loading,           setLoading]           = useState(true);
+  const [searchTerm,        setSearchTerm]        = useState('');
+  const [statusFilter,      setStatusFilter]      = useState('all');
+  const [typeFilter,        setTypeFilter]        = useState('all');
+  const [selectedContract,  setSelectedContract]  = useState<Contract | null>(null);
+  const [showDetails,       setShowDetails]       = useState(false);
+  const [sortBy,            setSortBy]            = useState('created_at');
+  const [sortOrder,         setSortOrder]         = useState<'asc' | 'desc'>('desc');
+
+  useEffect(() => { loadContracts(); }, []);
 
   const loadContracts = async () => {
     try {
       setLoading(true);
-      
-      const response = await Api.getAdminContracts();
-      setContracts(response.data || []);
-    } catch (error) {
-      console.error('Failed to load contracts:', error);
-      setContracts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-TZ', {
-      style: 'currency',
-      currency: 'TZS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-TZ', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return t.green;
-      case 'pending': return t.orange;
-      case 'expired': return t.red;
-      case 'terminated': return t.muted;
-      case 'draft': return t.blue;
-      default: return t.muted;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active': return <CheckCircle size={16} />;
-      case 'pending': return <Clock size={16} />;
-      case 'expired': return <XCircle size={16} />;
-      case 'terminated': return <XCircle size={16} />;
-      case 'draft': return <FileText size={16} />;
-      default: return <AlertCircle size={16} />;
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'residential': return <Building size={16} />;
-      case 'commercial': return <Building size={16} />;
-      case 'vacation': return <Building size={16} />;
-      default: return <Building size={16} />;
-    }
+      const res = await Api.getAdminContracts();
+      setContracts(res.data || []);
+    } catch { setContracts([]); }
+    finally { setLoading(false); }
   };
 
   const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('desc');
-    }
+    if (sortBy === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(field); setSortOrder('desc'); }
   };
 
-  const sortedContracts = [...contracts].sort((a: any, b: any) => {
-    const aValue = a[sortBy];
-    const bValue = b[sortBy];
-    const modifier = sortOrder === 'asc' ? 1 : -1;
-    
-    if (aValue < bValue) return -1 * modifier;
-    if (aValue > bValue) return 1 * modifier;
-    return 0;
-  });
+  const filtered = [...contracts]
+    .sort((a: any, b: any) => {
+      const mod = sortOrder === 'asc' ? 1 : -1;
+      return a[sortBy] < b[sortBy] ? -mod : a[sortBy] > b[sortBy] ? mod : 0;
+    })
+    .filter(c =>
+      (!searchTerm ||
+        c.tenant?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.property?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.landlord?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.agent?.name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      (statusFilter === 'all' || c.status === statusFilter) &&
+      (typeFilter === 'all' || c.type === typeFilter)
+    );
 
-  const filteredContracts = sortedContracts.filter((contract: any) => {
-    const matchesSearch = !searchTerm || 
-      contract.tenant?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contract.property?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contract.landlord?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contract.agent?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || contract.status === statusFilter;
-    const matchesType = typeFilter === 'all' || contract.type === typeFilter;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  const handleViewDetails = (contract: any) => {
-    setSelectedContract(contract);
-    setShowDetails(true);
-  };
+  const totalMonthlyRent = filtered
+    .filter(c => c.status === 'active')
+    .reduce((sum, c) => sum + (c.rent_amount || 0), 0);
 
   const handleExport = () => {
-    // CSV export logic
     const csv = [
-      ['ID', 'Tenant', 'Property', 'Landlord', 'Agent', 'Rent Amount', 'Status', 'Start Date', 'End Date'],
-      ...filteredContracts.map((c: any) => [
-        c.id,
-        c.tenant?.name || 'N/A',
-        c.property?.title || 'N/A',
-        c.landlord?.name || 'N/A',
-        c.agent?.name || 'N/A',
-        c.rent_amount,
-        c.status,
-        c.start_date,
-        c.end_date
-      ])
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
+      ['ID', 'Tenant', 'Property', 'Landlord', 'Agent', 'Rent', 'Status', 'Start', 'End'],
+      ...filtered.map(c => [c.id, c.tenant?.name ?? 'N/A', c.property?.title ?? 'N/A', c.landlord?.name ?? 'N/A', c.agent?.name ?? 'N/A', c.rent_amount, c.status, c.start_date, c.end_date]),
+    ].map(r => r.join(',')).join('\n');
     const a = document.createElement('a');
-    a.href = url;
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = `contracts-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    window.URL.revokeObjectURL(url);
   };
 
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        padding: '60px',
-        backgroundColor: t.dark2,
-        borderRadius: 12,
-        border: `1px solid ${t.border}`
-      }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          border: `3px solid ${t.border}`,
-          borderTop: `3px solid ${t.gold}`,
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-        }} />
-      </div>
-    );
-  }
+  /* stat counts */
+  const counts = {
+    active:     filtered.filter(c => c.status === 'active').length,
+    pending:    filtered.filter(c => c.status === 'pending').length,
+    expired:    filtered.filter(c => c.status === 'expired').length,
+    terminated: filtered.filter(c => c.status === 'terminated').length,
+  };
+
+  /* ── sort-able TH ── */
+  const SortTh = ({ field, children }: { field: string; children: React.ReactNode }) => (
+    <th
+      onClick={() => handleSort(field)}
+      style={{ ...body, padding: '12px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: sortBy === field ? t.gold : t.slate, cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', background: t.navy700 }}
+    >
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        {children}
+        {sortBy === field && (sortOrder === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />)}
+      </span>
+    </th>
+  );
+
+  const PlainTh = ({ children }: { children: React.ReactNode }) => (
+    <th style={{ ...body, padding: '12px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.slate, background: t.navy700, whiteSpace: 'nowrap' }}>
+      {children}
+    </th>
+  );
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+    <div style={{ padding: '24px 20px', maxWidth: 1400, margin: '0 auto', background: t.navy900, minHeight: '100vh' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        :root {
+          --navy-900:#0F172A; --navy-800:#162035; --navy-700:#1E2D4A;
+          --gold:#C89128; --gold-dim:rgba(200,145,40,0.12);
+          --cream:#F8F8F9; --slate:#94A3B8; --border:rgba(200,145,40,0.18);
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .cm-btn { transition: filter .15s, transform .15s; }
+        .cm-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+        .cm-btn:active { transform: scale(.97); }
+        .cm-row { border-bottom: 1px solid rgba(200,145,40,0.07); transition: background .18s; }
+        .cm-row:hover { background: var(--gold-dim); }
+        .cm-row:last-child { border-bottom: none; }
+        .cm-input:focus { border-color: var(--gold) !important; }
+        .cm-select option { background: #1E2D4A; color: #F8F8F9; }
+        .section-tag {
+          display:inline-flex; align-items:center; gap:6px;
+          font-size:10px; font-weight:700; letter-spacing:.22em;
+          text-transform:uppercase; color:var(--gold);
+          background:var(--gold-dim); padding:4px 12px;
+          border:1px solid var(--border); font-family:'Jost',sans-serif;
+        }
+        @media (max-width: 640px) {
+          .cm-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+          .cm-stats  { grid-template-columns: repeat(2,1fr) !important; }
+          .cm-filters { flex-direction: column !important; }
+          .cm-filters > * { width: 100% !important; }
+        }
+      `}</style>
+
+      {/* ── Header ── */}
+      <div className="cm-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.cream, margin: '0 0 8px' }}>
-            Contracts Management
-          </h1>
-          <p style={{ ...body, fontSize: 16, color: t.muted, margin: 0 }}>
-            Manage and monitor all rental contracts
-          </p>
+          <div className="section-tag" style={{ marginBottom: 10 }}>Admin Panel</div>
+          <h1 style={{ ...serif, fontSize: 'clamp(20px,3vw,30px)', color: t.cream, margin: '0 0 4px' }}>Contracts Management</h1>
+          <p style={{ ...body, fontSize: 13, color: t.slate, margin: 0 }}>Manage and monitor all rental contracts</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={handleExport}
-            style={{ ...button, backgroundColor: `${t.green}20`, color: t.green }}
-          >
-            <Download size={16} />
-            Export CSV
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={handleExport} className="cm-btn" style={btn(t.green)}>
+            <Download size={14} /> Export CSV
           </button>
-          <button
-            onClick={loadContracts}
-            style={{ ...button, backgroundColor: `${t.blue}20`, color: t.blue }}
-          >
-            <RefreshCw size={16} />
-            Refresh
+          <button onClick={loadContracts} className="cm-btn" style={btn(t.blue)}>
+            <RefreshCw size={14} /> Refresh
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: 20, 
-        marginBottom: 32 
-      }}>
-        <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ 
-              width: 48, height: 48, 
-              background: `${t.green}20`,
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <CheckCircle size={24} style={{ color: t.green }} />
-            </div>
-            <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Active Contracts</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
-                {filteredContracts.filter((c: any) => c.status === 'active').length}
+      {/* ── Stats ── */}
+      <div className="cm-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 24 }}>
+        {[
+          { label: 'Active',      count: counts.active,     color: t.green,  Icon: CheckCircle },
+          { label: 'Pending',     count: counts.pending,    color: t.orange, Icon: Clock       },
+          { label: 'Expired',     count: counts.expired,    color: t.red,    Icon: XCircle     },
+          { label: 'Monthly Rent (Active)', count: null,    color: t.gold,   Icon: DollarSign, rent: totalMonthlyRent },
+        ].map(({ label, count, color, Icon, rent }) => (
+          <div key={label} style={{ ...card, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: color, borderRadius: '12px 12px 0 0' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 42, height: 42, background: `${color}18`, border: `1px solid ${color}28`, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon size={20} style={{ color }} />
+              </div>
+              <div>
+                <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.slate, marginBottom: 4 }}>{label}</div>
+                <div style={{ ...serif, fontSize: rent !== undefined ? 16 : 24, color: t.cream, lineHeight: 1 }}>
+                  {rent !== undefined ? formatCurrency(rent) : count}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ 
-              width: 48, height: 48, 
-              background: `${t.orange}20`,
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Clock size={24} style={{ color: t.orange }} />
-            </div>
-            <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Pending</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
-                {filteredContracts.filter((c: any) => c.status === 'pending').length}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ 
-              width: 48, height: 48, 
-              background: `${t.red}20`,
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <XCircle size={24} style={{ color: t.red }} />
-            </div>
-            <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Expired</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
-                {filteredContracts.filter((c: any) => c.status === 'expired').length}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={card}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ 
-              width: 48, height: 48, 
-              background: `${t.gold}20`,
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <DollarSign size={24} style={{ color: t.gold }} />
-            </div>
-            <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Total Monthly Rent</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
-                {formatCurrency(
-                  filteredContracts
-                    .filter((c: any) => c.status === 'active')
-                    .reduce((sum: number, c: any) => sum + (c.rent_amount || 0), 0)
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Filters */}
-      <div style={card}>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ 
-                position: 'absolute', 
-                left: 12, 
-                top: '50%', 
-                transform: 'translateY(-50%)',
-                color: t.muted 
-              }} />
-              <input
-                type="text"
-                placeholder="Search contracts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  ...body,
-                  width: '100%',
-                  padding: '10px 12px 10px 40px',
-                  backgroundColor: t.dark3,
-                  border: `1px solid ${t.border}`,
-                  borderRadius: 8,
-                  color: t.cream,
-                  fontSize: 14,
-                }}
-              />
-            </div>
+      {/* ── Filters ── */}
+      <div style={{ ...card, marginBottom: 20 }}>
+        <div className="cm-filters" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: t.slate }} />
+            <input
+              type="text"
+              placeholder="Search tenant, property, landlord…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="cm-input"
+              style={{ ...inp, paddingLeft: 36 }}
+            />
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              ...body,
-              padding: '10px 12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-              minWidth: 120,
-            }}
-          >
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="cm-select cm-input" style={{ ...inp, width: 'auto', minWidth: 130 }}>
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="pending">Pending</option>
@@ -465,21 +280,7 @@ const ContractsManagement = () => {
             <option value="terminated">Terminated</option>
             <option value="draft">Draft</option>
           </select>
-
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            style={{
-              ...body,
-              padding: '10px 12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-              minWidth: 120,
-            }}
-          >
+          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="cm-select cm-input" style={{ ...inp, width: 'auto', minWidth: 130 }}>
             <option value="all">All Types</option>
             <option value="residential">Residential</option>
             <option value="commercial">Commercial</option>
@@ -488,429 +289,201 @@ const ContractsManagement = () => {
         </div>
       </div>
 
-      {/* Contracts Table */}
-      <div style={card}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  userSelect: 'none'
-                }} onClick={() => handleSort('id')}>
-                  ID {sortBy === 'id' && (sortOrder === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Tenant</th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Property</th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Rent Amount</th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Type</th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Status</th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  userSelect: 'none'
-                }} onClick={() => handleSort('start_date')}>
-                  Start Date {sortBy === 'start_date' && (sortOrder === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />)}
-                </th>
-                <th style={{ 
-                  ...body, 
-                  padding: '12px', 
-                  textAlign: 'left', 
-                  color: t.muted, 
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textTransform: 'uppercase'
-                }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredContracts.length === 0 ? (
+      {/* ── Table ── */}
+      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+        <div style={{ height: 2, background: t.gold }} />
+
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '56px 20px', color: t.slate }}>
+            <div style={{ width: 36, height: 36, border: `3px solid ${t.border}`, borderTop: `3px solid ${t.gold}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            <span style={{ ...body, fontSize: 13 }}>Loading contracts…</span>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
                 <tr>
-                  <td colSpan={8} style={{ 
-                    ...body, 
-                    padding: '40px', 
-                    textAlign: 'center', 
-                    color: t.muted 
-                  }}>
-                    No contracts found
-                  </td>
+                  <SortTh field="id">ID</SortTh>
+                  <PlainTh>Tenant</PlainTh>
+                  <PlainTh>Property</PlainTh>
+                  <PlainTh>Rent</PlainTh>
+                  <PlainTh>Type</PlainTh>
+                  <PlainTh>Status</PlainTh>
+                  <SortTh field="start_date">Start</SortTh>
+                  <SortTh field="end_date">End</SortTh>
+                  <PlainTh>Action</PlainTh>
                 </tr>
-              ) : (
-                filteredContracts.map((contract: any) => (
-                  <tr key={contract.id} style={{ borderBottom: `1px solid ${t.border}` }}>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      #{contract.id}
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      <div>
-                        <div>{contract.tenant?.name || 'N/A'}</div>
-                        <div style={{ fontSize: 12, color: t.muted }}>
-                          {contract.tenant?.email || 'N/A'}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      <div>
-                        <div>{contract.property?.title || 'N/A'}</div>
-                        <div style={{ fontSize: 12, color: t.muted }}>
-                          {contract.property?.address || 'N/A'}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream, fontWeight: 600 }}>
-                      {formatCurrency(contract.rent_amount)}
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {getTypeIcon(contract.type)}
-                        <span>{contract.type}</span>
-                      </div>
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 8,
-                        color: getStatusColor(contract.status)
-                      }}>
-                        {getStatusIcon(contract.status)}
-                        <span>{contract.status}</span>
-                      </div>
-                    </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
-                      {formatDate(contract.start_date)}
-                    </td>
-                    <td style={{ ...body, padding: '12px' }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                          onClick={() => handleViewDetails(contract)}
-                          style={{
-                            ...button,
-                            padding: '6px',
-                            backgroundColor: `${t.blue}20`,
-                            color: t.blue,
-                            borderRadius: 6,
-                          }}
-                          title="View Details"
-                        >
-                          <Eye size={14} />
-                        </button>
-                      </div>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} style={{ ...body, padding: '52px 20px', textAlign: 'center', color: t.slate }}>
+                      <Search size={32} style={{ color: t.gold, opacity: 0.35, display: 'block', margin: '0 auto 12px' }} />
+                      No contracts found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : filtered.map(c => (
+                  <tr key={c.id} className="cm-row">
+                    {/* ID */}
+                    <td style={{ ...body, padding: '13px 14px', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: 'monospace', color: t.gold, fontSize: 13 }}>#{c.id}</span>
+                    </td>
+
+                    {/* Tenant */}
+                    <td style={{ ...body, padding: '13px 14px' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: t.cream }}>{c.tenant?.name || 'N/A'}</div>
+                      <div style={{ fontSize: 11, color: t.slate }}>{c.tenant?.email || ''}</div>
+                    </td>
+
+                    {/* Property */}
+                    <td style={{ ...body, padding: '13px 14px' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: t.cream }}>{c.property?.title || 'N/A'}</div>
+                      <div style={{ fontSize: 11, color: t.slate }}>{c.property?.address || ''}</div>
+                    </td>
+
+                    {/* Rent */}
+                    <td style={{ ...body, padding: '13px 14px', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: t.gold }}>{formatCurrency(c.rent_amount)}</span>
+                    </td>
+
+                    {/* Type */}
+                    <td style={{ ...body, padding: '13px 14px' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: t.goldDim, border: `1px solid ${t.border}`, borderRadius: 4, padding: '3px 8px', fontSize: 10, fontWeight: 700, color: t.gold, textTransform: 'capitalize', letterSpacing: '0.06em' }}>
+                        <Building size={10} /> {c.type || 'N/A'}
+                      </div>
+                    </td>
+
+                    {/* Status */}
+                    <td style={{ ...body, padding: '13px 14px' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: `${statusColor(c.status)}15`, border: `1px solid ${statusColor(c.status)}28`, borderRadius: 4, padding: '3px 8px', fontSize: 10, fontWeight: 700, color: statusColor(c.status), textTransform: 'capitalize', letterSpacing: '0.06em' }}>
+                        <StatusIcon status={c.status} /> {c.status}
+                      </div>
+                    </td>
+
+                    {/* Dates */}
+                    <td style={{ ...body, padding: '13px 14px', fontSize: 12, color: t.cream, whiteSpace: 'nowrap' }}>{formatDate(c.start_date)}</td>
+                    <td style={{ ...body, padding: '13px 14px', fontSize: 12, color: t.cream, whiteSpace: 'nowrap' }}>{formatDate(c.end_date)}</td>
+
+                    {/* Action */}
+                    <td style={{ padding: '13px 14px' }}>
+                      <button
+                        onClick={() => { setSelectedContract(c); setShowDetails(true); }}
+                        className="cm-btn"
+                        style={{ ...btn(t.blue), padding: '7px 12px', fontSize: 12 }}
+                        title="View Details"
+                      >
+                        <Eye size={13} /> View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Contract Details Modal */}
+      {/* ── Details Modal ── */}
       {showDetails && selectedContract && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: 20,
-        }}>
-          <div style={{ ...card, maxWidth: 700, width: '100%', maxHeight: '80vh', overflowY: 'auto', position: 'relative' }}>
-            <button
-              onClick={() => setShowDetails(false)}
-              style={{
-                position: 'absolute',
-                top: 14,
-                right: 14,
-                background: 'none',
-                border: 'none',
-                color: t.muted,
-                cursor: 'pointer',
-              }}
-            >
-              <XCircle size={18} />
-            </button>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.92)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}
+          onClick={e => { if (e.target === e.currentTarget) setShowDetails(false); }}
+        >
+          <div style={{ ...card, maxWidth: 720, width: '100%', maxHeight: '88vh', overflowY: 'auto', position: 'relative', padding: 0 }}>
+            <div style={{ height: 3, background: t.gold, borderRadius: '12px 12px 0 0' }} />
 
-            <h2 style={{ ...serif, fontSize: 20, fontWeight: 600, color: t.cream, margin: '0 0 20px' }}>
-              Contract Details
-            </h2>
-
-            <div style={{ display: 'grid', gap: 16 }}>
-              {/* Basic Information */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Basic Information
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Contract ID:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>#{selectedContract.id}</div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Type:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedContract.type}
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Status:</div>
-                    <div style={{ 
-                      ...body, 
-                      fontSize: 14, 
-                      color: getStatusColor(selectedContract.status),
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8
-                    }}>
-                      {getStatusIcon(selectedContract.status)}
-                      {selectedContract.status}
-                    </div>
-                  </div>
+            <div style={{ padding: '26px 28px 28px' }}>
+              {/* Modal header */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+                <div>
+                  <div className="section-tag" style={{ marginBottom: 8 }}>Contract #{selectedContract.id}</div>
+                  <h2 style={{ ...serif, fontSize: 22, color: t.cream, margin: 0 }}>Contract Details</h2>
                 </div>
+                <button onClick={() => setShowDetails(false)} style={{ background: 'none', border: 'none', color: t.slate, cursor: 'pointer', display: 'flex', padding: 6, borderRadius: 6 }}>
+                  <XCircle size={20} />
+                </button>
               </div>
 
-              {/* Parties Involved */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Parties Involved
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Tenant:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      <div>{selectedContract.tenant?.name || 'N/A'}</div>
-                      <div style={{ fontSize: 12, color: t.muted }}>
-                        {selectedContract.tenant?.email || 'N/A'}
-                      </div>
-                      <div style={{ fontSize: 12, color: t.muted }}>
-                        {selectedContract.tenant?.phone || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Landlord:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      <div>{selectedContract.landlord?.name || 'N/A'}</div>
-                      <div style={{ fontSize: 12, color: t.muted }}>
-                        {selectedContract.landlord?.email || 'N/A'}
-                      </div>
-                      <div style={{ fontSize: 12, color: t.muted }}>
-                        {selectedContract.landlord?.phone || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Agent:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      <div>{selectedContract.agent?.name || 'N/A'}</div>
-                      <div style={{ fontSize: 12, color: t.muted }}>
-                        {selectedContract.agent?.email || 'N/A'}
-                      </div>
-                      <div style={{ fontSize: 12, color: t.muted }}>
-                        {selectedContract.agent?.phone || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div style={{ display: 'grid', gap: 20 }}>
 
-              {/* Property Information */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Property Information
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Property:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      <div>{selectedContract.property?.title || 'N/A'}</div>
-                      <div style={{ fontSize: 12, color: t.muted }}>
-                        {selectedContract.property?.address || 'N/A'}
+                {/* Top row — status + type + dates */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div style={{ background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 8, padding: '14px 16px' }}>
+                    <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold, marginBottom: 12 }}>Contract Info</div>
+                    <DRow label="Status">
+                      <span style={{ color: statusColor(selectedContract.status), display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                        <StatusIcon status={selectedContract.status} />
+                        {selectedContract.status}
+                      </span>
+                    </DRow>
+                    <DRow label="Type">{selectedContract.type || 'N/A'}</DRow>
+                    <DRow label="Start Date">{formatDate(selectedContract.start_date)}</DRow>
+                    <DRow label="End Date">{formatDate(selectedContract.end_date)}</DRow>
+                    <DRow label="Created">{formatDate(selectedContract.created_at)}</DRow>
+                  </div>
+
+                  <div style={{ background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 8, padding: '14px 16px' }}>
+                    <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold, marginBottom: 12 }}>Financials</div>
+                    <DRow label="Monthly Rent">
+                      <span style={{ color: t.gold, fontWeight: 700 }}>{formatCurrency(selectedContract.rent_amount)}</span>
+                    </DRow>
+                    <DRow label="Deposit">
+                      <span style={{ color: t.gold }}>{formatCurrency(selectedContract.deposit_amount)}</span>
+                    </DRow>
+                    <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold, margin: '14px 0 10px' }}>Signatures</div>
+                    {[
+                      { label: 'Tenant',   signed: selectedContract.tenant_signature   },
+                      { label: 'Landlord', signed: selectedContract.landlord_signature },
+                      { label: 'Agent',    signed: selectedContract.agent_signature    },
+                    ].map(({ label, signed }) => (
+                      <DRow key={label} label={label}>
+                        <span style={{ color: signed ? t.green : t.orange, fontWeight: 600 }}>
+                          {signed ? '✓ Signed' : '⏳ Pending'}
+                        </span>
+                      </DRow>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Parties */}
+                <div style={{ background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 8, padding: '14px 16px' }}>
+                  <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold, marginBottom: 12 }}>Parties Involved</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+                    {[
+                      { role: 'Tenant',   party: selectedContract.tenant   },
+                      { role: 'Landlord', party: selectedContract.landlord },
+                      { role: 'Agent',    party: selectedContract.agent    },
+                    ].map(({ role, party }) => (
+                      <div key={role}>
+                        <div style={{ ...body, fontSize: 10, fontWeight: 700, color: t.slate, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>{role}</div>
+                        <div style={{ ...body, fontSize: 13, fontWeight: 600, color: t.cream, marginBottom: 3 }}>{party?.name || 'N/A'}</div>
+                        <div style={{ ...body, fontSize: 11, color: t.slate, marginBottom: 2 }}>{party?.email || ''}</div>
+                        <div style={{ ...body, fontSize: 11, color: t.slate }}>{party?.phone || ''}</div>
                       </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Property Type:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedContract.property?.type || 'N/A'}
-                    </div>
+                    ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Financial Information */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Financial Information
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Rent Amount:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream, fontWeight: 600 }}>
-                      {formatCurrency(selectedContract.rent_amount)}
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Deposit Amount:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream, fontWeight: 600 }}>
-                      {formatCurrency(selectedContract.deposit_amount)}
-                    </div>
-                  </div>
+                {/* Property */}
+                <div style={{ background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 8, padding: '14px 16px' }}>
+                  <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold, marginBottom: 12 }}>Property</div>
+                  <DRow label="Title">{selectedContract.property?.title || 'N/A'}</DRow>
+                  <DRow label="Address">{selectedContract.property?.address || 'N/A'}</DRow>
+                  <DRow label="Type">{selectedContract.property?.type || 'N/A'}</DRow>
+                  {selectedContract.property?.bedrooms !== undefined && (
+                    <DRow label="Beds / Baths">{selectedContract.property.bedrooms} bed · {selectedContract.property.bathrooms} bath</DRow>
+                  )}
                 </div>
-              </div>
 
-              {/* Contract Period */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Contract Period
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Start Date:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {formatDate(selectedContract.start_date)}
-                    </div>
+                {/* Terms */}
+                {selectedContract.terms && (
+                  <div style={{ background: t.navy700, border: `1px solid ${t.border}`, borderRadius: 8, padding: '14px 16px' }}>
+                    <div style={{ ...body, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold, marginBottom: 10 }}>Terms & Conditions</div>
+                    <p style={{ ...body, fontSize: 13, color: t.slate, lineHeight: 1.75, margin: 0 }}>
+                      {typeof selectedContract.terms === 'string' ? selectedContract.terms : JSON.stringify(selectedContract.terms)}
+                    </p>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>End Date:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {formatDate(selectedContract.end_date)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Signatures */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Signatures
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Tenant Signature:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedContract.tenant_signature ? (
-                        <span style={{ color: t.green }}>✓ Signed</span>
-                      ) : (
-                        <span style={{ color: t.orange }}>⏳ Pending</span>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Landlord Signature:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedContract.landlord_signature ? (
-                        <span style={{ color: t.green }}>✓ Signed</span>
-                      ) : (
-                        <span style={{ color: t.orange }}>⏳ Pending</span>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Agent Signature:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedContract.agent_signature ? (
-                        <span style={{ color: t.green }}>✓ Signed</span>
-                      ) : (
-                        <span style={{ color: t.orange }}>⏳ Pending</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Terms */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Terms & Conditions
-                </h3>
-                <div style={{ 
-                  ...body, 
-                  fontSize: 14, 
-                  color: t.cream,
-                  padding: 12,
-                  backgroundColor: t.dark3,
-                  borderRadius: 8,
-                  border: `1px solid ${t.border}`
-                }}>
-                  {selectedContract.terms || 'No terms specified'}
-                </div>
-              </div>
-
-              {/* Timestamps */}
-              <div>
-                <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Timestamps
-                </h3>
-                <div style={{ display: 'grid', gap: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Created:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {formatDate(selectedContract.created_at)}
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                    <div style={{ ...body, fontSize: 14, color: t.muted }}>Last Updated:</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {formatDate(selectedContract.updated_at)}
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

@@ -1,559 +1,300 @@
 import { useState, useEffect } from 'react';
-import { Users, Search, Filter, Plus, Edit, Trash2, Eye, Shield, CheckCircle, Clock, AlertTriangle, X, UserPlus, Mail, Phone, Calendar, Building, DollarSign, BarChart3, MoreVertical, Ban, RefreshCw, Download } from 'lucide-react';
+import {
+  Users, Search, UserPlus, Edit, Trash2, CheckCircle,
+  X, Mail, Phone, Ban, RefreshCw,
+} from 'lucide-react';
 import Api from '../../services/api';
+
+/* ─── TOKENS — matches Home page exactly ─── */
+const t = {
+  navy900: '#0F172A',
+  navy800: '#162035',
+  navy700: '#1E2D4A',
+  gold:    '#C89128',
+  goldLt:  '#D4A843',
+  goldDim: 'rgba(200,145,40,0.12)',
+  cream:   '#F8F8F9',
+  slate:   '#94A3B8',
+  border:  'rgba(200,145,40,0.18)',
+  green:   '#10b981',
+  red:     '#ef4444',
+  purple:  '#8b5cf6',
+  blue:    '#3b82f6',
+  amber:   '#f59e0b',
+} as const;
+
+const body: React.CSSProperties  = { fontFamily: "'Jost', sans-serif" };
+const serif: React.CSSProperties = { fontFamily: "'Jost', sans-serif", fontWeight: 700 };
+
+const card: React.CSSProperties = {
+  background:   t.navy800,
+  border:       `1px solid ${t.border}`,
+  borderRadius: 12,
+  padding:      20,
+};
+
+/* Shared input style */
+const inp: React.CSSProperties = {
+  ...body,
+  width: '100%',
+  padding: '10px 13px',
+  background: t.navy700,
+  border: `1px solid ${t.border}`,
+  borderRadius: 6,
+  color: t.cream,
+  fontSize: 13,
+  outline: 'none',
+};
+
+const EMPTY_FORM = {
+  firstName: '', lastName: '', email: '', phone: '',
+  role: 'tenant' as 'admin' | 'agent' | 'landlord' | 'tenant', 
+  status: 'active' as 'active' | 'inactive' | 'suspended',
+  password: '', confirmPassword: '', notes: '',
+};
 
 interface User {
   id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
+  firstName: string; lastName: string;
+  email: string; phone: string;
   role: 'admin' | 'agent' | 'landlord' | 'tenant';
   status: 'active' | 'inactive' | 'suspended';
-  registrationDate: string;
-  lastLogin: string;
-  propertiesCount: number;
-  transactionsCount: number;
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  profileCompleted: boolean;
-  permissions?: string[];
-  notes?: string;
-}
-
-interface CreateUserForm {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  role: 'admin' | 'agent' | 'landlord' | 'tenant';
-  status: 'active' | 'inactive' | 'suspended';
-  password: string;
-  confirmPassword: string;
+  registrationDate: string; lastLogin: string;
+  propertiesCount: number; transactionsCount: number;
+  emailVerified: boolean; phoneVerified: boolean; profileCompleted: boolean;
   notes?: string;
 }
 
 interface UserStats {
-  total: number;
-  active: number;
-  inactive: number;
-  suspended: number;
-  admins: number;
-  agents: number;
-  landlords: number;
-  tenants: number;
+  total: number; active: number; inactive: number; suspended: number;
+  admins: number; agents: number; landlords: number; tenants: number;
   newThisMonth: number;
-  activeThisMonth: number;
 }
 
-const UserManagement = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState<CreateUserForm>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    role: 'tenant',
-    status: 'active',
-    password: '',
-    confirmPassword: '',
-    notes: ''
-  });
-  const [formErrors, setFormErrors] = useState<Partial<CreateUserForm>>({});
+type FormData = typeof EMPTY_FORM;
 
-  useEffect(() => {
-    loadUsers();
-  }, [searchTerm, roleFilter, statusFilter]);
+const roleColor = (r: string) =>
+  r === 'admin' ? t.purple : r === 'agent' ? t.gold : r === 'landlord' ? t.blue : t.green;
+
+const statusColor = (s: string) =>
+  s === 'active' ? t.green : s === 'suspended' ? t.red : t.slate;
+
+const formatDate = (d: string) =>
+  d ? new Date(d).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+
+/* ─── Pill badge ─── */
+const Pill = ({ label, color }: { label: string; color: string }) => (
+  <span style={{ ...body, display: 'inline-flex', alignItems: 'center', padding: '3px 9px', background: `${color}18`, border: `1px solid ${color}30`, color, borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+    {label}
+  </span>
+);
+
+/* ─── Action button ─── */
+const Btn = ({ color, onClick, children, full }: { color: string; onClick?: () => void; children: React.ReactNode; full?: boolean }) => (
+  <button onClick={onClick} style={{ ...body, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 14px', background: `${color}15`, border: `1px solid ${color}28`, color, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .18s', width: full ? '100%' : undefined, letterSpacing: '0.04em' }}>
+    {children}
+  </button>
+);
+
+/* ══════════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════════ */
+const UserManagement = () => {
+  const [users,           setUsers]           = useState<User[]>([]);
+  const [stats,           setStats]           = useState<UserStats | null>(null);
+  const [loading,         setLoading]         = useState(true);
+  const [saving,          setSaving]          = useState(false);
+  const [searchTerm,      setSearchTerm]      = useState('');
+  const [roleFilter,      setRoleFilter]      = useState('all');
+  const [statusFilter,    setStatusFilter]    = useState('all');
+  const [showModal,       setShowModal]       = useState(false);
+  const [editMode,        setEditMode]        = useState(false);
+  const [selectedUser,    setSelectedUser]    = useState<User | null>(null);
+  const [formData,        setFormData]        = useState<FormData>(EMPTY_FORM);
+  const [formErrors,      setFormErrors]      = useState<Partial<FormData>>({});
+
+  useEffect(() => { loadUsers(); }, [searchTerm, roleFilter, statusFilter]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
-      
-      // Load users from API with filters
       const filters: any = {};
       if (searchTerm) filters.search = searchTerm;
       if (roleFilter !== 'all') filters.user_type = roleFilter;
       if (statusFilter !== 'all') filters.status = statusFilter;
-      
-      const response = await Api.getUsers(filters);
-      setUsers(response.data);
-      
-      // Load user stats
-      const statsResponse = await Api.getUserStats();
-      setStats(statsResponse.data);
-      
-    } catch (e) {
-      console.error('Failed to load users:', e);
-      setError('Failed to load users');
-    } finally {
-      setLoading(false);
-    }
+      const [usersRes, statsRes] = await Promise.all([
+        Api.getUsers(filters),
+        Api.getUserStats(),
+      ]);
+      setUsers(usersRes.data || []);
+      setStats(statsRes.data || null);
+    } catch { /* silent */ }
+    finally { setLoading(false); }
   };
 
-  const validateForm = (): boolean => {
-    const errors: Partial<CreateUserForm> = {};
-    
-    if (!formData.firstName.trim()) errors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) errors.lastName = 'Last name is required';
-    if (!formData.email.trim()) errors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Invalid email format';
-    if (!formData.phone.trim()) errors.phone = 'Phone is required';
-    if (!formData.password) errors.password = 'Password is required';
-    else if (formData.password.length < 8) errors.password = 'Password must be at least 8 characters';
-    if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Passwords do not match';
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+  const validate = (): boolean => {
+    const e: Partial<FormData> = {};
+    if (!formData.firstName.trim()) e.firstName = 'Required';
+    if (!formData.lastName.trim())  e.lastName  = 'Required';
+    if (!formData.email.trim())     e.email     = 'Required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) e.email = 'Invalid email';
+    if (!formData.phone.trim())     e.phone     = 'Required';
+    if (!editMode) {
+      if (!formData.password)               e.password        = 'Required (min 8 chars)';
+      else if (formData.password.length < 8) e.password       = 'Min 8 characters';
+      if (formData.password !== formData.confirmPassword) e.confirmPassword = 'Passwords do not match';
+    }
+    setFormErrors(e);
+    return Object.keys(e).length === 0;
   };
+
+  const openCreate = () => { setEditMode(false); setSelectedUser(null); setFormData(EMPTY_FORM); setFormErrors({}); setShowModal(true); };
+  const openEdit   = (u: User) => {
+    setEditMode(true); setSelectedUser(u);
+    setFormData({ firstName: u.firstName, lastName: u.lastName, email: u.email, phone: u.phone, role: u.role, status: u.status, password: '', confirmPassword: '', notes: u.notes || '' });
+    setFormErrors({}); setShowModal(true);
+  };
+  const closeModal = () => { setShowModal(false); setSelectedUser(null); setFormData(EMPTY_FORM); setFormErrors({}); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
-    
+    if (!validate()) return;
+    setSaving(true);
     try {
-      setLoading(true);
-      
-      // Create user via API
-      await Api.createUser({
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        user_type: formData.role,
-        password: formData.password,
-        status: formData.status,
-        notes: formData.notes
-      });
-      
-      // Reload users to get updated list
-      await loadUsers();
-      
-      // Reset form
-      setShowCreateModal(false);
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        role: 'tenant',
-        status: 'active',
-        password: '',
-        confirmPassword: '',
-        notes: ''
-      });
-      setFormErrors({});
-      
-    } catch (e) {
-      console.error('Failed to create user:', e);
-      setError('Failed to create user');
-    } finally {
-      setLoading(false);
-    }
+      const payload = { first_name: formData.firstName, last_name: formData.lastName, email: formData.email, phone: formData.phone, user_type: formData.role, status: formData.status, notes: formData.notes };
+      if (editMode && selectedUser) {
+        await Api.updateUser(selectedUser.id, { ...payload, ...(formData.password && { password: formData.password }) });
+      } else {
+        await Api.createUser({ ...payload, password: formData.password });
+      }
+      closeModal();
+      loadUsers();
+    } catch { /* silent */ }
+    finally { setSaving(false); }
   };
 
-  const handleEdit = (user: User) => {
-    setSelectedUser(user);
-    setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      status: user.status,
-      password: '',
-      confirmPassword: '',
-      notes: user.notes || ''
-    });
-    setShowEditModal(true);
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this user? This cannot be undone.')) return;
+    try { await Api.deleteUser(id); loadUsers(); } catch { alert('Delete failed'); }
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    try {
-      setLoading(true);
-      
-      // Update user via API
-      await Api.updateUser(selectedUser!.id, {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        user_type: formData.role,
-        ...(formData.password && { password: formData.password }),
-        status: formData.status,
-        notes: formData.notes
-      });
-      
-      // Reload users to get updated list
-      await loadUsers();
-      
-      // Reset form
-      setShowEditModal(false);
-      setSelectedUser(null);
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        role: 'tenant',
-        status: 'active',
-        password: '',
-        confirmPassword: '',
-        notes: ''
-      });
-      setFormErrors({});
-      
-    } catch (e) {
-      console.error('Failed to update user:', e);
-      setError('Failed to update user');
-    } finally {
-      setLoading(false);
-    }
+  const handleStatus = async (id: number, status: 'active' | 'suspended') => {
+    try { await Api.updateUserStatus(id, status); loadUsers(); } catch { /* silent */ }
   };
 
-  const handleDelete = async (userId: number) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
-    
-    try {
-      setLoading(true);
-      
-      // Delete user via API
-      await Api.deleteUser(userId);
-      
-      // Reload users to get updated list
-      await loadUsers();
-      
-    } catch (e) {
-      console.error('Failed to delete user:', e);
-      setError('Failed to delete user');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const f = (k: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setFormData(p => ({ ...p, [k]: e.target.value }));
 
-  const handleStatusChange = async (userId: number, newStatus: 'active' | 'inactive' | 'suspended') => {
-    try {
-      setLoading(true);
-      
-      // Update user status via API
-      await Api.updateUserStatus(userId, newStatus);
-      
-      // Reload users to get updated list
-      await loadUsers();
-      
-    } catch (e) {
-      console.error('Failed to update user status:', e);
-      setError('Failed to update user status');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getDefaultPermissions = (role: string): string[] => {
-    switch (role) {
-      case 'admin':
-        return ['admin_full_access', 'manage_users', 'manage_properties', 'manage_transactions', 'view_analytics', 'system_settings'];
-      case 'agent':
-        return ['manage_listings', 'view_analytics', 'manage_commissions', 'qr_codes', 'share_tracking'];
-      case 'landlord':
-        return ['manage_properties', 'view_tenants', 'receive_payments', 'property_reports'];
-      case 'tenant':
-        return ['view_properties', 'make_payments', 'view_contracts', 'send_messages'];
-      default:
-        return [];
-    }
-  };
-
-  const filteredUsers = users; // Filtering is now done on the server side
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return '#8b5cf6';
-      case 'agent': return '#c9a84c';
-      case 'landlord': return '#3b82f6';
-      case 'tenant': return '#10b981';
-      default: return '#6b7280';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return '#10b981';
-      case 'inactive': return '#6b7280';
-      case 'suspended': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-TZ', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '3px solid #e8e4dc', 
-            borderTop: '3px solid #c9a84c', 
-            borderRadius: '50%', 
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }}></div>
-          <p style={{ color: '#7a7060', fontFamily: 'DM Sans, sans-serif' }}>Loading users...</p>
-        </div>
-      </div>
-    );
-  }
+  /* ── STAT CARDS config ── */
+  const statCards = stats ? [
+    { label: 'Total Users',    value: stats.total,        color: t.gold   },
+    { label: 'Active',         value: stats.active,       color: t.green  },
+    { label: 'Admins',         value: stats.admins,       color: t.purple },
+    { label: 'Agents',         value: stats.agents,       color: t.gold   },
+    { label: 'Landlords',      value: stats.landlords,    color: t.blue   },
+    { label: 'Tenants',        value: stats.tenants,      color: t.green  },
+    { label: 'New This Month', value: stats.newThisMonth, color: t.amber  },
+  ] : [];
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 20px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Users size={28} style={{ color: '#c9a84c' }} />
-            <h1 style={{ color: '#e8e4dc', fontSize: '28px', fontWeight: '500', margin: 0 }}>
-              User Management
-            </h1>
-            {stats && (
-              <span style={{
-                padding: '4px 12px',
-                backgroundColor: 'rgba(201, 168, 76, 0.1)',
-                color: '#c9a84c',
-                borderRadius: '999px',
-                fontSize: '12px',
-                fontFamily: 'DM Sans, sans-serif',
-                fontWeight: '600'
-              }}>
-                {stats.total} users
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              backgroundColor: '#c9a84c',
-              color: '#080808',
-              border: 'none',
-              borderRadius: '6px',
-              fontFamily: 'DM Sans, sans-serif',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}
-          >
-            <UserPlus size={16} />
-            Add User
+    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '20px 16px 60px', background: t.navy900, minHeight: '100vh' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        :root {
+          --navy-900:#0F172A; --navy-800:#162035; --navy-700:#1E2D4A;
+          --gold:#C89128; --gold-dim:rgba(200,145,40,0.12);
+          --cream:#F8F8F9; --slate:#94A3B8; --border:rgba(200,145,40,0.18);
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes shimmer { 0%,100%{opacity:.5} 50%{opacity:.9} }
+        .um-btn { transition: filter .15s, transform .15s; }
+        .um-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+        .um-btn:active { transform: scale(.97); }
+        .um-row { transition: background .18s; border-bottom: 1px solid rgba(200,145,40,0.08); }
+        .um-row:hover { background: var(--gold-dim); }
+        .um-row:last-child { border-bottom: none; }
+        .um-input:focus { border-color: var(--gold) !important; }
+        .um-select option { background: #1E2D4A; color: #F8F8F9; }
+        .section-tag {
+          display:inline-flex; align-items:center; gap:6px;
+          font-size:10px; font-weight:700; letter-spacing:.22em;
+          text-transform:uppercase; color:var(--gold);
+          background:var(--gold-dim); padding:4px 12px;
+          border:1px solid var(--border); font-family:'Jost',sans-serif;
+        }
+
+        /* ── Mobile overrides ── */
+        @media (max-width: 640px) {
+          .um-stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+          .um-filters { flex-direction: column !important; }
+          .um-filters > * { width: 100% !important; }
+          .um-user-row { flex-direction: column !important; gap: 14px !important; align-items: flex-start !important; }
+          .um-user-actions { width: 100% !important; flex-wrap: wrap !important; }
+          .um-user-meta { text-align: left !important; }
+          .um-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+          .um-form-grid { grid-template-columns: 1fr !important; }
+          .um-modal-inner { padding: 20px 16px !important; }
+        }
+        @media (max-width: 400px) {
+          .um-stats-grid { grid-template-columns: 1fr 1fr !important; }
+        }
+      `}</style>
+
+      {/* ── Page Header ── */}
+      <div className="um-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div className="section-tag" style={{ marginBottom: 10 }}>Admin Panel</div>
+          <h1 style={{ ...serif, fontSize: 'clamp(20px,3vw,30px)', color: t.cream, margin: '0 0 4px' }}>User Management</h1>
+          <p style={{ ...body, fontSize: 13, color: t.slate, margin: 0 }}>
+            {stats ? `${stats.total} users in system` : 'Manage users and their roles'}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={loadUsers} className="um-btn" style={{ ...body, display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', background: t.goldDim, border: `1px solid ${t.border}`, color: t.gold, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            <RefreshCw size={14} /> Refresh
+          </button>
+          <button onClick={openCreate} className="um-btn" style={{ ...body, display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', background: t.gold, border: 'none', color: t.navy900, borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: '0.04em' }}>
+            <UserPlus size={15} /> Add User
           </button>
         </div>
-        <p style={{ color: '#7a7060', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
-          Manage system users and their roles
-        </p>
       </div>
 
-      {/* User Stats */}
+      {/* ── Stats Grid ── */}
       {stats && (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-          gap: '20px', 
-          marginBottom: '32px' 
-        }}>
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(201, 168, 76, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#e8e4dc', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.total}
+        <div className="um-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 12, marginBottom: 24 }}>
+          {statCards.map(({ label, value, color }) => (
+            <div key={label} style={{ ...card, padding: '16px 14px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: color }} />
+              <div style={{ ...serif, fontSize: 22, color, lineHeight: 1, marginBottom: 5 }}>{value}</div>
+              <div style={{ ...body, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.slate }}>{label}</div>
             </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Total Users
-            </div>
-          </div>
-
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(16, 185, 129, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#10b981', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.active}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Active
-            </div>
-          </div>
-
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(139, 92, 246, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#8b5cf6', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.admins}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Admins
-            </div>
-          </div>
-
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(201, 168, 76, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#c9a84c', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.agents}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Agents
-            </div>
-          </div>
-
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(59, 130, 246, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#3b82f6', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.landlords}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Landlords
-            </div>
-          </div>
-
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(16, 185, 129, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#10b981', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.tenants}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Tenants
-            </div>
-          </div>
-
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(245, 158, 11, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#f59e0b', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.newThisMonth}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              New This Month
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
-      {/* Filters */}
-      <div style={{
-        backgroundColor: '#0e0e0e',
-        border: '1px solid rgba(201, 168, 76, 0.12)',
-        borderRadius: '8px',
-        padding: '20px',
-        marginBottom: '32px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '250px' }}>
-            <Search size={18} style={{ color: '#7a7060' }} />
+      {/* ── Filters ── */}
+      <div style={{ ...card, marginBottom: 20 }}>
+        <div className="um-filters" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: t.slate }} />
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search by name or email…"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#e8e4dc',
-                borderRadius: '4px',
-                fontFamily: 'DM Sans, sans-serif',
-                fontSize: '14px',
-                outline: 'none'
-              }}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="um-input"
+              style={{ ...inp, paddingLeft: 36 }}
             />
           </div>
-          
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#e8e4dc',
-              borderRadius: '4px',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-          >
+          <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="um-select um-input" style={{ ...inp, width: 'auto', minWidth: 130 }}>
             <option value="all">All Roles</option>
             <option value="admin">Admin</option>
             <option value="agent">Agent</option>
             <option value="landlord">Landlord</option>
             <option value="tenant">Tenant</option>
           </select>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#e8e4dc',
-              borderRadius: '4px',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-          >
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="um-select um-input" style={{ ...inp, width: 'auto', minWidth: 130 }}>
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
@@ -562,582 +303,199 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Users List */}
-      <div style={{
-        backgroundColor: '#0e0e0e',
-        border: '1px solid rgba(201, 168, 76, 0.12)',
-        borderRadius: '8px',
-        padding: '24px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <h3 style={{ color: '#e8e4dc', fontSize: '18px', fontWeight: '500', margin: 0 }}>
-            Users List
-          </h3>
-          <span style={{ color: '#7a7060', fontSize: '14px', fontFamily: 'DM Sans, sans-serif' }}>
-            {filteredUsers.length} users
-          </span>
+      {/* ── Users List ── */}
+      <div style={{ ...card, padding: 0, overflow: 'hidden', position: 'relative' }}>
+        <div style={{ height: 2, background: t.gold }} />
+        <div style={{ padding: '18px 20px', borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ ...serif, fontSize: 18, color: t.cream, margin: 0 }}>Users</h2>
+          <span style={{ ...body, fontSize: 12, color: t.slate }}>{users.length} result{users.length !== 1 ? 's' : ''}</span>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {filteredUsers.map((user) => (
-            <div key={user.id} style={{
-              padding: '20px',
-              backgroundColor: 'transparent',
-              border: '1px solid rgba(201, 168, 76, 0.06)',
-              borderRadius: '8px',
-              transition: 'all 0.2s'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ 
-                    width: '50px', 
-                    height: '50px', 
-                    borderRadius: '50%',
-                    backgroundColor: 'rgba(201, 168, 76, 0.1)',
-                    border: '1px solid rgba(201, 168, 76, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Users size={20} style={{ color: '#c9a84c' }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ color: '#e8e4dc', fontSize: '16px', fontFamily: 'DM Sans, sans-serif', fontWeight: '500', margin: '0 0 4px' }}>
-                      {user.firstName} {user.lastName}
-                    </h4>
-                    <div style={{ color: '#7a7060', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                      {user.email}
+        {loading ? (
+          <div style={{ padding: '48px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, color: t.slate }}>
+            <div style={{ width: 36, height: 36, border: `3px solid ${t.border}`, borderTop: `3px solid ${t.gold}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            <span style={{ ...body, fontSize: 13 }}>Loading users…</span>
+          </div>
+        ) : users.length === 0 ? (
+          <div style={{ padding: '56px 20px', textAlign: 'center', color: t.slate }}>
+            <Users size={40} style={{ color: t.gold, opacity: 0.35, marginBottom: 14, display: 'block', margin: '0 auto 14px' }} />
+            <div style={{ ...body, fontSize: 15, fontWeight: 600, color: t.cream, marginBottom: 4 }}>No users found</div>
+            <div style={{ ...body, fontSize: 13 }}>Try adjusting your filters or add a new user.</div>
+          </div>
+        ) : (
+          <div>
+            {users.map(user => (
+              <div key={user.id} className="um-row" style={{ padding: '16px 20px' }}>
+                <div className="um-user-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+
+                  {/* Avatar + info */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: t.goldDim, border: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ ...serif, fontSize: 16, color: t.gold }}>
+                        {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                      </span>
                     </div>
-                    <div style={{ color: '#7a7060', fontSize: '13px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                      {user.phone}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{
-                        padding: '4px 8px',
-                        backgroundColor: `${getRoleColor(user.role)}15`,
-                        border: `1px solid ${getRoleColor(user.role)}30`,
-                        color: getRoleColor(user.role),
-                        borderRadius: '999px',
-                        fontSize: '11px',
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontWeight: '500',
-                        textTransform: 'capitalize'
-                      }}>
-                        {user.role}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ ...body, fontSize: 14, fontWeight: 700, color: t.cream, marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {user.firstName} {user.lastName}
                       </div>
-                      <div style={{
-                        padding: '4px 8px',
-                        backgroundColor: `${getStatusColor(user.status)}15`,
-                        border: `1px solid ${getStatusColor(user.status)}30`,
-                        color: getStatusColor(user.status),
-                        borderRadius: '999px',
-                        fontSize: '11px',
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontWeight: '500',
-                        textTransform: 'capitalize'
-                      }}>
-                        {user.status}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 12, color: t.slate, marginBottom: 4, flexWrap: 'wrap' }}>
+                        <Mail size={10} style={{ flexShrink: 0 }} /> {user.email}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 12, color: t.slate, marginBottom: 7, flexWrap: 'wrap' }}>
+                        <Phone size={10} style={{ flexShrink: 0 }} /> {user.phone || '—'}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <Pill label={user.role}   color={roleColor(user.role)} />
+                        <Pill label={user.status} color={statusColor(user.status)} />
+                        {user.emailVerified   && <Pill label="Email ✓"   color={t.green} />}
+                        {user.phoneVerified   && <Pill label="Phone ✓"   color={t.green} />}
                       </div>
                     </div>
                   </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ color: '#7a7060', fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>
-                      Properties: {user.propertiesCount} | Transactions: {user.transactionsCount}
+
+                  {/* Meta + actions */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
+                    <div className="um-user-meta" style={{ ...body, fontSize: 11, color: t.slate, textAlign: 'right', lineHeight: 1.7 }}>
+                      <div>Props: {user.propertiesCount} · Txns: {user.transactionsCount}</div>
+                      <div>Last login: {formatDate(user.lastLogin)}</div>
+                      <div>Joined: {formatDate(user.registrationDate)}</div>
                     </div>
-                    <div style={{ color: '#7a7060', fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>
-                      Last login: {formatDate(user.lastLogin)}
+                    <div className="um-user-actions" style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+                      <Btn color={t.gold} onClick={() => openEdit(user)}>
+                        <Edit size={12} /> Edit
+                      </Btn>
+                      {user.status === 'active' ? (
+                        <Btn color={t.red} onClick={() => handleStatus(user.id, 'suspended')}>
+                          <Ban size={12} /> Suspend
+                        </Btn>
+                      ) : (
+                        <Btn color={t.green} onClick={() => handleStatus(user.id, 'active')}>
+                          <CheckCircle size={12} /> Activate
+                        </Btn>
+                      )}
+                      <Btn color={t.red} onClick={() => handleDelete(user.id)}>
+                        <Trash2 size={12} />
+                      </Btn>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                      {user.emailVerified && (
-                        <CheckCircle size={12} style={{ color: '#10b981' }} title="Email verified" />
-                      )}
-                      {user.phoneVerified && (
-                        <CheckCircle size={12} style={{ color: '#10b981' }} title="Phone verified" />
-                      )}
-                      {user.profileCompleted && (
-                        <CheckCircle size={12} style={{ color: '#10b981' }} title="Profile completed" />
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button
-                      onClick={() => handleEdit(user)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 16px',
-                        backgroundColor: 'rgba(201, 168, 76, 0.1)',
-                        border: '1px solid rgba(201, 168, 76, 0.2)',
-                        color: '#c9a84c',
-                        borderRadius: '4px',
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Edit size={14} />
-                      Edit
-                    </button>
-                    
-                    {user.status === 'active' ? (
-                      <button
-                        onClick={() => handleStatusChange(user.id, 'suspended')}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 16px',
-                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                          border: '1px solid rgba(239, 68, 68, 0.2)',
-                          color: '#ef4444',
-                          borderRadius: '4px',
-                          fontFamily: 'DM Sans, sans-serif',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Ban size={14} />
-                        Suspend
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleStatusChange(user.id, 'active')}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 16px',
-                          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                          border: '1px solid rgba(16, 185, 129, 0.2)',
-                          color: '#10b981',
-                          borderRadius: '4px',
-                          fontFamily: 'DM Sans, sans-serif',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <CheckCircle size={14} />
-                        Activate
-                      </button>
-                    )}
-                    
-                    <button
-                      onClick={() => handleDelete(user.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 16px',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        border: '1px solid rgba(239, 68, 68, 0.2)',
-                        color: '#ef4444',
-                        borderRadius: '4px',
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Trash2 size={14} />
-                      Delete
-                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredUsers.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <Users size={48} style={{ color: '#7a7060', marginBottom: '16px' }} />
-            <h3 style={{ color: '#e8e4dc', fontSize: '18px', marginBottom: '8px' }}>No users found</h3>
-            <p style={{ color: '#7a7060', fontFamily: 'DM Sans, sans-serif' }}>
-              Try adjusting your filters or add a new user
-            </p>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Create/Edit User Modal */}
-      {(showCreateModal || showEditModal) && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(201, 168, 76, 0.12)',
-            borderRadius: '12px',
-            padding: '32px',
-            width: '90%',
-            maxWidth: '500px',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <h3 style={{ color: '#e8e4dc', fontSize: '20px', fontFamily: 'DM Sans, sans-serif', fontWeight: '500', margin: 0 }}>
-                {showEditModal ? 'Edit User' : 'Add New User'}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setShowEditModal(false);
-                  setSelectedUser(null);
-                  setFormData({
-                    firstName: '',
-                    lastName: '',
-                    email: '',
-                    phone: '',
-                    role: 'tenant',
-                    status: 'active',
-                    password: '',
-                    confirmPassword: '',
-                    notes: ''
-                  });
-                  setFormErrors({});
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  color: '#e8e4dc',
-                  cursor: 'pointer'
-                }}
-              >
-                <X size={16} />
+      {/* ── Create / Edit Modal ── */}
+      {showModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.92)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={e => { if (e.target === e.currentTarget) closeModal(); }}
+        >
+          <div className="um-modal-inner" style={{ ...card, maxWidth: 520, width: '100%', maxHeight: '90vh', overflowY: 'auto', position: 'relative', padding: '28px 26px' }}>
+            {/* Gold top accent */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: t.gold, borderRadius: '12px 12px 0 0' }} />
+
+            {/* Modal header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+              <div>
+                <div className="section-tag" style={{ marginBottom: 8 }}>{editMode ? 'Edit User' : 'New User'}</div>
+                <h2 style={{ ...serif, fontSize: 20, color: t.cream, margin: 0 }}>
+                  {editMode ? `Edit ${selectedUser?.firstName}` : 'Add New User'}
+                </h2>
+              </div>
+              <button onClick={closeModal} style={{ background: 'none', border: 'none', color: t.slate, cursor: 'pointer', display: 'flex', padding: 6, borderRadius: 6 }}>
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={showEditModal ? handleUpdate : handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div>
-                    <label style={{ color: '#e8e4dc', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                      First Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '10px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#e8e4dc',
-                        borderRadius: '4px',
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
-                    />
-                    {formErrors.firstName && (
-                      <div style={{ color: '#ef4444', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                        {formErrors.firstName}
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label style={{ color: '#e8e4dc', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                      Last Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '10px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#e8e4dc',
-                        borderRadius: '4px',
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
-                    />
-                    {formErrors.lastName && (
-                      <div style={{ color: '#ef4444', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                        {formErrors.lastName}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Name row */}
+              <div className="um-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div>
-                  <label style={{ color: '#e8e4dc', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: '#e8e4dc',
-                      borderRadius: '4px',
-                      fontFamily: 'DM Sans, sans-serif',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                  {formErrors.email && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                      {formErrors.email}
-                    </div>
-                  )}
+                  <label style={{ ...body, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.slate, display: 'block', marginBottom: 6 }}>First Name *</label>
+                  <input type="text" value={formData.firstName} onChange={f('firstName')} className="um-input" style={inp} placeholder="John" />
+                  {formErrors.firstName && <div style={{ ...body, fontSize: 11, color: t.red, marginTop: 4 }}>{formErrors.firstName}</div>}
                 </div>
-
                 <div>
-                  <label style={{ color: '#e8e4dc', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: '#e8e4dc',
-                      borderRadius: '4px',
-                      fontFamily: 'DM Sans, sans-serif',
-                      fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                  {formErrors.phone && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                      {formErrors.phone}
-                    </div>
-                  )}
+                  <label style={{ ...body, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.slate, display: 'block', marginBottom: 6 }}>Last Name *</label>
+                  <input type="text" value={formData.lastName} onChange={f('lastName')} className="um-input" style={inp} placeholder="Doe" />
+                  {formErrors.lastName && <div style={{ ...body, fontSize: 11, color: t.red, marginTop: 4 }}>{formErrors.lastName}</div>}
                 </div>
+              </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div>
-                    <label style={{ color: '#e8e4dc', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                      Role
-                    </label>
-                    <select
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                      style={{
-                        width: '100%',
-                        padding: '10px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#e8e4dc',
-                        borderRadius: '4px',
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
-                    >
-                      <option value="tenant">Tenant</option>
-                      <option value="landlord">Landlord</option>
-                      <option value="agent">Agent</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
+              {/* Email */}
+              <div>
+                <label style={{ ...body, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.slate, display: 'block', marginBottom: 6 }}>Email *</label>
+                <input type="email" value={formData.email} onChange={f('email')} className="um-input" style={inp} placeholder="john@example.com" />
+                {formErrors.email && <div style={{ ...body, fontSize: 11, color: t.red, marginTop: 4 }}>{formErrors.email}</div>}
+              </div>
 
-                  <div>
-                    <label style={{ color: '#e8e4dc', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                      Status
-                    </label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                      style={{
-                        width: '100%',
-                        padding: '10px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#e8e4dc',
-                        borderRadius: '4px',
-                        fontFamily: 'DM Sans, sans-serif',
-                        fontSize: '14px',
-                        outline: 'none'
-                      }}
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="suspended">Suspended</option>
-                    </select>
-                  </div>
-                </div>
+              {/* Phone */}
+              <div>
+                <label style={{ ...body, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.slate, display: 'block', marginBottom: 6 }}>Phone *</label>
+                <input type="tel" value={formData.phone} onChange={f('phone')} className="um-input" style={inp} placeholder="+255 712 345 678" />
+                {formErrors.phone && <div style={{ ...body, fontSize: 11, color: t.red, marginTop: 4 }}>{formErrors.phone}</div>}
+              </div>
 
-                {(showCreateModal || (showEditModal && !selectedUser)) && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div>
-                      <label style={{ color: '#e8e4dc', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                        Password
-                      </label>
-                      <input
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          color: '#e8e4dc',
-                          borderRadius: '4px',
-                          fontFamily: 'DM Sans, sans-serif',
-                          fontSize: '14px',
-                          outline: 'none'
-                        }}
-                      />
-                      {formErrors.password && (
-                        <div style={{ color: '#ef4444', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                          {formErrors.password}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label style={{ color: '#e8e4dc', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                        Confirm Password
-                      </label>
-                      <input
-                        type="password"
-                        value={formData.confirmPassword}
-                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          color: '#e8e4dc',
-                          borderRadius: '4px',
-                          fontFamily: 'DM Sans, sans-serif',
-                          fontSize: '14px',
-                          outline: 'none'
-                        }}
-                      />
-                      {formErrors.confirmPassword && (
-                        <div style={{ color: '#ef4444', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                          {formErrors.confirmPassword}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
+              {/* Role + Status */}
+              <div className="um-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div>
-                  <label style={{ color: '#e8e4dc', fontSize: '14px', fontFamily: 'DM Sans, sans-serif', marginBottom: '8px' }}>
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: '#e8e4dc',
-                      borderRadius: '4px',
-                      fontFamily: 'DM Sans, sans-serif',
-                      fontSize: '14px',
-                      outline: 'none',
-                      resize: 'vertical'
-                    }}
-                  />
+                  <label style={{ ...body, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.slate, display: 'block', marginBottom: 6 }}>Role</label>
+                  <select value={formData.role} onChange={f('role')} className="um-select um-input" style={inp}>
+                    <option value="tenant">Tenant</option>
+                    <option value="landlord">Landlord</option>
+                    <option value="agent">Agent</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
+                <div>
+                  <label style={{ ...body, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.slate, display: 'block', marginBottom: 6 }}>Status</label>
+                  <select value={formData.status} onChange={f('status')} className="um-select um-input" style={inp}>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+              </div>
 
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setShowEditModal(false);
-                      setSelectedUser(null);
-                      setFormData({
-                        firstName: '',
-                        lastName: '',
-                        email: '',
-                        phone: '',
-                        role: 'tenant',
-                        status: 'active',
-                        password: '',
-                        confirmPassword: '',
-                        notes: ''
-                      });
-                      setFormErrors({});
-                    }}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: 'transparent',
-                      border: '1px solid rgba(201, 168, 76, 0.2)',
-                      color: '#7a7060',
-                      borderRadius: '4px',
-                      fontFamily: 'DM Sans, sans-serif',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      padding: '10px 20px',
-                      backgroundColor: '#c9a84c',
-                      color: '#080808',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontFamily: 'DM Sans, sans-serif',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: loading ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    {loading ? 'Saving...' : (showEditModal ? 'Update' : 'Create') }
-                  </button>
+              {/* Password — always shown on create, optional on edit */}
+              <div className="um-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div>
+                  <label style={{ ...body, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.slate, display: 'block', marginBottom: 6 }}>
+                    Password {editMode ? '(leave blank to keep)' : '*'}
+                  </label>
+                  <input type="password" value={formData.password} onChange={f('password')} className="um-input" style={inp} placeholder={editMode ? '••••••••' : 'Min 8 chars'} />
+                  {formErrors.password && <div style={{ ...body, fontSize: 11, color: t.red, marginTop: 4 }}>{formErrors.password}</div>}
                 </div>
+                <div>
+                  <label style={{ ...body, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.slate, display: 'block', marginBottom: 6 }}>
+                    Confirm {editMode ? '' : '*'}
+                  </label>
+                  <input type="password" value={formData.confirmPassword} onChange={f('confirmPassword')} className="um-input" style={inp} placeholder="••••••••" />
+                  {formErrors.confirmPassword && <div style={{ ...body, fontSize: 11, color: t.red, marginTop: 4 }}>{formErrors.confirmPassword}</div>}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label style={{ ...body, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.slate, display: 'block', marginBottom: 6 }}>Notes (optional)</label>
+                <textarea value={formData.notes} onChange={f('notes')} rows={3} className="um-input" style={{ ...inp, resize: 'vertical' }} placeholder="Internal admin notes…" />
+              </div>
+
+              {/* Footer buttons */}
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 6 }}>
+                <button type="button" onClick={closeModal} style={{ ...body, padding: '10px 20px', background: 'transparent', border: `1px solid ${t.border}`, color: t.slate, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={saving} className="um-btn" style={{ ...body, padding: '10px 22px', background: t.gold, border: 'none', color: t.navy900, borderRadius: 6, fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                  {saving ? 'Saving…' : editMode ? 'Update User' : 'Create User'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };

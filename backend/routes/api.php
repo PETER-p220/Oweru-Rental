@@ -31,6 +31,9 @@ Route::get('/public/properties',            [PropertyController::class, 'publicI
 Route::get('/public/properties/{property}', [PropertyController::class, 'publicShow']);
 Route::get('/public/bnb',                   [PropertyController::class, 'publicBnbIndex']);
 
+// Public lead creation (property contact forms)
+Route::post('/public/properties/{property}/leads', [AgentController::class, 'createLead']);
+
 // Public BNB routes — MUST be outside auth middleware
 Route::get('/public/bnb/search',                          [BnbPropertyController::class, 'search']);
 Route::get('/public/bnb/properties/{property}',           [BnbPropertyController::class, 'show']);
@@ -186,6 +189,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Leads
         Route::get('/agent/leads',      [AgentController::class, 'getLeads']);
         Route::get('/agent/lead-stats', [AgentController::class, 'getLeadStats']);
+        Route::post('/agent/leads',     [AgentController::class, 'createLead']);
+        Route::patch('/agent/leads/{lead}', [AgentController::class, 'updateLeadStatus']);
 
         // Applications
         Route::get('/agent/applications',                      [AgentController::class, 'getApplications']);

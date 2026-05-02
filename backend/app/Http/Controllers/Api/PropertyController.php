@@ -75,7 +75,7 @@ class PropertyController extends Controller
         if ($request->get('admin_only') === 'true') {
             $query->where(function ($q) {
                 $q->where('type', 'oweru_rental')
-                  ->orWhereIn('type', ['Master-bedroom', 'Single-room', 'house', 'villa', 'apartment'])
+                  ->orWhereIn('type', ['Master-bedroom', 'Single-room', 'house'])
                    ->whereHas('owner', function ($ownerQuery) {
                        $ownerQuery->where('userType', 'admin');
                    });

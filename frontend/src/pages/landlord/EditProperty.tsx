@@ -421,11 +421,9 @@ const EditProperty = () => {
                       fontSize: '14px'
                     }}
                   >
-                    <option value="apartment">Apartment</option>
+                    <option value="Master-bedroom">Master-bedroom</option>
                     <option value="house">House</option>
-                    <option value="villa">Villa</option>
-                    <option value="studio">Studio</option>
-                    <option value="commercial">Commercial</option>
+                    <option value="Single-room">Single-room</option>
                   </select>
                 </div>
 
