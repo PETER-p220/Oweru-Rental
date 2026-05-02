@@ -94,7 +94,7 @@ class OwnerController extends Controller
             'area'        => 'required|integer|min:0',
             'agent_id'    => 'sometimes|exists:users,id',
             'images'      => 'sometimes|array',
-            'images.*'    => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images.*'    => 'image|mimes:jpeg,png,jpg,gif|max:5048',
         ]);
 
         if ($validator->fails()) {

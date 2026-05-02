@@ -73,7 +73,7 @@ class AgentController extends Controller
             'area'        => 'required|integer|min:0',
             'owner_id'    => 'required|exists:users,id',
             'images'      => 'sometimes|array',
-            'images.*'    => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images.*'    => 'image|mimes:jpeg,png,jpg,gif|max:5048',
             'landlord_name'  => 'sometimes|string|max:255', // Optional landlord info for agent reference
             'landlord_phone' => 'sometimes|string|max:20',  // Optional landlord phone for agent reference
         ]);

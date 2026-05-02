@@ -61,7 +61,7 @@ class PropertyController extends Controller
         // ── Source filters sent by Properties.tsx ──────────────────────────
         // sourceFilter='agent'    → has_agent=true
         // sourceFilter='landlord' → no_agent=true
-        // sourceFilter='admin'    → type=oweru_rental (already handled above via type filter)
+        // sourceFilter='admin'    → properties created by admin users
         // sourceFilter='all'      → no extra params — show everything
         if ($request->get('has_agent') === 'true') {
             $query->whereNotNull('agent_id');
@@ -69,6 +69,17 @@ class PropertyController extends Controller
 
         if ($request->get('no_agent') === 'true') {
             $query->whereNull('agent_id');
+        }
+
+        // Admin filter: show properties created by admin users
+        if ($request->get('admin_only') === 'true') {
+            $query->where(function ($q) {
+                $q->where('type', 'oweru_rental')
+                  ->orWhereIn('type', ['Master-bedroom', 'Single-room', 'house', 'villa', 'apartment'])
+                   ->whereHas('owner', function ($ownerQuery) {
+                       $ownerQuery->where('userType', 'admin');
+                   });
+            });
         }
 
         // Allow frontend to request more items per page (capped at 100)
