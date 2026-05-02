@@ -234,13 +234,25 @@ const Home = () => {
         fetch(`${API_BASE}/api/public/properties?type=oweru_rental&per_page=12`, { headers: { Accept: 'application/json' } })
       ]);
 
-      // Process all properties
-      const allPropsList: any[] = allPropsRes.ok ? 
-        (await allPropsRes.json())?.data?.data ?? (await allPropsRes.json())?.data ?? (Array.isArray(await allPropsRes.json()) ? await allPropsRes.json() : []) : [];
+      // Process all properties - read each response only once
+      let allPropsList: any[] = [];
+      let bnbList: any[] = [];
+      let oweruList: any[] = [];
+
+      if (allPropsRes.ok) {
+        const allPropsData = await allPropsRes.json();
+        allPropsList = allPropsData?.data?.data ?? allPropsData?.data ?? (Array.isArray(allPropsData) ? allPropsData : []);
+      }
       
-      const bnbList: any[] = bnbRes.ok ? (Array.isArray((await bnbRes.json())?.data) ? (await bnbRes.json()).data : []) : [];
+      if (bnbRes.ok) {
+        const bnbData = await bnbRes.json();
+        bnbList = Array.isArray(bnbData?.data) ? bnbData.data : [];
+      }
       
-      const oweruList: any[] = oweruRes.ok ? (Array.isArray((await oweruRes.json())?.data) ? (await oweruRes.json()).data : []) : [];
+      if (oweruRes.ok) {
+        const oweruData = await oweruRes.json();
+        oweruList = Array.isArray(oweruData?.data) ? oweruData.data : [];
+      }
       
       setAllProperties(allPropsList);
       setBnbProperties(bnbList);
