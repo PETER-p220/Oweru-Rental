@@ -196,11 +196,11 @@ const AdminDashboard = () => {
       }
     }
     
-    // If less than 1000, use regular formatting
-    return new Intl.NumberFormat('en-TZ', {
-      style: 'currency', currency: 'TZS',
+    // If less than 1000, use regular number formatting with TZS prefix
+    const formatted = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(n);
+    return `TZS ${formatted}`;
   };
 
   const getActivityIcon = (type: string) =>
