@@ -145,18 +145,6 @@ const PropertyDetail = () => {
   const amenities = getAmenities(property);
   const images    = property?.images?.length > 0 ? property.images : [null];
 
-  const shareProperty = async () => {
-    if (!property) return;
-    const url = `${window.location.origin}/property/${property.id}`;
-    if (navigator.share) {
-      try { await navigator.share({ title: property.title, text: property.location, url }); } catch {}
-    } else {
-      navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   const handleToggleSave = async () => {
     if (!property) return;
     try {
@@ -369,13 +357,7 @@ const PropertyDetail = () => {
                       </>
                     )}
 
-                    {/* Share button */}
-                    <div style={{ position: 'absolute', top: 14, right: 14 }}>
-                      <button className="pd-icon-btn" onClick={shareProperty} title={copied ? 'Copied!' : 'Share'} style={{ border: 'none' }}>
-                        <Share2 size={14} style={{ color: copied ? t.green : t.cream }} />
-                      </button>
-                    </div>
-
+                   
                     {/* Featured badge */}
                     {property.featured && (
                       <div style={{ position: 'absolute', top: 14, left: 14, background: t.gold, color: t.navy900, padding: '4px 10px', borderRadius: 4, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
