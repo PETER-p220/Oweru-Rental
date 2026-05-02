@@ -267,7 +267,7 @@ const LandlordDashboard = () => {
             properties.map((property) => (
               <div key={property.id} className="ld-item">
                 {property.images?.[0] ? (
-                  <img className="ld-thumb" src={imageUrl(property.images[0])} alt={property.title || 'Property'} />
+                  <img className="ld-thumb" src={imageUrl(property.images[0])} alt={property.title || 'Property'} loading="lazy" decoding="async" />
                 ) : (
                   <div className="ld-thumb" />
                 )}

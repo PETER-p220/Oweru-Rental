@@ -687,6 +687,8 @@ const EditProperty = () => {
                           height: '120px',
                           objectFit: 'cover'
                         }}
+                        loading="lazy"
+                        decoding="async"
                       />
                       <button
                         onClick={() => removeImage(index)}

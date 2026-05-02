@@ -703,7 +703,7 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
   return (
     <Link to={`/property/${property.id}`} className="pc">
       <div className="pc-img-wrap">
-        <img src={getImage(property)} alt={property.title} className="pc-img" />
+        <img src={getImage(property)} alt={property.title} className="pc-img" loading="lazy" decoding="async" />
         <div className="pc-img-overlay" />
         {property.featured && <div className="pc-badge-featured">Featured</div>}
         {property.type && (

@@ -340,7 +340,8 @@ const PropertyDetail = () => {
                       src={getPropertyImageUrl(property, selectedImg)}
                       alt={property.title}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity .3s' }}
-                      onError={e => { (e.currentTarget as HTMLImageElement).src = getPropertyImageUrl(property, 0); }}
+                      loading="lazy"
+                      decoding="async"
                     />
                     {/* Bottom gradient */}
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,.65) 0%, transparent 50%)' }} />
@@ -388,6 +389,8 @@ const PropertyDetail = () => {
                             src={getPropertyImageUrl(property, i)}
                             alt={`View ${i + 1}`}
                             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            loading="lazy"
+                            decoding="async"
                           />
                         </div>
                       ))}

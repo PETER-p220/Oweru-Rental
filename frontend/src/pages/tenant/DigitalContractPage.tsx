@@ -420,6 +420,13 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
               >
                 <Download size={12} /> Pakua
               </button>
+              <img
+                src={contract.tenant_signature}
+                alt="Tenant Signature"
+                style={{ marginTop: 10, maxHeight: 60, border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, background: 'rgba(255,255,255,0.03)', padding: 4 }}
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           )}
 
@@ -536,11 +543,13 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
                       border: `1px solid ${B.gold}35`, borderRadius: 8,
                       background: 'rgba(255,255,255,0.03)', padding: '8px 12px',
                     }}>
-                      <img
-                        src={signatureDataUrl}
-                        alt="Sahihi yako"
-                        style={{ display: 'block', maxHeight: 70, maxWidth: 260 }}
-                      />
+              <img
+                src={signatureDataUrl}
+                alt="Sahihi yako"
+                style={{ display: 'block', maxHeight: 70, maxWidth: 260 }}
+                loading="lazy"
+                decoding="async"
+              />
                     </div>
                     {!isReadOnly && (
                       <button

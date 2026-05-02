@@ -215,7 +215,7 @@ const SavedProperties = () => {
               <div key={id} className="sp-card">
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                   <div style={{ width: 88, height: 66, overflow: 'hidden', flexShrink: 0, border: `1px solid ${B.borderF}` }}>
-                    <img src={getImage(property)} alt={property?.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={getImage(property)} alt={property?.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" />
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: B.cream, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -249,7 +249,7 @@ const SavedProperties = () => {
           <div className="sp-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}>
             <div className="sp-modal">
               <div style={{ position: 'relative', height: 'clamp(200px, 40vh, 340px)', background: B.navy900, flexShrink: 0 }}>
-                <img src={images[activeImageIndex]} alt={selectedProperty.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={images[activeImageIndex]} alt={selectedProperty.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" />
                 <button className="sp-modal-close" onClick={() => setShowModal(false)}><X size={16} /></button>
                 {images.length > 1 && (
                   <>

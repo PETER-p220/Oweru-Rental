@@ -926,7 +926,7 @@ const AddProperty = () => {
                 <div className="ap-images">
                   {formData.images.map((imageFile, index) => (
                     <div key={index} className="ap-image-item">
-                      <img src={imageFile.preview} alt={`Property ${index + 1}`} className="ap-image-preview" />
+                      <img src={imageFile.preview} alt={`Property ${index + 1}`} className="ap-image-preview" loading="lazy" decoding="async" />
                       <button
                         type="button"
                         className="ap-image-remove"

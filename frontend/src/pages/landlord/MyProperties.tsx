@@ -496,6 +496,8 @@ const MyProperties = () => {
                           key={index}
                           src={image.startsWith('http') ? image : `http://localhost:8000${image}`}
                           alt={`${property.title} - Image ${index + 1}`}
+                          loading="lazy"
+                          decoding="async"
                           style={{
                             width: '100%',
                             height: '200px',

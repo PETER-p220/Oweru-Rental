@@ -90,7 +90,7 @@ const StickyFilterNav = ({
     >
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         {/* Brand */}
-        <img src={logo} alt="OWERU" style={{ height: 20, flexShrink: 0 }} />
+        <img src={logo} alt="OWERU" style={{ height: 20, flexShrink: 0 }} loading="lazy" decoding="async" />
 
         {/* Filter pills */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -682,6 +682,7 @@ const Home = () => {
                     <div key={p.id} className="result-card">
                       <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                         <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 190 }}
+                          loading="lazy" decoding="async"
                           onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                         <div style={{ padding: 18 }}>
                           {p.type && <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: 5 }}>{p.type}</div>}
@@ -762,6 +763,7 @@ const Home = () => {
                   <div key={p.id} className="prop-card" style={{ borderRadius: 12 }}>
                     <Link to={`/property/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 200 }}
+                        loading="lazy" decoding="async"
                         onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                       <div style={{ padding: 20 }}>
                         <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 8 }}>{p.title}</div>
@@ -817,6 +819,7 @@ const Home = () => {
                 {bnbProperties.map((p: any) => (
                   <div key={p.id} className="bnb-card" style={{ borderRadius: 12 }}>
                     <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 220 }}
+                      loading="lazy" decoding="async"
                       onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                     <div style={{ padding: 20 }}>
                       <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--cream)', marginBottom: 10 }}>{p.title}</h3>
@@ -867,6 +870,7 @@ const Home = () => {
                   <div key={p.id} className="oweru-card" onClick={() => navigate(`/property/${p.id}`)} style={{ borderRadius: 12 }}>
                     <div style={{ position: 'relative', height: 210, overflow: 'hidden' }}>
                       <img className="prop-img" src={getImage(p)} alt={p.title} style={{ height: 210 }}
+                        loading="lazy" decoding="async"
                         onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }} />
                       <div style={{ position: 'absolute', top: 12, right: 12, background: 'var(--gold)', color: 'var(--navy-900)', padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>OWERU</div>
                     </div>
@@ -941,7 +945,7 @@ const Home = () => {
       ══════════════════════════════════════════ */}
       <footer style={{ background: 'var(--navy-900)', borderTop: '1px solid var(--border)', padding: '28px 0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <img src={LOGO} alt="OWERU" style={{ height: 22 }} />
+          <img src={LOGO} alt="OWERU" style={{ height: 22 }} loading="lazy" decoding="async" />
           <div style={{ color: 'var(--slate)', fontSize: 13 }}>&copy; 2026 Oweru. Tanzania.</div>
         </div>
       </footer>
