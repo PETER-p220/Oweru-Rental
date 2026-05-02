@@ -8,7 +8,6 @@ interface PropertyData {
   description: string;
   price: number;
   location: string;
-  address: string;
   bedrooms: number;
   bathrooms: number;
   area: number;
@@ -19,7 +18,6 @@ interface PropertyData {
   owner_id: number;
   landlord_name: string;
   landlord_phone: string;
-  amenities: string[];
 }
 
 const AddListing: React.FC = () => {
@@ -34,18 +32,16 @@ const AddListing: React.FC = () => {
     description: '',
     price: 0,
     location: '',
-    address: '',
     bedrooms: 1,
     bathrooms: 1,
-    area: 0,
+    area: 1,
     type: 'apartment',
     featured: false,
     available: true,
     images: [],
-    owner_id: 0,
+    owner_id: user?.id || 0,
     landlord_name: '',
-    landlord_phone: '',
-    amenities: []
+    landlord_phone: ''
   });
 
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
@@ -70,11 +66,9 @@ const AddListing: React.FC = () => {
   }, []);
 
   const propertyTypes = [
-    { value: 'apartment', label: 'Apartment' },
     { value: 'house', label: 'House' },
-    { value: 'villa', label: 'Villa' },
-    { value: 'studio', label: 'Studio' },
-    { value: 'commercial', label: 'Commercial' },
+    { value: 'villa', label: 'Master-bedroom' },
+    { value: 'condominium', label: 'Single room' }, 
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -124,10 +118,8 @@ const AddListing: React.FC = () => {
     if (!formData.description.trim()) return 'Description is required';
     if (!formData.price || formData.price <= 0) return 'Price must be greater than 0';
     if (!formData.location.trim()) return 'Location is required';
-    if (!formData.address.trim()) return 'Address is required';
     if (!formData.bedrooms || formData.bedrooms <= 0) return 'Bedrooms must be greater than 0';
     if (!formData.bathrooms || formData.bathrooms <= 0) return 'Bathrooms must be greater than 0';
-    if (!formData.area || formData.area <= 0) return 'Area must be greater than 0';
     return '';
   };
 
@@ -147,25 +139,17 @@ const AddListing: React.FC = () => {
       const formDataToSend = new FormData();
       
       Object.keys(formData).forEach(key => {
-        if (key !== 'images' && key !== 'amenities') {
-          if (key === 'featured' || key === 'available') {
-            formDataToSend.append(key, formData[key] ? '1' : '0');
-          } else {
-            formDataToSend.append(key, String(formData[key as keyof PropertyData]));
-          }
+        if (key !== 'images') {
+          formDataToSend.append(key, String(formData[key as keyof PropertyData]));
         }
       });
       
-      formDataToSend.append('amenities', JSON.stringify(formData.amenities));
-      
       uploadedImages.forEach((file, index) => {
-        formDataToSend.append(`images[]`, file);
+        formDataToSend.append(`images[${index}]`, file);
       });
 
       let response;
-      const userType = user?.user_type || user?.userType;
-      
-      if (userType === 'agent') {
+      if (user?.userType === 'agent') {
         console.log('🏠 Creating agent listing with data:', {
           ...Object.fromEntries(formDataToSend.entries()),
           owner_id: user?.id,
@@ -179,8 +163,7 @@ const AddListing: React.FC = () => {
       if (response.data) {
         setSuccess(true);
         setTimeout(() => {
-          const userType = user?.user_type || user?.userType;
-          if (userType === 'agent') {
+          if (user?.userType === 'agent') {
             navigate('/dashboard/agent/my-listings');
           } else {
             navigate('/dashboard/landlord/my-properties');
@@ -507,9 +490,9 @@ const AddListing: React.FC = () => {
 
       <div className="al-container">
         <div className="al-header">
-          <Link to={user?.user_type === 'agent' ? '/dashboard/agent/my-listings' : '/dashboard/landlord/my-properties'} className="al-back-link">
+          <Link to={user?.userType === 'agent' ? '/my-listings' : '/my-properties'} className="al-back-link">
             <ArrowLeft size={16} />
-            Back to {user?.user_type === 'agent' ? 'My Listings' : 'My Properties'}
+            Back to {user?.userType === 'agent' ? 'My Listings' : 'My Properties'}
           </Link>
           <h1 className="al-title">Add New Property</h1>
           <p className="al-subtitle">List your property for rent and reach potential tenants</p>
@@ -591,18 +574,6 @@ const AddListing: React.FC = () => {
                 />
               </div>
               <div className="al-form-group">
-                <label className="al-label">Address *</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="al-input"
-                  placeholder="e.g., 1234, Ali Hassan Mwinyi Road"
-                  required
-                />
-              </div>
-              <div className="al-form-group">
                 <label className="al-label">Monthly Rent (TZS) *</label>
                 <input
                   type="number"
@@ -649,64 +620,6 @@ const AddListing: React.FC = () => {
                   required
                 />
               </div>
-              <div className="al-form-group">
-                <label className="al-label">Area (sqm) *</label>
-                <input
-                  type="number"
-                  name="area"
-                  value={formData.area}
-                  onChange={handleInputChange}
-                  className="al-input"
-                  min="1"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Amenities */}
-          <div className="al-section">
-            <h2 className="al-section-title">
-              <Home size={20} />
-              Amenities
-            </h2>
-            <div className="al-grid al-grid-3">
-              {[
-                { value: 'Pool', label: 'Swimming Pool' },
-                { value: 'Gym', label: 'Gym/Fitness' },
-                { value: 'Parking', label: 'Parking' },
-                { value: 'Security', label: '24/7 Security' },
-                { value: 'Air Conditioning', label: 'Air Conditioning' },
-                { value: 'Laundry', label: 'Laundry' },
-                { value: 'Furnished', label: 'Furnished' },
-                { value: 'WiFi', label: 'WiFi/Internet' },
-                { value: 'Pet Friendly', label: 'Pet Friendly' },
-              ].map((amenity) => (
-                <div key={amenity.value} className="al-checkbox-group">
-                  <input
-                    type="checkbox"
-                    id={`amenity-${amenity.value}`}
-                    checked={formData.amenities.includes(amenity.value)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFormData(prev => ({
-                          ...prev,
-                          amenities: [...prev.amenities, amenity.value]
-                        }));
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          amenities: prev.amenities.filter(a => a !== amenity.value)
-                        }));
-                      }
-                    }}
-                    className="al-checkbox"
-                  />
-                  <label htmlFor={`amenity-${amenity.value}`} className="al-checkbox-label">
-                    {amenity.label}
-                  </label>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -933,7 +846,7 @@ const AddListing: React.FC = () => {
           {/* Actions */}
           <div className="al-actions">
             <Link 
-              to={user?.user_type === 'agent' ? '/dashboard/agent/my-listings' : '/dashboard/landlord/my-properties'} 
+              to={user?.userType === 'agent' ? '/my-listings' : '/my-properties'} 
               className="al-btn al-btn-secondary"
             >
               Cancel
