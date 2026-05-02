@@ -46,8 +46,8 @@ const AddProperty = () => {
 
   const propertyTypes = [
     { value: 'house', label: 'House', icon: Home },
-    { value: 'apartment', label: 'Masterbedroom', icon: Building },
-    { value: 'villa', label: 'Single room', icon: Home },
+    { value: 'Masterbedrom', label: 'Masterbedroom', icon: Building },
+    { value: 'Sinle-room', label: 'Single room', icon: Home },
   ];
 
   const commonAmenities = [

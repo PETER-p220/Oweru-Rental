@@ -67,8 +67,8 @@ const AddListing: React.FC = () => {
 
   const propertyTypes = [
     { value: 'house', label: 'House' },
-    { value: 'villa', label: 'Master-bedroom' },
-    { value: 'condominium', label: 'Single room' }, 
+    { value: 'Master-Bedroom', label: 'Master-bedroom' },
+    { value: 'Single-room', label: 'Single room' }, 
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
