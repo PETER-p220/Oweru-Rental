@@ -672,18 +672,7 @@ const AddListing: React.FC = () => {
                   required
                 />
               </div>
-              <div className="al-form-group">
-                <label className="al-label">Area (sq meters) *</label>
-                <input
-                  type="number"
-                  name="area"
-                  value={formData.area}
-                  onChange={handleInputChange}
-                  className="al-input"
-                  min="1"
-                  required
-                />
-              </div>
+             
             </div>
           </div>
 

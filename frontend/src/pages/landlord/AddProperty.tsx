@@ -45,11 +45,9 @@ const AddProperty = () => {
   });
 
   const propertyTypes = [
-    { value: 'apartment', label: 'Apartment', icon: Building },
     { value: 'house', label: 'House', icon: Home },
-    { value: 'studio', label: 'Studio', icon: Square },
-    { value: 'villa', label: 'Villa', icon: Home },
-    { value: 'commercial', label: 'Commercial', icon: Store },
+    { value: 'apartment', label: 'Masterbedroom', icon: Building },
+    { value: 'villa', label: 'Single room', icon: Home },
   ];
 
   const commonAmenities = [
@@ -166,15 +164,7 @@ const AddProperty = () => {
       formDataToSend.append('type', isOweruProperty ? 'oweru_rental' : formData.type);
       formDataToSend.append('bedrooms', formData.bedrooms.toString());
       formDataToSend.append('bathrooms', formData.bathrooms.toString());
-      formDataToSend.append('area', formData.area);
       formDataToSend.append('featured', formData.featured.toString());
-      
-      if (formData.latitude) {
-        formDataToSend.append('latitude', formData.latitude);
-      }
-      if (formData.longitude) {
-        formDataToSend.append('longitude', formData.longitude);
-      }
       
       // Add amenities as JSON
       formDataToSend.append('amenities', JSON.stringify(formData.amenities));
@@ -842,19 +832,6 @@ const AddProperty = () => {
                 />
               </div>
 
-              <div className="ap-form-group">
-                <label className="ap-label">Size (sq meters) *</label>
-                <input
-                  type="number"
-                  name="area"
-                  value={formData.area}
-                  onChange={handleInputChange}
-                  className="ap-input"
-                  placeholder="e.g., 85"
-                  min="0"
-                  required
-                />
-              </div>
 
               <div className="ap-form-group">
                 <label className="ap-label">Bedrooms & Bathrooms</label>
