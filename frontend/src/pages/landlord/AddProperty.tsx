@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  Home, MapPin, Square, Bed, Bath, DollarSign, Camera,
+  Home, MapPin, Bed, Bath, DollarSign, Camera,
   ChevronLeft, ChevronRight, Check, X, Plus, Trash2,
   Wifi, Car, Waves, Dumbbell, Coffee, Shield, Trees, ArrowLeft, ArrowRight, AlertCircle, Building, Store, Upload
 } from 'lucide-react';
@@ -24,7 +24,7 @@ const AddProperty = () => {
     // Step 1: Basic Info
     title: '',
     description: '',
-    type: 'apartment',
+    type: 'house',
     location: '',
     address: '',
     
@@ -46,8 +46,8 @@ const AddProperty = () => {
 
   const propertyTypes = [
     { value: 'house', label: 'House', icon: Home },
-    { value: 'Masterbedrom', label: 'Masterbedroom', icon: Building },
-    { value: 'Sinle-room', label: 'Single room', icon: Home },
+    { value: 'Master-bedroom', label: 'Masterbedroom', icon: Building },
+    { value: 'Single-room', label: 'Single room', icon: Home },
   ];
 
   const commonAmenities = [

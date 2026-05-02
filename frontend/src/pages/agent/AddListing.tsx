@@ -35,7 +35,7 @@ const AddListing: React.FC = () => {
     bedrooms: 1,
     bathrooms: 1,
     area: 1,
-    type: 'apartment',
+    type: 'house',
     featured: false,
     available: true,
     images: [],
@@ -67,7 +67,7 @@ const AddListing: React.FC = () => {
 
   const propertyTypes = [
     { value: 'house', label: 'House' },
-    { value: 'Master-Bedroom', label: 'Master-bedroom' },
+    { value: 'Master-bedroom', label: 'Master-bedroom' },
     { value: 'Single-room', label: 'Single room' }, 
   ];
 
