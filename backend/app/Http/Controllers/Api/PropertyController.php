@@ -357,7 +357,7 @@ class PropertyController extends Controller
             'type'        => 'required|in:house,villa,apartment',
             'bedrooms'    => 'required|integer|min:0',
             'bathrooms'   => 'required|integer|min:0',
-            'area'        => 'required|numeric|min:0',
+            'area'        => 'sometimes|numeric|min:0',
             'amenities'   => 'array',
             'featured'    => 'boolean',
             'latitude'    => 'nullable|numeric|between:-90,90',

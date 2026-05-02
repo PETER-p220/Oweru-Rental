@@ -91,7 +91,7 @@ class OwnerController extends Controller
             'type'        => 'sometimes|in:Master-bedroom,house,Single-room',
             'bedrooms'    => 'required|integer|min:0',
             'bathrooms'   => 'required|integer|min:0',
-            'area'        => 'required|integer|min:0',
+            'area'        => 'sometimes|integer|min:0',
             'agent_id'    => 'sometimes|exists:users,id',
             'images'      => 'sometimes|array',
             'images.*'    => 'image|mimes:jpeg,png,jpg,gif|max:5048',
