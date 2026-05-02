@@ -155,28 +155,50 @@ const ShareAndTrack = () => {
         .sat-empty{text-align:center;padding:56px 24px;color:var(--slate);font-family:var(--sans);font-size:14px;}
         .sat-empty-ico{width:52px;height:52px;border-radius:14px;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--gold);}
 
-        .sat-list{display:flex;flex-direction:column;gap:14px;}
-        .sat-card{background:var(--navy-800);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .22s,transform .22s;animation:fadeUp .3s ease both;}
-        .sat-card:hover{border-color:rgba(200,145,40,.4);transform:translateY(-2px);}
-        .sat-card-head{padding:16px 18px 12px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--border);}
-        .sat-card-num{width:28px;height:28px;border-radius:8px;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:11px;font-weight:700;color:var(--gold);flex-shrink:0;margin-top:1px;}
-        .sat-card-title{font-family:var(--serif);font-size:16px;font-weight:400;color:var(--cream);letter-spacing:-.01em;line-height:1.3;flex:1;}
-        .sat-card-body{padding:14px 18px;}
-        .sat-url-row{display:flex;align-items:center;gap:6px;margin-bottom:14px;}
-        .sat-url{display:flex;align-items:center;gap:5px;font-family:var(--sans);font-size:12px;color:var(--gold);text-decoration:none;overflow:hidden;flex:1;}
-        .sat-url span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-        .sat-url:hover{color:var(--gold-lt);}
-        .sat-badges{display:flex;gap:8px;margin-bottom:14px;}
-        .sat-badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--sans);font-size:12px;font-weight:600;border-radius:20px;padding:4px 12px;border:1px solid;}
+        .sat-table-container{background:var(--navy-800);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+        .sat-table{width:100%;border-collapse:collapse;font-family:var(--sans);}
+        .sat-table thead{background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 100%);border-bottom:2px solid var(--border);}
+        .sat-table th{padding:14px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--border);}
+        .sat-table th:first-child{padding-left:20px;width:40px;}
+        .sat-table th:last-child{padding-right:20px;text-align:center;width:180px;}
+        .sat-table tbody tr{border-bottom:1px solid rgba(200,145,40,.08);transition:background-color .2s;}
+        .sat-table tbody tr:hover{background:rgba(200,145,40,.04);}
+        .sat-table td{padding:12px 16px;color:var(--cream);font-size:13px;vertical-align:middle;}
+        .sat-table td:first-child{padding-left:20px;}
+        .sat-table td:last-child{padding-right:20px;text-align:center;}
+
+        .sat-td-num{width:40px;text-align:center;}
+        .sat-td-num-inner{width:28px;height:28px;border-radius:8px;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:11px;font-weight:700;color:var(--gold);margin:0 auto;}
+
+        .sat-td-property{font-family:var(--serif);font-size:14px;font-weight:400;color:var(--cream);letter-spacing:-.01em;line-height:1.3;max-width:300px;}
+
+        .sat-td-url{font-family:var(--monospace,monospace);font-size:11px;color:var(--gold);}
+        .sat-td-url a{display:flex;align-items:center;gap:6px;color:var(--gold);text-decoration:none;overflow:hidden;}
+        .sat-td-url a span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
+        .sat-td-url a:hover{color:var(--gold-lt);}
+
+        .sat-td-stats{display:flex;gap:8px;align-items:center;}
+        .sat-badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--sans);font-size:11px;font-weight:600;border-radius:20px;padding:3px 10px;border:1px solid;}
         .sat-badge-clicks{color:#38bdf8;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.2);}
         .sat-badge-shares{color:#f59e0b;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.2);}
-        .sat-card-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:10px;background:rgba(9,15,29,.3);}
-        .sat-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:var(--sans);font-size:13px;font-weight:600;border-radius:9px;padding:10px 0;cursor:pointer;transition:all .18s;border:1px solid;}
+        .sat-date{font-family:var(--sans);font-size:11px;color:var(--slate);margin-left:auto;white-space:nowrap;}
+
+        .sat-td-actions{display:flex;gap:8px;justify-content:center;}
+        .sat-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-size:11px;font-weight:600;border-radius:7px;padding:6px 12px;cursor:pointer;transition:all .18s;border:1px solid;white-space:nowrap;}
         .sat-btn-copy{color:var(--gold);background:var(--gold-dim);border-color:rgba(200,145,40,.3);}
         .sat-btn-copy:hover{background:rgba(200,145,40,.2);border-color:var(--gold);}
         .sat-btn-copied{color:#10b981;background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);}
         .sat-btn-wa{color:#25d366;background:rgba(37,211,102,.08);border-color:rgba(37,211,102,.25);}
         .sat-btn-wa:hover{background:rgba(37,211,102,.15);border-color:rgba(37,211,102,.5);}
+
+        @media(max-width:768px){
+          .sat-table-container{overflow-x:auto;}
+          .sat-table{min-width:600px;}
+          .sat-table th,.sat-table td{padding:10px 12px;font-size:12px;}
+          .sat-td-property{max-width:200px;font-size:13px;}
+          .sat-td-url a span{max-width:120px;}
+          .sat-btn{font-size:10px;padding:5px 8px;}
+        }
 
         @media(max-width:600px){
           .sat-stats{grid-template-columns:1fr 1fr;}
@@ -237,20 +259,47 @@ const ShareAndTrack = () => {
 
         {error && <div className="sat-error">{error}</div>}
 
-        {/* Card list */}
+        {/* Table */}
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {[0,1,2].map(i => (
-              <div key={i} style={{ background: '#162035', border: '1px solid rgba(200,145,40,.18)', borderRadius: 14, overflow: 'hidden' }}>
-                <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid rgba(200,145,40,.18)' }}>
-                  <div style={{ height: 16, width: '60%', borderRadius: 4, background: 'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
-                </div>
-                <div style={{ padding: '14px 18px' }}>
-                  <div style={{ height: 12, width: '85%', borderRadius: 4, marginBottom: 12, background: 'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
-                </div>
-                <style>{`@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`}</style>
-              </div>
-            ))}
+          <div className="sat-table-container">
+            <table className="sat-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Property</th>
+                  <th>Tracking URL</th>
+                  <th>Stats</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[0,1,2].map(i => (
+                  <tr key={i}>
+                    <td className="sat-td-num">
+                      <div className="sat-td-num-inner">...</div>
+                    </td>
+                    <td>
+                      <div style={{ height:14, width:'60%', borderRadius:4, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                    </td>
+                    <td className="sat-td-url">
+                      <div style={{ height:11, width:'75%', borderRadius:4, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                    </td>
+                    <td className="sat-td-stats">
+                      <div style={{ display:'flex', gap:8 }}>
+                        <div style={{ width:50, height:20, borderRadius:20, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                        <div style={{ width:50, height:20, borderRadius:20, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                      </div>
+                    </td>
+                    <td className="sat-td-actions">
+                      <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
+                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : filtered.length === 0 ? (
           <div className="sat-empty">
@@ -268,54 +317,68 @@ const ShareAndTrack = () => {
             </div>
           </div>
         ) : (
-          <div className="sat-list">
-            {filtered.map((item, idx) => (
-              <div key={item.id} className="sat-card" style={{ animationDelay: `${idx * 0.05}s` }}>
-                {/* Card head */}
-                <div className="sat-card-head">
-                  <div className="sat-card-num">{idx + 1}</div>
-                  <div className="sat-card-title">{item.title}</div>
-                </div>
-
-                {/* Card body */}
-                <div className="sat-card-body">
-                  {/* URL */}
-                  <div className="sat-url-row">
-                    <a href={item.tracking_url} target="_blank" rel="noopener noreferrer"
-                      onClick={() => setTimeout(() => fetchLinks(true), 2000)}
-                      className="sat-url" title={item.tracking_url}>
-                      <LinkIcon />
-                      <span>{item.tracking_url}</span>
-                    </a>
-                  </div>
-
-                  {/* Stats badges */}
-                  <div className="sat-badges">
-                    <span className="sat-badge sat-badge-clicks">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                      {item.clicks || 0} clicks
-                    </span>
-                    <span className="sat-badge sat-badge-shares">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                      {item.shares || 0} shares
-                    </span>
-                    <span style={{ marginLeft: 'auto', fontFamily: "'Jost', sans-serif", fontSize: 11, color: '#94A3B8' }}>
-                      {new Date(item.created_at).toLocaleDateString('en-TZ', { day:'numeric', month:'short' })}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="sat-card-footer">
-                  <button onClick={() => handleCopy(item)} className={`sat-btn ${copied[item.id] ? 'sat-btn-copied' : 'sat-btn-copy'}`}>
-                    {copied[item.id] ? <><CheckIcon /> Copied!</> : <><CopyIcon /> Copy Link</>}
-                  </button>
-                  <button onClick={() => handleWhatsApp(item)} className="sat-btn sat-btn-wa">
-                    <WaIcon /> WhatsApp
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="sat-table-container">
+            <table className="sat-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Property</th>
+                  <th>Tracking URL</th>
+                  <th>Stats</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((item, idx) => (
+                  <tr key={item.id} style={{ animation: `fadeUp 0.3s ease both`, animationDelay: `${idx * 0.05}s` }}>
+                    <td className="sat-td-num">
+                      <div className="sat-td-num-inner">{idx + 1}</div>
+                    </td>
+                    <td>
+                      <div className="sat-td-property">{item.title}</div>
+                    </td>
+                    <td className="sat-td-url">
+                      <a href={item.tracking_url} target="_blank" rel="noopener noreferrer"
+                        onClick={() => setTimeout(() => fetchLinks(true), 2000)}
+                        title={item.tracking_url}>
+                        <LinkIcon />
+                        <span>{item.tracking_url}</span>
+                      </a>
+                    </td>
+                    <td className="sat-td-stats">
+                      <span className="sat-badge sat-badge-clicks">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        {item.clicks || 0}
+                      </span>
+                      <span className="sat-badge sat-badge-shares">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <circle cx="18" cy="5" r="3"/>
+                          <circle cx="6" cy="12" r="3"/>
+                          <circle cx="18" cy="19" r="3"/>
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                        </svg>
+                        {item.shares || 0}
+                      </span>
+                      <span className="sat-date">
+                        {new Date(item.created_at).toLocaleDateString('en-TZ', { day:'numeric', month:'short' })}
+                      </span>
+                    </td>
+                    <td className="sat-td-actions">
+                      <button onClick={() => handleCopy(item)} className={`sat-btn ${copied[item.id] ? 'sat-btn-copied' : 'sat-btn-copy'}`}>
+                        {copied[item.id] ? <><CheckIcon /> Copied!</> : <><CopyIcon /> Copy</>}
+                      </button>
+                      <button onClick={() => handleWhatsApp(item)} className="sat-btn sat-btn-wa">
+                        <WaIcon /> WhatsApp
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
