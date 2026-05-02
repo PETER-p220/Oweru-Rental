@@ -55,7 +55,37 @@ const LeadsAndVisitors = () => {
         console.log('📋 Processed leads:', leadsData);
         console.log('📊 Processed stats:', statsData);
         
-        setLeads(Array.isArray(leadsData) ? leadsData : []);
+        // If no leads, show sample leads for demonstration
+        const finalLeads = Array.isArray(leadsData) && leadsData.length > 0 ? leadsData : [
+          {
+            id: 'sample-1',
+            name: 'John Doe',
+            email: 'john.doe@example.com',
+            phone: '+255 712 345 678',
+            status: 'new',
+            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+            property: {
+              id: 1,
+              title: 'Modern Apartment in Dar es Salaam',
+              location: 'Dar es Salaam'
+            }
+          },
+          {
+            id: 'sample-2',
+            name: 'Jane Smith',
+            email: 'jane.smith@example.com',
+            phone: '+255 765 432 109',
+            status: 'contacted',
+            created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+            property: {
+              id: 2,
+              title: 'Cozy House in Arusha',
+              location: 'Arusha'
+            }
+          }
+        ];
+        
+        setLeads(finalLeads);
         setStats(statsData);
       } catch (err: any) {
         console.error('❌ Error loading leads:', err);

@@ -218,51 +218,48 @@ const Home = () => {
   const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
-    loadAllProperties();
-    loadBnbProperties();
-    loadOweruProperties();
-    loadSavedProperties();
+    loadInitialData();
   }, []);
 
-  const loadAllProperties = async () => {
+  const loadInitialData = async () => {
     try {
       setLoading(true);
-      const res  = await fetch(`${API_BASE}/api/public/properties?per_page=100`, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error();
-      const json = await res.json();
-      const list: any[] = json?.data?.data ?? json?.data ?? (Array.isArray(json) ? json : []);
-      setAllProperties(list);
-    } catch { setAllProperties([]); }
-    finally { setLoading(false); }
-  };
-
-  const loadBnbProperties = async () => {
-    try {
       setBnbLoading(true);
-      for (const url of [`${API_BASE}/api/public/bnb`, `${API_BASE}/api/public/bnb/search`]) {
-        const res = await fetch(url, { headers: { Accept: 'application/json' } });
-        if (res.ok) {
-          const json = await res.json();
-          setBnbProperties((Array.isArray(json) ? json : json?.data || []).slice(0, 6));
-          return;
-        }
-      }
-    } catch { /* silent */ }
-    finally { setBnbLoading(false); }
-  };
-
-  const loadOweruProperties = async () => {
-    try {
       setOweruLoading(true);
-      const res = await fetch(`${API_BASE}/api/public/properties?type=oweru_rental&per_page=20`, { headers: { Accept: 'application/json' } });
-      if (res.ok) {
-        const json = await res.json();
-        const list: any[] = json?.data?.data ?? json?.data ?? [];
-        if (list.length > 0) { setOweruProperties(list.slice(0, 6)); return; }
-      }
+      
+      // Load all data in parallel for better performance
+      const [allPropsRes, bnbRes, oweruRes] = await Promise.all([
+        fetch(`${API_BASE}/api/public/properties?per_page=12`, { headers: { Accept: 'application/json' } }),
+        fetch(`${API_BASE}/api/public/bnb`, { headers: { Accept: 'application/json' } }),
+        fetch(`${API_BASE}/api/public/properties?type=oweru_rental&per_page=12`, { headers: { Accept: 'application/json' } })
+      ]);
+
+      // Process all properties
+      const allPropsList: any[] = allPropsRes.ok ? 
+        (await allPropsRes.json())?.data?.data ?? (await allPropsRes.json())?.data ?? (Array.isArray(await allPropsRes.json()) ? await allPropsRes.json() : []) : [];
+      
+      const bnbList: any[] = bnbRes.ok ? (Array.isArray((await bnbRes.json())?.data) ? (await bnbRes.json()).data : []) : [];
+      
+      const oweruList: any[] = oweruRes.ok ? (Array.isArray((await oweruRes.json())?.data) ? (await oweruRes.json()).data : []) : [];
+      
+      setAllProperties(allPropsList);
+      setBnbProperties(bnbList);
+      setOweruProperties(oweruList);
+      
+      // Load saved properties in background (non-blocking)
+      loadSavedProperties();
+      
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      // Set empty states on error
+      setAllProperties([]);
+      setBnbProperties([]);
       setOweruProperties([]);
-    } catch { setOweruProperties([]); }
-    finally { setOweruLoading(false); }
+    } finally {
+      setLoading(false);
+      setBnbLoading(false);
+      setOweruLoading(false);
+    }
   };
 
   const loadSavedProperties = async () => {

@@ -342,6 +342,37 @@ const AdminDashboard = () => {
         </p>
       </div>
 
+      {/* ── System Overview Stats ─────────────────────────────────────── */}
+      <div className="admin-stats-grid">
+        {[
+          { label: 'Total Users',          value: stats.totalUsers,                    icon: Users,      bg: t.gold   },
+          { label: 'Total Properties',     value: stats.totalProperties,               icon: Building,   bg: t.green  },
+          { label: 'Total Revenue',        value: formatLargeCurrency(stats.totalRevenue),  icon: DollarSign, bg: '#2563eb' },
+          { label: 'Active Listings',      value: stats.activeListings,               icon: TrendingUp, bg: t.green  },
+          { label: 'Pending Applications', value: stats.pendingApplications || 0,      icon: AlertCircle, bg: t.gold  },
+        ].map(({ label, value, icon: Icon, bg }) => (
+          <div key={label} style={card} className="admin-stat-card">
+            <div className="admin-card-flex">
+              <div style={{
+                width: 48, height: 48, borderRadius: 8, background: bg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Icon size={24} style={{ color: t.dark }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...body, fontSize: 13, color: t.muted, marginBottom: 4 }}>{label}</div>
+                <div style={{
+                  ...serif, fontSize: 'clamp(20px, 3vw, 28px)',
+                  fontWeight: 600, color: t.cream,
+                }}>
+                  {value}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* ── Recent Activity ───────────────────────────────────────────── */}
       <div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
