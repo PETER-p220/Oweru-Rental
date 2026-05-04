@@ -1,33 +1,46 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // Check if column exists and get current data
-        if (Schema::hasColumn('users', 'user_type')) {
-            // First convert to varchar to allow any value
-            DB::statement("ALTER TABLE users MODIFY COLUMN user_type VARCHAR(20)");
-            
-            // Now safely change to enum with commercial included
-            DB::statement("ALTER TABLE users MODIFY COLUMN user_type ENUM('tenant', 'landlord', 'agent', 'admin', 'commercial') NOT NULL DEFAULT 'tenant'");
-        }
+        // 1. Fix any NULL or invalid values before touching the column
+        DB::statement("UPDATE users SET user_type = 'tenant' WHERE user_type IS NULL OR user_type = ''");
+
+        // 2. Sanitize any values not in the final enum list
+        DB::statement("
+            UPDATE users 
+            SET user_type = 'tenant' 
+            WHERE user_type NOT IN ('tenant', 'landlord', 'agent', 'admin', 'commercial')
+        ");
+
+        // 3. Temporarily widen to VARCHAR so MySQL won't complain during transition
+        DB::statement("ALTER TABLE users MODIFY COLUMN user_type VARCHAR(20) NOT NULL DEFAULT 'tenant'");
+
+        // 4. Now safely set the final enum with 'commercial' included
+        DB::statement("
+            ALTER TABLE users 
+            MODIFY COLUMN user_type 
+            ENUM('tenant', 'landlord', 'agent', 'admin', 'commercial') 
+            NOT NULL DEFAULT 'tenant'
+        ");
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        // Convert back to original enum without commercial
-        DB::statement("ALTER TABLE users MODIFY COLUMN user_type ENUM('tenant', 'landlord', 'agent', 'admin') NOT NULL DEFAULT 'tenant'");
+        // Revert any 'commercial' users to 'tenant' before shrinking the enum
+        DB::statement("UPDATE users SET user_type = 'tenant' WHERE user_type = 'commercial'");
+
+        DB::statement("ALTER TABLE users MODIFY COLUMN user_type VARCHAR(20) NOT NULL DEFAULT 'tenant'");
+
+        DB::statement("
+            ALTER TABLE users 
+            MODIFY COLUMN user_type 
+            ENUM('tenant', 'landlord', 'agent', 'admin') 
+            NOT NULL DEFAULT 'tenant'
+        ");
     }
 };
