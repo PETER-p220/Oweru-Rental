@@ -71,6 +71,7 @@ const StickyFilterNav = ({
     { id: 'featured', label: 'Residential', icon: '⭐', target: 'featured' },
     { id: 'bnb',      label: 'Short Stay',  icon: '🏝️', target: 'bnb'      },
     { id: 'oweru',    label: 'Oweru Special', icon: '👑', target: 'oweru'   },
+    { id: 'commercial', label: 'Commercial', icon: '🏢', target: 'commercial' },
   ];
 
   return (
@@ -204,9 +205,11 @@ const Home = () => {
   const [allProperties,    setAllProperties]    = useState<any[]>([]);
   const [bnbProperties,    setBnbProperties]    = useState<any[]>([]);
   const [oweruProperties,  setOweruProperties]  = useState<any[]>([]);
+  const [commercialProperties, setCommercialProperties] = useState<any[]>([]);
   const [loading,          setLoading]          = useState(true);
   const [bnbLoading,       setBnbLoading]       = useState(true);
   const [oweruLoading,     setOweruLoading]     = useState(true);
+  const [commercialLoading, setCommercialLoading] = useState(true);
   const [savedProperties,  setSavedProperties]  = useState<Set<number>>(new Set());
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
@@ -221,23 +224,26 @@ const Home = () => {
     loadInitialData();
   }, []);
 
-  const loadInitialData = async () => {
+  const loadInitialData = async () => {       
     try {
       setLoading(true);
-      setBnbLoading(true);
+      setBnbLoading(true);    
       setOweruLoading(true);
+      setCommercialLoading(true);
       
       // Load all data in parallel for better performance
-      const [allPropsRes, bnbRes, oweruRes] = await Promise.all([
+      const [allPropsRes, bnbRes, oweruRes, commercialRes] = await Promise.all([
         fetch(`${API_BASE}/api/public/properties?per_page=12`, { headers: { Accept: 'application/json' } }),
         fetch(`${API_BASE}/api/public/bnb`, { headers: { Accept: 'application/json' } }),
-        fetch(`${API_BASE}/api/public/properties?type=oweru_rental&per_page=12`, { headers: { Accept: 'application/json' } })
+        fetch(`${API_BASE}/api/public/properties?type=oweru_rental&per_page=12`, { headers: { Accept: 'application/json' } }),
+        fetch(`${API_BASE}/api/public/properties?type=office,retail,warehouse,commercial,industrial&per_page=8`, { headers: { Accept: 'application/json' } })
       ]);
 
       // Process all properties - read each response only once
       let allPropsList: any[] = [];
       let bnbList: any[] = [];
       let oweruList: any[] = [];
+      let commercialList: any[] = [];
 
       if (allPropsRes.ok) {
         const allPropsData = await allPropsRes.json();
@@ -254,9 +260,15 @@ const Home = () => {
         oweruList = Array.isArray(oweruData?.data) ? oweruData.data : [];
       }
       
+      if (commercialRes.ok) {
+        const commercialData = await commercialRes.json();
+        commercialList = commercialData?.data?.data ?? commercialData?.data ?? (Array.isArray(commercialData) ? commercialData : []);
+      }
+      
       setAllProperties(allPropsList);
       setBnbProperties(bnbList);
       setOweruProperties(oweruList);
+      setCommercialProperties(commercialList);
       
       // Load saved properties in background (non-blocking)
       loadSavedProperties();
@@ -267,10 +279,12 @@ const Home = () => {
       setAllProperties([]);
       setBnbProperties([]);
       setOweruProperties([]);
+      setCommercialProperties([]);
     } finally {
       setLoading(false);
       setBnbLoading(false);
       setOweruLoading(false);
+      setCommercialLoading(false);
     }
   };
 
@@ -340,6 +354,7 @@ const Home = () => {
     { id: 'featured', label: 'Residential',    icon: '⭐', target: 'featured' },
     { id: 'bnb',      label: 'Short Stay',     icon: '🏝️', target: 'bnb'      },
     { id: 'oweru',    label: 'Oweru Special',  icon: '👑', target: 'oweru'    },
+    { id: 'commercial', label: 'Commercial', icon: '🏢', target: 'commercial' },
   ];
 
   return (
@@ -902,6 +917,74 @@ const Home = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════════════
+          COMMERCIAL PROPERTIES
+      ══════════════════════════════════════════ */}
+      {!searchActive && (
+        <section id="commercial" style={{ background: 'linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%)', borderTop: '1px solid var(--border)', position: 'relative' }}>
+          <div className="section">
+            <div className="section-hdr">
+              <div>
+                <div className="section-tag">Business Spaces</div>
+                <h2 className="section-title">Commercial <span>Properties</span></h2>
+                <p style={{ color: 'var(--slate)', fontSize: 15, lineHeight: 1.7, maxWidth: 600 }}>
+                  Professional office spaces, retail locations, warehouses, and industrial properties for your business needs.
+                </p>
+              </div>
+              <Link to="/properties?type=commercial" className="btn-outline">View All Commercial <ChevronRight size={16} /></Link>
+            </div>
+
+            {commercialLoading ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="skeleton" style={{ height: 320 }} />
+                ))}
+              </div>
+            ) : commercialProperties.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
+                {commercialProperties.map(p => (
+                  <div key={p.id} className="result-card" onClick={e => { e.stopPropagation(); navigate(`/property/${p.id}`); }}>
+                    <div style={{ position: 'relative', height: 200, background: 'var(--navy-700)', overflow: 'hidden' }}>
+                      <img
+                        src={getImage(p)}
+                        alt={p.title}
+                        className="prop-img"
+                        style={{ height: '100%', objectFit: 'cover' }}
+                        loading="lazy" decoding="async"
+                        width="600" height="450"
+                        onError={e => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER; }}
+                      />
+                      <div style={{ position: 'absolute', top: 12, right: 12, background: 'var(--gold)', color: 'var(--navy-900)', padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>
+                        {p.type === 'office' ? 'Office' : p.type === 'retail' ? 'Retail' : p.type === 'warehouse' ? 'Warehouse' : 'Commercial'}
+                      </div>
+                    </div>
+                    <div style={{ padding: 20 }}>
+                      <h3 style={{ fontSize: 17, fontWeight: 600, color: 'var(--cream)', marginBottom: 10, lineHeight: 1.3 }}>{p.title}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, color: 'var(--slate)', fontSize: 13 }}>
+                        <MapPin size={14} style={{ color: 'var(--gold)', flexShrink: 0 }} />{p.location || p.address || 'Tanzania'}
+                      </div>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)', marginBottom: 18 }}>
+                        {formatPrice(p.price)} <span style={{ fontSize: 13, color: 'var(--slate)', fontWeight: 400 }}>/month</span>
+                      </div>
+                      <button onClick={e => { e.stopPropagation(); navigate(`/property/${p.id}`); }}
+                        style={{ width: '100%', background: 'var(--gold)', color: 'var(--navy-900)', border: 'none', padding: '13px', fontWeight: 700, fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                <Building size={48} style={{ color: 'var(--slate)', marginBottom: 16 }} />
+                <h3 style={{ fontSize: 20, color: 'var(--cream)', marginBottom: 8 }}>No commercial properties available</h3>
+                <p style={{ color: 'var(--slate)', fontSize: 15 }}>Check back later for new business spaces and commercial listings.</p>
               </div>
             )}
           </div>
