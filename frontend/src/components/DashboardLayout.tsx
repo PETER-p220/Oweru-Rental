@@ -7,7 +7,7 @@ import {
   ChevronRight, QrCode, Link2, ShieldCheck, CreditCard, Wallet,
   Receipt, UserCheck, MessageSquare, AlertCircle, PieChart,
   RefreshCw, Clock, BookOpen, Landmark, Eye, Bed, Bath,
-  Calendar, MapPin, Hotel,
+  Calendar, MapPin, Hotel, Briefcase,
 } from 'lucide-react';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
@@ -16,7 +16,7 @@ interface DashboardLayoutProps {
   title?: string;
 }
 
-type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner';
+type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner' | 'commercial';
 
 const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -93,14 +93,25 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Messages',          icon: MessageSquare, href: 'messages',          color: '#f87171' },
       { name: 'Settings',          icon: Settings,      href: 'settings',          color: '#fb923c' },
     ],
+    commercial: [
+      { name: 'Overview',        icon: Home,          href: '',               color: '#c9a84c' },
+      { name: 'My Properties',   icon: Building,      href: 'my-properties',  color: '#f59e0b' },
+      { name: 'Add Property',    icon: Plus,          href: 'properties/add', color: '#34d399' },
+      { name: 'Applications',    icon: FileText,      href: 'applications',   color: '#60a5fa' },
+      { name: 'Analytics',       icon: BarChart3,     href: 'analytics',      color: '#a78bfa' },
+      { name: 'Reports',         icon: PieChart,      href: 'reports',        color: '#fb923c' },
+      { name: 'Profile',         icon: Briefcase,     href: 'profile',        color: '#38bdf8' },
+      { name: 'Settings',        icon: Settings,      href: 'settings',       color: '#94a3b8' },
+    ],
   };
 
   const roleConfig: Record<UserRole, { label: string; accent: string; sidebarBg: string; border: string }> = {
-    tenant:    { label: 'Tenant',    accent: '#70c490', sidebarBg: 'linear-gradient(160deg,#0c1610 0%,#111a14 100%)', border: 'rgba(112,196,144,0.12)' },
-    landlord:  { label: 'Landlord',  accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1507 0%,#1f1a0b 100%)', border: 'rgba(37,99,235,0.12)'   },
-    agent:     { label: 'Dalali',    accent: '#38bdf8', sidebarBg: 'linear-gradient(160deg,#05101a 0%,#0c1824 100%)', border: 'rgba(56,189,248,0.12)'   },
-    admin:     { label: 'Admin',     accent: '#f87171', sidebarBg: 'linear-gradient(160deg,#1a0505 0%,#1f0c0c 100%)', border: 'rgba(248,113,113,0.12)'  },
-    bnb_owner: { label: 'BNB Owner', accent: '#f472b6', sidebarBg: 'linear-gradient(160deg,#2a0f1a 0%,#3f1425 100%)', border: 'rgba(244,114,182,0.12)'  },
+    tenant:     { label: 'Tenant',     accent: '#70c490', sidebarBg: 'linear-gradient(160deg,#0c1610 0%,#111a14 100%)', border: 'rgba(112,196,144,0.12)' },
+    landlord:   { label: 'Landlord',   accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1507 0%,#1f1a0b 100%)', border: 'rgba(37,99,235,0.12)'   },
+    agent:      { label: 'Dalali',     accent: '#38bdf8', sidebarBg: 'linear-gradient(160deg,#05101a 0%,#0c1824 100%)', border: 'rgba(56,189,248,0.12)'   },
+    admin:      { label: 'Admin',      accent: '#f87171', sidebarBg: 'linear-gradient(160deg,#1a0505 0%,#1f0c0c 100%)', border: 'rgba(248,113,113,0.12)'  },
+    bnb_owner:  { label: 'BNB Owner',  accent: '#f472b6', sidebarBg: 'linear-gradient(160deg,#2a0f1a 0%,#3f1425 100%)', border: 'rgba(244,114,182,0.12)'  },
+    commercial: { label: 'Commercial', accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1200 0%,#221a00 100%)', border: 'rgba(201,168,76,0.15)'   },
   };
 
   const cfg = roleConfig[userType] ?? roleConfig.tenant;
@@ -170,6 +181,11 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { label: 'Analytics',  items: ['Analytics','Messages'] },
       { label: 'Settings',   items: ['Settings'] },
     ],
+    commercial: [
+      { label: 'Properties', items: ['Overview','My Properties','Add Property'] },
+      { label: 'Business',   items: ['Applications','Analytics','Reports'] },
+      { label: 'Account',    items: ['Profile','Settings'] },
+    ],
   };
 
   const sections = sectionMap[userType] ?? sectionMap.tenant;
@@ -179,11 +195,12 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     secondary: string; secondaryLabel: string; secondaryIcon: any;
     settings?: string; settingsLabel?: string;
   }> = {
-    tenant:    { primary: getFullPath('messages'),     primaryLabel: 'Messages',     primaryIcon: MessageSquare, secondary: getFullPath('notifications'), secondaryLabel: 'Notifications', secondaryIcon: Bell,        settings: getFullPath('settings'), settingsLabel: 'Account Settings' },
-    landlord:  { primary: getFullPath('tenants'),      primaryLabel: 'Tenants',      primaryIcon: Users,         secondary: getFullPath('my-properties'), secondaryLabel: 'Properties',    secondaryIcon: Building,    settings: getFullPath('settings'), settingsLabel: 'Account Settings' },
-    agent:     { primary: getFullPath('leads'),        primaryLabel: 'Leads',        primaryIcon: Eye,           secondary: getFullPath('tracking'),      secondaryLabel: 'Tracking',      secondaryIcon: Link2,       settings: getFullPath('settings'), settingsLabel: 'Account Settings' },
-    admin:     { primary: getFullPath('verification'), primaryLabel: 'Verification', primaryIcon: ShieldCheck,   secondary: getFullPath('alerts'),        secondaryLabel: 'Alerts',        secondaryIcon: AlertCircle, settings: getFullPath('settings'), settingsLabel: 'System Settings'  },
-    bnb_owner: { primary: getFullPath('bnb-bookings'), primaryLabel: 'Bookings',     primaryIcon: Calendar,      secondary: getFullPath('bnb-reviews'),   secondaryLabel: 'Reviews',       secondaryIcon: Star,        settings: getFullPath('settings'), settingsLabel: 'Account Settings' },
+    tenant:     { primary: getFullPath('messages'),      primaryLabel: 'Messages',     primaryIcon: MessageSquare, secondary: getFullPath('notifications'),  secondaryLabel: 'Notifications', secondaryIcon: Bell,        settings: getFullPath('settings'), settingsLabel: 'Account Settings'  },
+    landlord:   { primary: getFullPath('tenants'),       primaryLabel: 'Tenants',      primaryIcon: Users,         secondary: getFullPath('my-properties'),  secondaryLabel: 'Properties',    secondaryIcon: Building,    settings: getFullPath('settings'), settingsLabel: 'Account Settings'  },
+    agent:      { primary: getFullPath('leads'),         primaryLabel: 'Leads',        primaryIcon: Eye,           secondary: getFullPath('tracking'),       secondaryLabel: 'Tracking',      secondaryIcon: Link2,       settings: getFullPath('settings'), settingsLabel: 'Account Settings'  },
+    admin:      { primary: getFullPath('verification'),  primaryLabel: 'Verification', primaryIcon: ShieldCheck,   secondary: getFullPath('alerts'),         secondaryLabel: 'Alerts',        secondaryIcon: AlertCircle, settings: getFullPath('settings'), settingsLabel: 'System Settings'   },
+    bnb_owner:  { primary: getFullPath('bnb-bookings'),  primaryLabel: 'Bookings',     primaryIcon: Calendar,      secondary: getFullPath('bnb-reviews'),    secondaryLabel: 'Reviews',       secondaryIcon: Star,        settings: getFullPath('settings'), settingsLabel: 'Account Settings'  },
+    commercial: { primary: getFullPath('my-properties'), primaryLabel: 'Properties',   primaryIcon: Building,      secondary: getFullPath('applications'),   secondaryLabel: 'Applications',  secondaryIcon: FileText,    settings: getFullPath('settings'), settingsLabel: 'Business Settings' },
   };
 
   const quickLinks = roleQuickLinks[userType] ?? roleQuickLinks.tenant;
@@ -521,31 +538,15 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
 
         /* ── Enhanced Mobile Grid Support ── */
         @media (max-width: 768px) {
-          .dl-content > * {
-            max-width: 100%;
-          }
-          .dl-content > [style*="grid"] {
-            grid-template-columns: 1fr !important;
-            gap: 12px !important;
-          }
-          .dl-content > [style*="display: grid"] {
-            grid-template-columns: 1fr !important;
-            gap: 12px !important;
-          }
+          .dl-content > * { max-width: 100%; }
+          .dl-content > [style*="grid"] { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .dl-content > [style*="display: grid"] { grid-template-columns: 1fr !important; gap: 12px !important; }
         }
 
         @media (max-width: 480px) {
-          .dl-content > * {
-            max-width: 100%;
-          }
-          .dl-content > [style*="grid"] {
-            grid-template-columns: 1fr !important;
-            gap: 8px !important;
-          }
-          .dl-content > [style*="display: grid"] {
-            grid-template-columns: 1fr !important;
-            gap: 8px !important;
-          }
+          .dl-content > * { max-width: 100%; }
+          .dl-content > [style*="grid"] { grid-template-columns: 1fr !important; gap: 8px !important; }
+          .dl-content > [style*="display: grid"] { grid-template-columns: 1fr !important; gap: 8px !important; }
         }
       `}</style>
 
