@@ -42,6 +42,7 @@ const Login = () => {
     { value: 'landlord',  label: 'Landlord' },
     { value: 'agent',     label: 'Agent' },
     { value: 'bnb_owner', label: 'BNB Owner' },
+    { value: 'commercial', label: 'Commercial' },
     { value: 'admin',     label: 'Admin' },
   ];
 
