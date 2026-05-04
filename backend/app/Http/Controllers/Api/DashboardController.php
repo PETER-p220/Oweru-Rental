@@ -40,6 +40,16 @@ class DashboardController extends Controller
                 'totalApplications' => Application::whereIn('property_id', $myProperties->pluck('id'))->count(),
                 'totalCommissions' => 0, // TODO: Calculate actual commissions
             ];
+        } elseif ($user->user_type === 'commercial') {
+            $myProperties = $user->ownedProperties();
+            $stats = [
+                'totalProperties' => $myProperties->count(),
+                'activeProperties' => $myProperties->where('status', 'active')->count(),
+                'totalBookings' => 0, // TODO: Implement commercial booking system
+                'totalRevenue' => 0, // TODO: Calculate from commercial bookings
+                'averageRating' => 4.8, // Calculate from commercial reviews
+                'occupancyRate' => $myProperties->count() > 0 ? 85 : 0, // Commercial occupancy calculation
+            ];
         }
 
         return response()->json([

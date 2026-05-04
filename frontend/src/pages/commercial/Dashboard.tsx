@@ -61,7 +61,7 @@ const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/api/commercial/dashboard`, {
+      const response = await fetch(`${API_BASE}/api/dashboard/commercial`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
