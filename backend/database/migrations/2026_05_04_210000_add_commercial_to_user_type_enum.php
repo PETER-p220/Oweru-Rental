@@ -12,13 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, update any existing users that might have invalid user_type values
-        DB::statement("ALTER TABLE users MODIFY COLUMN user_type VARCHAR(20) DEFAULT 'tenant'");
-        
-        // Now change to enum with commercial included
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('user_type', ['tenant', 'landlord', 'agent', 'admin', 'commercial'])->default('tenant')->change();
-        });
+        // Check if column exists and get current data
+        if (Schema::hasColumn('users', 'user_type')) {
+            // First convert to varchar to allow any value
+            DB::statement("ALTER TABLE users MODIFY COLUMN user_type VARCHAR(20)");
+            
+            // Now safely change to enum with commercial included
+            DB::statement("ALTER TABLE users MODIFY COLUMN user_type ENUM('tenant', 'landlord', 'agent', 'admin', 'commercial') NOT NULL DEFAULT 'tenant'");
+        }
     }
 
     /**
@@ -26,12 +27,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // First convert back to varchar
-        DB::statement("ALTER TABLE users MODIFY COLUMN user_type VARCHAR(20) DEFAULT 'tenant'");
-        
-        // Then change to original enum
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('user_type', ['tenant', 'landlord', 'agent', 'admin'])->default('tenant')->change();
-        });
+        // Convert back to original enum without commercial
+        DB::statement("ALTER TABLE users MODIFY COLUMN user_type ENUM('tenant', 'landlord', 'agent', 'admin') NOT NULL DEFAULT 'tenant'");
     }
 };
