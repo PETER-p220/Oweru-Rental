@@ -210,7 +210,40 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/agent/messages', [AgentController::class, 'sendMessage']);
     });
 
-    // ── Owner (landlord) routes ───────────────────────────────────────────────
+    // ── Commercial routes ────────────────────────────────────────────
+    Route::middleware('role:commercial')->group(function () {
+        // Dashboard
+        Route::get('/dashboard/commercial', [DashboardController::class, 'commercialDashboard']);
+
+        // Properties Management
+        Route::get('/commercial/my-properties',                   [PropertyController::class, 'getCommercialProperties']);
+        Route::post('/commercial/properties',                     [PropertyController::class, 'storeCommercial']);
+        Route::put('/commercial/properties/{property}',           [PropertyController::class, 'updateCommercial']);
+        Route::delete('/commercial/properties/{property}',        [PropertyController::class, 'destroyCommercial']);
+        Route::get('/commercial/properties/{property}/analytics', [PropertyController::class, 'getCommercialPropertyAnalytics']);
+
+        // Applications Management
+        Route::get('/commercial/applications',                              [ApplicationController::class, 'getCommercialApplications']);
+        Route::patch('/commercial/applications/{application}/approve',     [ApplicationController::class, 'approveCommercialApplication']);
+        Route::patch('/commercial/applications/{application}/reject',      [ApplicationController::class, 'rejectCommercialApplication']);
+
+        // Analytics
+        Route::get('/commercial/analytics',                           [PropertyController::class, 'getCommercialAnalytics']);
+
+        // Reports
+        Route::get('/commercial/reports',                             [ApplicationController::class, 'getCommercialReports']);
+        Route::post('/commercial/reports',                             [ApplicationController::class, 'generateCommercialReport']);
+
+        // Profile
+        Route::get('/commercial/profile',                             [DashboardController::class, 'getCommercialProfile']);
+        Route::put('/commercial/profile',                             [DashboardController::class, 'updateCommercialProfile']);
+
+        // Settings
+        Route::get('/commercial/settings',                            [DashboardController::class, 'getCommercialSettings']);
+        Route::put('/commercial/settings',                            [DashboardController::class, 'updateCommercialSettings']);
+    });
+
+    // ── Owner (landlord) routes ───────────────────────────────────────
     Route::middleware('role:landlord')->group(function () {
         Route::get('/owner/dashboard', [OwnerController::class, 'getDashboard']);
 
