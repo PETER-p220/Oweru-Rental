@@ -11,7 +11,7 @@ import Register from './pages/Register';
 import TenantDashboard from './pages/TenantDashboard';
 import LandlordDashboard from './pages/LandlordDashboard';
 import SettingsPage from './pages/Settings';
-import DashboardLayout from './components/DashboardLayout';
+import DashboardLayout, { type UserRole } from './components/DashboardLayout';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import RouteGuard from './components/RouteGuard';
@@ -74,6 +74,14 @@ import MyCommissions from './pages/agent/MyCommissions';
 import AgentApplicationsPage from './pages/agent/ApplicationsPage';
 import AgentAnalyticsPage from './pages/agent/AnalyticsPage';
 import AgentMessagesPage from './pages/agent/MessagesPage';
+
+// Commercial pages
+import CommercialDashboard from './pages/commercial/Dashboard';
+import CommercialProperties from './pages/commercial/Properties';
+import CommercialAddProperty from './pages/commercial/AddProperty';
+import CommercialAnalytics from './pages/commercial/Analytics';
+import CommercialReports from './pages/commercial/Reports';
+import CommercialProfile from './pages/commercial/Profile';
 
 // ─────────────────────────────────────────────
 // Public routes  (Header + Footer)
@@ -210,6 +218,24 @@ const BnbOwnerRoutes = () => (
   </RouteGuard>
 );
 
+// Commercial routes
+const CommercialRoutes = () => (
+  <RouteGuard requiredRole="commercial">
+    <DashboardLayout title="Dashboard">
+      <Routes>
+        <Route path="" element={<CommercialDashboard />} />
+        <Route path="my-properties" element={<CommercialProperties />} />
+        <Route path="properties/add" element={<CommercialAddProperty />} />
+        <Route path="analytics" element={<CommercialAnalytics />} />
+        <Route path="reports" element={<CommercialReports />} />
+        <Route path="profile" element={<CommercialProfile />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="*" element={<Navigate to="/dashboard/commercial" replace />} />
+      </Routes>
+    </DashboardLayout>
+  </RouteGuard>
+);
+
 // Dashboard redirect component
 const DashboardRedirect = () => {
   const { user } = useAuth();
@@ -218,7 +244,7 @@ const DashboardRedirect = () => {
     return <Navigate to="/login" replace />;
   }
   
-  const userType = user.userType || user.user_type || user.role || 'tenant';
+  const userType: UserRole = (user.userType || user.user_type || user.role || 'tenant') as UserRole;
   
   switch (userType) {
     case 'admin':
@@ -229,6 +255,8 @@ const DashboardRedirect = () => {
       return <Navigate to="/dashboard/landlord" replace />;
     case 'bnb_owner':
       return <Navigate to="/dashboard/bnb_owner" replace />;
+    case 'commercial':
+      return <Navigate to="/dashboard/commercial" replace />;
     default:
       return <Navigate to="/dashboard/tenant" replace />;
   }
@@ -251,6 +279,7 @@ function App() {
             <Route path="/dashboard/agent/*" element={<AgentRoutes />} />
             <Route path="/dashboard/landlord/*" element={<LandlordRoutes />} />
             <Route path="/dashboard/bnb_owner/*" element={<BnbOwnerRoutes />} />
+            <Route path="/dashboard/commercial/*" element={<CommercialRoutes />} />
             
             {/* Test route outside RouteGuard */}
             <Route path="/test-edit" element={<EditPropertySimple />} />

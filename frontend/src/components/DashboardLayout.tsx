@@ -16,7 +16,7 @@ interface DashboardLayoutProps {
   title?: string;
 }
 
-type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner' | 'commercial';
+export type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner' | 'commercial';
 
 const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
