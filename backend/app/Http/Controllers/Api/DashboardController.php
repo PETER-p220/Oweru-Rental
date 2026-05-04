@@ -41,19 +41,43 @@ class DashboardController extends Controller
                 'totalCommissions' => 0, // TODO: Calculate actual commissions
             ];
         } elseif ($user->user_type === 'commercial') {
-            $myProperties = $user->ownedProperties();
-            $stats = [
-                'totalProperties' => $myProperties->count(),
-                'activeProperties' => $myProperties->where('status', 'active')->count(),
-                'totalBookings' => 0, // TODO: Implement commercial booking system
-                'totalRevenue' => 0, // TODO: Calculate from commercial bookings
-                'averageRating' => 4.8, // Calculate from commercial reviews
-                'occupancyRate' => $myProperties->count() > 0 ? 85 : 0, // Commercial occupancy calculation
-            ];
+            return $this->commercialDashboard();
         }
 
         return response()->json([
             'data' => $stats
+        ]);
+    }
+
+    /**
+     * Commercial user dashboard
+     */
+    public function commercialDashboard(): JsonResponse
+    {
+        $user = Auth::user();
+        
+        $myProperties = $user->ownedProperties();
+        $stats = [
+            'totalProperties' => $myProperties->count(),
+            'activeProperties' => $myProperties->where('status', 'active')->count(),
+            'totalBookings' => 0, // TODO: Implement commercial booking system
+            'totalRevenue' => 0, // TODO: Calculate from commercial bookings
+            'averageRating' => 4.8, // Calculate from commercial reviews
+            'occupancyRate' => $myProperties->count() > 0 ? 85 : 0, // Commercial occupancy calculation
+        ];
+
+        return response()->json([
+            'stats' => $stats,
+            'recent_bookings' => [], // TODO: Implement commercial booking system
+            'popular_properties' => [], // TODO: Get popular commercial properties
+            'monthly_revenue' => [], // TODO: Calculate commercial monthly revenue
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'company_name' => $user->getMeta('company_name'),
+                'business_license' => $user->getMeta('business_license'),
+                'verified' => $user->email_verified_at !== null
+            ]
         ]);
     }
 
@@ -72,6 +96,7 @@ class DashboardController extends Controller
                 'id' => 1,
                 'property_title' => 'Modern Apartment in Dar es Salaam',
                 'client_name' => 'John Doe',
+                'client_email' => 'john@example.com',
                 'amount' => 50000,
                 'status' => 'paid',
                 'paid_at' => '2024-01-15T10:30:00Z',
@@ -80,6 +105,7 @@ class DashboardController extends Controller
                 'id' => 2,
                 'property_title' => 'Beach House in Zanzibar',
                 'client_name' => 'Jane Smith',
+                'client_email' => 'jane@example.com',
                 'amount' => 75000,
                 'status' => 'pending',
                 'paid_at' => null,
@@ -117,9 +143,9 @@ class DashboardController extends Controller
                 'property_title' => 'Beach House in Zanzibar',
                 'client_name' => 'Jane Smith',
                 'client_email' => 'jane@example.com',
-                'client_phone' => '+255 712 345 679',
-                'type' => 'application',
-                'status' => 'contacted',
+                'client_phone' => '+255 712 345 678',
+                'type' => 'property_inquiry',
+                'status' => 'new',
                 'created_at' => '2024-01-14T15:20:00Z',
             ],
         ];
