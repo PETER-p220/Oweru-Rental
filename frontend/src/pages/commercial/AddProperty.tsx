@@ -13,6 +13,7 @@ interface FormData {
 }
 
 const inputCls = "w-full px-4 py-3 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#C89128] transition-colors";
+const selectCls = "w-full px-4 py-3 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white text-sm focus:outline-none focus:border-[#C89128] transition-colors";
 const labelCls = "block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2";
 const errorCls = "mt-1.5 text-xs text-red-400";
 
@@ -141,6 +142,16 @@ const AddProperty: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0F172A]">
+      <style>{`
+        select option {
+          background-color: #1E2D4A;
+          color: white;
+        }
+        select:focus option {
+          background-color: #C89128;
+          color: #0F172A;
+        }
+      `}</style>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
         {/* Header */}
@@ -168,7 +179,7 @@ const AddProperty: React.FC = () => {
                 </div>
                 <div>
                   <label className={labelCls}>Property Type *</label>
-                  <select name="type" value={formData.type} onChange={handleChange} className={inputCls}>
+                  <select name="type" value={formData.type} onChange={handleChange} className={selectCls}>
                     {propertyTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
@@ -207,7 +218,7 @@ const AddProperty: React.FC = () => {
               </div>
               <div>
                 <label className={labelCls}>Price Type *</label>
-                <select name="price_type" value={formData.price_type} onChange={handleChange} className={inputCls}>
+                <select name="price_type" value={formData.price_type} onChange={handleChange} className={selectCls}>
                   {priceTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>

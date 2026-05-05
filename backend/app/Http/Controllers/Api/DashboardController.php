@@ -56,7 +56,17 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        $myProperties = $user->ownedProperties();
+        // Debug: Log user info
+        \Log::info('Commercial dashboard accessed by user: ' . $user->id . ' (' . $user->email . ')');
+        
+        try {
+            $myProperties = $user->ownedProperties();
+            \Log::info('Properties count: ' . $myProperties->count());
+        } catch (\Exception $e) {
+            \Log::error('Error getting properties: ' . $e->getMessage());
+            $myProperties = collect([]);
+        }
+        
         $stats = [
             'totalProperties' => $myProperties->count(),
             'activeProperties' => $myProperties->where('status', 'active')->count(),

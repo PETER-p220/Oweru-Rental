@@ -63,14 +63,19 @@ const Dashboard: React.FC = () => {
       const response = await fetch(`${API_BASE}/api/dashboard/commercial`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.stats);
-        setRecentBookings(data.recent_bookings);
-        setPopularProperties(data.popular_properties);
-        setMonthlyRevenue(data.monthly_revenue);
-        setUser(data.user);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
+      
+      const data = await response.json();
+      console.log('Dashboard data received:', data);
+      setStats(data.stats);
+      setRecentBookings(data.recent_bookings || []);
+      setPopularProperties(data.popular_properties || []);
+      setMonthlyRevenue(data.monthly_revenue || []);
+      setUser(data.user);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setError('Failed to load dashboard data. Please try again later.');
