@@ -53,7 +53,6 @@ const Dashboard: React.FC = () => {
   const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
   const [user, setUser] = useState<CommercialUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { fetchDashboardData(); }, []);
 
@@ -63,22 +62,16 @@ const Dashboard: React.FC = () => {
       const response = await fetch(`${API_BASE}/api/dashboard/commercial`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data.stats);
+        setRecentBookings(data.recent_bookings);
+        setPopularProperties(data.popular_properties);
+        setMonthlyRevenue(data.monthly_revenue);
+        setUser(data.user);
       }
-      
-      const data = await response.json();
-      console.log('Dashboard data received:', data);
-      setStats(data.stats);
-      setRecentBookings(data.recent_bookings || []);
-      setPopularProperties(data.popular_properties || []);
-      setMonthlyRevenue(data.monthly_revenue || []);
-      setUser(data.user);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setError('Failed to load dashboard data. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -114,24 +107,9 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-3 border-[#C89128]/30 border-t-[#C89128] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-400 text-base font-medium">Loading commercial dashboard...</p>
-          <p className="text-slate-500 text-sm mt-1">Please wait while we fetch your data</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 text-[#C89128] mx-auto mb-4">
-            <Calendar className="w-12 h-12" />
-          </div>
-          <p className="text-slate-400 text-base font-medium">Error loading dashboard</p>
-          <p className="text-slate-500 text-sm mt-1">{error}</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-[#C89128] border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">Loading dashboard…</p>
         </div>
       </div>
     );
