@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Filter, Search, DollarSign, Users, Eye, TrendingUp, TrendingDown, Zap, Plus } from 'lucide-react';
+import { FileText, Download, Search, DollarSign, Users, Eye, TrendingUp, Zap } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
@@ -9,23 +9,20 @@ interface Report {
 interface Property { id: number; title: string; type: string; location: string; status: string; }
 
 const reportTypes = [
-  { value: 'revenue', label: 'Revenue', icon: <DollarSign className="w-4 h-4" />, color: 'emerald' },
-  { value: 'bookings', label: 'Bookings', icon: <Users className="w-4 h-4" />, color: 'blue' },
-  { value: 'performance', label: 'Performance', icon: <TrendingUp className="w-4 h-4" />, color: 'violet' },
-  { value: 'analytics', label: 'Analytics', icon: <Eye className="w-4 h-4" />, color: 'amber' },
+  { value: 'revenue',     label: 'Revenue',     icon: <DollarSign size={16} />,  dot: '#10B981' },
+  { value: 'bookings',    label: 'Bookings',    icon: <Users size={16} />,       dot: '#3B82F6' },
+  { value: 'performance', label: 'Performance', icon: <TrendingUp size={16} />,  dot: '#8B5CF6' },
+  { value: 'analytics',   label: 'Analytics',   icon: <Eye size={16} />,         dot: '#F59E0B' },
 ];
+
+const dotColor: Record<string, string> = {
+  revenue: '#10B981', bookings: '#3B82F6', performance: '#8B5CF6', analytics: '#F59E0B'
+};
 
 const periods = [
   { value: 'daily', label: 'Daily' }, { value: 'weekly', label: 'Weekly' },
   { value: 'monthly', label: 'Monthly' }, { value: 'quarterly', label: 'Quarterly' }, { value: 'yearly', label: 'Yearly' },
 ];
-
-const colorMap: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
-  emerald: { bg: 'bg-emerald-400/10', text: 'text-emerald-400', border: 'border-emerald-400/25', iconBg: 'bg-emerald-400/10' },
-  blue: { bg: 'bg-blue-400/10', text: 'text-blue-400', border: 'border-blue-400/25', iconBg: 'bg-blue-400/10' },
-  violet: { bg: 'bg-violet-400/10', text: 'text-violet-400', border: 'border-violet-400/25', iconBg: 'bg-violet-400/10' },
-  amber: { bg: 'bg-amber-400/10', text: 'text-amber-400', border: 'border-amber-400/25', iconBg: 'bg-amber-400/10' },
-};
 
 const getTypeInfo = (type: string) => reportTypes.find(t => t.value === type) || reportTypes[0];
 
@@ -41,10 +38,7 @@ const Reports: React.FC = () => {
   const [selPeriod, setSelPeriod] = useState('');
   const [selProperty, setSelProperty] = useState('');
 
-  useEffect(() => {
-    fetchReports();
-    fetchProperties();
-  }, []);
+  useEffect(() => { fetchReports(); fetchProperties(); }, []);
 
   const fetchReports = async () => {
     try {
@@ -107,190 +101,227 @@ const Reports: React.FC = () => {
   });
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-[#C89128] border-t-transparent rounded-full animate-spin" />
-        <p className="text-[#4A5568] text-sm">Loading reports…</p>
+    <div style={{ minHeight: '100vh', background: '#080E1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 36, height: 36, border: '2px solid rgba(212,175,55,0.15)', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+        <p style={{ color: '#4A5568', fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>Loading reports…</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#0F172A]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-5 sm:space-y-6">
+    <div style={{ minHeight: '100vh', background: '#080E1A', fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+        * { box-sizing: border-box; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .card-panel { background: #0F1829; border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; }
+        .panel-header { padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 10px; }
+        .gold-dot { width: 7px; height: 7px; border-radius: 50%; background: #D4AF37; flex-shrink: 0; box-shadow: 0 0 8px rgba(212,175,55,0.5); }
+        .form-input {
+          width: 100%; padding: 10px 16px; background: #0C1420;
+          border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+          color: #E2D5B0; font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none;
+          transition: border-color 0.2s;
+        }
+        .form-input::placeholder { color: #2D3748; }
+        .form-input:focus { border-color: rgba(212,175,55,0.5); }
+        .quick-btn {
+          display: flex; flex-direction: column; align-items: center; gap: 10px;
+          padding: 18px 12px; background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(255,255,255,0.05); border-radius: 14px;
+          cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+        }
+        .quick-btn:hover:not(:disabled) { border-color: rgba(212,175,55,0.25); background: rgba(212,175,55,0.03); transform: translateY(-1px); }
+        .quick-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .quick-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .custom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .gen-btn {
+          display: flex; align-items: center; gap: 8px;
+          padding: 11px 22px; margin-top: 14px;
+          background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%);
+          color: #080E1A; border: none; border-radius: 12px;
+          font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; transition: all 0.2s;
+          box-shadow: 0 6px 20px rgba(212,175,55,0.22);
+        }
+        .gen-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(212,175,55,0.32); }
+        .gen-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .spinner-sm { width: 16px; height: 16px; border: 2px solid rgba(8,14,26,0.3); border-top-color: #080E1A; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .type-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+        .report-row { display: flex; align-items: center; gap: 14px; padding: 14px 22px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; }
+        .report-row:last-child { border-bottom: none; }
+        .report-row:hover { background: rgba(212,175,55,0.025); }
+        .report-icon { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .dl-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.18); border-radius: 10px; color: #D4AF37; font-size: 11px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
+        .dl-btn:hover { background: rgba(212,175,55,0.15); border-color: rgba(212,175,55,0.35); }
+        .empty-state { padding: 60px 20px; text-align: center; }
+        .empty-icon { width: 60px; height: 60px; background: rgba(255,255,255,0.03); border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+        .section-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #4A5568; margin-bottom: 12px; }
+        select option { background: #0C1420; color: #E2D5B0; }
+        .search-wrap { position: relative; }
+        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+        .search-input { padding-left: 40px !important; }
+        @media (max-width: 640px) {
+          .quick-grid { grid-template-columns: repeat(2, 1fr); }
+          .custom-grid, .filter-grid { grid-template-columns: 1fr !important; }
+          .tbl-hide { display: none !important; }
+        }
+      `}</style>
+
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '28px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         {/* Header */}
-        <div>
-          <p className="text-xs font-semibold tracking-widest text-[#C89128] uppercase mb-1">Business</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Reports</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Generate and download business reports</p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Business</span>
+            <h1 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 4 }}>Reports</h1>
+            <p style={{ color: '#4A5568', fontSize: 13 }}>Generate and download business reports</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: 12 }}>
+            <FileText size={14} color="#D4AF37" />
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#D4AF37' }}>{reports.length} total</span>
+          </div>
         </div>
 
-        {/* Quick Generate — Mobile: stack, Desktop: row */}
-        <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#1E2D4A] flex items-center gap-2">
-            <Zap className="w-4 h-4 text-[#C89128]" />
-            <h2 className="text-base font-semibold text-white">Quick Generate</h2>
+        {/* Quick Generate */}
+        <div className="card-panel">
+          <div className="panel-header">
+            <div className="gold-dot" />
+            <Zap size={14} color="#D4AF37" />
+            <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Quick Generate</span>
           </div>
 
           {/* One-click shortcuts */}
-          <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-[#1E2D4A]">
-            {reportTypes.map(rt => {
-              const c = colorMap[rt.color];
-              return (
-                <button key={rt.value} onClick={() => generateReport(rt.value, 'monthly')} disabled={generating}
-                  className={`flex flex-col items-center gap-2 p-4 bg-[#1E2D4A]/60 border border-[#1E2D4A] rounded-xl hover:border-[#C89128]/30 transition-all disabled:opacity-50 group`}>
-                  <div className={`w-9 h-9 ${c.iconBg} rounded-xl flex items-center justify-center ${c.text}`}>{rt.icon}</div>
-                  <div className="text-center">
-                    <p className="text-white text-xs font-medium">{rt.label}</p>
-                    <p className="text-slate-500 text-[10px] mt-0.5">Monthly</p>
-                  </div>
-                </button>
-              );
-            })}
+          <div className="quick-grid">
+            {reportTypes.map(rt => (
+              <button key={rt.value} className="quick-btn" onClick={() => generateReport(rt.value, 'monthly')} disabled={generating}>
+                <div className="quick-icon" style={{ background: `${rt.dot}14`, border: `1px solid ${rt.dot}30` }}>
+                  <span style={{ color: rt.dot }}>{rt.icon}</span>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ color: '#E2D5B0', fontSize: 12, fontWeight: 600, marginBottom: 3 }}>{rt.label}</p>
+                  <p style={{ color: '#4A5568', fontSize: 10 }}>Monthly</p>
+                </div>
+              </button>
+            ))}
           </div>
 
-          {/* Custom generate */}
-          <div className="p-4">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Custom Report</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <select value={selType} onChange={e => setSelType(e.target.value)}
-                className="px-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white text-sm focus:outline-none focus:border-[#C89128] transition-colors">
+          {/* Custom */}
+          <div style={{ padding: '18px 22px' }}>
+            <p className="section-label">Custom Report</p>
+            <div className="custom-grid">
+              <select value={selType} onChange={e => setSelType(e.target.value)} className="form-input">
                 <option value="">Report Type</option>
                 {reportTypes.map(t => <option key={t.value} value={t.value}>{t.label} Report</option>)}
               </select>
-              <select value={selPeriod} onChange={e => setSelPeriod(e.target.value)}
-                className="px-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white text-sm focus:outline-none focus:border-[#C89128] transition-colors">
+              <select value={selPeriod} onChange={e => setSelPeriod(e.target.value)} className="form-input">
                 <option value="">Period</option>
                 {periods.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
-              <select value={selProperty} onChange={e => setSelProperty(e.target.value)}
-                className="px-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white text-sm focus:outline-none focus:border-[#C89128] transition-colors">
+              <select value={selProperty} onChange={e => setSelProperty(e.target.value)} className="form-input">
                 <option value="">All Properties</option>
                 {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
               </select>
             </div>
-            <button
+            <button className="gen-btn"
               onClick={() => generateReport(selType, selPeriod, selProperty ? parseInt(selProperty) : undefined)}
-              disabled={!selType || !selPeriod || generating}
-              className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-[#C89128] text-[#0F172A] rounded-xl font-semibold text-sm hover:bg-[#D4A843] transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-[#C89128]/20"
-            >
-              {generating
-                ? <><div className="w-4 h-4 border-2 border-[#0F172A]/30 border-t-[#0F172A] rounded-full animate-spin" />Generating…</>
-                : <><FileText className="w-4 h-4" />Generate Report</>}
+              disabled={!selType || !selPeriod || generating}>
+              {generating ? <><div className="spinner-sm" />Generating…</> : <><FileText size={15} />Generate Report</>}
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            <div className="relative sm:col-span-1 lg:col-span-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
-              <input type="text" placeholder="Search reports…" value={search} onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#C89128] transition-colors" />
+        <div className="card-panel" style={{ padding: '18px 22px' }}>
+          <div className="filter-grid" style={{ marginBottom: 12 }}>
+            <div className="search-wrap">
+              <span className="search-icon"><Search size={14} color="#4A5568" /></span>
+              <input type="text" placeholder="Search reports…" value={search} onChange={e => setSearch(e.target.value)} className="form-input search-input" />
             </div>
-            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-              className="px-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white text-sm focus:outline-none focus:border-[#C89128]">
+            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="form-input">
               <option value="all">All Types</option>
               {reportTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
-            <select value={periodFilter} onChange={e => setPeriodFilter(e.target.value)}
-              className="px-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white text-sm focus:outline-none focus:border-[#C89128]">
+            <select value={periodFilter} onChange={e => setPeriodFilter(e.target.value)} className="form-input">
               <option value="all">All Periods</option>
               {periods.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
           </div>
-          <p className="text-xs text-slate-500 mt-3">{filtered.length} {filtered.length === 1 ? 'report' : 'reports'}</p>
+          <p style={{ fontSize: 11, color: '#2D3748', fontWeight: 600 }}>{filtered.length} {filtered.length === 1 ? 'report' : 'reports'}</p>
         </div>
 
-        {/* Reports */}
+        {/* Reports list */}
         {filtered.length === 0 ? (
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl py-16 text-center">
-            <div className="w-16 h-16 bg-[#1E2D4A] rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-slate-600" />
+          <div className="card-panel">
+            <div className="empty-state">
+              <div className="empty-icon"><FileText size={28} color="#2D3748" /></div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#E2D5B0', marginBottom: 6 }}>No reports found</h3>
+              <p style={{ color: '#4A5568', fontSize: 13 }}>Generate your first report above</p>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-1">No reports found</h3>
-            <p className="text-slate-400 text-sm">Generate your first report above</p>
           </div>
         ) : (
-          <>
-            {/* Mobile: cards */}
-            <div className="space-y-3 sm:hidden">
-              {filtered.map(r => {
-                const info = getTypeInfo(r.type);
-                const c = colorMap[info.color];
-                return (
-                  <div key={r.id} className="bg-[#162035] border border-[#1E2D4A] rounded-2xl p-4 hover:border-[#C89128]/20 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 ${c.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 ${c.text}`}>{info.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white truncate">{r.title}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">#{r.id}</p>
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-medium border ${c.bg} ${c.text} ${c.border}`}>{info.label}</span>
-                          <span className="text-[10px] text-slate-500">{periods.find(p => p.value === r.period)?.label}</span>
-                          <span className="text-[10px] text-slate-500">{formatDate(r.generated_at)}</span>
-                        </div>
-                      </div>
-                      <button onClick={() => downloadReport(r.id)}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-[#C89128]/10 text-[#C89128] border border-[#C89128]/20 rounded-xl text-xs font-medium hover:bg-[#C89128]/20 transition-colors flex-shrink-0">
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="card-panel">
+            {/* Table header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 120px 100px 1fr 100px', gap: 16, padding: '12px 22px', borderBottom: '1px solid rgba(255,255,255,0.04)' }} className="tbl-hide">
+              {['Report', 'Type', 'Period', 'Generated', ''].map((h, i) => (
+                <p key={i} style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: '#2D3748', textAlign: i === 4 ? 'right' : 'left' }}>{h}</p>
+              ))}
             </div>
 
-            {/* Desktop: table */}
-            <div className="hidden sm:block bg-[#162035] border border-[#1E2D4A] rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[#1E2D4A]">
-                      {['Report', 'Type', 'Period', 'Generated', ''].map((h, i) => (
-                        <th key={i} className={`px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide ${i === 4 ? 'text-right' : 'text-left'}`}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1E2D4A]">
-                    {filtered.map(r => {
-                      const info = getTypeInfo(r.type);
-                      const c = colorMap[info.color];
-                      return (
-                        <tr key={r.id} className="hover:bg-[#1E2D4A]/30 transition-colors">
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-9 h-9 ${c.iconBg} rounded-xl flex items-center justify-center ${c.text} flex-shrink-0`}>{info.icon}</div>
-                              <div>
-                                <p className="text-sm font-medium text-white">{r.title}</p>
-                                <p className="text-xs text-slate-500">#{r.id}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-5 py-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border ${c.bg} ${c.text} ${c.border}`}>
-                              {info.icon && <span className="w-3 h-3 flex items-center justify-center">{info.icon}</span>}
-                              {info.label}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-sm text-slate-300">{periods.find(p => p.value === r.period)?.label || r.period}</td>
-                          <td className="px-5 py-4 text-sm text-slate-400">{formatDate(r.generated_at)}</td>
-                          <td className="px-5 py-4 text-right">
-                            <button onClick={() => downloadReport(r.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C89128]/10 text-[#C89128] border border-[#C89128]/20 rounded-xl text-xs font-medium hover:bg-[#C89128]/20 transition-colors">
-                              <Download className="w-3.5 h-3.5" />Download
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
+            {/* Rows */}
+            {filtered.map(r => {
+              const info = getTypeInfo(r.type);
+              const dot = dotColor[r.type] || '#D4AF37';
+              return (
+                <div key={r.id} className="report-row">
+                  {/* Icon + title */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 2, minWidth: 0 }}>
+                    <div className="report-icon" style={{ background: `${dot}12`, border: `1px solid ${dot}25` }}>
+                      <span style={{ color: dot }}>{info.icon}</span>
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#E2D5B0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>{r.title}</p>
+                      <p style={{ fontSize: 10, color: '#2D3748' }}>#{r.id}</p>
+                    </div>
+                  </div>
+
+                  {/* Type badge */}
+                  <div style={{ width: 120 }} className="tbl-hide">
+                    <span className="type-badge" style={{ background: `${dot}12`, color: dot, border: `1px solid ${dot}25` }}>
+                      {info.label}
+                    </span>
+                  </div>
+
+                  {/* Period */}
+                  <div style={{ width: 100 }} className="tbl-hide">
+                    <p style={{ fontSize: 12, color: '#64748B' }}>{periods.find(p => p.value === r.period)?.label || r.period}</p>
+                  </div>
+
+                  {/* Date */}
+                  <div style={{ flex: 1 }} className="tbl-hide">
+                    <p style={{ fontSize: 12, color: '#4A5568' }}>{formatDate(r.generated_at)}</p>
+                  </div>
+
+                  {/* Mobile info below title (visible on small screens) */}
+                  <div style={{ display: 'none' }} className="mobile-meta">
+                    <span className="type-badge" style={{ background: `${dot}12`, color: dot }}>{info.label}</span>
+                    <span style={{ fontSize: 10, color: '#4A5568' }}>{periods.find(p => p.value === r.period)?.label}</span>
+                  </div>
+
+                  {/* Download */}
+                  <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+                    <button className="dl-btn" onClick={() => downloadReport(r.id)}>
+                      <Download size={13} />
+                      <span className="tbl-hide" style={{ display: 'inline' }}>Download</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
 
       </div>

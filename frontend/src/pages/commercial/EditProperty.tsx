@@ -4,62 +4,22 @@ import { Building2, Plus, X, Upload, MapPin, DollarSign, Home, Car, Bed, Bath, S
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
-interface Amenity {
-  id: number;
-  name: string;
-  icon: string;
-}
+interface Amenity { id: number; name: string; icon: string; }
 
 interface Property {
-  id: number;
-  title: string;
-  description: string;
-  type: string;
-  location: string;
-  address: string;
-  price: number;
-  price_type: string;
-  area: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  parking_spaces?: number;
-  furnished: boolean;
-  available_from: string;
-  contact_phone: string;
-  contact_email: string;
-  latitude?: number;
-  longitude?: number;
-  amenities: Array<{
-    id: number;
-    name: string;
-    icon: string;
-  }>;
-  images: Array<{
-    id: number;
-    image_path: string;
-    is_primary: boolean;
-  }>;
+  id: number; title: string; description: string; type: string; location: string;
+  address: string; price: number; price_type: string; area: number; bedrooms?: number;
+  bathrooms?: number; parking_spaces?: number; furnished: boolean; available_from: string;
+  contact_phone: string; contact_email: string; latitude?: number; longitude?: number;
+  amenities: Array<{ id: number; name: string; icon: string }>;
+  images: Array<{ id: number; image_path: string; is_primary: boolean }>;
 }
 
 interface FormData {
-  title: string;
-  description: string;
-  type: string;
-  location: string;
-  address: string;
-  price: number;
-  price_type: string;
-  area: number;
-  bedrooms: number;
-  bathrooms: number;
-  parking_spaces: number;                    
-  furnished: boolean;
-  available_from: string;                    
-  contact_phone: string;
-  contact_email: string;
-  latitude: number;
-  longitude: number;
-  amenities: number[];
+  title: string; description: string; type: string; location: string; address: string;
+  price: number; price_type: string; area: number; bedrooms: number; bathrooms: number;
+  parking_spaces: number; furnished: boolean; available_from: string;
+  contact_phone: string; contact_email: string; latitude: number; longitude: number; amenities: number[];
 }
 
 const EditProperty: React.FC = () => {
@@ -75,637 +35,403 @@ const EditProperty: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState<FormData>({
-    title: '',
-    description: '',
-    type: 'residential',
-    location: '',
-    address: '',
-    price: 0,
-    price_type: 'monthly',
-    area: 0,
-    bedrooms: 0,
-    bathrooms: 0,
-    parking_spaces: 0,
-    furnished: false,
-    available_from: '',
-    contact_phone: '',
-    contact_email: '',
-    latitude: 0,
-    longitude: 0,
-    amenities: []
+    title: '', description: '', type: 'residential', location: '', address: '',
+    price: 0, price_type: 'monthly', area: 0, bedrooms: 0, bathrooms: 0,
+    parking_spaces: 0, furnished: false, available_from: '',
+    contact_phone: '', contact_email: '', latitude: 0, longitude: 0, amenities: []
   });
 
-  useEffect(() => {
-    if (id) {
-      fetchProperty();
-      fetchAmenities();
-    }
-  }, [id]);
+  useEffect(() => { if (id) { fetchProperty(); fetchAmenities(); } }, [id]);
 
   const fetchProperty = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/api/commercial/properties/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-
       if (response.ok) {
         const data = await response.json();
         setProperty(data);
-        
-        // Populate form data
         setFormData({
-          title: data.title,
-          description: data.description,
-          type: data.type,
-          location: data.location,
-          address: data.address,
-          price: data.price,
-          price_type: data.price_type,
-          area: data.area,
-          bedrooms: data.bedrooms || 0,
-          bathrooms: data.bathrooms || 0,
-          parking_spaces: data.parking_spaces || 0,
-          furnished: data.furnished,
-          available_from: data.available_from,
-          contact_phone: data.contact_phone,
-          contact_email: data.contact_email,
-          latitude: data.latitude || 0,
-          longitude: data.longitude || 0,
+          title: data.title, description: data.description, type: data.type,
+          location: data.location, address: data.address, price: data.price,
+          price_type: data.price_type, area: data.area, bedrooms: data.bedrooms || 0,
+          bathrooms: data.bathrooms || 0, parking_spaces: data.parking_spaces || 0,
+          furnished: data.furnished, available_from: data.available_from,
+          contact_phone: data.contact_phone, contact_email: data.contact_email,
+          latitude: data.latitude || 0, longitude: data.longitude || 0,
           amenities: data.amenities.map((a: any) => a.id)
         });
-      } else {
-        navigate('/commercial/properties');
-      }
-    } catch (error) {
-      console.error('Error fetching property:', error);
-      navigate('/commercial/properties');
-    } finally {
-      setFetchLoading(false);
-    }
+      } else { navigate('/commercial/properties'); }
+    } catch { navigate('/commercial/properties'); }
+    finally { setFetchLoading(false); }
   };
 
   const fetchAmenities = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/api/commercial/amenities`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
+      const res = await fetch(`${API_BASE}/api/commercial/amenities`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAmenities(data);
-      }
-    } catch (error) {
-      console.error('Error fetching amenities:', error);
-    }
+      if (res.ok) setAmenities(await res.json());
+    } catch (e) { console.error(e); }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
-              type === 'number' ? Number(value) : value
-    }));
-
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    setFormData(p => ({ ...p, [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : type === 'number' ? Number(value) : value }));
+    if (errors[name]) setErrors(p => ({ ...p, [name]: '' }));
   };
 
-  const handleAmenityToggle = (amenityId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      amenities: prev.amenities.includes(amenityId)
-        ? prev.amenities.filter(id => id !== amenityId)
-        : [...prev.amenities, amenityId]
-    }));
-  };
+  const toggleAmenity = (amenityId: number) =>
+    setFormData(p => ({ ...p, amenities: p.amenities.includes(amenityId) ? p.amenities.filter(i => i !== amenityId) : [...p.amenities, amenityId] }));
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(file => file.type.startsWith('image/'));
-    
-    if (validFiles.length !== files.length) {
-      setErrors(prev => ({ ...prev, images: 'Only image files are allowed' }));
-      return;
-    }
-
-    setNewImages(prev => [...prev, ...validFiles]);
-
-    // Create previews
-    validFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreviews(prev => [...prev, e.target?.result as string]);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
+    setNewImages(p => [...p, ...files]);
+    files.forEach(file => {
+      const r = new FileReader();
+      r.onload = (ev) => setImagePreviews(p => [...p, ev.target?.result as string]);
+      r.readAsDataURL(file);
     });
-
-    // Clear error
-    if (errors.images) {
-      setErrors(prev => ({ ...prev, images: '' }));
-    }
+    if (errors.images) setErrors(p => ({ ...p, images: '' }));
   };
 
   const removeNewImage = (index: number) => {
-    setNewImages(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setNewImages(p => p.filter((_, i) => i !== index));
+    setImagePreviews(p => p.filter((_, i) => i !== index));
   };
 
-  const removeExistingImage = (imageId: number) => {
-    setDeletedImages(prev => [...prev, imageId]);
+  const removeExistingImage = (imageId: number) => setDeletedImages(p => [...p, imageId]);
+  const getExistingImages = () => property?.images.filter(img => !deletedImages.includes(img.id)) || [];
+
+  const validate = (): boolean => {
+    const e: Record<string, string> = {};
+    if (!formData.title.trim()) e.title = 'Title is required';
+    if (!formData.description.trim()) e.description = 'Description is required';
+    if (!formData.location.trim()) e.location = 'Location is required';
+    if (!formData.address.trim()) e.address = 'Address is required';
+    if (!formData.price || formData.price <= 0) e.price = 'Price must be greater than 0';
+    if (!formData.area || formData.area <= 0) e.area = 'Area must be greater than 0';
+    if (!formData.available_from) e.available_from = 'Available date is required';
+    if (!formData.contact_phone.trim()) e.contact_phone = 'Contact phone is required';
+    if (!formData.contact_email.trim()) e.contact_email = 'Contact email is required';
+    if (!/^\S+@\S+\.\S+$/.test(formData.contact_email)) e.contact_email = 'Invalid email format';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (!formData.location.trim()) newErrors.location = 'Location is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.price || formData.price <= 0) newErrors.price = 'Price must be greater than 0';
-    if (!formData.area || formData.area <= 0) newErrors.area = 'Area must be greater than 0';
-    if (!formData.available_from) newErrors.available_from = 'Available date is required';
-    if (!formData.contact_phone.trim()) newErrors.contact_phone = 'Contact phone is required';
-    if (!formData.contact_email.trim()) newErrors.contact_email = 'Contact email is required';
-    if (!/^\S+@\S+\.\S+$/.test(formData.contact_email)) newErrors.contact_email = 'Invalid email format';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-
+  const handleSubmit = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!validate()) return;
     setLoading(true);
-
     try {
       const token = localStorage.getItem('token');
-      const formDataToSend = new FormData();
-
-      // Add form fields
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'amenities') {
-          value.forEach((amenityId: number) => {
-            formDataToSend.append('amenities[]', amenityId.toString());
-          });
-        } else if (typeof value === 'boolean') {
-          formDataToSend.append(key, value ? '1' : '0');
-        } else {
-          formDataToSend.append(key, value.toString());
-        }
+      const fd = new FormData();
+      Object.entries(formData).forEach(([k, v]) => {
+        if (k === 'amenities') (v as number[]).forEach(aId => fd.append('amenities[]', aId.toString()));
+        else if (typeof v === 'boolean') fd.append(k, v ? '1' : '0');
+        else fd.append(k, v.toString());
       });
-
-      // Add new images
-      newImages.forEach((image, index) => {
-        formDataToSend.append(`images[${index}]`, image);
-      });
-
-      // Add deleted images
-      deletedImages.forEach((imageId, index) => {
-        formDataToSend.append(`deleted_images[${index}]`, imageId.toString());
-      });
-
-      const response = await fetch(`${API_BASE}/api/commercial/properties/${id}`, {
+      newImages.forEach((img, i) => fd.append(`images[${i}]`, img));
+      deletedImages.forEach((imgId, i) => fd.append(`deleted_images[${i}]`, imgId.toString()));
+      const res = await fetch(`${API_BASE}/api/commercial/properties/${id}`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        },
-        body: formDataToSend
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+        body: fd
       });
-
-      if (response.ok) {
-        navigate('/commercial/properties', {
-          state: { message: 'Property updated successfully and is pending approval' }
-        });
+      if (res.ok) {
+        navigate('/commercial/properties', { state: { message: 'Property updated successfully and is pending approval' } });
       } else {
-        const errorData = await response.json();
-        if (errorData.errors) {
-          setErrors(errorData.errors);
-        } else {
-          setErrors({ submit: errorData.message || 'Failed to update property' });
-        }
+        const err = await res.json();
+        if (err.errors) setErrors(err.errors);
+        else setErrors({ submit: err.message || 'Failed to update property' });
       }
-    } catch (error) {
-      console.error('Error updating property:', error);
-      setErrors({ submit: 'Network error. Please try again.' });
-    } finally {
-      setLoading(false);
-    }
+    } catch { setErrors({ submit: 'Network error. Please try again.' }); }
+    finally { setLoading(false); }
   };
 
   const propertyTypes = [
-    { value: 'residential', label: 'Residential' },
-    { value: 'commercial', label: 'Commercial' },
-    { value: 'office', label: 'Office' },
-    { value: 'retail', label: 'Retail' },
-    { value: 'warehouse', label: 'Warehouse' },
-    { value: 'industrial', label: 'Industrial' }
+    { value: 'residential', label: 'Residential' }, { value: 'commercial', label: 'Commercial' },
+    { value: 'office', label: 'Office' }, { value: 'retail', label: 'Retail' },
+    { value: 'warehouse', label: 'Warehouse' }, { value: 'industrial', label: 'Industrial' }
   ];
-
   const priceTypes = [
-    { value: 'monthly', label: 'Per Month' },
-    { value: 'yearly', label: 'Per Year' },
-    { value: 'sale', label: 'For Sale' }
+    { value: 'monthly', label: 'Per Month' }, { value: 'yearly', label: 'Per Year' }, { value: 'sale', label: 'For Sale' }
   ];
 
-  const getExistingImages = () => {
-    if (!property) return [];
-    return property.images.filter(img => !deletedImages.includes(img.id));
-  };
-
-  if (fetchLoading) {
-    return (
-      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
-        <div className="text-[#F1EDD8]">Loading property...</div>
+  if (fetchLoading) return (
+    <div style={{ minHeight: '100vh', background: '#080E1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 36, height: 36, border: '2px solid rgba(212,175,55,0.15)', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+        <p style={{ color: '#4A5568', fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>Loading property…</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#0F172A]">
+    <div style={{ minHeight: '100vh', background: '#080E1A', fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
-        :root {
-          --navy-900: #0F172A;
-          --navy-800: #162035;
-          --navy-700: #1E2D4A;
-          --gold: #C89128;
-          --gold-lt: #D4A843;
-          --gold-dim: rgba(200,145,40,0.12);
-          --cream: #F8F8F9;
-          --slate: #94A3B8;
-          --border: rgba(200,145,40,0.18);
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+        * { box-sizing: border-box; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .form-input {
+          width: 100%; padding: 11px 16px;
+          background: #0C1420; border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 12px; color: #E2D5B0; font-size: 13px;
+          font-family: 'DM Sans', sans-serif;
+          transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+        }
+        .form-input::placeholder { color: #2D3748; }
+        .form-input:focus { border-color: rgba(212,175,55,0.5); box-shadow: 0 0 0 3px rgba(212,175,55,0.07); }
+        .form-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #4A5568; margin-bottom: 8px; }
+        .card-panel { background: #0F1829; border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; }
+        .panel-header { padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 10px; }
+        .gold-dot { width: 7px; height: 7px; border-radius: 50%; background: #D4AF37; flex-shrink: 0; box-shadow: 0 0 8px rgba(212,175,55,0.5); }
+        .panel-body { padding: 22px; }
+        .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+        .field-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+        .error-text { margin-top: 5px; font-size: 11px; color: #F87171; }
+        .toggle-wrap { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .toggle-track { width: 44px; height: 24px; border-radius: 12px; position: relative; transition: background 0.2s; flex-shrink: 0; }
+        .toggle-thumb { position: absolute; top: 4px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: left 0.2s; }
+        .amenity-chip { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s; font-size: 12px; font-weight: 500; background: #0C1420; color: #64748B; }
+        .amenity-chip.active { border-color: rgba(212,175,55,0.4); background: rgba(212,175,55,0.08); color: #D4AF37; }
+        .amenity-chip:hover:not(.active) { border-color: rgba(212,175,55,0.2); color: #94A3B8; }
+        .amenity-check { width: 16px; height: 16px; border-radius: 5px; border: 1px solid; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+        .amenity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .upload-zone { border: 2px dashed rgba(255,255,255,0.06); border-radius: 14px; padding: 36px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+        .upload-zone:hover { border-color: rgba(212,175,55,0.3); background: rgba(212,175,55,0.03); }
+        .upload-icon-wrap { width: 52px; height: 52px; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.15); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+        .img-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+        .img-thumb { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; }
+        .img-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .img-remove { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; background: rgba(239,68,68,0.9); border-radius: 8px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; border: none; cursor: pointer; }
+        .img-thumb:hover .img-remove { opacity: 1; }
+        .primary-badge { position: absolute; top: 6px; left: 6px; padding: 3px 8px; background: #D4AF37; color: #080E1A; font-size: 9px; font-weight: 700; border-radius: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .btn-cancel { padding: 12px 24px; background: #0F1829; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; color: #94A3B8; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
+        .btn-cancel:hover { border-color: rgba(212,175,55,0.3); color: #E2D5B0; }
+        .btn-submit { display: flex; align-items: center; gap: 8px; padding: 12px 28px; background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%); color: #080E1A; border: none; border-radius: 14px; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 24px rgba(212,175,55,0.25); letter-spacing: 0.3px; }
+        .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(212,175,55,0.35); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(8,14,26,0.3); border-top-color: #080E1A; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .err-banner { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 10px; }
+        .section-label { font-size: 12px; font-weight: 600; color: #64748B; margin-bottom: 14px; letter-spacing: 0.5px; }
+        select option { background: #0C1420; color: #E2D5B0; }
+        @media (max-width: 640px) {
+          .field-grid-2, .field-grid-3, .field-grid-4 { grid-template-columns: 1fr !important; }
+          .img-grid { grid-template-columns: repeat(3, 1fr); }
+          .amenity-grid { grid-template-columns: repeat(2, 1fr); }
         }
       `}</style>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '28px 20px' }}>
+
         {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/commercial/properties')}
-            className="flex items-center gap-2 text-[#4A5568] hover:text-[#F1EDD8] mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Properties
+        <div style={{ marginBottom: 32 }}>
+          <button onClick={() => navigate('/commercial/properties')} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#4A5568', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 16, fontFamily: "'DM Sans', sans-serif", transition: 'color 0.2s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#E2D5B0')} onMouseLeave={e => (e.currentTarget.style.color = '#4A5568')}>
+            <ArrowLeft size={16} /> Back to Properties
           </button>
-          <h1 className="text-3xl font-bold text-[#F1EDD8] mb-2">Edit Property</h1>
-          <p className="text-[#4A5568]">Update your commercial rental property details</p>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Edit Listing</span>
+          <h1 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 6 }}>
+            Edit Property
+          </h1>
+          <p style={{ color: '#4A5568', fontSize: 13 }}>Update your commercial rental property details</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Basic Information */}
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
-              <Building2 className="w-5 h-5" />
-              Basic Information
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Property Title *
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="e.g., Modern Office Space in Kigali"
-                />
-                {errors.title && <p className="mt-1 text-sm text-red-400">{errors.title}</p>}
-              </div>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Property Type *
-                </label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] focus:outline-none focus:border-[#D4AF37]"
-                >
-                  {propertyTypes.map(type => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
-                {errors.type && <p className="mt-1 text-sm text-red-400">{errors.type}</p>}
+          {/* Basic Info */}
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <Building2 size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Basic Information</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-2" style={{ marginBottom: 16 }}>
+                <div>
+                  <label className="form-label">Property Title *</label>
+                  <input type="text" name="title" value={formData.title} onChange={handleChange} className="form-input" placeholder="e.g., Modern Office Space in Kigali" />
+                  {errors.title && <p className="error-text">{errors.title}</p>}
+                </div>
+                <div>
+                  <label className="form-label">Property Type *</label>
+                  <select name="type" value={formData.type} onChange={handleChange} className="form-input">
+                    {propertyTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
               </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Description *
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="Describe your property in detail..."
-                />
-                {errors.description && <p className="mt-1 text-sm text-red-400">{errors.description}</p>}
+              <div>
+                <label className="form-label">Description *</label>
+                <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="form-input" style={{ resize: 'none' }} placeholder="Describe your property in detail..." />
+                {errors.description && <p className="error-text">{errors.description}</p>}
               </div>
             </div>
           </div>
 
           {/* Location */}
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Location
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Location/Area *
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="e.g., Kigali, Rwanda"
-                />
-                {errors.location && <p className="mt-1 text-sm text-red-400">{errors.location}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Full Address *
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="e.g., KN 123 St, Kigali"
-                />
-                {errors.address && <p className="mt-1 text-sm text-red-400">{errors.address}</p>}
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <MapPin size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Location</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-2">
+                <div>
+                  <label className="form-label">Location / Area *</label>
+                  <input type="text" name="location" value={formData.location} onChange={handleChange} className="form-input" placeholder="e.g., Kigali, Rwanda" />
+                  {errors.location && <p className="error-text">{errors.location}</p>}
+                </div>
+                <div>
+                  <label className="form-label">Full Address *</label>
+                  <input type="text" name="address" value={formData.address} onChange={handleChange} className="form-input" placeholder="e.g., KN 123 St, Kigali" />
+                  {errors.address && <p className="error-text">{errors.address}</p>}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Pricing & Size */}
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
-              <DollarSign className="w-5 h-5" />
-              Pricing & Size
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Price (TZS) *
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="500000"
-                />
-                {errors.price && <p className="mt-1 text-sm text-red-400">{errors.price}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Price Type *
-                </label>
-                <select
-                  name="price_type"
-                  value={formData.price_type}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] focus:outline-none focus:border-[#D4AF37]"
-                >
-                  {priceTypes.map(type => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
-                {errors.price_type && <p className="mt-1 text-sm text-red-400">{errors.price_type}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Area (m²) *
-                </label>
-                <input
-                  type="number"
-                  name="area"
-                  value={formData.area}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="120"
-                />
-                {errors.area && <p className="mt-1 text-sm text-red-400">{errors.area}</p>}
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <DollarSign size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Pricing & Size</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-3">
+                <div>
+                  <label className="form-label">Price (TZS) *</label>
+                  <input type="number" name="price" value={formData.price} onChange={handleChange} className="form-input" placeholder="500000" />
+                  {errors.price && <p className="error-text">{errors.price}</p>}
+                </div>
+                <div>
+                  <label className="form-label">Price Type *</label>
+                  <select name="price_type" value={formData.price_type} onChange={handleChange} className="form-input">
+                    {priceTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Area (m²) *</label>
+                  <input type="number" name="area" value={formData.area} onChange={handleChange} className="form-input" placeholder="120" />
+                  {errors.area && <p className="error-text">{errors.area}</p>}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Property Features */}
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
-              <Home className="w-5 h-5" />
-              Property Features
-            </h2>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  <Bed className="w-4 h-4 inline mr-1" />
-                  Bedrooms
-                </label>
-                <input
-                  type="number"
-                  name="bedrooms"
-                  value={formData.bedrooms}
-                  onChange={handleInputChange}
-                  min="0"
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="0"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  <Bath className="w-4 h-4 inline mr-1" />
-                  Bathrooms
-                </label>
-                <input
-                  type="number"
-                  name="bathrooms"
-                  value={formData.bathrooms}
-                  onChange={handleInputChange}
-                  min="0"
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="0"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  <Car className="w-4 h-4 inline mr-1" />
-                  Parking Spaces
-                </label>
-                <input
-                  type="number"
-                  name="parking_spaces"
-                  value={formData.parking_spaces}
-                  onChange={handleInputChange}
-                  min="0"
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="0"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  <Square className="w-4 h-4 inline mr-1" />
-                  Furnished
-                </label>
-                <div className="flex items-center h-10">
-                  <input
-                    type="checkbox"
-                    name="furnished"
-                    checked={formData.furnished}
-                    onChange={handleInputChange}
-                    className="w-4 h-4 text-gold bg-[#1E2D4A] border-[#1E2D4A] rounded focus:ring-gold"
-                  />
-                  <span className="ml-2 text-[#E2D5B0]">Furnished</span>
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <Home size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Property Features</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-4">
+                <div>
+                  <label className="form-label"><Bed size={10} style={{ display: 'inline', marginRight: 4 }} />Bedrooms</label>
+                  <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleChange} min="0" className="form-input" placeholder="0" />
+                </div>
+                <div>
+                  <label className="form-label"><Bath size={10} style={{ display: 'inline', marginRight: 4 }} />Bathrooms</label>
+                  <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} min="0" className="form-input" placeholder="0" />
+                </div>
+                <div>
+                  <label className="form-label"><Car size={10} style={{ display: 'inline', marginRight: 4 }} />Parking</label>
+                  <input type="number" name="parking_spaces" value={formData.parking_spaces} onChange={handleChange} min="0" className="form-input" placeholder="0" />
+                </div>
+                <div>
+                  <label className="form-label" style={{ opacity: 0 }}>Furnished</label>
+                  <div className="toggle-wrap" style={{ marginTop: 2 }} onClick={() => setFormData(p => ({ ...p, furnished: !p.furnished }))}>
+                    <div className="toggle-track" style={{ background: formData.furnished ? '#D4AF37' : '#0C1420', border: `1px solid ${formData.furnished ? '#D4AF37' : 'rgba(255,255,255,0.1)'}` }}>
+                      <div className="toggle-thumb" style={{ left: formData.furnished ? '24px' : '4px' }} />
+                    </div>
+                    <span style={{ fontSize: 13, color: formData.furnished ? '#D4AF37' : '#64748B', fontWeight: 500 }}>Furnished</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Availability & Contact */}
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Availability & Contact
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Available From *
-                </label>
-                <input
-                  type="date"
-                  name="available_from"
-                  value={formData.available_from}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                />
-                {errors.available_from && <p className="mt-1 text-sm text-red-400">{errors.available_from}</p>}
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <Calendar size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Availability & Contact</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-2" style={{ marginBottom: 16 }}>
+                <div>
+                  <label className="form-label">Available From *</label>
+                  <input type="date" name="available_from" value={formData.available_from} onChange={handleChange} className="form-input" />
+                  {errors.available_from && <p className="error-text">{errors.available_from}</p>}
+                </div>
+                <div>
+                  <label className="form-label">Contact Phone *</label>
+                  <input type="tel" name="contact_phone" value={formData.contact_phone} onChange={handleChange} className="form-input" placeholder="+255712345678" />
+                  {errors.contact_phone && <p className="error-text">{errors.contact_phone}</p>}
+                </div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Contact Phone *
-                </label>
-                <input
-                  type="tel"
-                  name="contact_phone"
-                  value={formData.contact_phone}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="+255712345678"
-                />
-                {errors.contact_phone && <p className="mt-1 text-sm text-red-400">{errors.contact_phone}</p>}
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
-                  Contact Email *
-                </label>
-                <input
-                  type="email"
-                  name="contact_email"
-                  value={formData.contact_email}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
-                  placeholder="contact@example.com"
-                />
-                {errors.contact_email && <p className="mt-1 text-sm text-red-400">{errors.contact_email}</p>}
+                <label className="form-label">Contact Email *</label>
+                <input type="email" name="contact_email" value={formData.contact_email} onChange={handleChange} className="form-input" placeholder="contact@example.com" />
+                {errors.contact_email && <p className="error-text">{errors.contact_email}</p>}
               </div>
             </div>
           </div>
 
           {/* Amenities */}
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6">Amenities</h2>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {amenities.map((amenity) => (
-                <label
-                  key={amenity.id}
-                  className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
-                    formData.amenities.includes(amenity.id)
-                      ? 'border-gold bg-gold/10'
-                      : 'border-[#1E2D4A] bg-[#1E2D4A] hover:border-navy-500'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.amenities.includes(amenity.id)}
-                    onChange={() => handleAmenityToggle(amenity.id)}
-                    className="w-4 h-4 text-gold bg-[#1E2D4A] border-[#1E2D4A] rounded focus:ring-gold"
-                  />
-                  <span className="text-[#E2D5B0]">{amenity.name}</span>
-                </label>
-              ))}
+          {amenities.length > 0 && (
+            <div className="card-panel">
+              <div className="panel-header">
+                <div className="gold-dot" />
+                <Plus size={14} color="#D4AF37" />
+                <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Amenities</span>
+              </div>
+              <div className="panel-body">
+                <div className="amenity-grid">
+                  {amenities.map(a => {
+                    const active = formData.amenities.includes(a.id);
+                    return (
+                      <div key={a.id} className={`amenity-chip ${active ? 'active' : ''}`} onClick={() => toggleAmenity(a.id)}>
+                        <div className="amenity-check" style={{ borderColor: active ? '#D4AF37' : 'rgba(255,255,255,0.12)', background: active ? '#D4AF37' : 'transparent' }}>
+                          {active && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#080E1A" strokeWidth="3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                        </div>
+                        {a.name}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Images */}
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              Property Images
-            </h2>
-            
-            <div className="space-y-6">
-              {/* Existing Images */}
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <Upload size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Property Images</span>
+            </div>
+            <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* Existing images */}
               {getExistingImages().length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-[#E2D5B0] mb-4">Current Images</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {getExistingImages().map((image) => (
-                      <div key={image.id} className="relative group">
-                        <img
-                          src={`${API_BASE}/storage/${image.image_path}`}
-                          alt={`Property image ${image.id}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                        {image.is_primary && (
-                          <div className="absolute top-2 left-2 px-2 py-1 bg-gold text-navy-900 text-xs font-medium rounded">
-                            Primary
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeExistingImage(image.id)}
-                          className="absolute top-2 right-2 p-1 bg-red-500/80 backdrop-blur-sm rounded-lg text-[#F1EDD8] opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4" />
+                  <p className="section-label">Current Images</p>
+                  <div className="img-grid">
+                    {getExistingImages().map(img => (
+                      <div key={img.id} className="img-thumb">
+                        <img src={`${API_BASE}/storage/${img.image_path}`} alt="" />
+                        {img.is_primary && <span className="primary-badge">Primary</span>}
+                        <button type="button" className="img-remove" onClick={() => removeExistingImage(img.id)}>
+                          <X size={12} color="#fff" />
                         </button>
                       </div>
                     ))}
@@ -713,45 +439,25 @@ const EditProperty: React.FC = () => {
                 </div>
               )}
 
-              {/* New Images */}
+              {/* New images */}
               <div>
-                <h3 className="text-sm font-medium text-[#E2D5B0] mb-4">Add New Images</h3>
-                <div className="border-2 border-dashed border-[#1E2D4A] rounded-lg p-8 text-center">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className="cursor-pointer flex flex-col items-center"
-                  >
-                    <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                    <span className="text-[#E2D5B0] mb-2">Click to upload images</span>
-                    <span className="text-gray-500 text-sm">PNG, JPG, GIF up to 2MB each</span>
-                  </label>
-                </div>
-
-                {errors.images && <p className="mt-1 text-sm text-red-400">{errors.images}</p>}
-
+                <p className="section-label">Add New Images</p>
+                <input type="file" multiple accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} id="image-upload" />
+                <label htmlFor="image-upload" className="upload-zone">
+                  <div className="upload-icon-wrap">
+                    <Upload size={20} color="#D4AF37" />
+                  </div>
+                  <p style={{ color: '#E2D5B0', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Click to upload images</p>
+                  <p style={{ color: '#2D3748', fontSize: 11 }}>PNG, JPG, GIF — max 2MB each</p>
+                </label>
+                {errors.images && <p className="error-text">{errors.images}</p>}
                 {imagePreviews.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={preview}
-                          alt={`New preview ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeNewImage(index)}
-                          className="absolute top-2 right-2 p-1 bg-red-500/80 backdrop-blur-sm rounded-lg text-[#F1EDD8] opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4" />
+                  <div className="img-grid">
+                    {imagePreviews.map((src, i) => (
+                      <div key={i} className="img-thumb">
+                        <img src={src} alt="" />
+                        <button type="button" className="img-remove" onClick={() => removeNewImage(i)}>
+                          <X size={12} color="#fff" />
                         </button>
                       </div>
                     ))}
@@ -761,36 +467,22 @@ const EditProperty: React.FC = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end gap-4">
-            <button
-              type="button"
-              onClick={() => navigate('/commercial/properties')}
-              className="px-6 py-3 bg-[#162035] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] hover:border-[#1E2D4A] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-3 bg-gold text-navy-900 rounded-lg font-semibold hover:bg-gold-lt transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>Updating...</>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Update Property
-                </>
-              )}
+          {/* Error banner */}
+          {errors.submit && (
+            <div className="err-banner">
+              <X size={14} color="#F87171" style={{ flexShrink: 0 }} />
+              <p style={{ color: '#F87171', fontSize: 13 }}>{errors.submit}</p>
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 8 }}>
+            <button type="button" className="btn-cancel" onClick={() => navigate('/commercial/properties')}>Cancel</button>
+            <button type="submit" className="btn-submit" disabled={loading}>
+              {loading ? <><div className="spinner" />Updating…</> : <><Save size={15} />Update Property</>}
             </button>
           </div>
 
-          {errors.submit && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-              <p className="text-red-400">{errors.submit}</p>
-            </div>
-          )}
         </form>
       </div>
     </div>

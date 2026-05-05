@@ -12,21 +12,6 @@ interface FormData {
   available_from: string; contact_phone: string; contact_email: string; amenities: number[];
 }
 
-const inputCls = "w-full px-4 py-3 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-[#F1EDD8] placeholder-[#4A5568] text-sm focus:outline-none focus:border-[#D4AF37] transition-colors";
-const selectCls = "w-full px-4 py-3 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-[#F1EDD8] text-sm focus:outline-none focus:border-[#D4AF37] transition-colors";
-const labelCls = "block text-xs font-semibold text-[#E2D5B0] uppercase tracking-wide mb-2";
-const errorCls = "mt-1.5 text-xs text-red-400";
-
-const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
-  <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl overflow-hidden">
-    <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#1E2D4A]">
-      <span className="text-[#C89128]">{icon}</span>
-      <h2 className="text-base font-semibold text-[#F1EDD8]">{title}</h2>
-    </div>
-    <div className="p-5">{children}</div>      
-  </div>
-);
-
 const AddProperty: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -113,15 +98,10 @@ const AddProperty: React.FC = () => {
       });
       if (res.ok) {
         const propertyData = await res.json();
-        navigate('/commercial/properties', { 
-          state: { 
-            message: '🎉 Property created successfully!',
-            property: propertyData,
-            type: 'success'
-          } 
+        navigate('/commercial/properties', {
+          state: { message: '🎉 Property created successfully!', property: propertyData, type: 'success' }
         });
-      }
-      else {
+      } else {
         const err = await res.json();
         if (err.errors) setErrors(err.errors);
         else setErrors({ submit: err.message || 'Failed to create property' });
@@ -141,199 +121,299 @@ const AddProperty: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0F172A]">
+    <div style={{ minHeight: '100vh', background: '#080E1A', fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
-        select option {
-          background-color: #1E2D4A;
-          color: #F1EDD8;
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+        * { box-sizing: border-box; }
+        .form-input {
+          width: 100%; padding: 11px 16px;
+          background: #0C1420; border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 12px; color: #E2D5B0; font-size: 13px;
+          font-family: 'DM Sans', sans-serif;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          outline: none;
         }
-        select:focus option {
-          background-color: #D4AF37;
-          color: #0F172A;
+        .form-input::placeholder { color: #2D3748; }
+        .form-input:focus { border-color: rgba(212,175,55,0.5); box-shadow: 0 0 0 3px rgba(212,175,55,0.07); }
+        .form-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #4A5568; margin-bottom: 8px; }
+        .card-panel { background: #0F1829; border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; }
+        .panel-header { padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 10px; }
+        .gold-dot { width: 7px; height: 7px; border-radius: 50%; background: #D4AF37; flex-shrink: 0; box-shadow: 0 0 8px rgba(212,175,55,0.5); }
+        .panel-body { padding: 22px; }
+        .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+        .span-2 { grid-column: 1 / -1; }
+        .error-text { margin-top: 5px; font-size: 11px; color: #F87171; }
+        .toggle-wrap { display: flex; align-items: center; gap: 12px; cursor: pointer; margin-top: 28px; }
+        .toggle-track { width: 44px; height: 24px; border-radius: 12px; position: relative; transition: background 0.2s; flex-shrink: 0; }
+        .toggle-thumb { position: absolute; top: 4px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: left 0.2s; }
+        .amenity-chip {
+          display: flex; align-items: center; gap: 8px;
+          padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06);
+          cursor: pointer; transition: all 0.2s; font-size: 12px; font-weight: 500;
+          background: #0C1420; color: #64748B;
+        }
+        .amenity-chip.active { border-color: rgba(212,175,55,0.4); background: rgba(212,175,55,0.08); color: #D4AF37; }
+        .amenity-chip:hover:not(.active) { border-color: rgba(212,175,55,0.2); color: #94A3B8; }
+        .amenity-check { width: 16px; height: 16px; border-radius: 5px; border: 1px solid; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+        .upload-zone {
+          border: 2px dashed rgba(255,255,255,0.06); border-radius: 14px;
+          padding: 36px 20px; text-align: center; cursor: pointer;
+          transition: border-color 0.2s, background 0.2s;
+        }
+        .upload-zone:hover { border-color: rgba(212,175,55,0.3); background: rgba(212,175,55,0.03); }
+        .upload-icon-wrap { width: 52px; height: 52px; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.15); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+        .img-thumb { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; }
+        .img-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .img-remove { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; background: rgba(239,68,68,0.9); border-radius: 8px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; border: none; cursor: pointer; }
+        .img-thumb:hover .img-remove { opacity: 1; }
+        .img-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+        .amenity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .btn-cancel {
+          padding: 12px 24px; background: #0F1829; border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 14px; color: #94A3B8; font-size: 13px; font-weight: 600;
+          font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-cancel:hover { border-color: rgba(212,175,55,0.3); color: #E2D5B0; }
+        .btn-submit {
+          display: flex; align-items: center; gap: 8px;
+          padding: 12px 28px; background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%);
+          color: #080E1A; border: none; border-radius: 14px; font-size: 13px; font-weight: 700;
+          font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s;
+          box-shadow: 0 8px 24px rgba(212,175,55,0.25); letter-spacing: 0.3px;
+        }
+        .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(212,175,55,0.35); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(8,14,26,0.3); border-top-color: #080E1A; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .err-banner { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 10px; }
+        select option { background: #0C1420; color: #E2D5B0; }
+        @media (max-width: 640px) {
+          .field-grid-2, .field-grid-3 { grid-template-columns: 1fr !important; }
+          .img-grid { grid-template-columns: repeat(3, 1fr); }
+          .amenity-grid { grid-template-columns: repeat(2, 1fr); }
         }
       `}</style>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '28px 20px' }}>
 
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-3">
-            <span className="hover:text-slate-300 cursor-pointer" onClick={() => navigate('/commercial/properties')}>Properties</span>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-slate-300">Add New</span>
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <span style={{ color: '#4A5568', fontSize: 12, cursor: 'pointer' }} onClick={() => navigate('/commercial/properties')}>Properties</span>
+            <ChevronRight size={12} color="#2D3748" />
+            <span style={{ color: '#94A3B8', fontSize: 12 }}>Add New</span>
           </div>
-          <p className="text-xs font-semibold tracking-widest text-[#C89128] uppercase mb-1">New Listing</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Add Property</h1>
-          <p className="text-slate-400 text-sm mt-1">List your commercial space on Oweru</p>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>New Listing</span>
+          <h1 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 6 }}>
+            Add Property
+          </h1>
+          <p style={{ color: '#4A5568', fontSize: 13 }}>List your commercial space on Oweru</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Basic Info */}
-          <Section icon={<Building2 className="w-4 h-4" />} title="Basic Information">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <Building2 size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Basic Information</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-2" style={{ marginBottom: 16 }}>
                 <div>
-                  <label className={labelCls}>Property Title *</label>
-                  <input type="text" name="title" value={formData.title} onChange={handleChange} className={inputCls} placeholder="e.g., Modern Office in Dar" />
-                  {errors.title && <p className={errorCls}>{errors.title}</p>}
+                  <label className="form-label">Property Title *</label>
+                  <input type="text" name="title" value={formData.title} onChange={handleChange} className="form-input" placeholder="e.g., Modern Office in Dar" />
+                  {errors.title && <p className="error-text">{errors.title}</p>}
                 </div>
                 <div>
-                  <label className={labelCls}>Property Type *</label>
-                  <select name="type" value={formData.type} onChange={handleChange} className={selectCls}>
+                  <label className="form-label">Property Type *</label>
+                  <select name="type" value={formData.type} onChange={handleChange} className="form-input">
                     {propertyTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label className={labelCls}>Description *</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className={`${inputCls} resize-none`} placeholder="Describe your property in detail…" />
-                {errors.description && <p className={errorCls}>{errors.description}</p>}
+                <label className="form-label">Description *</label>
+                <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="form-input" style={{ resize: 'none' }} placeholder="Describe your property in detail…" />
+                {errors.description && <p className="error-text">{errors.description}</p>}
               </div>
             </div>
-          </Section>
+          </div>
 
           {/* Location */}
-          <Section icon={<MapPin className="w-4 h-4" />} title="Location">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Area / City *</label>
-                <input type="text" name="location" value={formData.location} onChange={handleChange} className={inputCls} placeholder="e.g., Dar es Salaam" />
-                {errors.location && <p className={errorCls}>{errors.location}</p>}
-              </div>
-              <div>
-                <label className={labelCls}>Full Address *</label>
-                <input type="text" name="address" value={formData.address} onChange={handleChange} className={inputCls} placeholder="e.g., Ohio St, Upanga" />
-                {errors.address && <p className={errorCls}>{errors.address}</p>}
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <MapPin size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Location</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-2">
+                <div>
+                  <label className="form-label">Area / City *</label>
+                  <input type="text" name="location" value={formData.location} onChange={handleChange} className="form-input" placeholder="e.g., Dar es Salaam" />
+                  {errors.location && <p className="error-text">{errors.location}</p>}
+                </div>
+                <div>
+                  <label className="form-label">Full Address *</label>
+                  <input type="text" name="address" value={formData.address} onChange={handleChange} className="form-input" placeholder="e.g., Ohio St, Upanga" />
+                  {errors.address && <p className="error-text">{errors.address}</p>}
+                </div>
               </div>
             </div>
-          </Section>
+          </div>
 
           {/* Pricing */}
-          <Section icon={<DollarSign className="w-4 h-4" />} title="Pricing">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Price (TZS) *</label>
-                <input type="number" name="price" value={formData.price} onChange={handleChange} className={inputCls} placeholder="500000" />
-                {errors.price && <p className={errorCls}>{errors.price}</p>}
-              </div>
-              <div>
-                <label className={labelCls}>Price Type *</label>
-                <select name="price_type" value={formData.price_type} onChange={handleChange} className={selectCls}>
-                  {priceTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <DollarSign size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Pricing</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-2">
+                <div>
+                  <label className="form-label">Price (TZS) *</label>
+                  <input type="number" name="price" value={formData.price} onChange={handleChange} className="form-input" placeholder="500000" />
+                  {errors.price && <p className="error-text">{errors.price}</p>}
+                </div>
+                <div>
+                  <label className="form-label">Price Type *</label>
+                  <select name="price_type" value={formData.price_type} onChange={handleChange} className="form-input">
+                    {priceTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
               </div>
             </div>
-          </Section>
+          </div>
 
           {/* Features */}
-          <Section icon={<Home className="w-4 h-4" />} title="Property Features">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}><Car className="w-3.5 h-3.5 inline mr-1" />Parking Spaces</label>
-                <input type="number" name="parking_spaces" value={formData.parking_spaces} onChange={handleChange} min="0" className={inputCls} placeholder="0" />
-              </div>
-              <div className="flex items-center">
-                <label className="flex items-center gap-3 cursor-pointer group mt-5 sm:mt-6">
-                  <div className={`w-11 h-6 rounded-full relative transition-colors ${formData.furnished ? 'bg-[#C89128]' : 'bg-[#1E2D4A]'}`}
-                    onClick={() => setFormData(p => ({ ...p, furnished: !p.furnished }))}>
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${formData.furnished ? 'left-6' : 'left-1'}`} />
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <Home size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Property Features</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-2">
+                <div>
+                  <label className="form-label"><Car size={11} style={{ display: 'inline', marginRight: 4 }} />Parking Spaces</label>
+                  <input type="number" name="parking_spaces" value={formData.parking_spaces} onChange={handleChange} min="0" className="form-input" placeholder="0" />
+                </div>
+                <div>
+                  <label className="form-label" style={{ opacity: 0 }}>Furnished</label>
+                  <div className="toggle-wrap" onClick={() => setFormData(p => ({ ...p, furnished: !p.furnished }))}>
+                    <div className="toggle-track" style={{ background: formData.furnished ? '#D4AF37' : '#0C1420', border: `1px solid ${formData.furnished ? '#D4AF37' : 'rgba(255,255,255,0.1)'}` }}>
+                      <div className="toggle-thumb" style={{ left: formData.furnished ? '24px' : '4px' }} />
+                    </div>
+                    <span style={{ fontSize: 13, color: formData.furnished ? '#D4AF37' : '#64748B', fontWeight: 500 }}>Furnished</span>
                   </div>
-                  <span className="text-sm text-slate-300">Furnished</span>
-                </label>
+                </div>
               </div>
             </div>
-          </Section>
+          </div>
 
           {/* Availability & Contact */}
-          <Section icon={<Calendar className="w-4 h-4" />} title="Availability & Contact">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Available From *</label>
-                <input type="date" name="available_from" value={formData.available_from} onChange={handleChange} className={inputCls} />
-                {errors.available_from && <p className={errorCls}>{errors.available_from}</p>}
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <Calendar size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Availability & Contact</span>
+            </div>
+            <div className="panel-body">
+              <div className="field-grid-2" style={{ marginBottom: 16 }}>
+                <div>
+                  <label className="form-label">Available From *</label>
+                  <input type="date" name="available_from" value={formData.available_from} onChange={handleChange} className="form-input" />
+                  {errors.available_from && <p className="error-text">{errors.available_from}</p>}
+                </div>
+                <div>
+                  <label className="form-label">Contact Phone *</label>
+                  <input type="tel" name="contact_phone" value={formData.contact_phone} onChange={handleChange} className="form-input" placeholder="+255712345678" />
+                  {errors.contact_phone && <p className="error-text">{errors.contact_phone}</p>}
+                </div>
               </div>
               <div>
-                <label className={labelCls}>Contact Phone *</label>
-                <input type="tel" name="contact_phone" value={formData.contact_phone} onChange={handleChange} className={inputCls} placeholder="+255712345678" />
-                {errors.contact_phone && <p className={errorCls}>{errors.contact_phone}</p>}
-              </div>
-              <div className="sm:col-span-2">
-                <label className={labelCls}>Contact Email *</label>
-                <input type="email" name="contact_email" value={formData.contact_email} onChange={handleChange} className={inputCls} placeholder="contact@company.com" />
-                {errors.contact_email && <p className={errorCls}>{errors.contact_email}</p>}
+                <label className="form-label">Contact Email *</label>
+                <input type="email" name="contact_email" value={formData.contact_email} onChange={handleChange} className="form-input" placeholder="contact@company.com" />
+                {errors.contact_email && <p className="error-text">{errors.contact_email}</p>}
               </div>
             </div>
-          </Section>
+          </div>
 
           {/* Amenities */}
           {amenities.length > 0 && (
-            <Section icon={<Plus className="w-4 h-4" />} title="Amenities">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {amenities.map(a => {
-                  const active = formData.amenities.includes(a.id);
-                  return (
-                    <label key={a.id} onClick={() => toggleAmenity(a.id)}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all text-sm ${active ? 'border-[#C89128]/60 bg-[#C89128]/10 text-[#C89128]' : 'border-[#1E2D4A] text-slate-400 hover:border-[#C89128]/30 hover:text-slate-200'}`}>
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${active ? 'bg-[#C89128] border-[#C89128]' : 'border-slate-600'}`}>
-                        {active && <svg className="w-2.5 h-2.5 text-[#0F172A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                      </div>
-                      {a.name}
-                    </label>
-                  );
-                })}
+            <div className="card-panel">
+              <div className="panel-header">
+                <div className="gold-dot" />
+                <Plus size={14} color="#D4AF37" />
+                <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Amenities</span>
               </div>
-            </Section>
+              <div className="panel-body">
+                <div className="amenity-grid">
+                  {amenities.map(a => {
+                    const active = formData.amenities.includes(a.id);
+                    return (
+                      <div key={a.id} className={`amenity-chip ${active ? 'active' : ''}`} onClick={() => toggleAmenity(a.id)}>
+                        <div className="amenity-check" style={{ borderColor: active ? '#D4AF37' : 'rgba(255,255,255,0.12)', background: active ? '#D4AF37' : 'transparent' }}>
+                          {active && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#080E1A" strokeWidth="3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                        </div>
+                        {a.name}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Images */}
-          <Section icon={<Upload className="w-4 h-4" />} title="Property Images">
-            <div>
-              <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" id="img-up" />
-              <label htmlFor="img-up"
-                className="flex flex-col items-center gap-2 border-2 border-dashed border-[#1E2D4A] hover:border-[#C89128]/40 rounded-xl p-8 cursor-pointer transition-colors group">
-                <div className="w-12 h-12 bg-[#1E2D4A] rounded-xl flex items-center justify-center group-hover:bg-[#C89128]/10 transition-colors">
-                  <Upload className="w-5 h-5 text-slate-400 group-hover:text-[#C89128] transition-colors" />
+          <div className="card-panel">
+            <div className="panel-header">
+              <div className="gold-dot" />
+              <Upload size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Property Images</span>
+            </div>
+            <div className="panel-body">
+              <input type="file" multiple accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} id="img-up" />
+              <label htmlFor="img-up" className="upload-zone">
+                <div className="upload-icon-wrap">
+                  <Upload size={20} color="#D4AF37" />
                 </div>
-                <p className="text-sm text-slate-300">Click to upload images</p>
-                <p className="text-xs text-slate-500">PNG, JPG, GIF — max 2MB each</p>
+                <p style={{ color: '#E2D5B0', fontSize: 13, fontWeight: 500, marginBottom: 4 }}>Click to upload images</p>
+                <p style={{ color: '#2D3748', fontSize: 11 }}>PNG, JPG, GIF — max 2MB each</p>
               </label>
-              {errors.images && <p className={errorCls}>{errors.images}</p>}
+              {errors.images && <p className="error-text">{errors.images}</p>}
               {imagePreviews.length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
+                <div className="img-grid">
                   {imagePreviews.map((src, i) => (
-                    <div key={i} className="relative group aspect-square">
-                      <img src={src} alt="" className="w-full h-full object-cover rounded-xl" />
-                      <button type="button" onClick={() => removeImage(i)}
-                        className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500/90 backdrop-blur-sm rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <X className="w-3 h-3 text-white" />
+                    <div key={i} className="img-thumb">
+                      <img src={src} alt="" />
+                      <button type="button" className="img-remove" onClick={() => removeImage(i)}>
+                        <X size={12} color="#fff" />
                       </button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </Section>
+          </div>
 
-          {/* Error & Actions */}
+          {/* Error */}
           {errors.submit && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-3">
-              <X className="w-4 h-4 text-red-400 flex-shrink-0" />
-              <p className="text-red-400 text-sm">{errors.submit}</p>
+            <div className="err-banner">
+              <X size={14} color="#F87171" style={{ flexShrink: 0 }} />
+              <p style={{ color: '#F87171', fontSize: 13 }}>{errors.submit}</p>
             </div>
           )}
 
-          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
-            <button type="button" onClick={() => navigate('/commercial/properties')}
-              className="flex-1 sm:flex-none px-6 py-3 bg-[#162035] border border-[#1E2D4A] rounded-xl text-white text-sm font-medium hover:border-[#C89128]/30 transition-colors">
-              Cancel
-            </button>
-            <button type="submit" disabled={loading}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-[#C89128] text-[#0F172A] rounded-xl font-semibold text-sm hover:bg-[#D4A843] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#C89128]/20">
-              {loading ? (
-                <><div className="w-4 h-4 border-2 border-[#0F172A]/30 border-t-[#0F172A] rounded-full animate-spin" />Creating…</>
-              ) : (
-                <><Save className="w-4 h-4" />Create Property</>
-              )}
+          {/* Actions */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 8 }}>
+            <button type="button" className="btn-cancel" onClick={() => navigate('/commercial/properties')}>Cancel</button>
+            <button type="submit" className="btn-submit" disabled={loading}>
+              {loading ? <><div className="spinner" />Creating…</> : <><Save size={15} />Create Property</>}
             </button>
           </div>
 
