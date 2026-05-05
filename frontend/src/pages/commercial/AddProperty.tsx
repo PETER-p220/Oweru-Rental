@@ -110,7 +110,16 @@ const AddProperty: React.FC = () => {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
         body: fd
       });
-      if (res.ok) navigate('/commercial/properties', { state: { message: 'Property created successfully and is pending approval' } });
+      if (res.ok) {
+        const propertyData = await res.json();
+        navigate('/commercial/properties', { 
+          state: { 
+            message: '🎉 Property created successfully!',
+            property: propertyData,
+            type: 'success'
+          } 
+        });
+      }
       else {
         const err = await res.json();
         if (err.errors) setErrors(err.errors);

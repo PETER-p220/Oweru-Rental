@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Building2, Plus, Search, Eye, Edit, Trash2, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -15,14 +15,23 @@ interface Property {
 }
 
 const Properties: React.FC = () => {
+  const location = useLocation();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => { fetchProperties(); }, [search, statusFilter, typeFilter, pagination.current_page]);
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+  }, [location]);
 
   const fetchProperties = async () => {
     try {
@@ -115,6 +124,21 @@ const Properties: React.FC = () => {
             <Plus className="w-4 h-4" />Add Property
           </Link>
         </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 mb-5 flex items-center gap-3">
+            <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <div>
+              <p className="text-emerald-400 font-medium">{successMessage}</p>
+              <button onClick={() => setSuccessMessage('')} className="text-slate-500 hover:text-slate-400 text-sm mt-1">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl p-4 mb-5">
