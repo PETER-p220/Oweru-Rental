@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Building2, MapPin, FileText, Save, Edit2, Check, X, Shield, Calendar } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface CommercialUser {
   id: number; name: string; email: string; phone: string; company_name: string;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Building2, Plus, Search, Eye, Edit, Trash2, MapPin, ChevronLeft, ChevronRight, SlidersHorizontal, CheckCircle2 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface Property {
   id: number; title: string; description: string; type: string; location: string;

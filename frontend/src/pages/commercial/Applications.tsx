@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Eye, Check, X, Clock, User, Building2, Search, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface Application {
   id: number;

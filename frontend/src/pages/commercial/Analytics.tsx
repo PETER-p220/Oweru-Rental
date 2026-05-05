@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Eye, DollarSign, Users, Activity, BarChart3, PieChart, Calendar, Zap, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface AnalyticsData {
   total_properties: number;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Search, DollarSign, Users, Eye, TrendingUp, Zap } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface Report {
   id: number; title: string; type: string; period: string; generated_at: string; file_url?: string; data?: any;
@@ -15,7 +15,7 @@ const reportTypes = [
   { value: 'analytics',   label: 'Analytics',   icon: <Eye size={16} />,         dot: '#F59E0B' },
 ];
 
-const dotColor: Record<string, string> = {
+const dotColor: Record<string, string> = {  
   revenue: '#10B981', bookings: '#3B82F6', performance: '#8B5CF6', analytics: '#F59E0B'
 };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, TrendingUp, Users, DollarSign, Eye, Star, Plus, ArrowUpRight, ArrowDownRight, BarChart3, Calendar } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface DashboardStats {
   total_properties: number; active_properties: number; total_bookings: number;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Building2, Plus, X, Upload, MapPin, DollarSign, Home, Car, Bed, Bath, Square, Calendar, Save, ArrowLeft } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface Amenity { id: number; name: string; icon: string; }
 
