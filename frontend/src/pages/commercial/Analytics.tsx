@@ -245,7 +245,7 @@ const Analytics: React.FC = () => {
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: ins.dot, marginTop: 4, flexShrink: 0, boxShadow: `0 0 8px ${ins.dot}80` }} />
                       <div>
                         <p style={{ fontSize: 13, fontWeight: 600, color: '#E2D5B0', marginBottom: 3 }}>{ins.title}</p>
-                        <p style={{ fontSize: 12, color: '#4A5568' }}>{ins.desc}</p>
+                        <p style={{ fontSize: 12,  color: '#4A5568' }}>{ins.desc}</p>
                       </div>
                     </div>
                   ))}
