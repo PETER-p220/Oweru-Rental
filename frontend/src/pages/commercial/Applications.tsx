@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Eye, Check, X, Clock, User, Building2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Eye, Check, X, Clock, User, Building2, Search, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
@@ -31,34 +31,30 @@ const CommercialApplications: React.FC = () => {
   const fetchApplications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const params = new URLSearchParams({ 
-        page: pagination.current_page.toString(), 
-        per_page: pagination.per_page.toString() 
+      const params = new URLSearchParams({
+        page: pagination.current_page.toString(),
+        per_page: pagination.per_page.toString()
       });
       if (search) params.append('search', search);
       if (statusFilter !== 'all') params.append('status', statusFilter);
-      
+
       const res = await fetch(`${API_BASE}/api/commercial/applications?${params}`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`, 
-          'Accept': 'application/json' 
-        }
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-      
       if (res.ok) {
         const data = await res.json();
         setApplications(data.data || []);
-        setPagination({ 
-          current_page: data.current_page || 1, 
-          last_page: data.last_page || 1, 
-          per_page: data.per_page || 10, 
-          total: data.total || 0 
+        setPagination({
+          current_page: data.current_page || 1,
+          last_page: data.last_page || 1,
+          per_page: data.per_page || 10,
+          total: data.total || 0
         });
       }
-    } catch (e) { 
-      console.error('Error fetching applications:', e); 
-    } finally { 
-      setLoading(false); 
+    } catch (e) {
+      console.error('Error fetching applications:', e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -86,29 +82,29 @@ const CommercialApplications: React.FC = () => {
     } catch (e) { console.error(e); }
   };
 
-  const formatDate = (dateString: string) => 
-    new Date(dateString).toLocaleDateString('en-TZ', { 
-      day: 'numeric', 
-      month: 'short', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-TZ', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
 
-  const statusStyle: Record<string, string> = {
-    pending: 'text-amber-400 bg-amber-400/10 border-amber-400/25',
-    approved: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/25',
-    rejected: 'text-red-400 bg-red-400/10 border-red-400/25',
-  };
-
-  const statusIcon: Record<string, React.ReactNode> = {
-    pending: <Clock className="w-4 h-4" />,
-    approved: <Check className="w-4 h-4" />,
-    rejected: <X className="w-4 h-4" />,
+  const statusConfig: Record<string, { pill: string; icon: React.ReactNode }> = {
+    pending: {
+      pill: 'bg-amber-500/10 border border-amber-500/25 text-amber-400',
+      icon: <Clock className="w-3 h-3" />,
+    },
+    approved: {
+      pill: 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-400',
+      icon: <Check className="w-3 h-3" />,
+    },
+    rejected: {
+      pill: 'bg-red-500/10 border border-red-500/25 text-red-400',
+      icon: <X className="w-3 h-3" />,
+    },
   };
 
   const filtered = applications.filter(app => {
-    const matchSearch = search === '' || 
+    const matchSearch = search === '' ||
       app.property_title.toLowerCase().includes(search.toLowerCase()) ||
       app.applicant_name.toLowerCase().includes(search.toLowerCase()) ||
       app.applicant_email.toLowerCase().includes(search.toLowerCase());
@@ -116,47 +112,85 @@ const CommercialApplications: React.FC = () => {
     return matchSearch && matchStatus;
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#C89128] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[#4A5568] text-sm">Loading applications…</p>
-        </div>
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#080E1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div className="spinner" />
+        <p style={{ color: '#64748B', fontSize: 13, marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>Loading applications…</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#0F172A]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div style={{ minHeight: '100vh', background: '#080E1A', fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .spinner { width: 36px; height: 36px; border: 2px solid rgba(212,175,55,0.15); border-top-color: #D4AF37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .card-panel { background: #0F1829; border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; }
+        .panel-header { padding: 16px 22px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; }
+        .gold-dot { width: 7px; height: 7px; border-radius: 50%; background: #D4AF37; margin-right: 10px; flex-shrink: 0; box-shadow: 0 0 8px rgba(212,175,55,0.5); }
+        .app-row { padding: 20px 22px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.2s; }
+        .app-row:last-child { border-bottom: none; }
+        .app-row:hover { background: rgba(212,175,55,0.025); }
+        .prop-icon { width: 44px; height: 44px; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.12); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #D4AF37; }
+        .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+        .action-icon-btn { padding: 8px; background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.12); border-radius: 10px; color: #D4AF37; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; }
+        .action-icon-btn:hover { background: rgba(212,175,55,0.15); }
+        .approve-btn { background: rgba(16,185,129,0.1) !important; border-color: rgba(16,185,129,0.2) !important; color: #10B981 !important; }
+        .approve-btn:hover { background: rgba(16,185,129,0.2) !important; }
+        .reject-btn { background: rgba(239,68,68,0.1) !important; border-color: rgba(239,68,68,0.2) !important; color: #EF4444 !important; }
+        .reject-btn:hover { background: rgba(239,68,68,0.2) !important; }
+        .add-btn { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%); color: #080E1A; padding: 11px 20px; border-radius: 14px; font-weight: 700; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 8px 24px rgba(212,175,55,0.25); border: none; cursor: pointer; letter-spacing: 0.3px; }
+        .add-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(212,175,55,0.35); }
+        .filter-input { background: #0C1420; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; color: #F1EDD8; font-size: 13px; padding: 9px 14px 9px 36px; outline: none; width: 100%; transition: border-color 0.2s; }
+        .filter-input:focus { border-color: #D4AF37; }
+        .filter-select { background: #0C1420; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; color: #F1EDD8; font-size: 13px; padding: 9px 14px; outline: none; transition: border-color 0.2s; }
+        .filter-select:focus { border-color: #D4AF37; }
+        .pager-btn { padding: 8px; background: #0C1420; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; color: #4A5568; cursor: pointer; display: flex; align-items: center; transition: border-color 0.2s; }
+        .pager-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pager-btn:not(:disabled):hover { border-color: rgba(212,175,55,0.3); }
+        .empty-icon { width: 56px; height: 56px; background: rgba(255,255,255,0.03); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+        @media (max-width: 640px) {
+          .app-row { padding: 16px; }
+          .panel-header { padding: 14px 16px; }
+        }
+      `}</style>
+
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '28px 20px' }}>
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
           <div>
-            <p className="text-xs font-semibold tracking-widest text-[#C89128] uppercase mb-1">Applications</p>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#F1EDD8]">Property Applications</h1>
-            <p className="text-[#4A5568] text-sm mt-0.5">Manage rental applications for your properties</p>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Applications</p>
+            <h1 style={{ fontSize: 'clamp(24px,5vw,32px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 6 }}>
+              Property Applications
+            </h1>
+            <p style={{ color: '#4A5568', fontSize: 13 }}>Manage rental applications for your properties</p>
           </div>
+          <Link to="/commercial/properties/add" className="add-btn">
+            <Plus size={14} /> Add Property
+          </Link>
         </div>
 
         {/* Filters */}
-        <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl p-4 mb-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div className="relative lg:col-span-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4A5568] w-4 h-4" />
-              <input 
-                type="text" 
-                placeholder="Search applications…" 
-                value={search} 
+        <div style={{ background: '#0F1829', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, padding: '16px 20px', marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 220px', position: 'relative' }}>
+              <Search style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#4A5568' }} />
+              <input
+                type="text"
+                placeholder="Search applications…"
+                value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-[#F1EDD8] placeholder-[#4A5568] text-sm focus:outline-none focus:border-[#D4AF37] transition-colors" 
+                className="filter-input"
               />
             </div>
-            <select 
-              value={statusFilter} 
+            <select
+              value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="px-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-[#F1EDD8] text-sm focus:outline-none focus:border-[#D4AF37]"
+              className="filter-select"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -166,129 +200,115 @@ const CommercialApplications: React.FC = () => {
           </div>
         </div>
 
-        {/* Applications List */}
+        {/* Applications */}
         {filtered.length === 0 ? (
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl p-12 text-center">
-            <div className="w-16 h-16 bg-[#1E2D4A] rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-[#4A5568]" />
+          <div className="card-panel" style={{ padding: '56px 20px', textAlign: 'center' }}>
+            <div className="empty-icon">
+              <FileText size={22} color="#2D3748" />
             </div>
-            <h3 className="text-lg font-semibold text-[#F1EDD8] mb-2">No applications found</h3>
-            <p className="text-[#4A5568] text-sm">
-              {search || statusFilter !== 'all' 
-                ? 'Try adjusting your filters' 
-                : 'Applications will appear here when tenants apply for your properties'
-              }
+            <h3 style={{ color: '#E2D5B0', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No applications found</h3>
+            <p style={{ color: '#4A5568', fontSize: 13 }}>
+              {search || statusFilter !== 'all'
+                ? 'Try adjusting your filters'
+                : 'Applications will appear here when tenants apply for your properties'}
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {filtered.map((app) => (
-              <div key={app.id} className="bg-[#162035] border border-[#1E2D4A] rounded-2xl p-6 hover:border-[#D4AF37]/30 transition-colors">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  {/* Property Info */}
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#1E2D4A] rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Building2 className="w-6 h-6 text-[#D4AF37]" />
+          <div className="card-panel">
+            <div className="panel-header">
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div className="gold-dot" />
+                <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Recent Applications</span>
+              </div>
+              <span style={{ color: '#2D3748', fontSize: 11, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>{pagination.total} total</span>
+            </div>
+
+            {filtered.map(app => {
+              const cfg = statusConfig[app.status];
+              return (
+                <div key={app.id} className="app-row">
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+                    <div className="prop-icon">
+                      <Building2 size={20} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-[#F1EDD8] truncate">{app.property_title}</h3>
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border ${statusStyle[app.status]}`}>
-                          {statusIcon[app.status]}
+                    <div style={{ flex: 1, minWidth: 180 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ color: '#F1EDD8', fontWeight: 600, fontSize: 15 }}>{app.property_title}</span>
+                        <span className={`status-pill ${cfg.pill}`}>
+                          {cfg.icon}
                           {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                         </span>
                       </div>
-                      <p className="text-[#4A5568] text-sm mb-1">{app.property_type} • {app.property_location}</p>
-                      <p className="text-[#4A5568] text-xs">Applied {formatDate(app.created_at)}</p>
+                      <p style={{ color: '#4A5568', fontSize: 12, marginBottom: 2 }}>{app.property_type} · {app.property_location}</p>
+                      <p style={{ color: '#2D3748', fontSize: 11 }}>Applied {formatDate(app.created_at)}</p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ color: '#E2D5B0', fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{app.applicant_name}</p>
+                        <p style={{ color: '#4A5568', fontSize: 11 }}>{app.applicant_email}</p>
+                        <p style={{ color: '#4A5568', fontSize: 11 }}>{app.applicant_phone}</p>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <Link
+                          to={`/dashboard/commercial/properties/${app.property_id}`}
+                          className="action-icon-btn"
+                          title="View Property"
+                        >
+                          <Eye size={14} />
+                        </Link>
+                        {app.status === 'pending' && (
+                          <>
+                            <button onClick={() => handleApprove(app.id)} className="action-icon-btn approve-btn" title="Approve">
+                              <Check size={14} />
+                            </button>
+                            <button onClick={() => handleReject(app.id)} className="action-icon-btn reject-btn" title="Reject">
+                              <X size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-
-                  {/* Applicant Info */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="text-sm">
-                      <div className="flex items-center gap-2 mb-1">
-                        <User className="w-4 h-4 text-[#4A5568]" />
-                        <span className="text-[#F1EDD8] font-medium">{app.applicant_name}</span>
-                      </div>
-                      <div className="text-[#4A5568] text-xs space-y-1">
-                        <p>{app.applicant_email}</p>
-                        <p>{app.applicant_phone}</p>
-                      </div>
+                  {app.message && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                      <p style={{ color: '#4A5568', fontSize: 12 }}>
+                        <span style={{ color: '#E2D5B0', fontWeight: 600 }}>Message:</span> {app.message}
+                      </p>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      <Link
-                        to={`/dashboard/commercial/properties/${app.property_id}`}
-                        className="p-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#4A5568] hover:text-[#F1EDD8] hover:border-[#D4AF37]/30 transition-colors"
-                        title="View Property"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                      
-                      {app.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => handleApprove(app.id)}
-                            className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-                            title="Approve"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleReject(app.id)}
-                            className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/20 transition-colors"
-                            title="Reject"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  )}
                 </div>
-
-                {/* Message */}
-                {app.message && (
-                  <div className="mt-4 pt-4 border-t border-[#1E2D4A]">
-                    <p className="text-[#4A5568] text-sm">
-                      <span className="font-medium text-[#E2D5B0]">Message:</span> {app.message}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
         {/* Pagination */}
         {pagination.last_page > 1 && (
-          <div className="flex items-center justify-between mt-6">
-            <div className="text-[#4A5568] text-sm">
-              Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} applications
-            </div>
-            <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 }}>
+            <span style={{ color: '#4A5568', fontSize: 12 }}>
+              Showing {((pagination.current_page - 1) * pagination.per_page) + 1}–{Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} applications
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
+                className="pager-btn"
                 onClick={() => setPagination(p => ({ ...p, current_page: Math.max(1, p.current_page - 1) }))}
                 disabled={pagination.current_page === 1}
-                className="p-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#4A5568] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#D4AF37]/30 transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft size={14} />
               </button>
-              <span className="text-[#F1EDD8] text-sm px-3">
+              <span style={{ color: '#E2D5B0', fontSize: 12, padding: '0 8px' }}>
                 Page {pagination.current_page} of {pagination.last_page}
               </span>
               <button
+                className="pager-btn"
                 onClick={() => setPagination(p => ({ ...p, current_page: Math.min(p.last_page, p.current_page + 1) }))}
                 disabled={pagination.current_page === pagination.last_page}
-                className="p-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#4A5568] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#D4AF37]/30 transition-colors"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight size={14} />
               </button>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
