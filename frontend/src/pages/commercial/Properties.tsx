@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, Plus, Search, Eye, Edit, Trash2, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, Plus, Search, Eye, Edit, Trash2, MapPin, ChevronLeft, ChevronRight, SlidersHorizontal, CheckCircle2 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
@@ -23,9 +23,9 @@ const Properties: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
   const [successMessage, setSuccessMessage] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => { fetchProperties(); }, [search, statusFilter, typeFilter, pagination.current_page]);
-
   useEffect(() => {
     if (location.state?.message) {
       setSuccessMessage(location.state.message);
@@ -48,16 +48,14 @@ const Properties: React.FC = () => {
         setProperties(data.data);
         setPagination({ current_page: data.current_page, last_page: data.last_page, per_page: data.per_page, total: data.total });
       }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Delete this property?')) return;
+    if (!confirm('Delete this property? This cannot be undone.')) return;
     try {
       const res = await fetch(`${API_BASE}/api/commercial/properties/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Accept': 'application/json' }
+        method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Accept': 'application/json' }
       });
       if (res.ok) fetchProperties();
     } catch (e) { console.error(e); }
@@ -66,98 +64,125 @@ const Properties: React.FC = () => {
   const handleToggle = async (id: number) => {
     try {
       const res = await fetch(`${API_BASE}/api/commercial/properties/${id}/toggle-status`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Accept': 'application/json' }
+        method: 'PATCH', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Accept': 'application/json' }
       });
       if (res.ok) fetchProperties();
     } catch (e) { console.error(e); }
   };
 
   const fmt = (n: number) => new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
-  const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short', year: 'numeric' });
-
-  const statusStyle: Record<string, string> = {
-    active: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/25',
-    pending: 'text-amber-400 bg-amber-400/10 border-amber-400/25',
-    inactive: 'text-slate-400 bg-slate-400/10 border-slate-400/25',
-    rejected: 'text-red-400 bg-red-400/10 border-red-400/25',
-  };
-
-  const typeStyle: Record<string, string> = {
-    office: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/25',
-    retail: 'text-pink-400 bg-pink-400/10 border-pink-400/25',
-    warehouse: 'text-orange-400 bg-orange-400/10 border-orange-400/25',
-    commercial: 'text-violet-400 bg-violet-400/10 border-violet-400/25',
-    industrial: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/25',
-    residential: 'text-blue-400 bg-blue-400/10 border-blue-400/25',
-  };
-
+  const priceSuffix = (t: string) => t === 'monthly' ? '/mo' : t === 'yearly' ? '/yr' : '';
   const getPrimaryImage = (p: Property) => {
     const img = p.images.find(i => i.is_primary);
     return img ? `${API_BASE}/storage/${img.image_path}` : null;
   };
 
-  const priceSuffix = (t: string) => t === 'monthly' ? '/mo' : t === 'yearly' ? '/yr' : '';
+  const statusConfig: Record<string, { bg: string; color: string; dot: string }> = {
+    active:   { bg: 'rgba(16,185,129,0.08)',  color: '#10B981', dot: '#10B981' },
+    pending:  { bg: 'rgba(245,158,11,0.08)',  color: '#F59E0B', dot: '#F59E0B' },
+    inactive: { bg: 'rgba(100,116,139,0.08)', color: '#64748B', dot: '#64748B' },
+    rejected: { bg: 'rgba(239,68,68,0.08)',   color: '#EF4444', dot: '#EF4444' },
+  };
+  const typeConfig: Record<string, string> = {
+    office: '#22D3EE', retail: '#F472B6', warehouse: '#FB923C', commercial: '#A78BFA', industrial: '#818CF8', residential: '#60A5FA',
+  };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-[#C89128] border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-400 text-sm">Loading properties…</p>
+    <div style={{ minHeight: '100vh', background: '#080E1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div className="spinner" />
+        <p style={{ color: '#4A5568', fontSize: 13, marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>Loading properties…</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#0F172A]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div style={{ minHeight: '100vh', background: '#080E1A', fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+        * { box-sizing: border-box; }
+        .spinner { width: 36px; height: 36px; border: 2px solid rgba(212,175,55,0.15); border-top-color: #D4AF37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .prop-card { background: #0F1829; border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; transition: all 0.3s ease; }
+        .prop-card:hover { border-color: rgba(212,175,55,0.2); transform: translateY(-3px); box-shadow: 0 24px 60px rgba(0,0,0,0.4); }
+        .action-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+        .action-edit { background: rgba(212,175,55,0.08); color: #D4AF37; border: 1px solid rgba(212,175,55,0.15); flex: 1; }
+        .action-edit:hover { background: rgba(212,175,55,0.15); }
+        .action-toggle { background: rgba(255,255,255,0.04); color: #94A3B8; border: 1px solid rgba(255,255,255,0.06); flex: 1; }
+        .action-toggle:hover { background: rgba(255,255,255,0.08); color: #E2D5B0; }
+        .action-del { background: rgba(239,68,68,0.06); color: #EF4444; border: 1px solid rgba(239,68,68,0.12); width: 38px; padding: 9px; flex-shrink: 0; }
+        .action-del:hover { background: rgba(239,68,68,0.15); }
+        .filter-input { width: 100%; padding: 11px 14px 11px 40px; background: #0C1420; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #E2D5B0; font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+        .filter-input:focus { border-color: rgba(212,175,55,0.4); }
+        .filter-select { width: 100%; padding: 11px 14px; background: #0C1420; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #E2D5B0; font-size: 13px; font-family: inherit; outline: none; appearance: none; cursor: pointer; transition: border-color 0.2s; }
+        .filter-select:focus { border-color: rgba(212,175,55,0.4); }
+        .filter-select option { background: #0C1420; }
+        .add-btn { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%); color: #080E1A; padding: 12px 22px; border-radius: 14px; font-weight: 700; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 8px 24px rgba(212,175,55,0.25); letter-spacing: 0.3px; }
+        .add-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(212,175,55,0.35); }
+        .page-btn { display: flex; align-items: center; gap: 6px; padding: 10px 18px; background: #0F1829; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; color: #E2D5B0; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .page-btn:hover:not(:disabled) { border-color: rgba(212,175,55,0.3); color: #D4AF37; }
+        .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+        .type-pill { padding: 3px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+        .feat-tag { padding: 3px 9px; background: rgba(255,255,255,0.04); border-radius: 6px; font-size: 10px; color: #4A5568; font-weight: 600; }
+        .success-bar { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 16px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        @media (max-width: 640px) {
+          .props-grid { grid-template-columns: 1fr !important; }
+          .filter-row { grid-template-columns: 1fr !important; }
+        }
+        @media (min-width: 641px) and (max-width: 1024px) {
+          .props-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `}</style>
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '28px 20px' }}>
+
+        {/* ── Header ── */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 28, flexWrap: 'wrap' }}>
           <div>
-            <p className="text-xs font-semibold tracking-widest text-[#C89128] uppercase mb-1">Inventory</p>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">My Properties</h1>
-            <p className="text-slate-400 text-sm mt-0.5">Manage your commercial listings</p>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Inventory</span>
+            <h1 style={{ fontSize: 'clamp(24px, 5vw, 34px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 6 }}>My Properties</h1>
+            <p style={{ color: '#4A5568', fontSize: 13 }}>Manage your commercial listings</p>
           </div>
-          <Link to="/commercial/properties/add"
-            className="inline-flex items-center gap-2 bg-[#C89128] text-[#0F172A] px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-[#D4A843] transition-colors self-start sm:self-auto shadow-lg shadow-[#C89128]/20">
-            <Plus className="w-4 h-4" />Add Property
+          <Link to="/commercial/properties/add" className="add-btn">
+            <Plus size={15} />Add Property
           </Link>
         </div>
 
-        {/* Success Message */}
+        {/* ── Success Message ── */}
         {successMessage && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 mb-5 flex items-center gap-3">
-            <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-            </div>
-            <div>
-              <p className="text-emerald-400 font-medium">{successMessage}</p>
-              <button onClick={() => setSuccessMessage('')} className="text-slate-500 hover:text-slate-400 text-sm mt-1">
-                Dismiss
-              </button>
-            </div>
+          <div className="success-bar">
+            <CheckCircle2 size={18} color="#10B981" style={{ flexShrink: 0 }} />
+            <p style={{ color: '#10B981', fontSize: 13, fontWeight: 600, flex: 1 }}>{successMessage}</p>
+            <button onClick={() => setSuccessMessage('')} style={{ background: 'none', border: 'none', color: '#4A5568', cursor: 'pointer', fontSize: 12, padding: '2px 8px', borderRadius: 6, transition: 'color 0.2s' }}>✕</button>
           </div>
         )}
 
-        {/* Filters */}
-        <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl p-4 mb-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            <div className="relative sm:col-span-1 lg:col-span-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
-              <input type="text" placeholder="Search properties…" value={search} onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#C89128] transition-colors" />
+        {/* ── Filters ── */}
+        <div style={{ background: '#0F1829', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, padding: 18, marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: filtersOpen || window.innerWidth > 640 ? 14 : 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <SlidersHorizontal size={14} color="#D4AF37" />
+              <span style={{ color: '#E2D5B0', fontSize: 13, fontWeight: 600 }}>Filters</span>
+              <span style={{ color: '#4A5568', fontSize: 11, fontWeight: 600 }}>— {pagination.total} results</span>
             </div>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-              className="px-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white text-sm focus:outline-none focus:border-[#C89128]">
+            <button onClick={() => setFiltersOpen(p => !p)} style={{ display: 'none', background: 'none', border: 'none', color: '#4A5568', cursor: 'pointer', fontSize: 12 }} className="filter-toggle">
+              {filtersOpen ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          <div className="filter-row" style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, alignItems: 'center' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} color="#4A5568" style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)' }} />
+              <input type="text" placeholder="Search properties…" value={search} onChange={e => setSearch(e.target.value)} className="filter-input" />
+            </div>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="filter-select" style={{ width: 'auto', minWidth: 130 }}>
               <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="pending">Pending</option>
               <option value="inactive">Inactive</option>
               <option value="rejected">Rejected</option>
             </select>
-            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-              className="px-4 py-2.5 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white text-sm focus:outline-none focus:border-[#C89128]">
+            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="filter-select" style={{ width: 'auto', minWidth: 130 }}>
               <option value="all">All Types</option>
               <option value="office">Office</option>
               <option value="retail">Retail</option>
@@ -166,90 +191,89 @@ const Properties: React.FC = () => {
               <option value="industrial">Industrial</option>
             </select>
           </div>
-          <p className="text-xs text-slate-500 mt-3">{pagination.total} {pagination.total === 1 ? 'property' : 'properties'} found</p>
         </div>
 
-        {/* Grid */}
+        {/* ── Grid ── */}
         {properties.length === 0 ? (
-          <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl py-16 text-center">
-            <div className="w-16 h-16 bg-[#1E2D4A] rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Building2 className="w-8 h-8 text-slate-600" />
+          <div style={{ background: '#0F1829', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, padding: '80px 20px', textAlign: 'center' }}>
+            <div style={{ width: 64, height: 64, background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.1)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+              <Building2 size={26} color="#2D3748" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-1">No properties found</h3>
-            <p className="text-slate-400 text-sm mb-6">Get started by adding your first listing</p>
-            <Link to="/commercial/properties/add"
-              className="inline-flex items-center gap-2 bg-[#C89128] text-[#0F172A] px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-[#D4A843] transition-colors">
-              <Plus className="w-4 h-4" />Add First Property
-            </Link>
+            <h3 style={{ color: '#E2D5B0', fontWeight: 700, fontSize: 18, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>No properties found</h3>
+            <p style={{ color: '#4A5568', fontSize: 13, marginBottom: 24 }}>Get started by adding your first listing</p>
+            <Link to="/commercial/properties/add" className="add-btn"><Plus size={14} />Add First Property</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="props-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
             {properties.map(p => {
               const img = getPrimaryImage(p);
+              const sc = statusConfig[p.status] || statusConfig.inactive;
+              const tc = typeConfig[p.type] || '#94A3B8';
               return (
-                <div key={p.id} className="bg-[#162035] border border-[#1E2D4A] rounded-2xl overflow-hidden hover:border-[#C89128]/30 transition-all duration-200 group">
+                <div key={p.id} className="prop-card">
                   {/* Image */}
-                  <div className="relative h-44 bg-[#1E2D4A]">
+                  <div style={{ position: 'relative', height: 200, background: '#0C1420' }}>
                     {img
-                      ? <img src={img} alt={p.title} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center"><Building2 className="w-10 h-10 text-slate-600" /></div>}
+                      ? <img src={img} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Building2 size={36} color="#1E2D4A" />
+                        </div>}
+                    {/* Gradient overlay */}
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,14,26,0.7) 0%, transparent 50%)' }} />
                     {/* Badges */}
-                    <div className="absolute top-3 left-3 flex gap-1.5">
-                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold border ${statusStyle[p.status] || statusStyle.inactive}`}>{p.status}</span>
-                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold border ${typeStyle[p.type] || 'text-slate-400 bg-slate-400/10 border-slate-400/25'}`}>{p.type}</span>
+                    <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 6 }}>
+                      <span className="pill" style={{ background: sc.bg, color: sc.color }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: sc.dot, display: 'inline-block' }} />
+                        {p.status}
+                      </span>
+                      <span className="type-pill" style={{ background: `${tc}15`, color: tc }}>{p.type}</span>
                     </div>
                     {/* Views */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-[#0F172A]/70 backdrop-blur-sm px-2 py-1 rounded-lg">
-                      <Eye className="w-3 h-3 text-slate-400" />
-                      <span className="text-[10px] text-slate-300">{p.views}</span>
+                    <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(8,14,26,0.7)', backdropFilter: 'blur(8px)', padding: '5px 10px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <Eye size={11} color="#94A3B8" />
+                      <span style={{ color: '#94A3B8', fontSize: 11, fontWeight: 600 }}>{p.views}</span>
                     </div>
                   </div>
 
                   {/* Body */}
-                  <div className="p-4">
-                    <h3 className="text-sm font-semibold text-white mb-1 truncate">{p.title}</h3>
-                    <div className="flex items-center gap-1 text-xs text-slate-400 mb-3">
-                      <MapPin className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{p.location}</span>
+                  <div style={{ padding: 18 }}>
+                    <h3 style={{ color: '#F1EDD8', fontSize: 14, fontWeight: 700, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#4A5568', fontSize: 12, marginBottom: 14 }}>
+                      <MapPin size={11} style={{ flexShrink: 0 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.location}</span>
                     </div>
 
-                    {/* Price */}
-                    <div className="flex items-end justify-between mb-3">
+                    {/* Price row */}
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                       <div>
-                        <span className="text-base font-bold text-[#C89128]">{fmt(p.price)}</span>
-                        <span className="text-xs text-slate-500 ml-1">{priceSuffix(p.price_type)}</span>
+                        <span style={{ fontSize: 18, fontWeight: 700, color: '#D4AF37', letterSpacing: '-0.5px' }}>{fmt(p.price)}</span>
+                        <span style={{ fontSize: 11, color: '#4A5568', marginLeft: 4 }}>{priceSuffix(p.price_type)}</span>
                       </div>
-                      {p.furnished && (
-                        <span className="px-2 py-0.5 bg-[#1E2D4A] rounded-lg text-[10px] text-slate-400">Furnished</span>
-                      )}
+                      {p.furnished && <span className="feat-tag">Furnished</span>}
                     </div>
 
-                    {/* Feature Pills */}
+                    {/* Feature pills */}
                     {(p.bedrooms || p.bathrooms || p.area || p.parking_spaces) ? (
-                      <div className="flex flex-wrap gap-1.5 mb-3">
-                        {p.bedrooms && <span className="px-2 py-0.5 bg-[#1E2D4A] rounded-lg text-[10px] text-slate-400">{p.bedrooms} Beds</span>}
-                        {p.bathrooms && <span className="px-2 py-0.5 bg-[#1E2D4A] rounded-lg text-[10px] text-slate-400">{p.bathrooms} Baths</span>}
-                        {p.area && <span className="px-2 py-0.5 bg-[#1E2D4A] rounded-lg text-[10px] text-slate-400">{p.area} m²</span>}
-                        {p.parking_spaces ? <span className="px-2 py-0.5 bg-[#1E2D4A] rounded-lg text-[10px] text-slate-400">{p.parking_spaces}P</span> : null}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                        {p.bedrooms ? <span className="feat-tag">{p.bedrooms} Beds</span> : null}
+                        {p.bathrooms ? <span className="feat-tag">{p.bathrooms} Baths</span> : null}
+                        {p.area ? <span className="feat-tag">{p.area} m²</span> : null}
+                        {p.parking_spaces ? <span className="feat-tag">{p.parking_spaces}P</span> : null}
                       </div>
                     ) : null}
 
                     {/* Actions */}
-                    <div className="flex gap-2 pt-2 border-t border-[#1E2D4A]">
-                      <Link to={`/commercial/properties/${p.id}/edit`}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#1E2D4A] text-white rounded-xl text-xs font-medium hover:bg-[#1E2D4A]/80 transition-colors">
-                        <Edit className="w-3.5 h-3.5" />Edit
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <Link to={`/commercial/properties/${p.id}/edit`} className="action-btn action-edit">
+                        <Edit size={12} />Edit
                       </Link>
                       {(p.status === 'active' || p.status === 'inactive') && (
-                        <button onClick={() => handleToggle(p.id)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#1E2D4A] text-white rounded-xl text-xs font-medium hover:bg-[#1E2D4A]/80 transition-colors">
-                          <Eye className="w-3.5 h-3.5" />
-                          {p.status === 'active' ? 'Deactivate' : 'Activate'}
+                        <button onClick={() => handleToggle(p.id)} className="action-btn action-toggle">
+                          <Eye size={12} />{p.status === 'active' ? 'Deactivate' : 'Activate'}
                         </button>
                       )}
-                      <button onClick={() => handleDelete(p.id)}
-                        className="flex items-center justify-center w-9 py-2 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500/20 transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <button onClick={() => handleDelete(p.id)} className="action-btn action-del">
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
@@ -259,25 +283,17 @@ const Properties: React.FC = () => {
           </div>
         )}
 
-        {/* Pagination */}
+        {/* ── Pagination ── */}
         {pagination.last_page > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <button
-              onClick={() => setPagination(p => ({ ...p, current_page: Math.max(1, p.current_page - 1) }))}
-              disabled={pagination.current_page === 1}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#162035] border border-[#1E2D4A] rounded-xl text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:border-[#C89128]/30 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />Prev
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 32 }}>
+            <button onClick={() => setPagination(p => ({ ...p, current_page: Math.max(1, p.current_page - 1) }))} disabled={pagination.current_page === 1} className="page-btn">
+              <ChevronLeft size={15} />Prev
             </button>
-            <span className="px-4 py-2 text-sm text-slate-400">
+            <div style={{ padding: '10px 18px', background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: 12, color: '#D4AF37', fontSize: 13, fontWeight: 700 }}>
               {pagination.current_page} / {pagination.last_page}
-            </span>
-            <button
-              onClick={() => setPagination(p => ({ ...p, current_page: Math.min(p.last_page, p.current_page + 1) }))}
-              disabled={pagination.current_page === pagination.last_page}
-              className="flex items-center gap-1.5 px-4 py-2 bg-[#162035] border border-[#1E2D4A] rounded-xl text-white text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:border-[#C89128]/30 transition-colors"
-            >
-              Next<ChevronRight className="w-4 h-4" />
+            </div>
+            <button onClick={() => setPagination(p => ({ ...p, current_page: Math.min(p.last_page, p.current_page + 1) }))} disabled={pagination.current_page === pagination.last_page} className="page-btn">
+              Next<ChevronRight size={15} />
             </button>
           </div>
         )}
