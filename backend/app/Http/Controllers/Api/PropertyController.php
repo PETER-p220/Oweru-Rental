@@ -14,6 +14,35 @@ use App\Models\BnbProperty;
 class PropertyController extends Controller
 {
     /**
+     * Get commercial amenities list
+     */
+    public function getCommercialAmenities(): JsonResponse
+    {
+        $amenities = [
+            ['id' => 1, 'name' => 'Air Conditioning', 'icon' => '❄️'],
+            ['id' => 2, 'name' => 'Parking', 'icon' => '🚗'],
+            ['id' => 3, 'name' => 'Security', 'icon' => '🔒'],
+            ['id' => 4, 'name' => 'Elevator', 'icon' => '🛗'],
+            ['id' => 5, 'name' => 'Reception', 'icon' => '🏢'],
+            ['id' => 6, 'name' => 'Conference Room', 'icon' => '🤝'],
+            ['id' => 7, 'name' => 'Kitchen', 'icon' => '🍽️'],
+            ['id' => 8, 'name' => 'Storage', 'icon' => '📦'],
+            ['id' => 9, 'name' => 'High-Speed Internet', 'icon' => '🌐'],
+            ['id' => 10, 'name' => 'Backup Generator', 'icon' => '⚡'],
+            ['id' => 11, 'name' => 'Fire Safety', 'icon' => '🔥'],
+            ['id' => 12, 'name' => 'CCTV Surveillance', 'icon' => '📹'],
+            ['id' => 13, 'name' => '24/7 Access', 'icon' => '🔓'],
+            ['id' => 14, 'name' => 'Meeting Rooms', 'icon' => '📊'],
+            ['id' => 15, 'name' => 'Pantry', 'icon' => '☕'],
+            ['id' => 16, 'name' => 'Disabled Access', 'icon' => '♿'],
+            ['id' => 17, 'name' => 'Gym/Fitness', 'icon' => '💪'],
+            ['id' => 18, 'name' => 'Cleaning Services', 'icon' => '🧹'],
+        ];
+
+        return response()->json($amenities);
+    }
+
+    /**
      * Public property listing — no authentication required.
      * FIXED: added source filters (has_agent / no_agent), dynamic per_page,
      *        explicit available=true instead of scope, and orderBy created_at desc.
