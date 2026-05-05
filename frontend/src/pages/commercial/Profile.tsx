@@ -13,9 +13,9 @@ interface FormData {
 }
 
 const inputCls = (disabled: boolean) =>
-  `w-full px-4 py-3 bg-[#1E2D4A] border rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none transition-colors ${disabled ? 'opacity-50 cursor-not-allowed border-[#1E2D4A]' : 'border-[#1E2D4A] focus:border-[#C89128]'}`;
+  `w-full px-4 py-3 bg-[#1E2D4A] border rounded-xl text-[#F1EDD8] placeholder-[#4A5568] text-sm focus:outline-none transition-colors ${disabled ? 'opacity-50 cursor-not-allowed border-[#1E2D4A]' : 'border-[#1E2D4A] focus:border-[#D4AF37]'}`;
 
-const labelCls = "block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2";
+const labelCls = "block text-xs font-semibold text-[#E2D5B0] uppercase tracking-wide mb-2";
 
 const Profile: React.FC = () => {
   const [user, setUser] = useState<CommercialUser | null>(null);
@@ -101,7 +101,7 @@ const Profile: React.FC = () => {
     <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-[#C89128] border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-400 text-sm">Loading profile…</p>
+        <p className="text-[#4A5568] text-sm">Loading profile…</p>
       </div>
     </div>
   );

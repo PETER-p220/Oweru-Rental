@@ -47,10 +47,10 @@ const Analytics: React.FC = () => {
   ];
 
   const colorMap: Record<string, string> = {
-    emerald: 'text-emerald-400 bg-emerald-400/10',
-    blue: 'text-blue-400 bg-blue-400/10',
-    violet: 'text-violet-400 bg-violet-400/10',
-    amber: 'text-amber-400 bg-amber-400/10',
+    emerald: 'text-[#D4AF37] bg-[#D4AF37]/10',
+    blue: 'text-[#D4AF37] bg-[#D4AF37]/10',
+    violet: 'text-[#D4AF37] bg-[#D4AF37]/10',
+    amber: 'text-[#D4AF37] bg-[#D4AF37]/10',
   };
 
   const maxRev = Math.max(...(data?.monthly_revenue?.map(m => m.revenue) || [1]), 1);
@@ -63,7 +63,7 @@ const Analytics: React.FC = () => {
       <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-[#C89128] border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm">Loading analytics…</p>
+          <p className="text-[#4A5568] text-sm">Loading analytics…</p>
         </div>
       </div>
     );

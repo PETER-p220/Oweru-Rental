@@ -52,9 +52,9 @@ interface FormData {
   area: number;
   bedrooms: number;
   bathrooms: number;
-  parking_spaces: number;
+  parking_spaces: number;                    
   furnished: boolean;
-  available_from: string;
+  available_from: string;                    
   contact_phone: string;
   contact_email: string;
   latitude: number;
@@ -329,14 +329,14 @@ const EditProperty: React.FC = () => {
 
   if (fetchLoading) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
-        <div className="text-white">Loading property...</div>
+      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
+        <div className="text-[#F1EDD8]">Loading property...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-navy-900">
+    <div className="min-h-screen bg-[#0F172A]">
       <style>{`
         :root {
           --navy-900: #0F172A;
@@ -356,26 +356,26 @@ const EditProperty: React.FC = () => {
         <div className="mb-8">
           <button
             onClick={() => navigate('/commercial/properties')}
-            className="flex items-center gap-2 text-gray-400 hover:text-white mb-4 transition-colors"
+            className="flex items-center gap-2 text-[#4A5568] hover:text-[#F1EDD8] mb-4 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to Properties
           </button>
-          <h1 className="text-3xl font-bold text-white mb-2">Edit Property</h1>
-          <p className="text-gray-400">Update your commercial rental property details</p>
+          <h1 className="text-3xl font-bold text-[#F1EDD8] mb-2">Edit Property</h1>
+          <p className="text-[#4A5568]">Update your commercial rental property details</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information */}
-          <div className="bg-navy-800 border border-navy-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
               <Building2 className="w-5 h-5" />
               Basic Information
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Property Title *
                 </label>
                 <input
@@ -383,21 +383,21 @@ const EditProperty: React.FC = () => {
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="e.g., Modern Office Space in Kigali"
                 />
                 {errors.title && <p className="mt-1 text-sm text-red-400">{errors.title}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Property Type *
                 </label>
                 <select
                   name="type"
                   value={formData.type}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] focus:outline-none focus:border-[#D4AF37]"
                 >
                   {propertyTypes.map(type => (
                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -407,7 +407,7 @@ const EditProperty: React.FC = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Description *
                 </label>
                 <textarea
@@ -415,7 +415,7 @@ const EditProperty: React.FC = () => {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="Describe your property in detail..."
                 />
                 {errors.description && <p className="mt-1 text-sm text-red-400">{errors.description}</p>}
@@ -424,15 +424,15 @@ const EditProperty: React.FC = () => {
           </div>
 
           {/* Location */}
-          <div className="bg-navy-800 border border-navy-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
               <MapPin className="w-5 h-5" />
               Location
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Location/Area *
                 </label>
                 <input
@@ -440,14 +440,14 @@ const EditProperty: React.FC = () => {
                   name="location"
                   value={formData.location}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="e.g., Kigali, Rwanda"
                 />
                 {errors.location && <p className="mt-1 text-sm text-red-400">{errors.location}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Full Address *
                 </label>
                 <input
@@ -455,7 +455,7 @@ const EditProperty: React.FC = () => {
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="e.g., KN 123 St, Kigali"
                 />
                 {errors.address && <p className="mt-1 text-sm text-red-400">{errors.address}</p>}
@@ -464,15 +464,15 @@ const EditProperty: React.FC = () => {
           </div>
 
           {/* Pricing & Size */}
-          <div className="bg-navy-800 border border-navy-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
               <DollarSign className="w-5 h-5" />
               Pricing & Size
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Price (TZS) *
                 </label>
                 <input
@@ -480,21 +480,21 @@ const EditProperty: React.FC = () => {
                   name="price"
                   value={formData.price}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="500000"
                 />
                 {errors.price && <p className="mt-1 text-sm text-red-400">{errors.price}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Price Type *
                 </label>
                 <select
                   name="price_type"
                   value={formData.price_type}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] focus:outline-none focus:border-[#D4AF37]"
                 >
                   {priceTypes.map(type => (
                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -504,7 +504,7 @@ const EditProperty: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Area (m²) *
                 </label>
                 <input
@@ -512,7 +512,7 @@ const EditProperty: React.FC = () => {
                   name="area"
                   value={formData.area}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="120"
                 />
                 {errors.area && <p className="mt-1 text-sm text-red-400">{errors.area}</p>}
@@ -521,15 +521,15 @@ const EditProperty: React.FC = () => {
           </div>
 
           {/* Property Features */}
-          <div className="bg-navy-800 border border-navy-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
               <Home className="w-5 h-5" />
               Property Features
             </h2>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   <Bed className="w-4 h-4 inline mr-1" />
                   Bedrooms
                 </label>
@@ -539,13 +539,13 @@ const EditProperty: React.FC = () => {
                   value={formData.bedrooms}
                   onChange={handleInputChange}
                   min="0"
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   <Bath className="w-4 h-4 inline mr-1" />
                   Bathrooms
                 </label>
@@ -555,13 +555,13 @@ const EditProperty: React.FC = () => {
                   value={formData.bathrooms}
                   onChange={handleInputChange}
                   min="0"
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   <Car className="w-4 h-4 inline mr-1" />
                   Parking Spaces
                 </label>
@@ -571,13 +571,13 @@ const EditProperty: React.FC = () => {
                   value={formData.parking_spaces}
                   onChange={handleInputChange}
                   min="0"
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   <Square className="w-4 h-4 inline mr-1" />
                   Furnished
                 </label>
@@ -587,24 +587,24 @@ const EditProperty: React.FC = () => {
                     name="furnished"
                     checked={formData.furnished}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-gold bg-navy-700 border-navy-600 rounded focus:ring-gold"
+                    className="w-4 h-4 text-gold bg-[#1E2D4A] border-[#1E2D4A] rounded focus:ring-gold"
                   />
-                  <span className="ml-2 text-gray-300">Furnished</span>
+                  <span className="ml-2 text-[#E2D5B0]">Furnished</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Availability & Contact */}
-          <div className="bg-navy-800 border border-navy-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
               <Calendar className="w-5 h-5" />
               Availability & Contact
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Available From *
                 </label>
                 <input
@@ -612,13 +612,13 @@ const EditProperty: React.FC = () => {
                   name="available_from"
                   value={formData.available_from}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                 />
                 {errors.available_from && <p className="mt-1 text-sm text-red-400">{errors.available_from}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Contact Phone *
                 </label>
                 <input
@@ -626,14 +626,14 @@ const EditProperty: React.FC = () => {
                   name="contact_phone"
                   value={formData.contact_phone}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="+255712345678"
                 />
                 {errors.contact_phone && <p className="mt-1 text-sm text-red-400">{errors.contact_phone}</p>}
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#E2D5B0] mb-2">
                   Contact Email *
                 </label>
                 <input
@@ -641,7 +641,7 @@ const EditProperty: React.FC = () => {
                   name="contact_email"
                   value={formData.contact_email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 bg-navy-700 border border-navy-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold"
+                  className="w-full px-4 py-2 bg-[#1E2D4A] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] placeholder-[#4A5568] focus:outline-none focus:border-[#D4AF37]"
                   placeholder="contact@example.com"
                 />
                 {errors.contact_email && <p className="mt-1 text-sm text-red-400">{errors.contact_email}</p>}
@@ -650,8 +650,8 @@ const EditProperty: React.FC = () => {
           </div>
 
           {/* Amenities */}
-          <div className="bg-navy-800 border border-navy-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-6">Amenities</h2>
+          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6">Amenities</h2>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {amenities.map((amenity) => (
@@ -660,24 +660,24 @@ const EditProperty: React.FC = () => {
                   className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
                     formData.amenities.includes(amenity.id)
                       ? 'border-gold bg-gold/10'
-                      : 'border-navy-600 bg-navy-700 hover:border-navy-500'
+                      : 'border-[#1E2D4A] bg-[#1E2D4A] hover:border-navy-500'
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={formData.amenities.includes(amenity.id)}
                     onChange={() => handleAmenityToggle(amenity.id)}
-                    className="w-4 h-4 text-gold bg-navy-700 border-navy-600 rounded focus:ring-gold"
+                    className="w-4 h-4 text-gold bg-[#1E2D4A] border-[#1E2D4A] rounded focus:ring-gold"
                   />
-                  <span className="text-gray-300">{amenity.name}</span>
+                  <span className="text-[#E2D5B0]">{amenity.name}</span>
                 </label>
               ))}
             </div>
           </div>
 
           {/* Images */}
-          <div className="bg-navy-800 border border-navy-700 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+          <div className="bg-[#162035] border border-[#1E2D4A] rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-[#F1EDD8] mb-6 flex items-center gap-2">
               <Upload className="w-5 h-5" />
               Property Images
             </h2>
@@ -686,7 +686,7 @@ const EditProperty: React.FC = () => {
               {/* Existing Images */}
               {getExistingImages().length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-4">Current Images</h3>
+                  <h3 className="text-sm font-medium text-[#E2D5B0] mb-4">Current Images</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {getExistingImages().map((image) => (
                       <div key={image.id} className="relative group">
@@ -703,7 +703,7 @@ const EditProperty: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => removeExistingImage(image.id)}
-                          className="absolute top-2 right-2 p-1 bg-red-500/80 backdrop-blur-sm rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-2 right-2 p-1 bg-red-500/80 backdrop-blur-sm rounded-lg text-[#F1EDD8] opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -715,8 +715,8 @@ const EditProperty: React.FC = () => {
 
               {/* New Images */}
               <div>
-                <h3 className="text-sm font-medium text-gray-300 mb-4">Add New Images</h3>
-                <div className="border-2 border-dashed border-navy-600 rounded-lg p-8 text-center">
+                <h3 className="text-sm font-medium text-[#E2D5B0] mb-4">Add New Images</h3>
+                <div className="border-2 border-dashed border-[#1E2D4A] rounded-lg p-8 text-center">
                   <input
                     type="file"
                     multiple
@@ -730,7 +730,7 @@ const EditProperty: React.FC = () => {
                     className="cursor-pointer flex flex-col items-center"
                   >
                     <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                    <span className="text-gray-300 mb-2">Click to upload images</span>
+                    <span className="text-[#E2D5B0] mb-2">Click to upload images</span>
                     <span className="text-gray-500 text-sm">PNG, JPG, GIF up to 2MB each</span>
                   </label>
                 </div>
@@ -749,7 +749,7 @@ const EditProperty: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => removeNewImage(index)}
-                          className="absolute top-2 right-2 p-1 bg-red-500/80 backdrop-blur-sm rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-2 right-2 p-1 bg-red-500/80 backdrop-blur-sm rounded-lg text-[#F1EDD8] opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -766,7 +766,7 @@ const EditProperty: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/commercial/properties')}
-              className="px-6 py-3 bg-navy-800 border border-navy-700 rounded-lg text-white hover:border-navy-600 transition-colors"
+              className="px-6 py-3 bg-[#162035] border border-[#1E2D4A] rounded-lg text-[#F1EDD8] hover:border-[#1E2D4A] transition-colors"
             >
               Cancel
             </button>

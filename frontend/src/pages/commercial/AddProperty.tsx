@@ -12,18 +12,18 @@ interface FormData {
   available_from: string; contact_phone: string; contact_email: string; amenities: number[];
 }
 
-const inputCls = "w-full px-4 py-3 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#C89128] transition-colors";
-const selectCls = "w-full px-4 py-3 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-white text-sm focus:outline-none focus:border-[#C89128] transition-colors";
-const labelCls = "block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2";
+const inputCls = "w-full px-4 py-3 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-[#F1EDD8] placeholder-[#4A5568] text-sm focus:outline-none focus:border-[#D4AF37] transition-colors";
+const selectCls = "w-full px-4 py-3 bg-[#1E2D4A] border border-[#1E2D4A] rounded-xl text-[#F1EDD8] text-sm focus:outline-none focus:border-[#D4AF37] transition-colors";
+const labelCls = "block text-xs font-semibold text-[#E2D5B0] uppercase tracking-wide mb-2";
 const errorCls = "mt-1.5 text-xs text-red-400";
 
 const Section: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
   <div className="bg-[#162035] border border-[#1E2D4A] rounded-2xl overflow-hidden">
     <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#1E2D4A]">
       <span className="text-[#C89128]">{icon}</span>
-      <h2 className="text-base font-semibold text-white">{title}</h2>
+      <h2 className="text-base font-semibold text-[#F1EDD8]">{title}</h2>
     </div>
-    <div className="p-5">{children}</div>
+    <div className="p-5">{children}</div>      
   </div>
 );
 
@@ -145,10 +145,10 @@ const AddProperty: React.FC = () => {
       <style>{`
         select option {
           background-color: #1E2D4A;
-          color: white;
+          color: #F1EDD8;
         }
         select:focus option {
-          background-color: #C89128;
+          background-color: #D4AF37;
           color: #0F172A;
         }
       `}</style>

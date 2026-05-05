@@ -110,7 +110,7 @@ const Reports: React.FC = () => {
     <div className="min-h-screen bg-[#0F172A] flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-[#C89128] border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-400 text-sm">Loading reports…</p>
+        <p className="text-[#4A5568] text-sm">Loading reports…</p>
       </div>
     </div>
   );
