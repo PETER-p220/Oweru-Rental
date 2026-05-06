@@ -10,7 +10,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up(): void        
     {
         // Update all draft contracts to pending_signature
         $updated = DB::table('digital_contracts')

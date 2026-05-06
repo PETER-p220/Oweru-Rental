@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('digital_contracts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
+            $table->foreignId('tenant_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('property_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->string('file_path')->nullable();
