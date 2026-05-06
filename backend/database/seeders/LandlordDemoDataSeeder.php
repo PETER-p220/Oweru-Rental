@@ -107,7 +107,7 @@ class LandlordDemoDataSeeder extends Seeder
                 'price' => 420000,
                 'location' => 'Mikocheni, Dar es Salaam',
                 'address' => '44 Coca Cola Road, Mikocheni',
-                'type' => 'studio',
+                'type' => 'apartment',
                 'bedrooms' => 1,
                 'bathrooms' => 1,
                 'area' => 48,
