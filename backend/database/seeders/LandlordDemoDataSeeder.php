@@ -357,7 +357,7 @@ class LandlordDemoDataSeeder extends Seeder
         Message::firstOrCreate(
             [
                 'sender_id' => $landlord->id,
-                'recipient_id' => $mike->id,
+                'receiver_id' => $mike->id,
                 'subject' => 'Rent reminder',
             ],
             [
@@ -372,7 +372,7 @@ class LandlordDemoDataSeeder extends Seeder
         Message::firstOrCreate(
             [
                 'sender_id' => $amina->id,
-                'recipient_id' => $landlord->id,
+                'receiver_id' => $landlord->id,
                 'subject' => 'Maintenance follow-up',
             ],
             [
@@ -387,7 +387,7 @@ class LandlordDemoDataSeeder extends Seeder
         Message::firstOrCreate(
             [
                 'sender_id' => $agent->id,
-                'recipient_id' => $landlord->id,
+                'receiver_id' => $landlord->id,
                 'subject' => 'Viewing feedback',
             ],
             [
