@@ -609,6 +609,108 @@ class PropertyController extends Controller
     }
 
     /**
+     * Store a commercial property
+     */
+    public function storeCommercial(Request $request): JsonResponse
+    {
+        $data = [
+            'title'       => $request->input('title'),
+            'description' => $request->input('description'),
+            'price'       => $request->input('price'),
+            'price_type'  => $request->input('price_type', 'monthly'),
+            'location'    => $request->input('location'),
+            'address'     => $request->input('address'),
+            'type'        => $request->input('type'),
+            'bedrooms'    => $request->input('bedrooms', 0),
+            'bathrooms'   => $request->input('bathrooms', 0),
+            'parking_spaces' => $request->input('parking_spaces', 0),
+            'area'        => $request->input('area', 0),
+            'furnished'   => $request->input('furnished', false),
+            'available_from' => $request->input('available_from'),
+            'contact_phone' => $request->input('contact_phone'),
+            'contact_email' => $request->input('contact_email'),
+            'amenities'   => $request->input('amenities', []),
+            'featured'    => false,
+            'latitude'    => $request->input('latitude'),
+            'longitude'   => $request->input('longitude'),
+        ];
+
+        // Validation
+        $validator = Validator::make($data, [
+            'title'          => 'required|string|max:255',
+            'description'    => 'required|string',
+            'price'          => 'required|numeric|min:0',
+            'price_type'     => 'required|in:monthly,yearly,sale',
+            'location'       => 'required|string|max:255',
+            'address'        => 'required|string|max:255',
+            'type'           => 'required|in:office,retail,warehouse,commercial building,industrial',
+            'bedrooms'       => 'required|integer|min:0',
+            'bathrooms'      => 'required|integer|min:0',
+            'parking_spaces' => 'required|integer|min:0',
+            'area'           => 'required|numeric|min:0',
+            'furnished'      => 'boolean',
+            'available_from' => 'required|date',
+            'contact_phone'  => 'required|string|max:20',
+            'contact_email'  => 'required|email|max:255',
+            'amenities'      => 'array',
+            'latitude'       => 'nullable|numeric|between:-90,90',
+            'longitude'      => 'nullable|numeric|between:-180,180',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $amenities = $data['amenities'];
+        if (is_string($amenities)) {
+            $amenities = json_decode($amenities, true) ?? [];
+        }
+
+        $user = Auth::user();
+        
+        // Handle image uploads
+        $imagePaths = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                if ($image->isValid()) {
+                    $path = $image->store('properties', 'public');
+                    $imagePaths[] = [
+                        'path' => $path,
+                        'is_primary' => count($imagePaths) === 0 // First image is primary
+                    ];
+                }
+            }
+        }
+
+        $property = Property::create([
+            'title'          => $data['title'],
+            'description'    => $data['description'],
+            'price'          => $data['price'],
+            'location'       => $data['location'],
+            'address'        => $data['address'],
+            'type'           => $data['type'],
+            'bedrooms'       => $data['bedrooms'],
+            'bathrooms'      => $data['bathrooms'],
+            'area'           => $data['area'],
+            'images'         => $imagePaths,
+            'amenities'      => $amenities,
+            'featured'       => filter_var($data['featured'], FILTER_VALIDATE_BOOLEAN),
+            'available'      => true,
+            'latitude'       => $data['latitude'],
+            'longitude'      => $data['longitude'],
+            'owner_id'       => $user->id,
+        ]);
+
+        return response()->json([
+            'message' => 'Commercial property created successfully',
+            'property' => $property
+        ], 201);
+    }
+
+    /**
      * Debug endpoint — REMOVE IN PRODUCTION.
      * GET /api/debug/properties
      */
