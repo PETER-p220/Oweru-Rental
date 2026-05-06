@@ -643,7 +643,7 @@ class PropertyController extends Controller
             'price_type'     => 'required|in:monthly,yearly,sale',
             'location'       => 'required|string|max:255',
             'address'        => 'required|string|max:255',
-            'type'           => 'required|in:office,retail,warehouse,commercial building,industrial',
+            'type'           => 'required|in:office,retail,warehouse,commercial,industrial',
             'bedrooms'       => 'required|integer|min:0',
             'bathrooms'      => 'required|integer|min:0',
             'parking_spaces' => 'required|integer|min:0',
