@@ -66,6 +66,8 @@ class AdminController extends Controller
                 'admins' => User::where('user_type', 'admin')->count(),
                 'agents' => User::where('user_type', 'agent')->count(),
                 'landlords' => User::where('user_type', 'landlord')->count(),
+                'bnb_owners' => User::where('user_type', 'bnb_owner')->count(),
+                'commercial' => User::where('user_type', 'commercial')->count(),
                 'tenants' => User::where('user_type', 'tenant')->count(),
                 'newThisMonth' => User::where('created_at', '>=', now()->startOfMonth())->count(),
                 'activeThisMonth' => User::where('is_active', true)->where('updated_at', '>=', now()->startOfMonth())->count(),

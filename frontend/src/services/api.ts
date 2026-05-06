@@ -28,13 +28,20 @@ export interface User {
   lastName: string;
   email: string;
   phone: string;
-  userType: 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner';
-  user_type?: string;
-  role?: string;
-  userRole?: string;
+  user_type: 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner' | 'commercial';
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Optional fields that may be added by frontend mapping
+  role?: string;
+  status?: string;
+  registrationDate?: string;
+  lastLogin?: string;
+  propertiesCount?: number;
+  transactionsCount?: number;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  profileCompleted?: boolean;
 }
 
 export interface Property {

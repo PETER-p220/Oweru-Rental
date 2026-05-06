@@ -143,7 +143,20 @@ const UserManagement = () => {
       const [usersRes, statsRes] = await Promise.all([
         Api.getUsers(filters), Api.getUserStats(),
       ]);
-      setUsers(usersRes.data || []);
+      // Map backend user_type to frontend role field
+      const mappedUsers = (usersRes.data || []).map((user: any) => ({
+        ...user,
+        role: user.user_type || 'tenant', // Map user_type to role
+        status: user.is_active ? 'active' : (user.user_type === 'admin' ? 'inactive' : 'suspended'),
+        registrationDate: user.created_at,
+        lastLogin: user.updated_at,
+        propertiesCount: user.properties_count || 0,
+        transactionsCount: user.transactions_count || 0,
+        emailVerified: user.email_verified || false,
+        phoneVerified: user.phone_verified || false,
+        profileCompleted: user.profile_completed || false,
+      }));
+      setUsers(mappedUsers);
       setStats(statsRes.data || null);
     } catch { /* silent */ }
     finally { setLoading(false); }
