@@ -358,7 +358,8 @@ class LandlordDemoDataSeeder extends Seeder
             [
                 'sender_id' => $landlord->id,
                 'receiver_id' => $mike->id,
-                'subject' => 'Rent reminder',
+                'content' => 'Rent reminder',
+                'type' => 'text',
             ],
             [
                 'property_id' => $masakiApartment->id,
@@ -373,7 +374,8 @@ class LandlordDemoDataSeeder extends Seeder
             [
                 'sender_id' => $amina->id,
                 'receiver_id' => $landlord->id,
-                'subject' => 'Maintenance follow-up',
+                'content' => 'Maintenance follow-up',
+                'type' => 'text',
             ],
             [
                 'property_id' => $oysterBayVilla->id,
@@ -388,7 +390,8 @@ class LandlordDemoDataSeeder extends Seeder
             [
                 'sender_id' => $agent->id,
                 'receiver_id' => $landlord->id,
-                'subject' => 'Viewing feedback',
+                'content' => 'Viewing feedback',
+                'type' => 'text',
             ],
             [
                 'property_id' => $mikocheniStudio->id,
