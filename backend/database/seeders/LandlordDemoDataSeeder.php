@@ -363,7 +363,7 @@ class LandlordDemoDataSeeder extends Seeder
             ],
             [
                 'property_id' => $masakiApartment->id,
-                'body' => 'Thanks for the on-time payment. Please remember the next rent cycle starts on the 5th.',
+                'content' => 'Thanks for the on-time payment. Please remember to start the next rent cycle on the 5th.',
                 'read_at' => now()->subDays(1),
                 'created_at' => now()->subDays(2),
                 'updated_at' => now()->subDays(2),
@@ -395,7 +395,7 @@ class LandlordDemoDataSeeder extends Seeder
             ],
             [
                 'property_id' => $mikocheniStudio->id,
-                'body' => 'Two qualified prospects asked for a second viewing this week.',
+                'content' => 'Two qualified prospects asked for a second viewing this week.',
                 'read_at' => null,
                 'created_at' => now()->subHours(10),
                 'updated_at' => now()->subHours(10),
