@@ -48,7 +48,7 @@ const inp: React.CSSProperties = {
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', email: '', phone: '',
-  role: 'tenant' as 'admin' | 'agent' | 'landlord' | 'tenant', 
+  role: 'tenant' as 'admin' | 'agent' | 'landlord' | 'tenant' | 'bnb_owner' | 'commercial', 
   status: 'active' as 'active' | 'inactive' | 'suspended',
   password: '', confirmPassword: '', notes: '',
 };
@@ -57,7 +57,7 @@ interface User {
   id: number;
   firstName: string; lastName: string;
   email: string; phone: string;
-  role: 'admin' | 'agent' | 'landlord' | 'tenant';
+  role: 'admin' | 'agent' | 'landlord' | 'tenant' | 'bnb_owner' | 'commercial';
   status: 'active' | 'inactive' | 'suspended';
   registrationDate: string; lastLogin: string;
   propertiesCount: number; transactionsCount: number;
@@ -74,7 +74,12 @@ interface UserStats {
 type FormData = typeof EMPTY_FORM;
 
 const roleColor = (r: string) =>
-  r === 'admin' ? t.purple : r === 'agent' ? t.gold : r === 'landlord' ? t.blue : t.green;
+  r === 'admin' ? t.purple : 
+  r === 'agent' ? t.gold : 
+  r === 'landlord' ? t.blue : 
+  r === 'bnb_owner' ? t.amber : 
+  r === 'commercial' ? t.goldDim : 
+  t.green;
 
 const statusColor = (s: string) =>
   s === 'active' ? t.green : s === 'suspended' ? t.red : t.slate;
@@ -292,6 +297,8 @@ const UserManagement = () => {
             <option value="admin">Admin</option>
             <option value="agent">Agent</option>
             <option value="landlord">Landlord</option>
+            <option value="bnb_owner">BNB Owner</option>
+            <option value="commercial">Commercial</option>
             <option value="tenant">Tenant</option>
           </select>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="um-select um-input" style={{ ...inp, width: 'auto', minWidth: 130 }}>
@@ -447,6 +454,8 @@ const UserManagement = () => {
                     <option value="landlord">Landlord</option>
                     <option value="agent">Agent</option>
                     <option value="admin">Admin</option>
+                    <option value="bnb_owner">BNB Owner</option>
+                    <option value="commercial">Commercial</option>
                   </select>
                 </div>
                 <div>
