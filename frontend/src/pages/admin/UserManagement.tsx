@@ -61,6 +61,7 @@ interface User {
 interface UserStats {
   total: number; active: number; inactive: number; suspended: number;
   admins: number; agents: number; landlords: number; tenants: number;
+  bnb_owners: number; commercial: number;
   newThisMonth: number;
 }
 
@@ -202,13 +203,15 @@ const UserManagement = () => {
 
   /* stat cards */
   const statCards = stats ? [
-    { label: 'Total',     value: stats.total,        color: t.gold,   sub: 'users' },
-    { label: 'Active',    value: stats.active,        color: t.green,  sub: 'users' },
-    { label: 'Admins',    value: stats.admins,        color: t.purple, sub: 'users' },
-    { label: 'Agents',    value: stats.agents,        color: t.gold,   sub: 'users' },
-    { label: 'Landlords', value: stats.landlords,     color: t.blue,   sub: 'users' },
-    { label: 'Tenants',   value: stats.tenants,       color: t.green,  sub: 'users' },
-    { label: 'New / Mo',  value: stats.newThisMonth,  color: t.amber,  sub: 'joined' },
+    { label: 'Total',     value: stats.total,        color: t.gold },
+    { label: 'Active',    value: stats.active,        color: t.green },
+    { label: 'Admins',    value: stats.admins,        color: t.purple },
+    { label: 'Agents',    value: stats.agents,        color: t.gold },
+    { label: 'Landlords', value: stats.landlords,     color: t.blue },
+    { label: 'BNB Owners',value: stats.bnb_owners || 0, color: '#f59e0b' },
+    { label: 'Commercial',value: stats.commercial || 0, color: '#D4A843' },
+    { label: 'Tenants',   value: stats.tenants,       color: t.green },
+    { label: 'New / Mo',  value: stats.newThisMonth,  color: t.amber },
   ] : [];
 
   /* table col widths */
@@ -273,8 +276,8 @@ const UserManagement = () => {
 
       {/* ── Stats Grid ── */}
       {stats && (
-        <div className="um-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 10, marginBottom: 22 }}>
-          {statCards.map(({ label, value, color, sub }) => (
+        <div className="um-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(9,1fr)', gap: 10, marginBottom: 22 }}>
+          {statCards.map(({ label, value, color }) => (
             <div key={label} style={{ background: t.navy800, border: `1px solid ${t.border}`, borderRadius: 12, padding: '14px 12px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: color, borderRadius: '12px 12px 0 0' }} />
               <div style={{ ...serif, fontSize: 24, color, lineHeight: 1, marginBottom: 4 }}>{value}</div>
@@ -362,8 +365,8 @@ const UserManagement = () => {
 
               <tbody>
                 {users.map(user => {
-                  const role   = ROLE_CONFIG[user.role]   ?? ROLE_CONFIG.tenant;
-                  const status = STATUS_CONFIG[user.status] ?? STATUS_CONFIG.inactive;
+                  const role   = ROLE_CONFIG[user.role]   || ROLE_CONFIG.tenant;
+                  const status = STATUS_CONFIG[user.status] || STATUS_CONFIG.inactive;
                   const hue    = avatarHue(user);
                   const isOpen = expandedRow === user.id;
 
@@ -383,7 +386,7 @@ const UserManagement = () => {
                         <td>
                           <div className="cell">
                             <div style={{ ...body, fontSize: 13, fontWeight: 700, color: t.cream, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {user.firstName} {user.lastName}
+                              {user.firstName || ''} {user.lastName || ''}
                             </div>
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
                               {user.emailVerified && <span style={{ ...body, fontSize: 9, color: t.green, fontWeight: 700, letterSpacing: '0.06em' }}>✓ EMAIL</span>}
@@ -396,7 +399,7 @@ const UserManagement = () => {
                         <td className="hide-sm">
                           <div className="cell">
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 12, color: t.slate, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              <Mail size={10} style={{ flexShrink: 0 }} />{user.email}
+                              <Mail size={10} style={{ flexShrink: 0 }} />{user.email || '—'}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 12, color: t.slate }}>
                               <Phone size={10} style={{ flexShrink: 0 }} />{user.phone || '—'}
