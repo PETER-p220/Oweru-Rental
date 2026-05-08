@@ -217,7 +217,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Properties Management
         Route::get('/commercial/amenities',                      [PropertyController::class, 'getCommercialAmenities']);
-        Route::get('/commercial/my-properties',                   [PropertyController::class, 'getCommercialProperties']);
+        Route::get('/commercial/properties',                     [PropertyController::class, 'getCommercialProperties']);
         Route::post('/commercial/properties',                     [PropertyController::class, 'storeCommercial']);
         Route::put('/commercial/properties/{property}',           [PropertyController::class, 'updateCommercial']);
         Route::delete('/commercial/properties/{property}',        [PropertyController::class, 'destroyCommercial']);
