@@ -211,7 +211,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // ── Commercial routes ────────────────────────────────────────────
-    Route::middleware('role:commercial')->group(function () {
+    Route::middleware(['auth'])->group(function () {
         // Dashboard
         Route::get('/dashboard/commercial', [DashboardController::class, 'commercialDashboard']);
 

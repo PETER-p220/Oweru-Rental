@@ -403,7 +403,7 @@ const UserManagement = () => {
 
               <thead>
                 <tr style={{ borderBottom: `1px solid rgba(200,145,40,0.10)` }}>
-                  {['', 'User', 'Contact', 'Role', 'Status', 'Activity', 'Joined', 'Actions'].map((h, i) => (
+                  {['', 'User', 'Contact', 'Role', 'Status', 'Joined', 'Actions'].map((h, i) => (
                     <th key={i}
                       className={i === 2 ? 'hide-sm' : i === 5 || i === 6 ? 'hide-md' : ''}
                       style={{ padding: '10px 14px', textAlign: i === 7 ? 'right' : 'left', ...font, fontSize: 10, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: t.creamDim }}>

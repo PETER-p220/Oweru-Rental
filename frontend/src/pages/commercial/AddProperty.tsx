@@ -9,6 +9,7 @@ interface Amenity { id: number; name: string; icon: string; }
 interface FormData {
   title: string; description: string; type: string; location: string; address: string;
   price: number; price_type: string; parking_spaces: number; furnished: boolean;
+  bedrooms: number; bathrooms: number; area: number;
   available_from: string; contact_phone: string; contact_email: string; amenities: number[];
 }
 
@@ -23,6 +24,7 @@ const AddProperty: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     title: '', description: '', type: 'office', location: '', address: '',
     price: 0, price_type: 'monthly', parking_spaces: 0, furnished: false,
+    bedrooms: 0, bathrooms: 0, area: 0,
     available_from: '', contact_phone: '', contact_email: '', amenities: []
   });
 
@@ -70,6 +72,9 @@ const AddProperty: React.FC = () => {
     if (!formData.location.trim()) e.location = 'Location is required';
     if (!formData.address.trim()) e.address = 'Address is required';
     if (!formData.price || formData.price <= 0) e.price = 'Price must be greater than 0';
+    if (!formData.bedrooms || formData.bedrooms < 0) e.bedrooms = 'Bedrooms must be 0 or greater';
+    if (!formData.bathrooms || formData.bathrooms < 0) e.bathrooms = 'Bathrooms must be 0 or greater';
+    if (!formData.area || formData.area < 0) e.area = 'Area must be 0 or greater';
     if (!formData.available_from) e.available_from = 'Available date is required';
     if (!formData.contact_phone.trim()) e.contact_phone = 'Contact phone is required';
     if (!formData.contact_email.trim()) e.contact_email = 'Contact email is required';
@@ -299,9 +304,28 @@ const AddProperty: React.FC = () => {
             <div className="panel-body">
               <div className="field-grid-2">
                 <div>
+                  <label className="form-label"><Home size={11} style={{ display: 'inline', marginRight: 4 }} />Bedrooms</label>
+                  <input type="number" name="bedrooms" value={formData.bedrooms} onChange={handleChange} min="0" className="form-input" placeholder="0" />
+                  {errors.bedrooms && <div className="error-text">{errors.bedrooms}</div>}
+                </div>
+                <div>
+                  <label className="form-label"><Home size={11} style={{ display: 'inline', marginRight: 4 }} />Bathrooms</label>
+                  <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleChange} min="0" className="form-input" placeholder="0" />
+                  {errors.bathrooms && <div className="error-text">{errors.bathrooms}</div>}
+                </div>
+              </div>
+              <div className="field-grid-2">
+                <div>
+                  <label className="form-label"><MapPin size={11} style={{ display: 'inline', marginRight: 4 }} />Area (sq ft)</label>
+                  <input type="number" name="area" value={formData.area} onChange={handleChange} min="0" className="form-input" placeholder="0" />
+                  {errors.area && <div className="error-text">{errors.area}</div>}
+                </div>
+                <div>
                   <label className="form-label"><Car size={11} style={{ display: 'inline', marginRight: 4 }} />Parking Spaces</label>
                   <input type="number" name="parking_spaces" value={formData.parking_spaces} onChange={handleChange} min="0" className="form-input" placeholder="0" />
                 </div>
+              </div>
+              <div className="field-grid-2">
                 <div>
                   <label className="form-label" style={{ opacity: 0 }}>Furnished</label>
                   <div className="toggle-wrap" onClick={() => setFormData(p => ({ ...p, furnished: !p.furnished }))}>
@@ -311,6 +335,7 @@ const AddProperty: React.FC = () => {
                     <span style={{ fontSize: 13, color: formData.furnished ? '#D4AF37' : '#64748B', fontWeight: 500 }}>Furnished</span>
                   </div>
                 </div>
+                <div></div>
               </div>
             </div>
           </div>
