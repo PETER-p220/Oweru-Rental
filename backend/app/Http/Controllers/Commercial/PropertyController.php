@@ -6,19 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\Amenity;
 use App\Models\Property;
 use App\Models\PropertyImage;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
+// NOTE: Laravel 11 removed controller-based middleware() calls.
+// Auth is enforced by the auth:sanctum middleware applied to these
+// routes in routes/api.php — no __construct needed here.
+
 class PropertyController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(['auth:sanctum']);
-    }
-
     // =========================================================================
     // LIST  —  GET /api/commercial/properties
     // =========================================================================
