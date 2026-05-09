@@ -68,6 +68,11 @@ class Property extends Model
         return $this->hasMany(Application::class);
     }
 
+    public function images(): HasMany
+    {
+        return $this->hasMany(PropertyImage::class);
+    }
+
     // Scopes
     public function scopeAvailable($query)
     {
