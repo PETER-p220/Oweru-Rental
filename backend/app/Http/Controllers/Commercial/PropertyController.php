@@ -25,7 +25,7 @@ class PropertyController extends Controller
     {
         $user = Auth::user();
 
-        $query = Property::where('user_id', $user->id)
+        $query = Property::where('owner_id', $user->id)
             ->with(['images', 'amenities']);
 
         // ── Search ────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ class PropertyController extends Controller
 
     public function show($id): JsonResponse
     {
-        $property = Property::where('user_id', Auth::id())
+        $property = Property::where('owner_id', Auth::id())
             ->with(['images', 'amenities'])
             ->findOrFail($id);
 
@@ -107,7 +107,7 @@ class PropertyController extends Controller
         ]);
 
         $property = Property::create([
-            'user_id'        => $user->id,
+            'owner_id'        => $user->id,
             'title'          => $request->title,
             'description'    => $request->description,
             'type'           => $request->type,
@@ -170,7 +170,7 @@ class PropertyController extends Controller
     {
         $user = Auth::user();
 
-        $property = Property::where('user_id', $user->id)->findOrFail($id);
+        $property = Property::where('owner_id', $user->id)->findOrFail($id);
 
         $request->validate([
             'title'            => 'required|string|max:255',
@@ -272,7 +272,7 @@ class PropertyController extends Controller
 
     public function destroy($id): JsonResponse
     {
-        $property = Property::where('user_id', Auth::id())->findOrFail($id);
+        $property = Property::where('owner_id', Auth::id())->findOrFail($id);
 
         foreach ($property->images as $image) {
             Storage::disk('public')->delete($image->image_path);
@@ -290,7 +290,7 @@ class PropertyController extends Controller
 
     public function toggleStatus($id): JsonResponse
     {
-        $property = Property::where('user_id', Auth::id())->findOrFail($id);
+        $property = Property::where('owner_id', Auth::id())->findOrFail($id);
 
         if ($property->status === 'pending') {
             return response()->json(
@@ -321,7 +321,7 @@ class PropertyController extends Controller
 
     public function analytics($id): JsonResponse
     {
-        $property = Property::where('user_id', Auth::id())
+        $property = Property::where('owner_id', Auth::id())
             ->with(['images', 'amenities'])
             ->findOrFail($id);
 
@@ -359,7 +359,7 @@ class PropertyController extends Controller
      */
     public function uploadImages(Request $request, $id): JsonResponse
     {
-        $property = Property::where('user_id', Auth::id())->findOrFail($id);
+        $property = Property::where('owner_id', Auth::id())->findOrFail($id);
 
         $request->validate([
             'images'   => 'required|array',
@@ -395,7 +395,7 @@ class PropertyController extends Controller
      */
     public function deleteImage($propertyId, $imageId): JsonResponse
     {
-        $property = Property::where('user_id', Auth::id())->findOrFail($propertyId);
+        $property = Property::where('owner_id', Auth::id())->findOrFail($propertyId);
         $image    = PropertyImage::where('property_id', $property->id)->findOrFail($imageId);
 
         Storage::disk('public')->delete($image->image_path);
@@ -417,7 +417,7 @@ class PropertyController extends Controller
      */
     public function setPrimaryImage($propertyId, $imageId): JsonResponse
     {
-        $property = Property::where('user_id', Auth::id())->findOrFail($propertyId);
+        $property = Property::where('owner_id', Auth::id())->findOrFail($propertyId);
         $image    = PropertyImage::where('property_id', $property->id)->findOrFail($imageId);
 
         PropertyImage::where('property_id', $property->id)
