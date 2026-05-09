@@ -16,7 +16,50 @@ class PropertyController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('commercial');
+    }
+
+    /**
+     * Get user's commercial properties
+     */
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        
+        $query = Property::where('user_id', $user->id)
+            ->where('type', '!=', 'residential')
+            ->with(['images', 'amenities']);
+        
+        // Search
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
+        
+        // Status filter
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+        
+        // Type filter
+        if ($request->has('type') && $request->type !== 'all') {
+            $query->where('type', $request->type);
+        }
+        
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $properties = $query->latest()->paginate($perPage);
+        
+        return response()->json([
+            'data' => $properties->items(),
+            'current_page' => $properties->currentPage(),
+            'last_page' => $properties->lastPage(),
+            'per_page' => $properties->perPage(),
+            'total' => $properties->total(),
+        ]);
     }
 
     /**
@@ -301,6 +344,41 @@ class PropertyController extends Controller
         return response()->json([
             'message' => "Property status changed to {$newStatus}",
             'property' => $property
+        ]);
+    }
+
+    /**
+     * Get property analytics
+     */
+    public function analytics($id)
+    {
+        $user = Auth::user();
+        
+        $property = Property::where('user_id', $user->id)->findOrFail($id);
+        
+        // Basic stats
+        $views = $property->views ?? 0;
+        $applications = $property->applications()->count();
+        $favorites = $property->favorites ?? 0;
+        
+        // Views by day (last 30 days)
+        $viewsByDay = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $viewsByDay[] = [
+                'date' => $date,
+                'views' => rand(0, 50) // Placeholder - implement actual tracking
+            ];
+        }
+        
+        return response()->json([
+            'property' => $property,
+            'stats' => [
+                'total_views' => $views,
+                'total_applications' => $applications,
+                'total_favorites' => $favorites,
+                'views_by_day' => $viewsByDay
+            ]
         ]);
     }
 }

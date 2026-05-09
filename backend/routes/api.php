@@ -216,12 +216,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard/commercial', [DashboardController::class, 'commercialDashboard']);
 
         // Properties Management
-        Route::get('/commercial/amenities',                      [PropertyController::class, 'getCommercialAmenities']);
-        Route::get('/commercial/properties',                     [PropertyController::class, 'getCommercialProperties']);
-        Route::post('/commercial/properties',                     [PropertyController::class, 'storeCommercial']);
-        Route::put('/commercial/properties/{property}',           [PropertyController::class, 'updateCommercial']);
-        Route::delete('/commercial/properties/{property}',        [PropertyController::class, 'destroyCommercial']);
-        Route::get('/commercial/properties/{property}/analytics', [PropertyController::class, 'getCommercialPropertyAnalytics']);
+        Route::get('/commercial/amenities',                      [\App\Http\Controllers\Commercial\PropertyController::class, 'getAmenities']);
+        Route::get('/commercial/properties',                     [\App\Http\Controllers\Commercial\PropertyController::class, 'index']);
+        Route::post('/commercial/properties',                     [\App\Http\Controllers\Commercial\PropertyController::class, 'store']);
+        Route::put('/commercial/properties/{property}',           [\App\Http\Controllers\Commercial\PropertyController::class, 'update']);
+        Route::delete('/commercial/properties/{property}',        [\App\Http\Controllers\Commercial\PropertyController::class, 'destroy']);
+        Route::patch('/commercial/properties/{property}/toggle-status', [\App\Http\Controllers\Commercial\PropertyController::class, 'toggleStatus']);
+        Route::get('/commercial/properties/{property}/analytics', [\App\Http\Controllers\Commercial\PropertyController::class, 'analytics']);
 
         // Applications Management
         Route::get('/commercial/applications',                              [ApplicationController::class, 'getCommercialApplications']);
