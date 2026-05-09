@@ -11,8 +11,6 @@ use App\Models\DigitalContract;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\Message;
-use App\Models\PropertyImage;
-use App\Models\Amenity;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -126,38 +124,17 @@ class OwnerController extends Controller
             'bedrooms'    => $request->bedrooms,
             'bathrooms'   => $request->bathrooms,
             'area'        => $request->area,
+            'images'      => $imagePaths,
+            'amenities'   => $request->amenities ?? [],
             'featured'    => $request->boolean('featured', false),
             'available'   => true,
             'owner_id'    => $user->id,
             'agent_id'    => $request->agent_id,
         ]);
 
-        // ── Images ────────────────────────────────────────────────────────────
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $path = $image->store('properties', 'public');
-                PropertyImage::create([
-                    'property_id' => $property->id,
-                    'image_path' => $path,
-                    'is_primary' => false,
-                ]);
-            }
-        }
-
-        // ── Amenities ──────────────────────────────────────────────────────────
-        if ($request->has('amenities')) {
-            $amenities = json_decode($request->amenities, true);
-            if (is_array($amenities)) {
-                foreach ($amenities as $amenityName) {
-                    $amenity = Amenity::firstOrCreate(['name' => $amenityName]);
-                    $property->amenities()->attach($amenity->id);
-                }
-            }
-        }
-
         return response()->json([
             'message' => 'Property created successfully',
-            'data'    => $property->load(['agent', 'images', 'amenities'])
+            'data'    => $property->load('agent')
         ], 201);
     }
 
