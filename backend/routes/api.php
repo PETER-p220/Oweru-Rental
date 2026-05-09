@@ -16,6 +16,7 @@ use App\Http\Controllers\Bnb\BnbBookingController;
 use App\Http\Controllers\Bnb\BnbReviewController;
 use App\Http\Controllers\Api\ImageUploadController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Commercial\PropertyController as CommercialPropertyController;
 use App\Http\Controllers\MessageController;
 
 // ─────────────────────────────────────────────────────────────────────────────
