@@ -41,7 +41,6 @@ class Property extends Model
         'area' => 'decimal:2',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
-        'amenities' => 'array',
         'featured' => 'boolean',
         'available' => 'boolean',
     ];

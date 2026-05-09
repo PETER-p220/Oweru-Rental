@@ -148,7 +148,7 @@ const AddProperty = () => {
       const isOweruProperty = window.location.pathname === '/dashboard/admin/add-oweru-property';
       
       // Check if current user is admin
-      const isAdmin = user?.userType === 'admin' || user?.user_type === 'admin' || user?.role === 'admin';
+      const isAdmin = user?.user_type === 'admin' || user?.role === 'admin';
       
       // Create FormData for file upload
       const formDataToSend = new FormData();
