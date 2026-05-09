@@ -3,382 +3,442 @@
 namespace App\Http\Controllers\Commercial;
 
 use App\Http\Controllers\Controller;
+use App\Models\Amenity;
+use App\Models\Property;
+use App\Models\PropertyImage;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\Property;
-use App\Models\PropertyImage;
-use App\Models\Amenity;
-use Carbon\Carbon;
 
 class PropertyController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware('auth:sanctum');
     }
 
-    /**
-     * Get user's commercial properties
-     */
-    public function index(Request $request)
+    // =========================================================================
+    // LIST  —  GET /api/commercial/properties
+    // =========================================================================
+
+    public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
-        
+
         $query = Property::where('user_id', $user->id)
-            ->where('type', '!=', 'residential')
             ->with(['images', 'amenities']);
-        
-        // Search
-        if ($request->has('search') && $request->search) {
+
+        // ── Search ────────────────────────────────────────────────────────────
+        if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('title',       'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('location', 'like', "%{$search}%");
+                  ->orWhere('location',   'like', "%{$search}%")
+                  ->orWhere('address',    'like', "%{$search}%");
             });
         }
-        
-        // Status filter
-        if ($request->has('status') && $request->status !== 'all') {
+
+        // ── Status filter (ignore 'all') ───────────────────────────────────
+        if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
-        
-        // Type filter
-        if ($request->has('type') && $request->type !== 'all') {
+
+        // ── Type filter (ignore 'all') ────────────────────────────────────
+        if ($request->filled('type') && $request->type !== 'all') {
             $query->where('type', $request->type);
         }
-        
-        // Pagination
-        $perPage = $request->get('per_page', 10);
+
+        $perPage    = (int) $request->get('per_page', 10);
         $properties = $query->latest()->paginate($perPage);
-        
-        return response()->json([
-            'data' => $properties->items(),
-            'current_page' => $properties->currentPage(),
-            'last_page' => $properties->lastPage(),
-            'per_page' => $properties->perPage(),
-            'total' => $properties->total(),
-        ]);
+
+        // Return the standard Laravel paginator shape:
+        // { data: [...], current_page, last_page, per_page, total }
+        // This is exactly what Properties.tsx expects.
+        return response()->json($properties);
     }
 
-    /**
-     * Store a new property
-     */
-    public function store(Request $request)
+    // =========================================================================
+    // SHOW  —  GET /api/commercial/properties/{id}
+    // =========================================================================
+
+    public function show($id): JsonResponse
+    {
+        $property = Property::where('user_id', Auth::id())
+            ->with(['images', 'amenities'])
+            ->findOrFail($id);
+
+        return response()->json($property);
+    }
+
+    // =========================================================================
+    // STORE  —  POST /api/commercial/properties
+    // =========================================================================
+
+    public function store(Request $request): JsonResponse
     {
         $user = Auth::user();
-        
+
         $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'type' => 'required|in:residential,commercial,office,retail,warehouse,industrial',
-            'location' => 'required|string|max:255',
-            'address' => 'required|string|max:500',
-            'price' => 'required|numeric|min:0',
-            'price_type' => 'required|in:monthly,yearly,sale',
-            'area' => 'required|numeric|min:0',
-            'bedrooms' => 'nullable|integer|min:0',
-            'bathrooms' => 'nullable|integer|min:0',
+            'title'          => 'required|string|max:255',
+            'description'    => 'required|string',
+            'type'           => 'required|in:residential,commercial,office,retail,warehouse,industrial',
+            'location'       => 'required|string|max:255',
+            'address'        => 'required|string|max:500',
+            'price'          => 'required|numeric|min:0',
+            'price_type'     => 'required|in:monthly,yearly,sale',
+            'area'           => 'required|numeric|min:0',
+            'bedrooms'       => 'nullable|integer|min:0',
+            'bathrooms'      => 'nullable|integer|min:0',
             'parking_spaces' => 'nullable|integer|min:0',
-            'furnished' => 'boolean',
+            // 'furnished' arrives as '1'/'0' from FormData — cast manually below
+            'furnished'      => 'nullable',
             'available_from' => 'required|date',
-            'images' => 'array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-            'amenities' => 'array',
-            'amenities.*' => 'exists:amenities,id',
-            'contact_phone' => 'required|string|max:20',
-            'contact_email' => 'required|email|max:255',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric'
+            'contact_phone'  => 'required|string|max:20',
+            'contact_email'  => 'required|email|max:255',
+            'latitude'       => 'nullable|numeric',
+            'longitude'      => 'nullable|numeric',
+            // Images arrive as images[0], images[1], …
+            'images'         => 'nullable|array',
+            'images.*'       => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            // Amenities arrive as amenities[] array of IDs
+            'amenities'      => 'nullable|array',
+            'amenities.*'    => 'integer|exists:amenities,id',
         ]);
 
-        // Create property
         $property = Property::create([
-            'user_id' => $user->id,
-            'title' => $request->title,
-            'description' => $request->description,
-            'type' => $request->type,
-            'location' => $request->location,
-            'address' => $request->address,
-            'price' => $request->price,
-            'price_type' => $request->price_type,
-            'area' => $request->area,
-            'bedrooms' => $request->bedrooms,
-            'bathrooms' => $request->bathrooms,
-            'parking_spaces' => $request->parking_spaces,
-            'furnished' => $request->furnished ?? false,
+            'user_id'        => $user->id,
+            'title'          => $request->title,
+            'description'    => $request->description,
+            'type'           => $request->type,
+            'location'       => $request->location,
+            'address'        => $request->address,
+            'price'          => $request->price,
+            'price_type'     => $request->price_type,
+            'area'           => $request->area,
+            'bedrooms'       => $request->bedrooms       ?? 0,
+            'bathrooms'      => $request->bathrooms      ?? 0,
+            'parking_spaces' => $request->parking_spaces ?? 0,
+            // FormData sends booleans as '1'/'0' strings — normalise properly
+            'furnished'      => filter_var($request->input('furnished', false), FILTER_VALIDATE_BOOLEAN),
             'available_from' => $request->available_from,
-            'contact_phone' => $request->contact_phone,
-            'contact_email' => $request->contact_email,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'status' => 'pending', // Requires admin approval
-            'featured' => false,
-            'views' => 0
+            'contact_phone'  => $request->contact_phone,
+            'contact_email'  => $request->contact_email,
+            'latitude'       => $request->latitude  ?? null,
+            'longitude'      => $request->longitude ?? null,
+            'status'         => 'pending',  // requires admin approval
+            'featured'       => false,
+            'views'          => 0,
         ]);
 
-        // Handle images upload
+        // ── Images ────────────────────────────────────────────────────────────
+        // The React form appends files as images[0], images[1], …
+        // hasFile('images') returns true when at least one file was sent.
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
                 $path = $image->store('properties', 'public');
-                
+
                 PropertyImage::create([
                     'property_id' => $property->id,
-                    'image_path' => $path,
-                    'is_primary' => $index === 0 // First image is primary
+                    'image_path'  => $path,
+                    'is_primary'  => $index === 0, // first image is primary
                 ]);
             }
         }
 
-        // Attach amenities
-        if ($request->has('amenities')) {
-            $property->amenities()->attach($request->amenities);
-        }
-
-        return response()->json([
-            'message' => 'Property created successfully and is pending approval',
-            'property' => $property->load(['images', 'amenities'])
-        ], 201);
-    }
-
-    /**
-     * Update a property
-     */
-    public function update(Request $request, $id)
-    {
-        $user = Auth::user();
-        
-        $property = Property::where('user_id', $user->id)->findOrFail($id);
-        
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'type' => 'required|in:residential,commercial,office,retail,warehouse,industrial',
-            'location' => 'required|string|max:255',
-            'address' => 'required|string|max:500',
-            'price' => 'required|numeric|min:0',
-            'price_type' => 'required|in:monthly,yearly,sale',
-            'area' => 'required|numeric|min:0',
-            'bedrooms' => 'nullable|integer|min:0',
-            'bathrooms' => 'nullable|integer|min:0',
-            'parking_spaces' => 'nullable|integer|min:0',
-            'furnished' => 'boolean',
-            'available_from' => 'required|date',
-            'contact_phone' => 'required|string|max:20',
-            'contact_email' => 'required|email|max:255',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric'
-        ]);
-
-        $property->update([
-            'title' => $request->title,
-            'description' => $request->description,
-            'type' => $request->type,
-            'location' => $request->location,
-            'address' => $request->address,
-            'price' => $request->price,
-            'price_type' => $request->price_type,
-            'area' => $request->area,
-            'bedrooms' => $request->bedrooms,
-            'bathrooms' => $request->bathrooms,
-            'parking_spaces' => $request->parking_spaces,
-            'furnished' => $request->furnished ?? false,
-            'available_from' => $request->available_from,
-            'contact_phone' => $request->contact_phone,
-            'contact_email' => $request->contact_email,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'status' => 'pending' // Reset to pending when updated
-        ]);
-
-        // Update amenities
-        if ($request->has('amenities')) {
+        // ── Amenities ─────────────────────────────────────────────────────────
+        if ($request->filled('amenities')) {
             $property->amenities()->sync($request->amenities);
         }
 
         return response()->json([
-            'message' => 'Property updated successfully and is pending approval',
-            'property' => $property->load(['images', 'amenities'])
+            'message'  => 'Property created successfully and is pending approval',
+            'property' => $property->load(['images', 'amenities']),
+        ], 201);
+    }
+
+    // =========================================================================
+    // UPDATE  —  POST /api/commercial/properties/{id}
+    // =========================================================================
+    // NOTE: EditProperty.tsx sends a POST (not PUT) with FormData because
+    // multipart/form-data doesn't support PUT natively in some browsers.
+    // Make sure your route is:
+    //   Route::post('/commercial/properties/{id}', [..., 'update']);
+    // OR use Route::put and add _method=PUT to the FormData in the frontend.
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        $user = Auth::user();
+
+        $property = Property::where('user_id', $user->id)->findOrFail($id);
+
+        $request->validate([
+            'title'            => 'required|string|max:255',
+            'description'      => 'required|string',
+            'type'             => 'required|in:residential,commercial,office,retail,warehouse,industrial',
+            'location'         => 'required|string|max:255',
+            'address'          => 'required|string|max:500',
+            'price'            => 'required|numeric|min:0',
+            'price_type'       => 'required|in:monthly,yearly,sale',
+            'area'             => 'required|numeric|min:0',
+            'bedrooms'         => 'nullable|integer|min:0',
+            'bathrooms'        => 'nullable|integer|min:0',
+            'parking_spaces'   => 'nullable|integer|min:0',
+            'furnished'        => 'nullable',
+            'available_from'   => 'required|date',
+            'contact_phone'    => 'required|string|max:20',
+            'contact_email'    => 'required|email|max:255',
+            'latitude'         => 'nullable|numeric',
+            'longitude'        => 'nullable|numeric',
+            'images'           => 'nullable|array',
+            'images.*'         => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'amenities'        => 'nullable|array',
+            'amenities.*'      => 'integer|exists:amenities,id',
+            // IDs of existing images the user removed in the edit form
+            'deleted_images'   => 'nullable|array',
+            'deleted_images.*' => 'integer',
+        ]);
+
+        $property->update([
+            'title'          => $request->title,
+            'description'    => $request->description,
+            'type'           => $request->type,
+            'location'       => $request->location,
+            'address'        => $request->address,
+            'price'          => $request->price,
+            'price_type'     => $request->price_type,
+            'area'           => $request->area,
+            'bedrooms'       => $request->bedrooms       ?? 0,
+            'bathrooms'      => $request->bathrooms      ?? 0,
+            'parking_spaces' => $request->parking_spaces ?? 0,
+            'furnished'      => filter_var($request->input('furnished', false), FILTER_VALIDATE_BOOLEAN),
+            'available_from' => $request->available_from,
+            'contact_phone'  => $request->contact_phone,
+            'contact_email'  => $request->contact_email,
+            'latitude'       => $request->latitude  ?? null,
+            'longitude'      => $request->longitude ?? null,
+            'status'         => 'pending', // reset to pending on every edit
+        ]);
+
+        // ── Remove images the user deleted ────────────────────────────────────
+        if ($request->filled('deleted_images')) {
+            $toDelete = PropertyImage::whereIn('id', $request->deleted_images)
+                ->where('property_id', $property->id)
+                ->get();
+
+            foreach ($toDelete as $img) {
+                Storage::disk('public')->delete($img->image_path);
+                $img->delete();
+            }
+        }
+
+        // ── Add new images ─────────────────────────────────────────────────
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('properties', 'public');
+                PropertyImage::create([
+                    'property_id' => $property->id,
+                    'image_path'  => $path,
+                    'is_primary'  => false,
+                ]);
+            }
+
+            // Ensure there is always a primary image
+            $hasPrimary = PropertyImage::where('property_id', $property->id)
+                ->where('is_primary', true)
+                ->exists();
+
+            if (!$hasPrimary) {
+                PropertyImage::where('property_id', $property->id)
+                    ->first()
+                    ?->update(['is_primary' => true]);
+            }
+        }
+
+        // ── Amenities ─────────────────────────────────────────────────────────
+        if ($request->has('amenities')) {
+            $property->amenities()->sync($request->amenities ?? []);
+        }
+
+        return response()->json([
+            'message'  => 'Property updated successfully and is pending approval',
+            'property' => $property->fresh(['images', 'amenities']),
         ]);
     }
 
-    /**
-     * Delete a property
-     */
-    public function destroy($id)
+    // =========================================================================
+    // DELETE  —  DELETE /api/commercial/properties/{id}
+    // =========================================================================
+
+    public function destroy($id): JsonResponse
     {
-        $user = Auth::user();
-        
-        $property = Property::where('user_id', $user->id)->findOrFail($id);
-        
-        // Delete property images
+        $property = Property::where('user_id', Auth::id())->findOrFail($id);
+
         foreach ($property->images as $image) {
             Storage::disk('public')->delete($image->image_path);
             $image->delete();
         }
-        
+
         $property->delete();
-        
+
+        return response()->json(['message' => 'Property deleted successfully']);
+    }
+
+    // =========================================================================
+    // TOGGLE STATUS  —  PATCH /api/commercial/properties/{id}/toggle-status
+    // =========================================================================
+
+    public function toggleStatus($id): JsonResponse
+    {
+        $property = Property::where('user_id', Auth::id())->findOrFail($id);
+
+        if ($property->status === 'pending') {
+            return response()->json(
+                ['message' => 'Cannot toggle status of a property that is still pending approval'],
+                400
+            );
+        }
+
+        if ($property->status === 'rejected') {
+            return response()->json(
+                ['message' => 'Cannot toggle status of a rejected property'],
+                400
+            );
+        }
+
+        $newStatus = $property->status === 'active' ? 'inactive' : 'active';
+        $property->update(['status' => $newStatus]);
+
         return response()->json([
-            'message' => 'Property deleted successfully'
+            'message'  => "Property status changed to {$newStatus}",
+            'property' => $property->fresh(),
         ]);
     }
 
-    /**
-     * Upload property images
-     */
-    public function uploadImages(Request $request, $id)
+    // =========================================================================
+    // ANALYTICS  —  GET /api/commercial/properties/{id}/analytics
+    // =========================================================================
+
+    public function analytics($id): JsonResponse
     {
-        $user = Auth::user();
-        
-        $property = Property::where('user_id', $user->id)->findOrFail($id);
-        
+        $property = Property::where('user_id', Auth::id())
+            ->with(['images', 'amenities'])
+            ->findOrFail($id);
+
+        $views        = $property->views ?? 0;
+        $applications = method_exists($property, 'applications')
+            ? $property->applications()->count()
+            : 0;
+
+        // Views by day for the last 30 days
+        // Replace rand() with real tracking data when available.
+        $viewsByDay = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $viewsByDay[] = [
+                'date'  => now()->subDays($i)->format('Y-m-d'),
+                'views' => 0,
+            ];
+        }
+
+        return response()->json([
+            'property' => $property,
+            'stats'    => [
+                'total_views'        => $views,
+                'total_applications' => $applications,
+                'views_by_day'       => $viewsByDay,
+            ],
+        ]);
+    }
+
+    // =========================================================================
+    // IMAGE HELPERS
+    // =========================================================================
+
+    /**
+     * POST /api/commercial/properties/{id}/images
+     */
+    public function uploadImages(Request $request, $id): JsonResponse
+    {
+        $property = Property::where('user_id', Auth::id())->findOrFail($id);
+
         $request->validate([
-            'images' => 'required|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+            'images'   => 'required|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
-        $uploadedImages = [];
-        
+        $uploaded = [];
         foreach ($request->file('images') as $image) {
             $path = $image->store('properties', 'public');
-            
-            $propertyImage = PropertyImage::create([
+            $uploaded[] = PropertyImage::create([
                 'property_id' => $property->id,
-                'image_path' => $path,
-                'is_primary' => false
+                'image_path'  => $path,
+                'is_primary'  => false,
             ]);
-            
-            $uploadedImages[] = $propertyImage;
+        }
+
+        // Ensure a primary exists
+        $hasPrimary = PropertyImage::where('property_id', $property->id)
+            ->where('is_primary', true)->exists();
+        if (!$hasPrimary) {
+            PropertyImage::where('property_id', $property->id)
+                ->first()?->update(['is_primary' => true]);
         }
 
         return response()->json([
             'message' => 'Images uploaded successfully',
-            'images' => $uploadedImages
+            'images'  => $uploaded,
         ]);
     }
 
     /**
-     * Delete property image
+     * DELETE /api/commercial/properties/{propertyId}/images/{imageId}
      */
-    public function deleteImage($propertyId, $imageId)
+    public function deleteImage($propertyId, $imageId): JsonResponse
     {
-        $user = Auth::user();
-        
-        $property = Property::where('user_id', $user->id)->findOrFail($propertyId);
-        $image = PropertyImage::where('property_id', $property->id)->findOrFail($imageId);
-        
-        // Delete file from storage
+        $property = Property::where('user_id', Auth::id())->findOrFail($propertyId);
+        $image    = PropertyImage::where('property_id', $property->id)->findOrFail($imageId);
+
         Storage::disk('public')->delete($image->image_path);
-        
-        // If this was primary, set another image as primary
+
         if ($image->is_primary) {
-            $newPrimary = PropertyImage::where('property_id', $property->id)
+            $next = PropertyImage::where('property_id', $property->id)
                 ->where('id', '!=', $image->id)
                 ->first();
-            
-            if ($newPrimary) {
-                $newPrimary->update(['is_primary' => true]);
-            }
+            $next?->update(['is_primary' => true]);
         }
-        
+
         $image->delete();
-        
-        return response()->json([
-            'message' => 'Image deleted successfully'
-        ]);
+
+        return response()->json(['message' => 'Image deleted successfully']);
     }
 
     /**
-     * Set primary image
+     * PATCH /api/commercial/properties/{propertyId}/images/{imageId}/primary
      */
-    public function setPrimaryImage($propertyId, $imageId)
+    public function setPrimaryImage($propertyId, $imageId): JsonResponse
     {
-        $user = Auth::user();
-        
-        $property = Property::where('user_id', $user->id)->findOrFail($propertyId);
-        $image = PropertyImage::where('property_id', $property->id)->findOrFail($imageId);
-        
-        // Remove primary from all images
-        PropertyImage::where('property_id', $property->id)->update(['is_primary' => false]);
-        
-        // Set new primary
+        $property = Property::where('user_id', Auth::id())->findOrFail($propertyId);
+        $image    = PropertyImage::where('property_id', $property->id)->findOrFail($imageId);
+
+        PropertyImage::where('property_id', $property->id)
+            ->update(['is_primary' => false]);
+
         $image->update(['is_primary' => true]);
-        
+
         return response()->json([
-            'message' => 'Primary image set successfully',
-            'image' => $image
+            'message' => 'Primary image updated',
+            'image'   => $image,
         ]);
     }
 
-    /**
-     * Get available amenities
-     */
-    public function getAmenities()
-    {
-        $amenities = Amenity::orderBy('name')->get();
-        
-        return response()->json($amenities);
-    }
+    // =========================================================================
+    // AMENITIES  —  GET /api/commercial/amenities
+    // =========================================================================
 
-    /**
-     * Toggle property status (active/inactive)
-     */
-    public function toggleStatus($id)
+    public function getAmenities(): JsonResponse
     {
-        $user = Auth::user();
-        
-        $property = Property::where('user_id', $user->id)->findOrFail($id);
-        
-        // Only allow toggling if property is approved
-        if ($property->status === 'pending') {
-            return response()->json([
-                'message' => 'Cannot toggle status of pending property'
-            ], 400);
-        }
-        
-        $newStatus = $property->status === 'active' ? 'inactive' : 'active';
-        $property->update(['status' => $newStatus]);
-        
-        return response()->json([
-            'message' => "Property status changed to {$newStatus}",
-            'property' => $property
-        ]);
-    }
-
-    /**
-     * Get property analytics
-     */
-    public function analytics($id)
-    {
-        $user = Auth::user();
-        
-        $property = Property::where('user_id', $user->id)->findOrFail($id);
-        
-        // Basic stats
-        $views = $property->views ?? 0;
-        $applications = $property->applications()->count();
-        $favorites = $property->favorites ?? 0;
-        
-        // Views by day (last 30 days)
-        $viewsByDay = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $date = now()->subDays($i)->format('Y-m-d');
-            $viewsByDay[] = [
-                'date' => $date,
-                'views' => rand(0, 50) // Placeholder - implement actual tracking
-            ];
-        }
-        
-        return response()->json([
-            'property' => $property,
-            'stats' => [
-                'total_views' => $views,
-                'total_applications' => $applications,
-                'total_favorites' => $favorites,
-                'views_by_day' => $viewsByDay
-            ]
-        ]);
+        return response()->json(Amenity::orderBy('name')->get());
     }
 }
