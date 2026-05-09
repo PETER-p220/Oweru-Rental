@@ -75,11 +75,11 @@ class Property extends Model
 
     public function amenities(): BelongsToMany
     {
-        return $this->belongsToMany(Amenity::class);
+        return $this->belongsToMany(Amenity::class, 'amenity_property');
     }
 
     // Scopes
-    public function scopeAvailable($query)
+    public function scopeAvailable($query)     
     {
         return $query->where('available', true);
     }
