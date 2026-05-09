@@ -18,7 +18,7 @@ return new class extends Migration
         
         Schema::table('properties', function (Blueprint $table) {
             // Add the enum column with new values
-            $table->enum('type', ['house', 'Master-bedroom', 'Single-room', 'oweru_rental'])->after('address');
+            $table->enum('type', ['house', 'Master-bedroom', 'Single-room', 'oweru_rental', 'residential', 'apartment', 'office', 'retail', 'warehouse', 'commercial', 'industrial'])->after('address');
         });
     }
 
@@ -34,7 +34,7 @@ return new class extends Migration
         
         Schema::table('properties', function (Blueprint $table) {
             // Restore the original enum column
-            $table->enum('type', ['apartment', 'house', 'studio', 'villa', 'commercial', 'oweru_rental'])->after('address');
+            $table->enum('type', ['house', 'Master-bedroom', 'Single-room', 'oweru_rental', 'residential', 'apartment', 'office', 'retail', 'warehouse', 'commercial', 'industrial'])->after('address');
         });
     }
 };
