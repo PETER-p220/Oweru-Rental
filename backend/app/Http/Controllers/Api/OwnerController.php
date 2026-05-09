@@ -124,8 +124,6 @@ class OwnerController extends Controller
             'bedrooms'    => $request->bedrooms,
             'bathrooms'   => $request->bathrooms,
             'area'        => $request->area,
-            'images'      => $imagePaths,
-            'amenities'   => $request->amenities ?? [],
             'featured'    => $request->boolean('featured', false),
             'available'   => true,
             'owner_id'    => $user->id,
