@@ -73,6 +73,11 @@ class Property extends Model
         return $this->hasMany(PropertyImage::class);
     }
 
+    public function amenities(): BelongsToMany
+    {
+        return $this->belongsToMany(Amenity::class);
+    }
+
     // Scopes
     public function scopeAvailable($query)
     {
