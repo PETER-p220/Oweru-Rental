@@ -19,7 +19,7 @@ interface Property {
   address: string; price: number; price_type: string; area: number;
   bedrooms?: number; bathrooms?: number; parking_spaces?: number;
   furnished: boolean; available_from: string; status: string; views: number;
-  images: PropertyImage[]; amenities: Amenity[]; created_at: string;
+  images?: PropertyImage[]; property_images?: PropertyImage[]; amenities?: Amenity[]; property_amenities?: Amenity[]; created_at: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -157,7 +157,8 @@ const Properties: React.FC = () => {
     t === 'monthly' ? '/mo' : t === 'yearly' ? '/yr' : '';
 
   const getPrimaryImage = (p: Property) => {
-    const img = p.images?.find(i => i.is_primary) ?? p.images?.[0];
+    const imgs = p.property_images ?? p.images ?? [];
+    const img = imgs.find(i => i.is_primary) ?? imgs[0];
     return img ? `${API_BASE}/storage/${img.image_path}` : null;
   };
 

@@ -89,18 +89,43 @@ const PropertyDetail = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
-  const getPropertyImageUrl = (property: any, imageIndex: number = 0) => {
-    if (property?.images?.length > 0) {
-      const image = property.images[imageIndex];
-      if (typeof image === 'string' && image.trim() !== '') {
-        const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
-        if (image.startsWith('http://') || image.startsWith('https://')) return image;
-        if (image.startsWith('/')) return `${VITE_STORAGE}${image}`;
-        if (image.startsWith('storage/')) return `${VITE_STORAGE}/${image}`;
-        return `${VITE_STORAGE}/storage/${image}`;
-      }
+  const VITE_STORAGE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace('/api', '');
+  const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Crect width='900' height='600' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='22' fill='%23C89128'%3ENo Image Available%3C/text%3E%3C/svg%3E`;
+
+  // ── Universal image resolver ─────────────────────────────────────────────────
+  // Tries every shape the backend may return:
+  //   1. property_images[] snake_case  (public API after fix)
+  //   2. propertyImages[]  camelCase   (commercial API)
+  //   3. images[]          JSON column (agent-created properties)
+  const getPropertyImageUrl = (property: any, imageIndex: number = 0): string => {
+    const si = property?.property_images;
+    if (Array.isArray(si) && si.length > 0) {
+      const p = si.find((i: any) => i.is_primary) ?? si[0];
+      const path = p?.image_path ?? p?.url ?? '';
+      if (path) return resolveUrl(path);
     }
-    return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Crect width='900' height='600' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='22' fill='%23C89128'%3ENo Image Available%3C/text%3E%3C/svg%3E`;
+    const ci = property?.propertyImages;
+    if (Array.isArray(ci) && ci.length > 0) {
+      const p = ci.find((i: any) => i.is_primary) ?? ci[0];
+      const path = p?.image_path ?? p?.url ?? '';
+      if (path) return resolveUrl(path);
+    }
+    const imgs = property?.images;
+    if (Array.isArray(imgs) && imgs.length > 0) {
+      const first = imgs[imageIndex] ?? imgs[0];
+      const path = typeof first === 'string' ? first : (first?.image_path ?? first?.url ?? '');
+      if (path) return resolveUrl(path);
+    }
+    return PLACEHOLDER;
+  };
+
+  const resolveUrl = (path: string): string => {
+    if (!path || !path.trim()) return PLACEHOLDER;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('/storage/'))  return `${VITE_STORAGE}${path}`;
+    if (path.startsWith('storage/'))   return `${VITE_STORAGE}/${path}`;
+    if (path.startsWith('/'))          return `${VITE_STORAGE}${path}`;
+    return `${VITE_STORAGE}/storage/${path}`;
   };
 
   const [selectedImg, setSelectedImg]         = useState(0);
@@ -156,7 +181,7 @@ const PropertyDetail = () => {
   const handleApply = async () => {
     if (!isAuthenticated) { setShowSignInModal(true); return; }
     if (!property) return;
-    if (user?.userType !== 'tenant') { setShowTenantModal(true); return; }
+    if (user?.user_type !== 'tenant') { setShowTenantModal(true); return; }
     try {
       await Api.createApplication({
         property_id: property.id,

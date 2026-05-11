@@ -211,48 +211,48 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/agent/messages', [AgentController::class, 'sendMessage']);
     });
 
-    Route::get('/commercial/amenities', [CommercialPropertyController::class, 'getAmenities']);
- 
-// ── Property collection & creation ───────────────────────────────────────────
-Route::get ('/commercial/properties', [CommercialPropertyController::class, 'index']);
-Route::post('/commercial/properties', [CommercialPropertyController::class, 'store']);
- 
-// ── Static sub-routes BEFORE parameterised /{id} routes ──────────────────────
-// (Laravel matches routes top-to-bottom; a literal segment like "toggle-status"
-//  must appear before a wildcard like {id} or Laravel treats it as an ID.)
- 
-// ── Parameterised property routes ─────────────────────────────────────────────
-Route::get   ('/commercial/properties/{id}',                        [CommercialPropertyController::class, 'show']);
-Route::post  ('/commercial/properties/{id}',                        [CommercialPropertyController::class, 'update']);   // POST because EditProperty sends FormData
-Route::put   ('/commercial/properties/{id}',                        [CommercialPropertyController::class, 'update']);   // also accept PUT for API clients
-Route::delete('/commercial/properties/{id}',                        [CommercialPropertyController::class, 'destroy']);
-Route::patch ('/commercial/properties/{id}/toggle-status',          [CommercialPropertyController::class, 'toggleStatus']);
-Route::get   ('/commercial/properties/{id}/analytics',              [CommercialPropertyController::class, 'analytics']);
- 
-// ── Image management ──────────────────────────────────────────────────────────
-Route::post ('/commercial/properties/{id}/images',                          [CommercialPropertyController::class, 'uploadImages']);
-Route::delete('/commercial/properties/{propertyId}/images/{imageId}',       [CommercialPropertyController::class, 'deleteImage']);
-Route::patch ('/commercial/properties/{propertyId}/images/{imageId}/primary',[CommercialPropertyController::class, 'setPrimaryImage']);
- 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
-Route::get('/dashboard/commercial', [DashboardController::class, 'commercialDashboard']);
- 
-// ── Applications ──────────────────────────────────────────────────────────────
-Route::get  ('/commercial/applications',                          [ApplicationController::class, 'getCommercialApplications']);
-Route::patch('/commercial/applications/{application}/approve',    [ApplicationController::class, 'approveCommercialApplication']);
-Route::patch('/commercial/applications/{application}/reject',     [ApplicationController::class, 'rejectCommercialApplication']);
- 
-// ── Analytics, Reports, Profile, Settings ─────────────────────────────────────
-Route::get('/commercial/analytics',  [DashboardController::class, 'getCommercialAnalytics']);
- 
-Route::get ('/commercial/reports',   [ApplicationController::class, 'getCommercialReports']);
-Route::post('/commercial/reports',   [ApplicationController::class, 'generateCommercialReport']);
- 
-Route::get('/commercial/profile',    [DashboardController::class, 'getCommercialProfile']);
-Route::put('/commercial/profile',    [DashboardController::class, 'updateCommercialProfile']);
- 
-Route::get('/commercial/settings',   [DashboardController::class, 'getCommercialSettings']);
-Route::put('/commercial/settings',   [DashboardController::class, 'updateCommercialSettings']);    // ── Owner (landlord) routes ───────────────────────────────────────
+    // ── Commercial routes ────────────────────────────────────────────────────
+    Route::middleware('role:commercial')->group(function () {
+        // Dashboard
+        Route::get('/commercial/dashboard', [DashboardController::class, 'commercialDashboard']);
+
+        // Amenities
+        Route::get('/commercial/amenities', [CommercialPropertyController::class, 'getAmenities']);
+        
+        // Property collection & creation
+        Route::get('/commercial/properties', [CommercialPropertyController::class, 'index']);
+        Route::post('/commercial/properties', [CommercialPropertyController::class, 'store']);
+        
+        // Parameterised property routes
+        // (static routes BEFORE parameterised /{id} routes)
+        Route::get('/commercial/properties/{id}', [CommercialPropertyController::class, 'show']);
+        Route::post('/commercial/properties/{id}', [CommercialPropertyController::class, 'update']);   // POST because EditProperty sends FormData
+        Route::put('/commercial/properties/{id}', [CommercialPropertyController::class, 'update']);   // also accept PUT for API clients
+        Route::delete('/commercial/properties/{id}', [CommercialPropertyController::class, 'destroy']);
+        Route::patch('/commercial/properties/{id}/toggle-status', [CommercialPropertyController::class, 'toggleStatus']);
+        Route::get('/commercial/properties/{id}/analytics', [CommercialPropertyController::class, 'analytics']);
+        
+        // Image management
+        Route::post('/commercial/properties/{id}/images', [CommercialPropertyController::class, 'uploadImages']);
+        Route::delete('/commercial/properties/{propertyId}/images/{imageId}', [CommercialPropertyController::class, 'deleteImage']);
+        Route::patch('/commercial/properties/{propertyId}/images/{imageId}/primary', [CommercialPropertyController::class, 'setPrimaryImage']);
+        
+        // Applications
+        Route::get('/commercial/applications', [ApplicationController::class, 'getCommercialApplications']);
+        Route::patch('/commercial/applications/{application}/approve', [ApplicationController::class, 'approveCommercialApplication']);
+        Route::patch('/commercial/applications/{application}/reject', [ApplicationController::class, 'rejectCommercialApplication']);
+        
+        // Analytics, Reports, Profile, Settings
+        Route::get('/commercial/analytics', [DashboardController::class, 'getCommercialAnalytics']);
+        Route::get('/commercial/reports', [ApplicationController::class, 'getCommercialReports']);
+        Route::post('/commercial/reports', [ApplicationController::class, 'generateCommercialReport']);
+        Route::get('/commercial/profile', [DashboardController::class, 'getCommercialProfile']);
+        Route::put('/commercial/profile', [DashboardController::class, 'updateCommercialProfile']);
+        Route::get('/commercial/settings', [DashboardController::class, 'getCommercialSettings']);
+        Route::put('/commercial/settings', [DashboardController::class, 'updateCommercialSettings']);
+    });
+
+    // ── Owner (landlord) routes ───────────────────────────────────────
     Route::middleware('role:landlord')->group(function () {
         Route::get('/owner/dashboard', [OwnerController::class, 'getDashboard']);
 

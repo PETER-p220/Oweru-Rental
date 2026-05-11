@@ -26,7 +26,7 @@ class PropertyController extends Controller
         $user = Auth::user();
 
         $query = Property::where('owner_id', $user->id)
-            ->with(['images', 'amenities']);
+            ->with(['propertyImages', 'propertyAmenities']);
 
         // ── Search ────────────────────────────────────────────────────────────
         if ($request->filled('search')) {
@@ -65,7 +65,7 @@ class PropertyController extends Controller
     public function show($id): JsonResponse
     {
         $property = Property::where('owner_id', Auth::id())
-            ->with(['images', 'amenities'])
+            ->with(['propertyImages', 'propertyAmenities'])
             ->findOrFail($id);
 
         return response()->json($property);
@@ -148,12 +148,12 @@ class PropertyController extends Controller
 
         // ── Amenities ─────────────────────────────────────────────────────────
         if ($request->filled('amenities')) {
-            $property->amenities()->sync($request->amenities);
+            $property->propertyAmenities()->sync($request->amenities);
         }
 
         return response()->json([
             'message'  => 'Property created successfully and is pending approval',
-            'property' => $property->load(['images', 'amenities']),
+            'property' => $property->load(['propertyImages', 'propertyAmenities']),
         ], 201);
     }
 
@@ -257,12 +257,12 @@ class PropertyController extends Controller
 
         // ── Amenities ─────────────────────────────────────────────────────────
         if ($request->has('amenities')) {
-            $property->amenities()->sync($request->amenities ?? []);
+            $property->propertyAmenities()->sync($request->amenities ?? []);
         }
 
         return response()->json([
             'message'  => 'Property updated successfully and is pending approval',
-            'property' => $property->fresh(['images', 'amenities']),
+            'property' => $property->fresh(['propertyImages', 'propertyAmenities']),
         ]);
     }
 
@@ -274,7 +274,7 @@ class PropertyController extends Controller
     {
         $property = Property::where('owner_id', Auth::id())->findOrFail($id);
 
-        foreach ($property->images as $image) {
+        foreach ($property->propertyImages as $image) {
             Storage::disk('public')->delete($image->image_path);
             $image->delete();
         }
@@ -322,7 +322,7 @@ class PropertyController extends Controller
     public function analytics($id): JsonResponse
     {
         $property = Property::where('owner_id', Auth::id())
-            ->with(['images', 'amenities'])
+            ->with(['propertyImages', 'propertyAmenities'])
             ->findOrFail($id);
 
         $views        = $property->views ?? 0;

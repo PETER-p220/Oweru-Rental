@@ -17,6 +17,7 @@ interface Property {
   price: number | null | undefined; bedrooms?: number; bathrooms?: number; size?: number; area?: number;
   type?: string; featured?: boolean; furnished?: boolean; description?: string;
   images?: string[];
+  property_images?: { image_path: string; is_primary?: boolean }[];
   owner?: { id?: number; name?: string; first_name?: string; last_name?: string };
   agent?: { id?: number; name?: string; code?: string };
   dalali?: string;
@@ -55,45 +56,83 @@ const typeLabel: Record<string, string> = {
   oweru_rental: 'Oweru Rental',
 };
 
-const getImage = (p: Property): string => {
-  if (p.images?.length) {
-    const i = p.images[0];
-    if (i.startsWith('http')) {
-      return i; // Full URL already
-    }
-    if (i.startsWith('storage/')) {
-      return `${VITE_STORAGE}/${i}`; // Path like "storage/properties/image.jpg"
-    }
-    return `${VITE_STORAGE}/storage/${i}`; // Path like "properties/image.jpg" or just filename
+const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='450' viewBox='0 0 600 450'%3E%3Crect width='600' height='450' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
+
+// ── Universal image resolver ─────────────────────────────────────────────────
+// Tries every shape the backend may return:
+//   1. property_images[] snake_case  (public API after fix)
+//   2. propertyImages[]  camelCase   (commercial API)
+//   3. images[]          JSON column (agent-created properties)
+const getImage = (property: any): string => {
+  const si = property?.property_images;
+  if (Array.isArray(si) && si.length > 0) {
+    const p = si.find((i: any) => i.is_primary) ?? si[0];
+    const path = p?.image_path ?? p?.url ?? '';
+    if (path) return resolveUrl(path);
   }
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='450' viewBox='0 0 600 450'%3E%3Crect width='600' height='450' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
+  const ci = property?.propertyImages;
+  if (Array.isArray(ci) && ci.length > 0) {
+    const p = ci.find((i: any) => i.is_primary) ?? ci[0];
+    const path = p?.image_path ?? p?.url ?? '';
+    if (path) return resolveUrl(path);
+  }
+  const imgs = property?.images;
+  if (Array.isArray(imgs) && imgs.length > 0) {
+    const first = imgs[0];
+    const path = typeof first === 'string' ? first : (first?.image_path ?? first?.url ?? '');
+    if (path) return resolveUrl(path);
+  }
+  return PLACEHOLDER;
 };
 
-const getImageSrcSet = (p: Property): string => {
-  if (!p.images?.length) return '';
-  const i = p.images[0];
-  let base: string;
+const resolveUrl = (path: string): string => {
+  if (!path || !path.trim()) return PLACEHOLDER;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('/storage/'))  return `${VITE_STORAGE}${path}`;
+  if (path.startsWith('storage/'))   return `${VITE_STORAGE}/${path}`;
+  if (path.startsWith('/'))          return `${VITE_STORAGE}${path}`;
+  return `${VITE_STORAGE}/storage/${path}`;
+};
+
+const getImageSrcSet = (property: any): string => {
+  const getImagePath = (): string => {
+    const si = property?.property_images;
+    if (Array.isArray(si) && si.length > 0) {
+      const p = si.find((i: any) => i.is_primary) ?? si[0];
+      return p?.image_path ?? p?.url ?? '';
+    }
+    const ci = property?.propertyImages;
+    if (Array.isArray(ci) && ci.length > 0) {
+      const p = ci.find((i: any) => i.is_primary) ?? ci[0];
+      return p?.image_path ?? p?.url ?? '';
+    }
+    const imgs = property?.images;
+    if (Array.isArray(imgs) && imgs.length > 0) {
+      const first = imgs[0];
+      return typeof first === 'string' ? first : (first?.image_path ?? first?.url ?? '');
+    }
+    return '';
+  };
   
-  if (i.startsWith('http')) {
-    base = i; // Full URL already
-  } else if (i.startsWith('storage/')) {
-    base = `${VITE_STORAGE}/${i}`; // Path like "storage/properties/image.jpg"
-  } else {
-    base = `${VITE_STORAGE}/storage/${i}`; // Path like "properties/image.jpg" or just filename
-  }
+  const path = getImagePath();
+  if (!path) return '';
   
+  const base = resolveUrl(path);
   return `${base}?w=400 400w, ${base}?w=800 800w, ${base}?w=1200 1200w`;
 };
 
-const getListingSource = (p: Property): 'agent' | 'landlord' | 'admin' => {
+const COMMERCIAL_TYPES = ['office', 'retail', 'warehouse', 'commercial', 'industrial'];
+
+const getListingSource = (p: Property): 'agent' | 'landlord' | 'admin' | 'commercial_admin' => {
   if (p.agent_id) return 'agent';
   if (p.type === 'oweru_rental') return 'admin';
+  if (p.type && COMMERCIAL_TYPES.includes(p.type.toLowerCase())) return 'commercial_admin';
   if (p.owner_id) return 'landlord';
   return 'landlord';
 };
 
 const sourceLabel: Record<string, string> = {
-  agent: 'Agent', landlord: 'Landlord', admin: 'Oweru Rental',
+  agent: 'Agent', landlord: 'Landlord', admin: 'Oweru Rental', commercial_admin: 'Commercial',
 };
 
 function getPageNumbers(current: number, total: number): (number | '...')[] {
@@ -286,6 +325,7 @@ const CSS = `
 .pc-badge-source.agent{background:rgba(200,145,40,.9);color:var(--navy-900);}
 .pc-badge-source.landlord{background:rgba(15,23,42,.85);color:var(--cream);backdrop-filter:blur(6px);}
 .pc-badge-source.admin{background:rgba(15,110,86,.9);color:#fff;}
+.pc-badge-source.commercial_admin{background:rgba(139,92,246,.9);color:#fff;}
 .pc-price-overlay{position:absolute;bottom:12px;right:12px;text-align:right;}
 .pc-price-main{font-family:var(--serif);font-size:18px;font-weight:400;color:var(--cream);letter-spacing:-.01em;}
 .pc-price-period{font-family:var(--sans);font-size:10px;color:rgba(248,248,249,.5);}

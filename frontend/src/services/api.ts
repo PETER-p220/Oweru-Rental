@@ -1,5 +1,6 @@
 // API service for connecting to Laravel backend
-const API_BASE_URL = 'https://rental.oweru.com'; // Hardcoded for now to fix the issue
+// const API_BASE_URL = 'https://rental.oweru.com'; // Hardcoded for now to fix the issue
+const API_BASE_URL='http://localhost:8000'
 
 // ── The single source of truth for the token key ──────────────────────────────
 export const TOKEN_KEY = 'token';

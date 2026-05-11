@@ -22,30 +22,34 @@ class Property extends Model
         'bedrooms',
         'bathrooms',
         'area',
-        'images',
-        'amenities',
         'featured',
         'available',
         'latitude',
         'longitude',
         'owner_id',
         'agent_id',
-        'landlord_name', // For agent reference
-        'landlord_phone', // For agent reference
-        'clicks', // Tracking clicks
-        'shares', // Tracking shares
+        'dalali',
+        'landlord_name',
+        'landlord_phone',
+        'clicks',
+        'shares',
+        'images',      // ← ADDED
+        'amenities',   // ← ADDED
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'area' => 'decimal:2',
-        'latitude' => 'decimal:8',
+        'price'     => 'decimal:2',
+        'area'      => 'decimal:2',
+        'latitude'  => 'decimal:8',
         'longitude' => 'decimal:8',
-        'featured' => 'boolean',
+        'featured'  => 'boolean',
         'available' => 'boolean',
+        'images'    => 'array',   // ← ADDED: auto JSON encode/decode
+        'amenities' => 'array',   // ← ADDED: auto JSON encode/decode
     ];
 
-    // Relationships
+    // ── Relationships ─────────────────────────────────────────────────────────
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
@@ -66,18 +70,29 @@ class Property extends Model
         return $this->hasMany(Application::class);
     }
 
-    public function images(): HasMany
+    /**
+     * Relationship to PropertyImage model (separate images table).
+     * Renamed to propertyImages() to avoid conflict with the
+     * 'images' JSON column and its array cast above.
+     */
+    public function propertyImages(): HasMany
     {
         return $this->hasMany(PropertyImage::class);
     }
 
-    public function amenities(): BelongsToMany
+    /**
+     * Relationship to Amenity model via pivot table.
+     * Renamed to propertyAmenities() to avoid conflict with the
+     * 'amenities' JSON column and its array cast above.
+     */
+    public function propertyAmenities(): BelongsToMany
     {
         return $this->belongsToMany(Amenity::class, 'amenity_property');
     }
 
-    // Scopes
-    public function scopeAvailable($query)     
+    // ── Scopes ────────────────────────────────────────────────────────────────
+
+    public function scopeAvailable($query)
     {
         return $query->where('available', true);
     }
@@ -108,7 +123,8 @@ class Property extends Model
         return $query;
     }
 
-    // Accessors
+    // ── Accessors ─────────────────────────────────────────────────────────────
+
     public function getFormattedPriceAttribute(): string
     {
         return number_format($this->price, 2);
@@ -116,41 +132,40 @@ class Property extends Model
 
     public function getMainImageAttribute(): string
     {
+        // 'images' is now cast to array automatically
         $images = $this->images ?? [];
+
         if (empty($images)) {
             return '/placeholder-property.jpg';
         }
-        
+
         $firstImage = $images[0];
-        
-        // Check if it's already a full URL
+
         if (str_starts_with($firstImage, 'http')) {
             return $firstImage;
         }
-        
-        // Check if it's a storage path
+
         if (str_starts_with($firstImage, 'properties/')) {
             return '/storage/' . $firstImage;
         }
-        
+
         return $firstImage;
     }
 
     public function getImageUrlsAttribute(): array
     {
+        // 'images' is now cast to array automatically
         $images = $this->images ?? [];
-        
+
         return array_map(function ($image) {
-            // Check if it's already a full URL
             if (str_starts_with($image, 'http')) {
                 return $image;
             }
-            
-            // Check if it's a storage path
+
             if (str_starts_with($image, 'properties/')) {
                 return '/storage/' . $image;
             }
-            
+
             return $image;
         }, $images);
     }

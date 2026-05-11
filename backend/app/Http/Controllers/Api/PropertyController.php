@@ -49,7 +49,8 @@ class PropertyController extends Controller
      */
     public function publicIndex(Request $request): JsonResponse
     {
-        $query = Property::with(['owner', 'agent'])
+        // Load property_images for commercial properties, owner/agent for all
+        $query = Property::with(['owner', 'agent', 'propertyImages'])
             ->where('available', true);  // explicit — does not rely on scope
 
         if ($request->filled('search')) {
@@ -134,7 +135,7 @@ class PropertyController extends Controller
      */
     public function publicShow(Property $property, Request $request): JsonResponse
     {
-        $property->load(['owner', 'agent']);
+        $property->load(['owner', 'agent', 'propertyImages']);
 
         \Log::info('Property publicShow - Full Request', [
             'property_id' => $property->id,
