@@ -23,6 +23,7 @@ export interface DashboardStats {
   occupancyRate?: number;
 }
 
+
 export interface User {
   id: number;
   firstName: string;
@@ -112,6 +113,8 @@ export interface LoginResponse {
     token: string;
   };
 }
+
+
 
 class Api {
   private static async request<T>(
@@ -859,6 +862,8 @@ class Api {
   static async getAnalytics() {
     return this.request<any>('analytics');
   }
+
+  
 }
 
 export default Api;

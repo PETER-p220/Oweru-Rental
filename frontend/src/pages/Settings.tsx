@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { Settings, Save, User, Mail } from 'lucide-react';
 
 const SettingsPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
   useEffect(() => {
     loadUserData();
@@ -14,15 +23,65 @@ const SettingsPage: React.FC = () => {
   const loadUserData = async () => {
     try {
       setLoading(true);
+      // In a real app, this would be an API call to /api/user
       const userData = localStorage.getItem('user');
       if (userData) {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setFormData({
+          name: parsedUser.name || '',
+          email: parsedUser.email || '',
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
       }
     } catch (error) {
       console.error('Error loading user data:', error);
       setError('Failed to load user data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setStatusMessage(null);
+    
+    try {
+      // In a real app, this would be an API call to /api/settings/profile
+      // and /api/settings/password depending on which fields are modified
+      // Also need to handle email verification request if email is changed
+      
+      setStatusMessage({
+        type: 'success',
+        message: 'Profile updated successfully. In a real app, this would be an API call to your backend.'
+      });
+      
+      // Update user data in local storage
+      const updatedUser = {
+        ...user,
+        name: formData.name,
+        email: formData.email
+      };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      setStatusMessage({
+        type: 'error',
+        message: 'Failed to save changes. Please try again.'
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -138,17 +197,212 @@ const SettingsPage: React.FC = () => {
         }
       `}</style>
 
-      <h2 className="settings-title">Settings</h2>
+      <h2 className="settings-title">Account Settings</h2>
 
       <p className="settings-description">
-        Manage your account settings and preferences.
+        Manage your account settings and preferences. Update your profile information below.
       </p>
 
+      {statusMessage && (
+        <div style={{
+          padding: '12px 16px',
+          marginBottom: '24px',
+          borderRadius: '8px',
+          backgroundColor: statusMessage.type === 'success' ? '#d1fae5' : '#fee2e2',
+          border: '1px solid',
+          borderColor: statusMessage.type === 'success' ? '#a7f3d0' : '#fecdd3',
+          color: statusMessage.type === 'success' ? '#065f46' : '#9f1a1c',
+        }}>
+          {statusMessage.message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} style={{ marginBottom: '32px' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <label htmlFor="name" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+            Name
+          </label>
+          <div style={{ position: 'relative' }}>
+            <User 
+              size={18} 
+              style={{ position: 'absolute', left: '12px', top: '12px', color: '#6b7280' }} 
+            />
+            <input
+              id="name"
+              name="name"
+              type="text"
+              required
+              value={formData.name}
+              onChange={handleInputChange}
+              style={{
+                width: '100%',
+                padding: '10px 40px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '14px',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <label htmlFor="email" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+            Email
+          </label>
+          <div style={{ position: 'relative' }}>
+            <Mail 
+              size={18} 
+              style={{ position: 'absolute', left: '12px', top: '12px', color: '#6b7280' }} 
+            />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={formData.email}
+              onChange={handleInputChange}
+              style={{
+                width: '100%',
+                padding: '10px 40px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '14px',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <label htmlFor="currentPassword" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+            Current Password (required to save changes)
+          </label>
+          <input
+            id="currentPassword"
+            name="currentPassword"
+            type="password"
+            required
+            value={formData.currentPassword}
+            onChange={handleInputChange}
+            style={{
+              width: '100%',
+              padding: '10px 16px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '14px',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <label htmlFor="newPassword" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+            New Password (optional)
+          </label>
+          <input
+            id="newPassword"
+            name="newPassword"
+            type="password"
+            value={formData.newPassword}
+            onChange={handleInputChange}
+            style={{
+              width: '100%',
+              padding: '10px 16px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '14px',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+            Confirm New Password
+          </label>
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={handleInputChange}
+            style={{
+              width: '100%',
+              padding: '10px 16px',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '14px',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <button
+            type="submit"
+            disabled={isSaving}
+            style={{
+              padding: '12px 20px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
+              opacity: isSaving ? 0.7 : 1,
+            }}
+          >
+            <Save size={16} />
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </button>
+
+          <Link 
+            to="/dashboard" 
+            style={{
+              padding: '12px 20px',
+              border: '2px solid #3b82f6',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#3b82f6',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <Settings size={16} />
+            Cancel
+          </Link>
+        </div>
+      </form>
+
       <div className="settings-actions">
-        <Link to="/dashboard" className="settings-back-btn">
-          <Settings size={16} />
-          Back to Dashboard
-        </Link>
+        <button
+          onClick={() => {
+            if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+              // In a real app, this would be an API call to /api/settings/profile with DELETE method
+              alert('Account deleted successfully. In a real app, this would delete your account.');
+            }
+          }}
+          style={{
+            padding: '12px 20px',
+            background: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}
+        >
+          Delete Account
+        </button>
       </div>
     </div>
   );

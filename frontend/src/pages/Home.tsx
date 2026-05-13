@@ -811,15 +811,9 @@ const Home = () => {
         </div>
       )}
 
-      {/* ══ FOOTER ══ */}
-      <footer style={{ background: 'var(--bg)', borderTop: '1px solid var(--border)', padding: '28px 0' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <img src={LOGO} alt="OWERU" style={{ height: 22 }} loading="lazy" />
-          <div style={{ color: 'var(--slate)', fontSize: 13 }}>&copy; 2026 Oweru. Tanzania.</div>
-        </div>
-      </footer>
+      
     </div>
   );
 };
 
-export default Home;
+export default Home;                            

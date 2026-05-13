@@ -1,1471 +1,689 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search, Download, Eye, Edit, Plus,
   Bed, Bath, Users, Star, MapPin, Wifi, Car,
   Dumbbell, Wind, Utensils, Monitor, Tv, Shirt,
-  Home, BarChart3, RefreshCw, ImageIcon, CheckCircle, AlertCircle,
-  XCircle
+  Home, RefreshCw, ImageIcon, CheckCircle, AlertCircle,
+  XCircle, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import Api from '../../services/api';
 
-/* ─────────────────────────────────────────────────────────────
-   BNB PROPERTIES STYLE TOKENS
-───────────────────────────────────────────────────────────── */
+/* ─── TOKENS ─────────────────────────────────────────── */
 const t = {
-  gold:    '#c9a84c',
-  goldLt:  '#e8c97a',
-  dark:    '#080808',
-  dark2:   '#0e0e0e',
-  dark3:   '#141414',
-  cream:   '#e8e4dc',
-  muted:   '#7a7060',
-  border:  'rgba(201,168,76,0.12)',
-  green:   '#10b981',
-  red:     '#ef4444',
-  blue:    '#38bdf8',
-  orange:  '#f59e0b',
-  purple:  '#a78bfa',
+  gold:   '#c9a84c',
+  goldLt: '#e8c97a',
+  dark:   '#080808',
+  dark2:  '#0e0e0e',
+  dark3:  '#141414',
+  cream:  '#e8e4dc',
+  muted:  '#7a7060',
+  border: 'rgba(201,168,76,0.12)',
+  green:  '#10b981',
+  red:    '#ef4444',
+  blue:   '#38bdf8',
+  orange: '#f59e0b',
 } as const;
 
-const body: React.CSSProperties = { fontFamily: 'DM Sans, sans-serif' };
-const serif: React.CSSProperties = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
+const body: React.CSSProperties   = { fontFamily: 'DM Sans, sans-serif' };
+const serif: React.CSSProperties  = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
+const card: React.CSSProperties   = { backgroundColor: t.dark3, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' };
+const btn: React.CSSProperties    = { ...body, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', border: 'none', transition: 'all 0.2s' };
 
-const card: React.CSSProperties = {
-  backgroundColor: t.dark2,
-  border: `1px solid ${t.border}`,
-  borderRadius: 12,
-  padding: '20px',
-};
+const BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace('/api', '');
 
-const button: React.CSSProperties = {
-  ...body,
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-  padding: '10px 16px',
-  borderRadius: 8,
-  fontSize: 14,
-  fontWeight: 500,
-  cursor: 'pointer',
-  border: 'none',
-  transition: 'all 0.2s',
-};
+/* ─── IMAGE UTILITIES ───────────────────────────────── */
+const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Crect width='600' height='400' fill='%23141414'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='DM Sans' font-size='18' fill='%23c9a84c'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
-/* ─────────────────────────────────────────────────────────────
-   BNB PROPERTIES COMPONENT
-───────────────────────────────────────────────────────────── */
-const BnbProperties = () => {
-  const [properties, setProperties] = useState<Array<{
-    id: number;
-    title: string;
-    description: string;
-    price: number;
-    location: string;
-    address: string;
-    type: string;
-    property_type: 'rental' | 'bnb';
-    bedrooms: number;
-    bathrooms: number;
-    amenities: string[];
-    images: string[];
-    owner_id: number;
-    status: 'available' | 'occupied' | 'maintenance';
-    created_at: string;
-    updated_at: string;
-    average_rating?: number;
-    reviews_count?: number;
-    bnb_details?: {
-      max_guests: number;
-      min_stay: number;
-      instant_book: boolean;
-      cancellation_policy: string;
-      house_rules: string[];
-      check_in_time: string;
-      check_out_time: string;
-      cleaning_fee: number;
-      service_fee: number;
-      security_deposit: number;
-      weekly_discount: number;
-      monthly_discount: number;
-      amenities_bnb: {
-        wifi: boolean;
-        kitchen: boolean;
-        parking: boolean;
-        pool: boolean;
-        gym: boolean;
-        ac: boolean;
-        heating: boolean;
-        workspace: boolean;
-        tv: boolean;
-        washer: boolean;
-      };
-      location_highlights: string[];
-      safety_items: string[];
-    };
-  }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [selectedProperty, setSelectedProperty] = useState<{
-    id: number;
-    title: string;
-    description: string;
-    price: number;
-    location: string;
-    address: string;
-    type: string;
-    property_type: 'rental' | 'bnb';
-    bedrooms: number;
-    bathrooms: number;
-    amenities: string[];
-    images: string[];
-    owner_id: number;
-    status: 'available' | 'occupied' | 'maintenance';
-    created_at: string;
-    updated_at: string;
-    average_rating?: number;
-    reviews_count?: number;
-    bnb_details?: {
-      max_guests: number;
-      min_stay: number;
-      instant_book: boolean;
-      cancellation_policy: string;
-      house_rules: string[];
-      check_in_time: string;
-      check_out_time: string;
-      cleaning_fee: number;
-      service_fee: number;
-      security_deposit: number;
-      weekly_discount: number;
-      monthly_discount: number;
-      amenities_bnb: {
-        wifi: boolean;
-        kitchen: boolean;
-        parking: boolean;
-        pool: boolean;
-        gym: boolean;
-        ac: boolean;
-        heating: boolean;
-        workspace: boolean;
-        tv: boolean;
-        washer: boolean;
-      };
-      location_highlights: string[];
-      safety_items: string[];
-    };
-  } | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+function resolveUrl(path: string): string {
+  if (!path?.trim()) return PLACEHOLDER;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('/storage/')) return `${BASE}${path}`;
+  if (path.startsWith('storage/'))  return `${BASE}/${path}`;
+  if (path.startsWith('/'))         return `${BASE}${path}`;
+  return `${BASE}/storage/${path}`;
+}
+
+/** Returns all resolved image URLs from any property shape */
+function getAllImages(property: any): string[] {
+  const imgs: string[] = [];
+
+  // snake_case: property_images[].image_path | .url
+  for (const src of [property?.property_images, property?.propertyImages]) {
+    if (Array.isArray(src) && src.length) {
+      // primary first
+      const sorted = [...src].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
+      for (const i of sorted) {
+        const p = i?.image_path ?? i?.url ?? '';
+        if (p) imgs.push(resolveUrl(p));
+      }
+      if (imgs.length) return imgs;
+    }
+  }
+
+  // plain images[]
+  if (Array.isArray(property?.images) && property.images.length) {
+    for (const i of property.images) {
+      const p = typeof i === 'string' ? i : (i?.image_path ?? i?.url ?? '');
+      if (p) imgs.push(resolveUrl(p));
+    }
+    if (imgs.length) return imgs;
+  }
+
+  return [PLACEHOLDER];
+}
+
+function getPrimaryImage(property: any): string {
+  return getAllImages(property)[0];
+}
+
+/* ─── LAZY IMAGE ────────────────────────────────────── */
+function LazyImg({ src, alt, style }: { src: string; alt: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLImageElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError]   = useState(false);
 
   useEffect(() => {
-    loadProperties();
-  }, [searchTerm, statusFilter, sortBy, sortOrder]);
+    if (!ref.current) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        ref.current!.src = src;
+        obs.disconnect();
+      }
+    }, { rootMargin: '200px' });
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [src]);
 
-  const loadProperties = async () => {
+  return (
+    <div style={{ position: 'relative', ...style }}>
+      {/* skeleton */}
+      {!loaded && !error && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `linear-gradient(90deg, ${t.dark3} 25%, #1e1e1e 50%, ${t.dark3} 75%)`,
+          backgroundSize: '400% 100%',
+          animation: 'shimmer 1.4s ease infinite',
+          borderRadius: 'inherit',
+        }} />
+      )}
+      {error ? (
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: t.dark3, borderRadius: 'inherit',
+        }}>
+          <ImageIcon size={32} style={{ color: t.muted }} />
+        </div>
+      ) : (
+        <img
+          ref={ref}
+          alt={alt}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          style={{
+            width: '100%', height: '100%', objectFit: 'cover',
+            borderRadius: 'inherit',
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 0.3s ease',
+            display: 'block',
+          }}
+        />
+      )}
+      <style>{`
+        @keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+        @keyframes spin    { to { transform: rotate(360deg) } }
+        @keyframes fadeIn  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
+    </div>
+  );
+}
+
+/* ─── IMAGE CAROUSEL ────────────────────────────────── */
+function ImageCarousel({ images, title }: { images: string[]; title: string }) {
+  const [idx, setIdx] = useState(0);
+  if (images.length === 0 || images[0] === PLACEHOLDER) {
+    return (
+      <div style={{ width: '100%', height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: t.dark3, border: `2px dashed ${t.border}`, borderRadius: 8 }}>
+        <ImageIcon size={40} style={{ color: t.muted }} />
+      </div>
+    );
+  }
+  return (
+    <div style={{ position: 'relative', height: 220, borderRadius: 8, overflow: 'hidden' }}>
+      <LazyImg src={images[idx]} alt={`${title} ${idx + 1}`} style={{ width: '100%', height: 220, borderRadius: 8 }} />
+      {images.length > 1 && (
+        <>
+          <button onClick={() => setIdx(i => (i - 1 + images.length) % images.length)}
+            style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: 28, height: 28, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ChevronLeft size={16} />
+          </button>
+          <button onClick={() => setIdx(i => (i + 1) % images.length)}
+            style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: 28, height: 28, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ChevronRight size={16} />
+          </button>
+          <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 4 }}>
+            {images.map((_, i) => (
+              <div key={i} onClick={() => setIdx(i)} style={{ width: i === idx ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: i === idx ? t.gold : 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: 'all 0.2s' }} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── SKELETON CARD ─────────────────────────────────── */
+function SkeletonCard() {
+  const shimmer = { background: `linear-gradient(90deg, ${t.dark3} 25%, #1e1e1e 50%, ${t.dark3} 75%)`, backgroundSize: '400% 100%', animation: 'shimmer 1.4s ease infinite', borderRadius: 6 } as React.CSSProperties;
+  return (
+    <div style={{ ...card, padding: 16 }}>
+      <div style={{ ...shimmer, height: 220, marginBottom: 16, borderRadius: 8 }} />
+      <div style={{ ...shimmer, height: 20, width: '70%', marginBottom: 10 }} />
+      <div style={{ ...shimmer, height: 14, width: '50%', marginBottom: 10 }} />
+      <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+        {[1,2,3].map(i => <div key={i} style={{ ...shimmer, height: 14, width: 60 }} />)}
+      </div>
+      <div style={{ ...shimmer, height: 14, width: '90%', marginBottom: 6 }} />
+      <div style={{ ...shimmer, height: 14, width: '75%', marginBottom: 16 }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ ...shimmer, height: 24, width: 100 }} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ ...shimmer, height: 32, width: 32, borderRadius: 6 }} />
+          <div style={{ ...shimmer, height: 32, width: 32, borderRadius: 6 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── HELPERS ───────────────────────────────────────── */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
+const fmt = (n: number) => new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
+
+const statusColor = (s: string) => ({ available: t.green, occupied: t.red, maintenance: t.orange }[s] ?? t.muted);
+const StatusIcon = ({ s }: { s: string }) => s === 'available' ? <CheckCircle size={14}/> : s === 'occupied' ? <XCircle size={14}/> : <AlertCircle size={14}/>;
+
+const amenityIcon = (a: string) => {
+  const icons: Record<string, JSX.Element> = { wifi: <Wifi size={13}/>, parking: <Car size={13}/>, gym: <Dumbbell size={13}/>, kitchen: <Utensils size={13}/>, workspace: <Monitor size={13}/>, tv: <Tv size={13}/>, washer: <Shirt size={13}/>, ac: <Wind size={13}/> };
+  return icons[a.toLowerCase()] ?? <Star size={13}/>;
+};
+
+/* ─── MAIN COMPONENT ────────────────────────────────── */
+export default function BnbProperties() {
+  const [properties, setProperties] = useState<any[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [searchInput, setSearchInput] = useState('');
+  const searchTerm = useDebounce(searchInput, 400);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selected, setSelected]     = useState<any>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showAdd, setShowAdd]       = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
       const filters: any = {};
       if (searchTerm) filters.search = searchTerm;
       if (statusFilter !== 'all') filters.status = statusFilter;
-
-      const response = await Api.getBnbProperties(filters);
-      setProperties(response.data || []);
-    } catch (error) {
-      console.error('Failed to load properties:', error);
+      const res = await Api.getBnbProperties(filters);
+      setProperties(res.data || []);
+    } catch {
       setProperties([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, statusFilter]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-TZ', {
-      style: 'currency',
-      currency: 'TZS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-TZ', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available': return t.green;
-      case 'occupied': return t.red;
-      case 'maintenance': return t.orange;
-      default: return t.muted;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'available': return <CheckCircle size={16} />;
-      case 'occupied': return <XCircle size={16} />;
-      case 'maintenance': return <AlertCircle size={16} />;
-      default: return <AlertCircle size={16} />;
-    }
-  };
-
-  const getAmenityIcon = (amenity: string) => {
-    switch (amenity.toLowerCase()) {
-      case 'wifi': return <Wifi size={16} />;
-      case 'parking': return <Car size={16} />;
-      case 'pool': return <Home size={16} />;
-      case 'gym': return <Dumbbell size={16} />;
-      case 'kitchen': return <Utensils size={16} />;
-      case 'workspace': return <Monitor size={16} />;
-      case 'tv': return <Tv size={16} />;
-      case 'washer': return <Shirt size={16} />;
-      case 'ac': return <Wind size={16} />;
-      default: return <Star size={16} />;
-    }
-  };
-
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('desc');
-    }
-  };
-
-  const sortedProperties = [...properties].sort((a: any, b: any) => {
-    const aValue = a[sortBy];
-    const bValue = b[sortBy];
-    const modifier = sortOrder === 'asc' ? 1 : -1;
-    
-    if (aValue < bValue) return -1 * modifier;
-    if (aValue > bValue) return 1 * modifier;
-    return 0;
-  });
-
-  const filteredProperties = sortedProperties.filter((property: any) => {
-    const matchesSearch = !searchTerm || 
-      property.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      property.location?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || property.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleViewDetails = (property: any) => {
-    setSelectedProperty(property);
-    setShowDetails(true);
-  };
+  useEffect(() => { load(); }, [load]);
 
   const handleExport = () => {
     const csv = [
-      ['ID', 'Title', 'Location', 'Price', 'Bedrooms', 'Bathrooms', 'Max Guests', 'Status', 'Rating', 'Created'],
-      ...filteredProperties.map((p: any) => [
-        p.id,
-        p.title,
-        p.location,
-        p.price,
-        p.bedrooms,
-        p.bathrooms,
-        p.bnb_details?.max_guests || 2,
-        p.status,
-        p.average_rating || 'N/A',
-        p.created_at
-      ])
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
+      ['ID','Title','Location','Price','Bedrooms','Bathrooms','Max Guests','Status','Rating'],
+      ...properties.map((p: any) => [p.id, p.title, p.location, p.price, p.bedrooms, p.bathrooms, p.bnb_details?.max_guests ?? p.max_guests ?? 2, p.status, p.average_rating ?? 'N/A'])
+    ].map(r => r.join(',')).join('\n');
     const a = document.createElement('a');
-    a.href = url;
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     a.download = `bnb-properties-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    window.URL.revokeObjectURL(url);
   };
 
-  if (loading) {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        padding: '60px',
-        backgroundColor: t.dark2,
-        borderRadius: 12,
-        border: `1px solid ${t.border}`
-      }}>
-        <div style={{
-          width: 40,
-          height: 40,
-          border: `3px solid ${t.border}`,
-          borderTop: `3px solid ${t.gold}`,
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-        }} />
-      </div>
-    );
-  }
-
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ padding: '24px', maxWidth: 1400, margin: '0 auto', ...body }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.cream, margin: '0 0 8px' }}>
-            BNB Properties
-          </h1>
-          <p style={{ ...body, fontSize: 16, color: t.muted, margin: 0 }}>
-            Manage your Airbnb property listings
+          <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.cream, margin: '0 0 6px' }}>BNB Properties</h1>
+          <p style={{ fontSize: 15, color: t.muted, margin: 0 }}>
+            {loading ? 'Loading…' : `${properties.length} listing${properties.length !== 1 ? 's' : ''}`}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={() => {
-              console.log('Add Property button clicked');
-              setShowAddModal(true);
-            }}
-            style={{ ...button, backgroundColor: t.gold, color: t.dark }}
-          >
-            <Plus size={16} />
-            Add Property
-          </button>
-          <button
-            onClick={handleExport}
-            style={{ ...button, backgroundColor: `${t.green}20`, color: t.green }}
-          >
-            <Download size={16} />
-            Export CSV
-          </button>
-          <button
-            onClick={loadProperties}
-            style={{ ...button, backgroundColor: `${t.blue}20`, color: t.blue }}
-          >
-            <RefreshCw size={16} />
-            Refresh
-          </button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.dark }}><Plus size={15}/>Add Property</button>
+          <button onClick={handleExport}           style={{ ...btn, backgroundColor: `${t.green}20`, color: t.green }}><Download size={15}/>Export</button>
+          <button onClick={load}                   style={{ ...btn, backgroundColor: `${t.blue}20`, color: t.blue }}><RefreshCw size={15}/>Refresh</button>
         </div>
       </div>
 
       {/* Filters */}
-      <div style={card}>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ 
-                position: 'absolute', 
-                left: 12, 
-                top: '50%', 
-                transform: 'translateY(-50%)',
-                color: t.muted 
-              }} />
-              <input
-                type="text"
-                placeholder="Search properties..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  ...body,
-                  width: '100%',
-                  padding: '10px 12px 10px 40px',
-                  backgroundColor: t.dark3,
-                  border: `1px solid ${t.border}`,
-                  borderRadius: 8,
-                  color: t.cream,
-                  fontSize: 14,
-                }}
-              />
-            </div>
-          </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              ...body,
-              padding: '10px 12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-              minWidth: 120,
-            }}
-          >
-            <option value="all">All Status</option>
-            <option value="available">Available</option>
-            <option value="occupied">Occupied</option>
-            <option value="maintenance">Maintenance</option>
-          </select>
+      <div style={{ ...card, padding: '14px 16px', marginBottom: 24, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+          <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: t.muted, pointerEvents: 'none' }} />
+          <input
+            type="text"
+            placeholder="Search properties…"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            style={{ ...body, width: '100%', padding: '9px 12px 9px 36px', backgroundColor: '#0e0e0e', border: `1px solid ${t.border}`, borderRadius: 8, color: t.cream, fontSize: 14, boxSizing: 'border-box' }}
+          />
         </div>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+          style={{ ...body, padding: '9px 12px', backgroundColor: '#0e0e0e', border: `1px solid ${t.border}`, borderRadius: 8, color: t.cream, fontSize: 14 }}>
+          <option value="all">All Status</option>
+          <option value="available">Available</option>
+          <option value="occupied">Occupied</option>
+          <option value="maintenance">Maintenance</option>
+        </select>
       </div>
 
-      {/* Properties Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 24 }}>
-        {filteredProperties.length === 0 ? (
-          <div style={{ 
-            ...card, 
-            gridColumn: '1 / -1',
-            textAlign: 'center',
-            padding: '60px'
-          }}>
+      {/* Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 22 }}>
+        {loading ? (
+          Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : properties.length === 0 ? (
+          <div style={{ ...card, gridColumn: '1/-1', textAlign: 'center', padding: 60, animation: 'fadeIn 0.4s ease' }}>
             <Home size={48} style={{ color: t.muted, marginBottom: 16 }} />
-            <div style={{ ...serif, fontSize: 20, color: t.cream, marginBottom: 8 }}>
-              No properties found
-            </div>
-            <div style={{ ...body, color: t.muted, marginBottom: 24 }}>
-              Start by adding your first Airbnb property
-            </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              style={{ ...button, backgroundColor: t.gold, color: t.dark }}
-            >
-              <Plus size={16} />
-              Add Your First Property
-            </button>
+            <div style={{ ...serif, fontSize: 20, color: t.cream, marginBottom: 8 }}>No properties found</div>
+            <div style={{ color: t.muted, marginBottom: 24 }}>Start by adding your first listing</div>
+            <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.dark }}><Plus size={15}/>Add Property</button>
           </div>
         ) : (
-          filteredProperties.map((property: any) => (
-            <div key={property.id} style={card}>
-              {/* Property Image */}
-              <div style={{ position: 'relative', marginBottom: 16 }}>
-                {property.images?.[0] ? (
-                  <img 
-                    src={property.images[0]} 
-                    alt={property.title}
-                    style={{
-                      width: '100%',
-                      height: 200,
-                      borderRadius: 8,
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <div style={{
-                    width: '100%',
-                    height: 200,
-                    borderRadius: 8,
-                    backgroundColor: t.dark3,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: `2px dashed ${t.border}`
-                  }}>
-                    <ImageIcon size={48} style={{ color: t.muted }} />
-                  </div>
-                )}
-                
-                {/* Status Badge */}
-                <div style={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 12px',
-                  backgroundColor: `${getStatusColor(property.status)}20`,
-                  borderRadius: 20,
-                  color: getStatusColor(property.status),
-                  fontSize: 12,
-                  fontWeight: 500,
-                }}>
-                  {getStatusIcon(property.status)}
-                  {property.status}
-                </div>
-
-                {/* Rating Badge */}
-                {property.average_rating && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 12,
-                    left: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '6px 12px',
-                    backgroundColor: 'rgba(0,0,0,0.7)',
-                    borderRadius: 20,
-                    color: t.gold,
-                    fontSize: 12,
-                    fontWeight: 500,
-                  }}>
-                    <Star size={12} fill={t.gold} />
-                    {property.average_rating.toFixed(1)}
-                  </div>
-                )}
-              </div>
-
-              {/* Property Details */}
-              <div style={{ marginBottom: 16 }}>
-                <h3 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.cream, margin: '0 0 8px' }}>
-                  {property.title}
-                </h3>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <MapPin size={14} style={{ color: t.muted }} />
-                  <span style={{ ...body, fontSize: 14, color: t.muted }}>
-                    {property.location}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Bed size={14} style={{ color: t.muted }} />
-                    <span style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {property.bedrooms} beds
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Bath size={14} style={{ color: t.muted }} />
-                    <span style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {property.bathrooms} baths
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Users size={14} style={{ color: t.muted }} />
-                    <span style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {property.bnb_details?.max_guests || 2} guests
-                    </span>
-                  </div>
-                </div>
-
-                {/* Amenities */}
-                {property.bnb_details?.amenities_bnb && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                    {Object.entries(property.bnb_details.amenities_bnb)
-                      .filter(([_, enabled]) => enabled)
-                      .slice(0, 4)
-                      .map(([amenity]) => (
-                        <div key={amenity} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          padding: '4px 8px',
-                          backgroundColor: `${t.gold}20`,
-                          borderRadius: 4,
-                          fontSize: 12,
-                          color: t.gold
-                        }}>
-                          {getAmenityIcon(amenity)}
-                          {amenity}
-                        </div>
-                      ))}
-                  </div>
-                )}
-
-                {/* Description */}
-                <p style={{ 
-                  ...body, 
-                  fontSize: 14, 
-                  color: t.muted, 
-                  margin: 0,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
-                }}>
-                  {property.description}
-                </p>
-              </div>
-
-              {/* Price and Actions */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ ...serif, fontSize: 20, fontWeight: 600, color: t.gold }}>
-                    {formatCurrency(property.price)}
-                  </div>
-                  <div style={{ ...body, fontSize: 12, color: t.muted }}>
-                    per night
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => handleViewDetails(property)}
-                    style={{
-                      ...button,
-                      padding: '8px',
-                      backgroundColor: `${t.blue}20`,
-                      color: t.blue,
-                      borderRadius: 6,
-                    }}
-                    title="View Details"
-                  >
-                    <Eye size={14} />
-                  </button>
-                  <button
-                    style={{
-                      ...button,
-                      padding: '8px',
-                      backgroundColor: `${t.gold}20`,
-                      color: t.gold,
-                      borderRadius: 6,
-                    }}
-                    title="Edit Property"
-                  >
-                    <Edit size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
+          properties.map((p: any) => (
+            <PropertyCard key={p.id} property={p} onView={() => { setSelected(p); setShowDetails(true); }} />
           ))
         )}
       </div>
 
-      {/* Property Details Modal */}
-      {showDetails && selectedProperty && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: 20,
-        }}>
-          <div style={{ ...card, maxWidth: 800, width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream, margin: 0 }}>
-                {selectedProperty.title}
-              </h2>
-              <button
-                onClick={() => setShowDetails(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: t.muted,
-                  cursor: 'pointer',
-                }}
-              >
-                <XCircle size={24} />
-              </button>
-            </div>
-
-            {/* Property Images */}
-            {selectedProperty.images && selectedProperty.images.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-                  {selectedProperty.images.map((image: string, index: number) => (
-                    <img 
-                      key={index}
-                      src={image} 
-                      alt={`${selectedProperty.title} ${index + 1}`}
-                      style={{
-                        width: '100%',
-                        height: 150,
-                        borderRadius: 8,
-                        objectFit: 'cover'
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Property Info */}
-            <div style={{ display: 'grid', gap: 20 }}>
-              <div>
-                <h3 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Property Information
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-                  <div>
-                    <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>Location</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedProperty.location}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>Price</div>
-                    <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {formatCurrency(selectedProperty.price)}/night
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>Status</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: getStatusColor(selectedProperty.status) }}>
-                      {getStatusIcon(selectedProperty.status)}
-                      {selectedProperty.status}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Capacity
-                </h3>
-                <div style={{ display: 'flex', gap: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Bed size={16} style={{ color: t.muted }} />
-                    <span style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedProperty.bedrooms} bedrooms
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Bath size={16} style={{ color: t.muted }} />
-                    <span style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedProperty.bathrooms} bathrooms
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Users size={16} style={{ color: t.muted }} />
-                    <span style={{ ...body, fontSize: 14, color: t.cream }}>
-                      {selectedProperty.bnb_details?.max_guests || 2} guests max
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Amenities
-                </h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {selectedProperty.bnb_details?.amenities_bnb && Object.entries(selectedProperty.bnb_details.amenities_bnb)
-                    .filter(([_, enabled]) => enabled)
-                    .map(([amenity]) => (
-                      <div key={amenity} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '8px 12px',
-                        backgroundColor: `${t.gold}20`,
-                        borderRadius: 8,
-                        color: t.gold
-                      }}>
-                        {getAmenityIcon(amenity)}
-                        {amenity}
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                  Description
-                </h3>
-                <p style={{ ...body, fontSize: 14, color: t.cream, lineHeight: 1.6 }}>
-                  {selectedProperty.description}
-                </p>
-              </div>
-
-              {selectedProperty.bnb_details && (
-                <div>
-                  <h3 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.gold, margin: '0 0 12px' }}>
-                    BNB Details
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-                    <div>
-                      <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>Minimum Stay</div>
-                      <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                        {selectedProperty.bnb_details.min_stay || 1} nights
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>Check-in</div>
-                      <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                        {selectedProperty.bnb_details.check_in_time || '3:00 PM'}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>Check-out</div>
-                      <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                        {selectedProperty.bnb_details.check_out_time || '11:00 AM'}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>Instant Book</div>
-                      <div style={{ ...body, fontSize: 14, color: t.cream }}>
-                        {selectedProperty.bnb_details.instant_book ? 'Yes' : 'No'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Detail modal */}
+      {showDetails && selected && (
+        <DetailModal property={selected} onClose={() => setShowDetails(false)} />
       )}
-      
-      {/* Add Property Modal */}
-      {showAddModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            backgroundColor: t.dark2,
-            borderRadius: 16,
-            padding: 32,
-            maxWidth: 800,
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            width: '90%',
-            border: `1px solid ${t.border}`,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h2 style={{ ...serif, fontSize: 24, color: t.gold, margin: 0 }}>
-                Add New Property
-              </h2>
-              <button
-                onClick={() => setShowAddModal(false)}
-                style={{ ...button, backgroundColor: 'transparent', color: t.muted, padding: 8 }}
-              >
-                <XCircle size={20} />
-              </button>
-            </div>
 
-            <AddPropertyForm 
-              onClose={() => setShowAddModal(false)}
-              onSuccess={() => {
-                setShowAddModal(false);
-                loadProperties();
-              }}
-            />
-          </div>
-        </div>
+      {/* Add modal */}
+      {showAdd && (
+        <AddModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); load(); }} />
       )}
     </div>
   );
-};
+}
 
-// Add Property Form Component
-const AddPropertyForm = ({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price: '',
-    location: '',
-    address: '',
-    type: 'apartment',
-    bedrooms: '1',
-    bathrooms: '1',
-    max_guests: '2',
-    min_stay: '1',
-    check_in_time: '15:00',
-    check_out_time: '11:00',
-    instant_book: false,
-    amenities: [] as string[],
-    images: [] as string[],
-  });
+/* ─── PROPERTY CARD ─────────────────────────────────── */
+function PropertyCard({ property: p, onView }: { property: any; onView: () => void }) {
+  const images = getAllImages(p);
+  const enabledAmenities = p.bnb_details?.amenities_bnb
+    ? Object.entries(p.bnb_details.amenities_bnb).filter(([_, v]) => v).map(([k]) => k)
+    : (p.amenities ?? []);
 
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  return (
+    <div style={{ ...card, display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.35s ease' }}>
+      {/* Image + badges */}
+      <div style={{ position: 'relative', padding: 12, paddingBottom: 0 }}>
+        <ImageCarousel images={images} title={p.title} />
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+        <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', backgroundColor: `${statusColor(p.status)}1a`, border: `1px solid ${statusColor(p.status)}40`, borderRadius: 20, color: statusColor(p.status), fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <StatusIcon s={p.status} />{p.status}
+        </div>
+
+        {p.average_rating && (
+          <div style={{ position: 'absolute', top: 20, left: 20, display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 20, color: t.gold, fontSize: 12, fontWeight: 600 }}>
+            <Star size={12} fill={t.gold}/>{p.average_rating.toFixed(1)}
+          </div>
+        )}
+
+        {images.length > 1 && (
+          <div style={{ position: 'absolute', bottom: 8, right: 20, fontSize: 11, color: 'rgba(255,255,255,0.7)', background: 'rgba(0,0,0,0.5)', padding: '2px 7px', borderRadius: 10 }}>
+            {images.length} photos
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: '14px 14px 6px', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <h3 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.cream, margin: 0, lineHeight: 1.25 }}>{p.title}</h3>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.muted, fontSize: 13 }}>
+          <MapPin size={13}/>{p.location}
+        </div>
+
+        <div style={{ display: 'flex', gap: 14 }}>
+          {[
+            { icon: <Bed size={13}/>, label: `${p.bedrooms} bed${p.bedrooms !== 1 ? 's' : ''}` },
+            { icon: <Bath size={13}/>, label: `${p.bathrooms} bath${p.bathrooms !== 1 ? 's' : ''}` },
+            { icon: <Users size={13}/>, label: `${p.bnb_details?.max_guests ?? p.max_guests ?? 2} guests` },
+          ].map(({ icon, label }, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, color: t.cream, fontSize: 13 }}>
+              <span style={{ color: t.muted }}>{icon}</span>{label}
+            </div>
+          ))}
+        </div>
+
+        {enabledAmenities.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {enabledAmenities.slice(0, 4).map((a: string) => (
+              <span key={a} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', backgroundColor: `${t.gold}18`, border: `1px solid ${t.gold}30`, borderRadius: 5, fontSize: 11, color: t.goldLt }}>
+                {amenityIcon(a)}{a}
+              </span>
+            ))}
+            {enabledAmenities.length > 4 && (
+              <span style={{ padding: '3px 8px', backgroundColor: `${t.border}`, borderRadius: 5, fontSize: 11, color: t.muted }}>+{enabledAmenities.length - 4}</span>
+            )}
+          </div>
+        )}
+
+        <p style={{ color: t.muted, fontSize: 13, lineHeight: 1.5, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {p.description}
+        </p>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '10px 14px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${t.border}`, marginTop: 4 }}>
+        <div>
+          <div style={{ ...serif, fontSize: 20, fontWeight: 700, color: t.gold }}>{fmt(p.price)}</div>
+          <div style={{ fontSize: 11, color: t.muted }}>per night</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onView} style={{ ...btn, padding: '7px 14px', backgroundColor: `${t.blue}18`, color: t.blue, fontSize: 13 }}><Eye size={14}/>View</button>
+          <button style={{ ...btn, padding: '7px 10px', backgroundColor: `${t.gold}18`, color: t.gold, fontSize: 13 }}><Edit size={14}/></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── DETAIL MODAL ──────────────────────────────────── */
+function DetailModal({ property: p, onClose }: { property: any; onClose: () => void }) {
+  const images = getAllImages(p);
+  const [imgIdx, setImgIdx] = useState(0);
+  const enabledAmenities = p.bnb_details?.amenities_bnb
+    ? Object.entries(p.bnb_details.amenities_bnb).filter(([_, v]) => v).map(([k]) => k)
+    : (p.amenities ?? []);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20, backdropFilter: 'blur(4px)' }}>
+      <div style={{ ...card, maxWidth: 860, width: '100%', maxHeight: '88vh', overflowY: 'auto', animation: 'fadeIn 0.25s ease' }}>
+        <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${t.border}`, position: 'sticky', top: 0, backgroundColor: t.dark3, zIndex: 1 }}>
+          <div>
+            <h2 style={{ ...serif, fontSize: 22, fontWeight: 600, color: t.cream, margin: 0 }}>{p.title}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.muted, fontSize: 13, marginTop: 4 }}><MapPin size={13}/>{p.location}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: t.muted, cursor: 'pointer', padding: 4 }}><XCircle size={22}/></button>
+        </div>
+
+        <div style={{ padding: 24 }}>
+          {/* Gallery */}
+          {images[0] !== PLACEHOLDER && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ position: 'relative', height: 320, borderRadius: 10, overflow: 'hidden', marginBottom: 8 }}>
+                <LazyImg src={images[imgIdx]} alt={p.title} style={{ width: '100%', height: 320, borderRadius: 10 }} />
+                {images.length > 1 && (
+                  <>
+                    <button onClick={() => setImgIdx(i => (i-1+images.length)%images.length)} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: '50%', width: 36, height: 36, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={18}/></button>
+                    <button onClick={() => setImgIdx(i => (i+1)%images.length)} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.65)', border: 'none', borderRadius: '50%', width: 36, height: 36, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={18}/></button>
+                    <div style={{ position: 'absolute', bottom: 10, right: 12, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 12, padding: '3px 9px', borderRadius: 12 }}>{imgIdx+1}/{images.length}</div>
+                  </>
+                )}
+              </div>
+              {images.length > 1 && (
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+                  {images.map((img, i) => (
+                    <div key={i} onClick={() => setImgIdx(i)} style={{ flexShrink: 0, width: 72, height: 52, borderRadius: 6, overflow: 'hidden', cursor: 'pointer', border: `2px solid ${i === imgIdx ? t.gold : 'transparent'}`, transition: 'border-color 0.2s' }}>
+                      <LazyImg src={img} alt="" style={{ width: 72, height: 52, borderRadius: 4 }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Info grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 20 }}>
+            {[
+              { label: 'Price', value: `${fmt(p.price)}/night` },
+              { label: 'Status', value: <span style={{ color: statusColor(p.status), display: 'flex', alignItems: 'center', gap: 5 }}><StatusIcon s={p.status}/>{p.status}</span> },
+              { label: 'Bedrooms', value: `${p.bedrooms}` },
+              { label: 'Bathrooms', value: `${p.bathrooms}` },
+              { label: 'Max Guests', value: `${p.bnb_details?.max_guests ?? p.max_guests ?? 2}` },
+              { label: 'Min Stay', value: `${p.bnb_details?.min_stay ?? p.min_stay ?? 1} nights` },
+              { label: 'Check-in', value: p.bnb_details?.check_in_time ?? p.check_in_time ?? '15:00' },
+              { label: 'Check-out', value: p.bnb_details?.check_out_time ?? p.check_out_time ?? '11:00' },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ backgroundColor: t.dark2, borderRadius: 8, padding: '12px 14px', border: `1px solid ${t.border}` }}>
+                <div style={{ fontSize: 11, color: t.muted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
+                <div style={{ fontSize: 14, color: t.cream, fontWeight: 500 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Amenities */}
+          {enabledAmenities.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 10px' }}>Amenities</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {enabledAmenities.map((a: string) => (
+                  <span key={a} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', backgroundColor: `${t.gold}18`, border: `1px solid ${t.gold}30`, borderRadius: 8, fontSize: 13, color: t.goldLt }}>
+                    {amenityIcon(a)}{a}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Description */}
+          <div>
+            <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 8px' }}>Description</h3>
+            <p style={{ color: t.cream, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{p.description}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── ADD MODAL ─────────────────────────────────────── */
+function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState({ title: '', description: '', price: '', location: '', address: '', type: 'apartment', bedrooms: '1', bathrooms: '1', max_guests: '2', min_stay: '1', check_in_time: '15:00', check_out_time: '11:00', instant_book: false, amenities: [] as string[] });
+  const [files, setFiles]       = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [loading, setLoading]   = useState(false);
+  const [errors, setErrors]     = useState<Record<string, string>>({});
+
+  useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
+
+  const set = (k: string, v: any) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: '' })); };
+
+  const addFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valid = Array.from(e.target.files ?? []).filter(f => f.type.startsWith('image/'));
+    setPreviews(p => [...p, ...valid.map(f => URL.createObjectURL(f))]);
+    setFiles(f => [...f, ...valid]);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(file => file.type.startsWith('image/'));
-    
-    if (validFiles.length !== files.length) {
-      setErrors(prev => ({ ...prev, images: 'Only image files are allowed' }));
-    } else {
-      setErrors(prev => ({ ...prev, images: '' }));
-    }
-
-    // Create previews for new images
-    const newPreviews = validFiles.map(file => URL.createObjectURL(file));
-    setImagePreviews(prev => [...prev, ...newPreviews]);
-    setImageFiles(prev => [...prev, ...validFiles]);
+  const removeFile = (i: number) => {
+    URL.revokeObjectURL(previews[i]);
+    setPreviews(p => p.filter((_, j) => j !== i));
+    setFiles(f => f.filter((_, j) => j !== i));
   };
 
-  const removeImage = (index: number) => {
-    // Revoke object URL to prevent memory leaks
-    URL.revokeObjectURL(imagePreviews[index]);
-    
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
-  };
+  const submit = async () => {
+    const errs: Record<string, string> = {};
+    if (!form.title.trim())       errs.title       = 'Required';
+    if (!form.description.trim()) errs.description = 'Required';
+    if (!form.price || +form.price <= 0) errs.price = 'Enter a valid price';
+    if (!form.location.trim())    errs.location    = 'Required';
+    if (!form.address.trim())     errs.address     = 'Required';
+    if (Object.keys(errs).length) { setErrors(errs); return; }
 
-  const uploadImages = async (): Promise<string[]> => {
-    const uploadedUrls: string[] = [];
-    
-    if (imageFiles.length === 0) {
-      return uploadedUrls;
-    }
-
+    setLoading(true);
     try {
-      // Try multiple upload first using authenticated API
-      const formData = new FormData();
-      imageFiles.forEach(file => {
-        formData.append('images[]', file);
-      });
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-images`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Accept': 'application/json',
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        uploadedUrls.push(...result.images.map((img: any) => img.url));
-      } else {
-        throw new Error('Failed to upload images');
-      }
-    } catch (error) {
-      console.error('Multiple image upload error:', error);
-      
-      // Fallback to individual uploads
-      for (const file of imageFiles) {
-        try {
-          const formData = new FormData();
-          formData.append('image', file);
-          
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-image`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-              'Accept': 'application/json',
-            },
-            body: formData,
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            uploadedUrls.push(result.url);
-          } else {
-            throw new Error('Failed to upload image');
-          }
-        } catch (singleError) {
-          console.error('Single image upload error:', singleError);
-          // For demo purposes, use placeholder URLs
-          uploadedUrls.push(`https://picsum.photos/seed/${Math.random()}/800/600.jpg`);
+      let images: string[] = [];
+      if (files.length) {
+        const fd = new FormData();
+        files.forEach(f => fd.append('images[]', f));
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-images`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, Accept: 'application/json' },
+          body: fd,
+        });
+        if (res.ok) {
+          const j = await res.json();
+          images = j.images.map((i: any) => i.url);
         }
       }
-    }
-    
-    return uploadedUrls;
-  };
-
-  // Cleanup object URLs when component unmounts
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
-    };
-  }, [imagePreviews]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrors({});
-
-    try {
-      // Validate required fields
-      const newErrors: Record<string, string> = {};
-      if (!formData.title.trim()) newErrors.title = 'Title is required';
-      if (!formData.description.trim()) newErrors.description = 'Description is required';
-      if (!formData.price || parseFloat(formData.price) <= 0) newErrors.price = 'Valid price is required';
-      if (!formData.location.trim()) newErrors.location = 'Location is required';
-      if (!formData.address.trim()) newErrors.address = 'Address is required';
-
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        return;
-      }
-
-      // Upload images first if any
-      let uploadedImageUrls: string[] = [];
-      if (imageFiles.length > 0) {
-        uploadedImageUrls = await uploadImages();
-      }
-
-      // Prepare data for API
-      const propertyData = {
-        title: formData.title,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        location: formData.location,
-        address: formData.address,
-        type: formData.type,
-        bedrooms: parseInt(formData.bedrooms),
-        bathrooms: parseInt(formData.bathrooms),
-        max_guests: parseInt(formData.max_guests),
-        min_stay: parseInt(formData.min_stay),
-        check_in_time: formData.check_in_time,
-        check_out_time: formData.check_out_time,
-        instant_book: formData.instant_book,
-        amenities: formData.amenities,
-        images: uploadedImageUrls,
-      };
-
-      await Api.createBnbProperty(propertyData);
+      await Api.createBnbProperty({ ...form, price: +form.price, bedrooms: +form.bedrooms, bathrooms: +form.bathrooms, max_guests: +form.max_guests, min_stay: +form.min_stay, images });
       onSuccess();
-    } catch (error: any) {
-      console.error('Error creating property:', error);
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
-      } else {
-        setErrors({ submit: 'Failed to create property. Please try again.' });
-      }
+    } catch (err: any) {
+      setErrors(err?.response?.data?.errors ?? { submit: 'Failed to create property. Please try again.' });
     } finally {
       setLoading(false);
     }
   };
 
-  const amenityOptions = [
-    'WiFi', 'Kitchen', 'Parking', 'Air Conditioning', 'Heating', 'Washer', 'Dryer',
-    'TV', 'Workspace', 'Pool', 'Gym', 'Elevator', 'Pet Friendly', 'Smoking Allowed'
-  ];
+  const inp = (style?: React.CSSProperties): React.CSSProperties => ({
+    ...body, width: '100%', padding: '10px 12px', backgroundColor: t.dark3, border: `1px solid ${t.border}`,
+    borderRadius: 8, color: t.cream, fontSize: 14, boxSizing: 'border-box', ...style,
+  });
+  const lbl: React.CSSProperties = { display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 500, color: t.cream };
+
+  const amenityOptions = ['WiFi','Kitchen','Parking','Air Conditioning','Heating','Washer','Dryer','TV','Workspace','Pool','Gym','Pet Friendly'];
 
   return (
-    <form onSubmit={handleSubmit} style={{ ...body, color: t.cream }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 20 }}>
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Property Title *
-          </label>
-          <input
-            type="text"
-            value={formData.title}
-            onChange={(e) => handleInputChange('title', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${errors.title ? t.red : t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-            placeholder="e.g., Luxury Beach Villa"
-          />
-          {errors.title && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.title}</div>}
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, backdropFilter: 'blur(4px)' }}>
+      <div style={{ backgroundColor: t.dark2, borderRadius: 14, padding: 28, maxWidth: 780, maxHeight: '90vh', overflowY: 'auto', width: '100%', border: `1px solid ${t.border}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+          <h2 style={{ ...serif, fontSize: 22, color: t.gold, margin: 0 }}>Add New Property</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: t.muted, cursor: 'pointer' }}><XCircle size={20}/></button>
         </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Price per Night (TZS) *
-          </label>
-          <input
-            type="number"
-            value={formData.price}
-            onChange={(e) => handleInputChange('price', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${errors.price ? t.red : t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-            placeholder="50000"
-          />
-          {errors.price && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.price}</div>}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <div>
+            <label style={lbl}>Title *</label>
+            <input value={form.title} onChange={e => set('title', e.target.value)} style={inp({ borderColor: errors.title ? t.red : t.border })} placeholder="e.g. Luxury Beach Villa"/>
+            {errors.title && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.title}</div>}
+          </div>
+          <div>
+            <label style={lbl}>Price per Night (TZS) *</label>
+            <input type="number" value={form.price} onChange={e => set('price', e.target.value)} style={inp({ borderColor: errors.price ? t.red : t.border })} placeholder="50000"/>
+            {errors.price && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.price}</div>}
+          </div>
+          <div>
+            <label style={lbl}>Location *</label>
+            <input value={form.location} onChange={e => set('location', e.target.value)} style={inp({ borderColor: errors.location ? t.red : t.border })} placeholder="Dar es Salaam, Tanzania"/>
+            {errors.location && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.location}</div>}
+          </div>
+          <div>
+            <label style={lbl}>Property Type</label>
+            <select value={form.type} onChange={e => set('type', e.target.value)} style={inp()}>
+              <option value="apartment">Apartment</option>
+              <option value="house">House</option>
+              <option value="villa">Villa</option>
+              <option value="studio">Studio</option>
+              <option value="condo">Condo</option>
+            </select>
+          </div>
         </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Location *
-          </label>
-          <input
-            type="text"
-            value={formData.location}
-            onChange={(e) => handleInputChange('location', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${errors.location ? t.red : t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-            placeholder="e.g., Dar es Salaam, Tanzania"
-          />
-          {errors.location && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.location}</div>}
+        <div style={{ marginBottom: 16 }}>
+          <label style={lbl}>Address *</label>
+          <input value={form.address} onChange={e => set('address', e.target.value)} style={inp({ borderColor: errors.address ? t.red : t.border })} placeholder="Full street address"/>
+          {errors.address && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.address}</div>}
         </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Property Type
-          </label>
-          <select
-            value={formData.type}
-            onChange={(e) => handleInputChange('type', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-          >
-            <option value="apartment">Apartment</option>
-            <option value="house">Hotel</option>
-            <option value="villa">Guest</option>
-            <option value="studio">Villa</option>
-            <option value="condo">Airbnb</option>
-          </select>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-          Address *
-        </label>
-        <input
-          type="text"
-          value={formData.address}
-          onChange={(e) => handleInputChange('address', e.target.value)}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: t.dark3,
-            border: `1px solid ${errors.address ? t.red : t.border}`,
-            borderRadius: 8,
-            color: t.cream,
-            fontSize: 14,
-          }}
-          placeholder="Full property address"
-        />
-        {errors.address && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.address}</div>}
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-          Description *
-        </label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => handleInputChange('description', e.target.value)}
-          rows={4}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: t.dark3,
-            border: `1px solid ${errors.description ? t.red : t.border}`,
-            borderRadius: 8,
-            color: t.cream,
-            fontSize: 14,
-            resize: 'vertical',
-          }}
-          placeholder="Describe your property..."
-        />
-        {errors.description && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.description}</div>}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 20 }}>
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Bedrooms
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={formData.bedrooms}
-            onChange={(e) => handleInputChange('bedrooms', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-          />
+        <div style={{ marginBottom: 16 }}>
+          <label style={lbl}>Description *</label>
+          <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} style={{ ...inp(), resize: 'vertical', borderColor: errors.description ? t.red : t.border } as any} placeholder="Describe your property…"/>
+          {errors.description && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.description}</div>}
         </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Bathrooms
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={formData.bathrooms}
-            onChange={(e) => handleInputChange('bathrooms', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-          />
-        </div>
-
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Max Guests
-          </label>
-          <input
-            type="number"
-            min="1"
-            value={formData.max_guests}
-            onChange={(e) => handleInputChange('max_guests', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-          />
-        </div>
-
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Min Stay (nights)
-          </label>
-          <input
-            type="number"
-            min="1"
-            value={formData.min_stay}
-            onChange={(e) => handleInputChange('min_stay', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-          />
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginBottom: 20 }}>
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Check-in Time
-          </label>
-          <input
-            type="time"
-            value={formData.check_in_time}
-            onChange={(e) => handleInputChange('check_in_time', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-          />
-        </div>
-
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-            Check-out Time
-          </label>
-          <input
-            type="time"
-            value={formData.check_out_time}
-            onChange={(e) => handleInputChange('check_out_time', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
-              borderRadius: 8,
-              color: t.cream,
-              fontSize: 14,
-            }}
-          />
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-          Property Images
-        </label>
-        <div style={{
-          border: `1px solid ${errors.images ? t.red : t.border}`,
-          borderRadius: 8,
-          padding: 16,
-          backgroundColor: t.dark3,
-        }}>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageUpload}
-            style={{ display: 'none' }}
-            id="image-upload"
-          />
-          <label
-            htmlFor="image-upload"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px',
-              border: `2px dashed ${t.border}`,
-              borderRadius: 8,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              backgroundColor: 'rgba(201,168,76,0.05)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(201,168,76,0.1)';
-              e.currentTarget.style.borderColor = t.gold;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(201,168,76,0.05)';
-              e.currentTarget.style.borderColor = t.border;
-            }}
-          >
-            <ImageIcon size={32} style={{ color: t.gold, marginBottom: 8 }} />
-            <div style={{ color: t.cream, fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
-              Click to upload images
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+          {[['Bedrooms','bedrooms','0'],['Bathrooms','bathrooms','0'],['Max Guests','max_guests','1'],['Min Stay (nights)','min_stay','1']].map(([label, key, min]) => (
+            <div key={key}>
+              <label style={lbl}>{label}</label>
+              <input type="number" min={min} value={(form as any)[key]} onChange={e => set(key, e.target.value)} style={inp()}/>
             </div>
-            <div style={{ color: t.muted, fontSize: 12, textAlign: 'center' }}>
-              Upload multiple images to showcase your property<br />
-              JPG, PNG, GIF (Max 5MB each)
-            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div>
+            <label style={lbl}>Check-in Time</label>
+            <input type="time" value={form.check_in_time} onChange={e => set('check_in_time', e.target.value)} style={inp()}/>
+          </div>
+          <div>
+            <label style={lbl}>Check-out Time</label>
+            <input type="time" value={form.check_out_time} onChange={e => set('check_out_time', e.target.value)} style={inp()}/>
+          </div>
+        </div>
+
+        {/* Image Upload */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={lbl}>Property Images</label>
+          <input type="file" multiple accept="image/*" id="img-up" onChange={addFiles} style={{ display: 'none' }}/>
+          <label htmlFor="img-up" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '18px', border: `2px dashed ${t.border}`, borderRadius: 8, cursor: 'pointer', backgroundColor: `${t.gold}08`, transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = t.gold; e.currentTarget.style.backgroundColor = `${t.gold}12`; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.backgroundColor = `${t.gold}08`; }}>
+            <ImageIcon size={28} style={{ color: t.gold, marginBottom: 6 }}/>
+            <div style={{ color: t.cream, fontSize: 13, fontWeight: 500 }}>Click to upload images</div>
+            <div style={{ color: t.muted, fontSize: 11, marginTop: 2 }}>JPG, PNG, GIF — max 5MB each</div>
           </label>
-          
-          {imagePreviews.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ color: t.cream, fontSize: 12, marginBottom: 8 }}>
-                {imagePreviews.length} image{imagePreviews.length !== 1 ? 's' : ''} selected
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 8 }}>
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} style={{ position: 'relative', borderRadius: 4, overflow: 'hidden' }}>
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      style={{
-                        width: '100%',
-                        height: '80px',
-                        objectFit: 'cover',
-                        display: 'block',
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      style={{
-                        position: 'absolute',
-                        top: 4,
-                        right: 4,
-                        backgroundColor: 'rgba(0,0,0,0.7)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '20px',
-                        height: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
+          {previews.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8, marginTop: 10 }}>
+              {previews.map((src, i) => (
+                <div key={i} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', height: 70 }}>
+                  <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+                  <button type="button" onClick={() => removeFile(i)} style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', width: 18, height: 18, color: '#fff', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                </div>
+              ))}
             </div>
           )}
         </div>
-        {errors.images && <div style={{ color: t.red, fontSize: 12, marginTop: 4 }}>{errors.images}</div>}
-      </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontSize: 14, fontWeight: 500 }}>
-          Amenities
-        </label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-          {amenityOptions.map((amenity) => (
-            <label key={amenity} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={formData.amenities.includes(amenity)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    handleInputChange('amenities', [...formData.amenities, amenity]);
-                  } else {
-                    handleInputChange('amenities', formData.amenities.filter(a => a !== amenity));
-                  }
-                }}
-                style={{ accentColor: t.gold }}
-              />
-              <span style={{ fontSize: 14 }}>{amenity}</span>
-            </label>
-          ))}
+        {/* Amenities */}
+        <div style={{ marginBottom: 18 }}>
+          <label style={lbl}>Amenities</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {amenityOptions.map(a => (
+              <label key={a} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: t.cream }}>
+                <input type="checkbox" checked={form.amenities.includes(a)} onChange={e => set('amenities', e.target.checked ? [...form.amenities, a] : form.amenities.filter(x => x !== a))} style={{ accentColor: t.gold }}/>
+                {a}
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-        <input
-          type="checkbox"
-          id="instant_book"
-          checked={formData.instant_book}
-          onChange={(e) => handleInputChange('instant_book', e.target.checked)}
-          style={{ accentColor: t.gold, marginRight: 8 }}
-        />
-        <label htmlFor="instant_book" style={{ fontSize: 14, cursor: 'pointer' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, cursor: 'pointer', fontSize: 13, color: t.cream }}>
+          <input type="checkbox" checked={form.instant_book} onChange={e => set('instant_book', e.target.checked)} style={{ accentColor: t.gold }}/>
           Enable Instant Booking
         </label>
-      </div>
 
-      {errors.submit && (
-        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: `1px solid ${t.red}`, borderRadius: 8, padding: 12, marginBottom: 20 }}>
-          <div style={{ color: t.red, fontSize: 14 }}>{errors.submit}</div>
+        {errors.submit && (
+          <div style={{ backgroundColor: `${t.red}18`, border: `1px solid ${t.red}40`, borderRadius: 8, padding: '10px 14px', marginBottom: 16, color: t.red, fontSize: 13 }}>{errors.submit}</div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ ...btn, backgroundColor: 'transparent', border: `1px solid ${t.border}`, color: t.cream }}>Cancel</button>
+          <button onClick={submit} disabled={loading} style={{ ...btn, backgroundColor: t.gold, color: t.dark, opacity: loading ? 0.7 : 1 }}>
+            {loading ? 'Creating…' : 'Create Property'}
+          </button>
         </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{ ...button, backgroundColor: 'transparent', border: `1px solid ${t.border}`, color: t.cream }}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ ...button, backgroundColor: t.gold, color: t.dark, opacity: loading ? 0.7 : 1 }}
-        >
-          {loading ? 'Creating...' : 'Create Property'}
-        </button>
       </div>
-    </form>
+    </div>
   );
-};
-
-export default BnbProperties;
+}

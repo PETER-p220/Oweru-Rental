@@ -368,28 +368,7 @@ const Footer = () => {
         }
       `}</style>
 
-      {/* Top identity bar */}
-      <div className="ft-top-bar">
-        <div className="ft-top-inner">
-          <div className="ft-brand">
-            <img src={LOGO} alt="OWERU" style={{ height: '28px', width: 'auto' }} />
-            <div className="ft-divider-line" />
-            <span className="ft-tagline">Tanzania Property Rentals</span>
-          </div>
-
-          <div className="ft-socials">
-            {[
-              { icon: <Facebook size={14} />,  href: '#' },
-              { icon: <Twitter size={14} />,   href: '#' },
-              { icon: <Instagram size={14} />, href: '#' },
-              { icon: <Globe size={14} />,     href: '#' },
-            ].map((s, i) => (
-              <a key={i} href={s.href} className="social-btn">{s.icon}</a>
-            ))}
-          </div>
-        </div>
-      </div>
-
+      
       {/* Main grid — 4 cols desktop, 2+2 tablet, About+Nav+Svc+Contact mobile */}
       <div className="ft-main">
 
