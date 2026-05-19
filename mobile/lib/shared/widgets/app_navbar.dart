@@ -144,6 +144,7 @@ class AppNavBar extends StatelessWidget implements PreferredSizeWidget {
                 itemBuilder: (BuildContext context) => [
                   PopupMenuItem<String>(
                     value: 'profile',
+                    onTap: onProfilePressed,
                     child: Row(
                       children: const [
                         Icon(Icons.person, color: kGold, size: 18),
@@ -151,7 +152,6 @@ class AppNavBar extends StatelessWidget implements PreferredSizeWidget {
                         Text('Profile', style: TextStyle(color: kCream)),
                       ],
                     ),
-                    onTap: onProfilePressed,
                   ),
                   const PopupMenuDivider(height: 8),
                   PopupMenuItem<String>(

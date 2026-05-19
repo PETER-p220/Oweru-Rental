@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-
-const String kApiBase = 'https://api.oweru.com';
+import '../../core/constants/api_config.dart';
 
 class AuthService {
-  static const String _baseUrl = '$kApiBase/api';
+  static const String _baseUrl = ApiConfig.apiPath;
   static String? _token;
 
   static String? get token => _token;
@@ -20,6 +19,10 @@ class AuthService {
     String userType = 'tenant',
   }) async {
     try {
+      print('🔵 LOGIN STARTING - Email: $email, UserType: $userType');
+      print('🔵 API Base URL: $_baseUrl');
+      print('🔵 Full URL: $_baseUrl/login');
+      
       final response = await http.post(
         Uri.parse('$_baseUrl/login'),
         headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
@@ -30,18 +33,35 @@ class AuthService {
         }),
       );
 
+      print('🔵 Login Response Status: ${response.statusCode}');
+      print('🔵 Login Response Headers: ${response.headers}');
+      print('🔵 Login Response Body: ${response.body}');
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        _token = data['token'];
+        print('🟢 Login Success - Data: $data');
+        _token = data['data']['token'];
+        print('🟢 Token Set: $_token');
         return {'success': true, 'data': data};
       } else {
-        final error = jsonDecode(response.body);
-        return {
-          'success': false,
-          'message': error['message'] ?? 'Login failed',
-        };
+        print('🔴 Login Failed - Status Code: ${response.statusCode}');
+        try {
+          final error = jsonDecode(response.body);
+          print('🔴 Error Response: $error');
+          return {
+            'success': false,
+            'message': error['message'] ?? 'Login failed (status: ${response.statusCode})',
+          };
+        } catch (e) {
+          print('🔴 Error parsing response: $e');
+          return {
+            'success': false,
+            'message': 'Server error (${response.statusCode}): ${response.body}',
+          };
+        }
       }
     } catch (e) {
+      print('🔴 Login Exception: $e');
       return {
         'success': false,
         'message': 'Connection error: $e',
@@ -74,12 +94,18 @@ class AuthService {
         }),
       );
 
+      print('Register Response Status: ${response.statusCode}');
+      print('Register Response Body: ${response.body}');
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        _token = data['token'];
+        print('Register Response Decoded: $data');
+        _token = data['data']['token'];
+        print('Token Set: $_token');
         return {'success': true, 'data': data};
       } else {
         final error = jsonDecode(response.body);
+        print('Register Error: $error');
         if (error['errors'] is Map) {
           final errors = error['errors'] as Map<String, dynamic>;
           final messages = <String>[];
@@ -100,6 +126,7 @@ class AuthService {
         };
       }
     } catch (e) {
+      print('Register Exception: $e');
       return {
         'success': false,
         'message': 'Connection error: $e',

@@ -233,6 +233,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/commercial/properties/{id}/analytics', [CommercialPropertyController::class, 'analytics']);
         
         // Image management
+        
         Route::post('/commercial/properties/{id}/images', [CommercialPropertyController::class, 'uploadImages']);
         Route::delete('/commercial/properties/{propertyId}/images/{imageId}', [CommercialPropertyController::class, 'deleteImage']);
         Route::patch('/commercial/properties/{propertyId}/images/{imageId}/primary', [CommercialPropertyController::class, 'setPrimaryImage']);

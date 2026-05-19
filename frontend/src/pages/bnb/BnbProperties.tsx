@@ -214,7 +214,7 @@ const statusColor = (s: string) => ({ available: t.green, occupied: t.red, maint
 const StatusIcon = ({ s }: { s: string }) => s === 'available' ? <CheckCircle size={14}/> : s === 'occupied' ? <XCircle size={14}/> : <AlertCircle size={14}/>;
 
 const amenityIcon = (a: string) => {
-  const icons: Record<string, JSX.Element> = { wifi: <Wifi size={13}/>, parking: <Car size={13}/>, gym: <Dumbbell size={13}/>, kitchen: <Utensils size={13}/>, workspace: <Monitor size={13}/>, tv: <Tv size={13}/>, washer: <Shirt size={13}/>, ac: <Wind size={13}/> };
+  const icons: Record<string, React.ReactElement> = { wifi: <Wifi size={13}/>, parking: <Car size={13}/>, gym: <Dumbbell size={13}/>, kitchen: <Utensils size={13}/>, workspace: <Monitor size={13}/>, tv: <Tv size={13}/>, washer: <Shirt size={13}/>, ac: <Wind size={13}/> };
   return icons[a.toLowerCase()] ?? <Star size={13}/>;
 };
 

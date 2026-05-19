@@ -19,13 +19,13 @@ class AppNavBar extends StatelessWidget implements PreferredSizeWidget {
   final String? userName;
 
   const AppNavBar({
-    Key? key,
+    super.key,
     required this.isLoggedIn,
     this.onLoginPressed,
     this.onRegisterPressed,
     this.onLogoutPressed,
     this.userName,
-  }) : super(key: key);
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(64.0);

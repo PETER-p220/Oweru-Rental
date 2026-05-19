@@ -1,8 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../core/constants/api_config.dart';
 
 class AuthService {
-  static const String _baseUrl = 'https://api.oweru.com/api';
+  static String? _token;
+
+  static String? get token => _token;
+
+  static void setToken(String? token) {
+    _token = token;
+  }
 
   /// Login with email, password, and user type
   static Future<Map<String, dynamic>> login({
@@ -12,7 +19,7 @@ class AuthService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/login'),
+        Uri.parse('${ApiConfig.apiPath}/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -23,9 +30,10 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        _token = data['data']['token'];
         return {
           'success': true,
-          'message': 'Login successful',
+          'message': data['message'] ?? 'Login successful',
           'data': data,
         };
       } else if (response.statusCode == 401) {
@@ -60,7 +68,7 @@ class AuthService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/register'),
+        Uri.parse('${ApiConfig.apiPath}/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'first_name': firstName,
@@ -75,9 +83,10 @@ class AuthService {
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        _token = data['data']['token'];
         return {
           'success': true,
-          'message': 'Registration successful',
+          'message': data['message'] ?? 'Registration successful',
           'data': data,
         };
       } else if (response.statusCode == 422) {
@@ -110,33 +119,38 @@ class AuthService {
     }
   }
 
-  /// Logout user (requires token)
-  static Future<Map<String, dynamic>> logout({required String token}) async {
+  /// Logout user
+  static Future<Map<String, dynamic>> logout() async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/logout'),
+      if (_token != null) {
+        await http.post(
+          Uri.parse('${ApiConfig.apiPath}/logout'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_token',
+          },
+        );
+      }
+    } catch (_) {}
+    _token = null;
+    return {'success': true, 'message': 'Logout successful'};
+  }
+
+  /// Get Current User
+  static Future<Map<String, dynamic>?> getCurrentUser() async {
+    if (_token == null) return null;
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.apiPath}/user'),
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $_token',
         },
       );
-
       if (response.statusCode == 200) {
-        return {
-          'success': true,
-          'message': 'Logout successful',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': 'Logout failed',
-        };
+        return jsonDecode(response.body);
       }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error: $e',
-      };
-    }
+    } catch (_) {}
+    return null;
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/auth_service.dart';
+import '../../../shared/services/user_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,6 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   String _error = '';
   String _userType = 'tenant';
+  final _userService = UserService();
 
   final List<Map<String, String>> userTypes = [
     {'value': 'tenant', 'label': 'Tenant'},
@@ -22,7 +24,6 @@ class _LoginPageState extends State<LoginPage> {
     {'value': 'agent', 'label': 'Agent'},
     {'value': 'bnb_owner', 'label': 'BNB Owner'},
     {'value': 'commercial', 'label': 'Commercial'},
-    {'value': 'admin', 'label': 'Admin'},
   ];
 
   @override
@@ -52,16 +53,44 @@ class _LoginPageState extends State<LoginPage> {
 
       if (result['success']) {
         if (mounted) {
+          // Store user data
+          _userService.setUserData(
+            userType: _userType,
+            token: result['data']?['data']?['token'],
+            userName: result['data']?['data']?['user']?['first_name'],
+            userEmail: _emailCtrl.text.trim(),
+          );
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Login successful!')),
           );
-          // Navigate to home or dashboard
-          Navigator.pop(context, true);
+          // Navigate to appropriate dashboard based on user type
+          String route = '/tenant-dashboard';
+          switch (_userType) {
+            case 'agent':
+              route = '/agent-dashboard';
+              break;
+            case 'landlord':
+              route = '/landlord-dashboard';
+              break;
+            case 'tenant':
+              route = '/tenant-dashboard';
+              break;
+            case 'bnb_owner':
+              route = '/bnb-dashboard';
+              break;
+            case 'commercial':
+              route = '/commercial-dashboard';
+              break;
+          }
+          Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
         }
       } else {
+        print('Login Failed: ${result['message']}');
         setState(() => _error = result['message'] ?? 'Login failed');
       }
     } catch (e) {
+      print('Login Catch Error: $e');
       setState(() => _error = 'An error occurred: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);

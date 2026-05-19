@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/auth_service.dart';
+import '../../../shared/services/user_service.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -27,12 +28,14 @@ class _RegisterPageState extends State<RegisterPage> {
   String _userType = 'tenant';
   bool _isLoading = false;
   List<String> _errors = [];
+  final _userService = UserService();
 
   final List<Map<String, String>> userTypes = [
     {'value': 'tenant', 'label': 'Tenant', 'desc': 'Looking to rent'},
     {'value': 'landlord', 'label': 'Landlord', 'desc': 'I own property'},
     {'value': 'agent', 'label': 'Agent', 'desc': 'Real estate professional'},
     {'value': 'bnb_owner', 'label': 'BNB Owner', 'desc': 'I host BNB properties'},
+    {'value': 'commercial', 'label': 'Commercial', 'desc': 'Commercial property owner'},
   ];
 
   @override
@@ -92,15 +95,45 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (result['success']) {
         if (mounted) {
+          // Store user data
+          final userData = result['data']?['data']?['user'] ?? {};
+          _userService.setUserData(
+            userType: _userType,
+            token: result['data']?['data']?['token'],
+            userName: '${_firstNameCtrl.text} ${_lastNameCtrl.text}',
+            userEmail: _emailCtrl.text.trim(),
+          );
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Registration successful!')),
           );
-          Navigator.pop(context, true);
+          // Navigate to appropriate dashboard based on user type
+          String route = '/tenant-dashboard';
+          switch (_userType) {
+            case 'agent':
+              route = '/agent-dashboard';
+              break;
+            case 'landlord':
+              route = '/landlord-dashboard';
+              break;
+            case 'tenant':
+              route = '/tenant-dashboard';
+              break;
+            case 'bnb_owner':
+              route = '/bnb-dashboard';
+              break;
+            case 'commercial':
+              route = '/commercial-dashboard';
+              break;
+          }
+          Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
         }
       } else {
+        print('Register Failed: ${result['message']}');
         setState(() => _errors = [result['message'] ?? 'Registration failed']);
       }
     } catch (e) {
+      print('Register Catch Error: $e');
       setState(() => _errors = ['An error occurred: $e']);
     } finally {
       if (mounted) setState(() => _isLoading = false);
