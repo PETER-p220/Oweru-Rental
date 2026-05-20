@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/services/tenant_api_service.dart';
 import 'tenant_theme.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -9,65 +10,52 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  final List<Map<String, dynamic>> _notifications = [
-    {
-      'id': 1,
-      'title': 'Application Approved',
-      'message': 'Your application for Masaki Apartments - Unit 3B has been approved!',
-      'timestamp': '2 hours ago',
-      'type': 'success',
-      'read': false,
-      'icon': Icons.check_circle_rounded,
-    },
-    {
-      'id': 2,
-      'title': 'Payment Reminder',
-      'message': 'Your rent payment is due in 5 days. Pay now to avoid penalties.',
-      'timestamp': '5 hours ago',
-      'type': 'warning',
-      'read': false,
-      'icon': Icons.warning_rounded,
-    },
-    {
-      'id': 3,
-      'title': 'New Message',
-      'message': 'John Doe sent you a message about the property viewing.',
-      'timestamp': '1 day ago',
-      'type': 'info',
-      'read': true,
-      'icon': Icons.mail_rounded,
-    },
-    {
-      'id': 4,
-      'title': 'Application Received',
-      'message': 'Your application for Oyster Bay Villa has been received and is under review.',
-      'timestamp': '2 days ago',
-      'type': 'info',
-      'read': true,
-      'icon': Icons.description_rounded,
-    },
-    {
-      'id': 5,
-      'title': 'Contract Ready',
-      'message': 'Your rental contract for Masaki Apartments is ready for review and signature.',
-      'timestamp': '3 days ago',
-      'type': 'info',
-      'read': true,
-      'icon': Icons.check_circle_rounded,
-    },
-  ];
+  List<Map<String, dynamic>> _notifications = [];
+  bool _isLoading = true;
+  String _error = '';
 
-  void _markAllRead() {
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
     setState(() {
-      for (final n in _notifications) {
-        n['read'] = true;
-      }
+      _isLoading = true;
+      _error = '';
     });
+    try {
+      final data = await TenantApiService.getNotifications();
+      if (!mounted) return;
+      setState(() {
+        _notifications = data;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load notifications';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _markAllRead() async {
+    final ok = await TenantApiService.markAllNotificationsAsRead();
+    if (ok && mounted) {
+      setState(() {
+        for (final n in _notifications) {
+          n['is_read'] = true;
+          n['read'] = true;
+        }
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _notifications.where((n) => !n['read']).length;
+    final unreadCount = _notifications.where((n) => !(n['is_read'] == true || n['read'] == true)).length;
 
     return Scaffold(
       backgroundColor: kBg,
@@ -86,32 +74,38 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (unreadCount > 0)
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: kGoldDim,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: kGoldBorder),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.notifications_active_rounded, color: kGold, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'You have $unreadCount unread notification${unreadCount > 1 ? 's' : ''}',
-                    style: const TextStyle(color: kGold, fontSize: 11, fontWeight: FontWeight.w600),
+      body: _isLoading
+          ? ListView(
+              padding: const EdgeInsets.all(16),
+              children: List.generate(5, (_) => const TSkeletonCard(height: 82)),
+            )
+          : _error.isNotEmpty
+              ? TErrorState(message: _error, onRetry: _load)
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  color: kGold,
+                  backgroundColor: kBg2,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      if (unreadCount > 0)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: kGoldDim, borderRadius: BorderRadius.circular(10), border: Border.all(color: kGoldBorder)),
+                          child: Text('You have $unreadCount unread notification${unreadCount > 1 ? 's' : ''}', style: const TextStyle(color: kGold, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ),
+                      if (_notifications.isEmpty)
+                        const TEmptyState(
+                          icon: Icons.notifications_none_rounded,
+                          title: 'No notifications',
+                          subtitle: 'You are all caught up for now.',
+                        )
+                      else
+                        ..._notifications.map((n) => _buildNotificationCard(n)),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ..._notifications.map((n) => _buildNotificationCard(n)),
-        ],
-      ),
+                ),
     );
   }
 
@@ -123,10 +117,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
       'info':    kInfo,
     };
     final color = typeColors[notification['type']] ?? kInfo;
-    final isRead = notification['read'] as bool;
+    final isRead = notification['is_read'] == true || notification['read'] == true;
 
     return GestureDetector(
-      onTap: () => setState(() => notification['read'] = true),
+      onTap: () async {
+        final id = notification['id'];
+        if (id is int && !isRead) {
+          await TenantApiService.markNotificationAsRead(id);
+        }
+        if (!mounted) return;
+        setState(() {
+          notification['is_read'] = true;
+          notification['read'] = true;
+        });
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
@@ -180,7 +184,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    notification['timestamp'],
+                    (notification['timestamp'] ?? notification['created_at'] ?? '').toString(),
                     style: const TextStyle(color: kSlateDim, fontSize: 9),
                   ),
                 ],

@@ -1,21 +1,22 @@
-// ============================================================
-// landlord_add_property.dart — Add Property page
-// ============================================================
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../../../../shared/services/landlord_api_service.dart';
 import 'landlord_theme.dart';
 
 class LandlordAddPropertyPage extends StatefulWidget {
   const LandlordAddPropertyPage({super.key});
+
   @override
   State<LandlordAddPropertyPage> createState() => _LandlordAddPropertyPageState();
 }
 
 class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
-  int _step = 1;
+  int _currentStep = 1;
   bool _isLoading = false;
-  final List<String> _errors = [];
-  
-  final _formKey = GlobalKey<FormState>();
+  List<String> _errors = [];
+
+  // Form data
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
@@ -27,16 +28,13 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
   final _longitudeController = TextEditingController();
 
   String _propertyType = 'house';
-  final Set<String> _amenities = {};
-  final List<String> _images = [];
+  List<String> _amenities = [];
+  List<File> _images = [];
   bool _featured = false;
 
-  final List<PropertyType> _propertyTypes = [
-    PropertyType(value: 'house', label: 'House', icon: Icons.home_rounded),
-    PropertyType(value: 'Master-bedroom', label: 'Masterbedroom', icon: Icons.apartment_rounded),
-    PropertyType(value: 'Single-room', label: 'Single room', icon: Icons.bed_rounded),
-  ];
+  final ImagePicker _imagePicker = ImagePicker();
 
+  final List<String> _propertyTypes = ['house', 'Master-bedroom', 'Single-room'];
   final List<String> _commonAmenities = [
     'Parking', 'Security', 'Gym', 'Pool', 'Garden', 'Balcony',
     'Air Conditioning', 'Heating', 'WiFi', 'Kitchen', 'Laundry',
@@ -58,447 +56,680 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
   }
 
   bool _validateStep() {
-    _errors.clear();
-    
-    if (_step == 1) {
-      if (_titleController.text.trim().isEmpty) _errors.add('Property title is required');
-      if (_descriptionController.text.trim().isEmpty) _errors.add('Description is required');
-      if (_locationController.text.trim().isEmpty) _errors.add('Location is required');
-      if (_addressController.text.trim().isEmpty) _errors.add('Address is required');
+    final errs = <String>[];
+
+    if (_currentStep == 1) {
+      if (_titleController.text.trim().isEmpty) {
+        errs.add('Property title is required');
+      }
+      if (_descriptionController.text.trim().isEmpty) {
+        errs.add('Description is required');
+      }
+      if (_locationController.text.trim().isEmpty) {
+        errs.add('Location is required');
+      }
+      if (_addressController.text.trim().isEmpty) {
+        errs.add('Address is required');
+      }
     }
-    
-    if (_step == 2) {
-      final price = int.tryParse(_priceController.text);
-      if (price == null || price <= 0) _errors.add('Price must be greater than 0');
+
+    if (_currentStep == 2) {
+      final price = double.tryParse(_priceController.text.trim());
+      if (price == null || price <= 0) {
+        errs.add('Price must be greater than 0');
+      }
     }
-    
-    if (_step == 3) {
-      if (_images.isEmpty) _errors.add('At least one image is required');
+
+    if (_currentStep == 3) {
+      if (_images.isEmpty) {
+        errs.add('At least one image is required');
+      }
     }
-    
-    setState(() {});
-    return _errors.isEmpty;
+
+    setState(() => _errors = errs);
+    return errs.isEmpty;
   }
 
-  void _handleNext() {
+  void _nextStep() {
     if (_validateStep()) {
-      setState(() => _step++);
+      setState(() {
+        _errors = [];
+        _currentStep++;
+      });
     }
   }
 
-  void _handleBack() {
-    setState(() => _step--);
+  void _previousStep() {
+    setState(() {
+      _errors = [];
+      _currentStep--;
+    });
   }
 
-  Future<void> _handleSubmit() async {
+  Future<void> _pickImages() async {
+    try {
+      final List<XFile> pickedFiles = await _imagePicker.pickMultiImage();
+      if (pickedFiles.isNotEmpty) {
+        setState(() {
+          _images.addAll(pickedFiles.map((xFile) => File(xFile.path)));
+        });
+      }
+    } catch (e) {
+      setState(() => _errors = ['Failed to pick images']);
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _images.removeAt(index);
+    });
+  }
+
+  void _toggleAmenity(String amenity) {
+    setState(() {
+      if (_amenities.contains(amenity)) {
+        _amenities.remove(amenity);
+      } else {
+        _amenities.add(amenity);
+      }
+    });
+  }
+
+  Future<void> _submit() async {
     if (!_validateStep()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errors = [];
+    });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await LandlordApiService.createProperty({
+        'title': _titleController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'location': _locationController.text.trim(),
+        'address': _addressController.text.trim(),
+        'price': double.tryParse(_priceController.text.trim()) ?? 0,
+        'type': _propertyType,
+        'bedrooms': int.tryParse(_bedroomsController.text.trim()) ?? 1,
+        'bathrooms': int.tryParse(_bathroomsController.text.trim()) ?? 1,
+        'amenities': _amenities,
+        'featured': _featured,
+        'latitude': _latitudeController.text.trim(),
+        'longitude': _longitudeController.text.trim(),
+      });
 
-    setState(() => _isLoading = false);
-    
-    // Navigate back to properties
-    Navigator.pop(context);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Property created successfully')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      setState(() {
+        _errors = ['Failed to create property. Please try again.'];
+        _isLoading = false;
+      });
+    }
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kBg,
-    appBar: AppBar(
-      backgroundColor: kBg2,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded, color: kGold),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: const Text('Add New Property',
-        style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w600)),
-    ),
-    body: _isLoading ? _buildLoading() : _buildContent(),
-  );
-
-  Widget _buildLoading() => const Center(
-    child: CircularProgressIndicator(color: kGold),
-  );
-
-  Widget _buildContent() => Form(
-    key: _formKey,
-    child: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Steps indicator
-        Row(children: [
-          _StepIndicator(step: 1, current: _step, label: 'Basic Info'),
-          Expanded(child: Container(height: 2, color: _step > 1 ? kGold : kBorder)),
-          _StepIndicator(step: 2, current: _step, label: 'Details'),
-          Expanded(child: Container(height: 2, color: _step > 2 ? kGold : kBorder)),
-          _StepIndicator(step: 3, current: _step, label: 'Features'),
-        ]),
-        const SizedBox(height: 24),
-
-        // Errors
-        if (_errors.isNotEmpty) ...[
-          ..._errors.map((error) => Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: kDanger.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: kDanger.withOpacity(0.3)),
-            ),
-            child: Row(children: [
-              Icon(Icons.error_outline_rounded, color: kDanger, size: 16),
-              const SizedBox(width: 8),
-              Expanded(child: Text(error, style: TextStyle(color: kDanger, fontSize: 12))),
-            ]),
-          )),
-          const SizedBox(height: 16),
-        ],
-
-        // Step content
-        if (_step == 1) _buildStep1(),
-        if (_step == 2) _buildStep2(),
-        if (_step == 3) _buildStep3(),
-
-        const SizedBox(height: 24),
-        // Actions
-        Row(children: [
-          if (_step > 1) ...[
-            Expanded(child: LGhostButton(
-              label: 'Back',
-              onTap: _handleBack,
-              borderColor: kBorder,
-            )),
-            const SizedBox(width: 12),
-          ],
-          Expanded(child: LGoldButton(
-            label: _step == 3 ? 'Submit' : 'Next',
-            onTap: _step == 3 ? _handleSubmit : _handleNext,
-            fullWidth: true,
-          )),
-        ]),
-      ],
-    ),
-  );
-
-  Widget _buildStep1() => LCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('Basic Information', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w600)),
-    const SizedBox(height: 20),
-    
-    const Text('Property Title *', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    TextField(
-      controller: _titleController,
-      style: TextStyle(color: kCream, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: 'e.g., Modern 2BR Apartment in Masaki',
-        hintStyle: TextStyle(color: kSlate, fontSize: 12),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kGold)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      ),
-    ),
-    const SizedBox(height: 16),
-
-    const Text('Description *', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    TextField(
-      controller: _descriptionController,
-      maxLines: 4,
-      style: TextStyle(color: kCream, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: 'Describe your property, highlighting key features and amenities...',
-        hintStyle: TextStyle(color: kSlate, fontSize: 12),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kGold)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      ),
-    ),
-    const SizedBox(height: 16),
-
-    const Text('Property Type *', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
-      childAspectRatio: 1.2,
-      children: _propertyTypes.map((type) => InkWell(
-        onTap: () => setState(() => _propertyType = type.value),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          decoration: BoxDecoration(
-            color: _propertyType == type.value ? kGold.withOpacity(0.12) : kBg2,
-            border: Border.all(color: _propertyType == type.value ? kGold : kBorder),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(type.icon, color: kGold, size: 24),
-            const SizedBox(height: 8),
-            Text(type.label, style: TextStyle(color: kCream, fontSize: 11)),
-          ]),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBg,
+      appBar: AppBar(
+        backgroundColor: kBg2,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: kCream),
+          onPressed: () => Navigator.pop(context),
         ),
-      )).toList(),
-    ),
-    const SizedBox(height: 16),
-
-    const Text('Location *', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    TextField(
-      controller: _locationController,
-      style: TextStyle(color: kCream, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: 'e.g., Dar es Salaam, Masaki',
-        hintStyle: TextStyle(color: kSlate, fontSize: 12),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kGold)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        title: const Text('Add New Property', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
-    ),
-    const SizedBox(height: 16),
-
-    const Text('Full Address *', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    TextField(
-      controller: _addressController,
-      style: TextStyle(color: kCream, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: 'e.g., 34 Toure Drive, Masaki, Dar es Salaam',
-        hintStyle: TextStyle(color: kSlate, fontSize: 12),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kGold)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      ),
-    ),
-  ]));
-
-  Widget _buildStep2() => LCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('Property Details', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w600)),
-    const SizedBox(height: 20),
-    
-    const Text('Monthly Price (TZS) *', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    TextField(
-      controller: _priceController,
-      keyboardType: TextInputType.number,
-      style: TextStyle(color: kCream, fontSize: 14),
-      decoration: InputDecoration(
-        hintText: 'e.g., 800000',
-        hintStyle: TextStyle(color: kSlate, fontSize: 12),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kGold)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      ),
-    ),
-    const SizedBox(height: 16),
-
-    const Text('Bedrooms & Bathrooms', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    Row(children: [
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Bedrooms', style: TextStyle(color: kCream, fontSize: 12)),
-        const SizedBox(height: 4),
-        TextField(
-          controller: _bedroomsController,
-          keyboardType: TextInputType.number,
-          style: TextStyle(color: kCream, fontSize: 14),
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kGold)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-        ),
-      ])),
-      const SizedBox(width: 12),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Bathrooms', style: TextStyle(color: kCream, fontSize: 12)),
-        const SizedBox(height: 4),
-        TextField(
-          controller: _bathroomsController,
-          keyboardType: TextInputType.number,
-          style: TextStyle(color: kCream, fontSize: 14),
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kGold)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-        ),
-      ])),
-    ]),
-    const SizedBox(height: 16),
-
-    const Text('Location Coordinates (Optional)', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    Row(children: [
-      Expanded(child: TextField(
-        controller: _latitudeController,
-        keyboardType: TextInputType.number,
-        style: TextStyle(color: kCream, fontSize: 14),
-        decoration: InputDecoration(
-          hintText: 'Latitude',
-          hintStyle: TextStyle(color: kSlate, fontSize: 12),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kGold)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        ),
-      )),
-      const SizedBox(width: 12),
-      Expanded(child: TextField(
-        controller: _longitudeController,
-        keyboardType: TextInputType.number,
-        style: TextStyle(color: kCream, fontSize: 14),
-        decoration: InputDecoration(
-          hintText: 'Longitude',
-          hintStyle: TextStyle(color: kSlate, fontSize: 12),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kBorder)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: kGold)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        ),
-      )),
-    ]),
-  ]));
-
-  Widget _buildStep3() => LCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('Property Features', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w600)),
-    const SizedBox(height: 20),
-    
-    const Text('Amenities', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _commonAmenities.map((amenity) => InkWell(
-        onTap: () => setState(() {
-          if (_amenities.contains(amenity)) {
-            _amenities.remove(amenity);
-          } else {
-            _amenities.add(amenity);
-          }
-        }),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: _amenities.contains(amenity) ? kGold.withOpacity(0.12) : kBg2,
-            border: Border.all(color: _amenities.contains(amenity) ? kGold : kBorder),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (_amenities.contains(amenity)) ...[
-              Icon(Icons.check_rounded, color: kGold, size: 14),
-              const SizedBox(width: 4),
-            ],
-            Text(amenity, style: TextStyle(color: kCream, fontSize: 12)),
-          ]),
-        ),
-      )).toList(),
-    ),
-    const SizedBox(height: 16),
-
-    const Text('Property Images *', style: TextStyle(color: kCream, fontSize: 13)),
-    const SizedBox(height: 8),
-    GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 8,
-      mainAxisSpacing: 8,
-      childAspectRatio: 1,
-      children: [
-        ..._images.asMap().entries.map((entry) => Stack(children: [
+      body: Column(
+        children: [
+          // Steps Indicator
           Container(
-            decoration: BoxDecoration(
-              color: kBg2,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: kBorder),
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            color: kBg2,
+            child: Row(
+              children: [
+                _buildStepIndicator(1, 'Basic Info'),
+                _buildStepLine(1),
+                _buildStepIndicator(2, 'Details'),
+                _buildStepLine(2),
+                _buildStepIndicator(3, 'Features'),
+              ],
             ),
-            child: Icon(Icons.image_rounded, color: kSlate, size: 32),
           ),
-          Positioned(top: 4, right: 4,
-            child: GestureDetector(
-              onTap: () => setState(() => _images.removeAt(entry.key)),
-              child: Container(
-                width: 24, height: 24,
-                decoration: BoxDecoration(color: kDanger, borderRadius: BorderRadius.circular(4)),
-                child: Icon(Icons.close_rounded, color: kBg, size: 14),
+          // Error Display
+          if (_errors.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withOpacity(0.06),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
               ),
-            )),
-        ])),
-        InkWell(
-          onTap: () {
-            // TODO: Implement image picker
-            setState(() => _images.add('placeholder'));
-          },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _errors.map((error) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error, size: 16, color: Color(0xFFEF4444)),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(error, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 14))),
+                    ],
+                  ),
+                )).toList(),
+              ),
+            ),
+          // Form Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: _buildCurrentStep(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepIndicator(int step, String label) {
+    final isCompleted = _currentStep > step;
+    final isActive = _currentStep == step;
+
+    return Column(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: kGold, width: 2),
+            color: isActive ? kGold : isCompleted ? kGold.withOpacity(0.3) : kBg3,
+          ),
+          child: Center(
+            child: isCompleted
+                ? const Icon(Icons.check, color: kBg, size: 16)
+                : Text(
+                    '$step',
+                    style: TextStyle(
+                      color: isActive ? kBg : kSlate,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: isActive ? kGold : kSlate,
+            fontSize: 11,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepLine(int step) {
+    final isCompleted = _currentStep > step;
+    return Expanded(
+      child: Container(
+        height: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: isCompleted ? kGold : kBorder,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 1:
+        return _buildStep1();
+      case 2:
+        return _buildStep2();
+      case 3:
+        return _buildStep3();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildStep1() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kBg2,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Basic Information', style: TextStyle(color: kCream, fontSize: 20, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 20),
+          _buildTextField('Property Title *', _titleController, 'e.g., Modern 2BR Apartment in Masaki'),
+          const SizedBox(height: 16),
+          _buildTextArea('Description *', _descriptionController, 'Describe your property, highlighting key features and amenities...'),
+          const SizedBox(height: 16),
+          const Text('Property Type *', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          _buildPropertyTypeSelector(),
+          const SizedBox(height: 16),
+          _buildTextField('Location *', _locationController, 'e.g., Dar es Salaam, Masaki'),
+          const SizedBox(height: 16),
+          _buildTextField('Full Address *', _addressController, 'e.g., 34 Toure Drive, Masaki, Dar es Salaam'),
+          const SizedBox(height: 24),
+          _buildStepActions(showBack: false),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep2() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kBg2,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Property Details', style: TextStyle(color: kCream, fontSize: 20, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 20),
+          _buildTextField('Monthly Price (TZS) *', _priceController, 'e.g., 800000', keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Bedrooms', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    _buildNumberField(_bedroomsController),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Bathrooms', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    _buildNumberField(_bathroomsController),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text('Location Coordinates (Optional)', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTextField('Latitude', _latitudeController, 'Latitude', keyboardType: TextInputType.number),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildTextField('Longitude', _longitudeController, 'Longitude', keyboardType: TextInputType.number),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildStepActions(showBack: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep3() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kBg2,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Property Features', style: TextStyle(color: kCream, fontSize: 20, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 20),
+          const Text('Amenities', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          _buildAmenitiesGrid(),
+          const SizedBox(height: 16),
+          const Text('Property Images *', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          _buildImageUploadSection(),
+          const SizedBox(height: 16),
+          _buildFeaturedCheckbox(),
+          const SizedBox(height: 24),
+          _buildStepActions(showBack: true, isSubmit: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, String placeholder, {TextInputType? keyboardType}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            hintText: placeholder,
+            hintStyle: const TextStyle(color: kSlate),
+            filled: true,
+            fillColor: kBg3,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kGold),
+            ),
+          ),
+          style: const TextStyle(color: kCream),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextArea(String label, TextEditingController controller, String placeholder) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: 4,
+          decoration: InputDecoration(
+            hintText: placeholder,
+            hintStyle: const TextStyle(color: kSlate),
+            filled: true,
+            fillColor: kBg3,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: kGold),
+            ),
+          ),
+          style: const TextStyle(color: kCream),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumberField(TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: kBg3,
+        border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: kBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: kBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: kGold),
+        ),
+      ),
+      style: const TextStyle(color: kCream),
+    );
+  }
+
+  Widget _buildPropertyTypeSelector() {
+    return GridView.builder(
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 2.5,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: _propertyTypes.length,
+      itemBuilder: (context, index) {
+        final type = _propertyTypes[index];
+        final isSelected = _propertyType == type;
+        return GestureDetector(
+          onTap: () => setState(() => _propertyType = type),
           child: Container(
             decoration: BoxDecoration(
-              color: kBg2,
+              color: isSelected ? kGold.withOpacity(0.1) : kBg3,
+              border: Border.all(
+                color: isSelected ? kGold : kBorder,
+                width: isSelected ? 2 : 1,
+              ),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: kBorder, style: BorderStyle.solid),
             ),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.add_rounded, color: kSlate, size: 32),
-              const SizedBox(height: 4),
-              Text('Upload', style: TextStyle(color: kSlate, fontSize: 10)),
-            ]),
+            child: Center(
+              child: Text(
+                type,
+                style: TextStyle(
+                  color: isSelected ? kGold : kCream,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAmenitiesGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 4,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: _commonAmenities.length,
+      itemBuilder: (context, index) {
+        final amenity = _commonAmenities[index];
+        final isSelected = _amenities.contains(amenity);
+        return GestureDetector(
+          onTap: () => _toggleAmenity(amenity),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? kGold.withOpacity(0.1) : kBg3,
+              border: Border.all(
+                color: isSelected ? kGold : kBorder,
+                width: isSelected ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: kGold, width: 2),
+                    borderRadius: BorderRadius.circular(4),
+                    color: isSelected ? kGold : Colors.transparent,
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check, color: kBg, size: 14)
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    amenity,
+                    style: TextStyle(
+                      color: isSelected ? kGold : kCream,
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildImageUploadSection() {
+    return Column(
+      children: [
+        if (_images.isNotEmpty)
+          GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: _images.length,
+            itemBuilder: (context, index) {
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      _images[index],
+                      width: double.infinity,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () => _removeImage(index),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: _pickImages,
+          child: Container(
+            height: 150,
+            decoration: BoxDecoration(
+              color: kBg3,
+              border: Border.all(color: kBorder, width: 2, style: BorderStyle.solid),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_upload, color: kSlate, size: 32),
+                const SizedBox(height: 8),
+                Text(
+                  'Upload Images',
+                  style: TextStyle(color: kSlate, fontSize: 14),
+                ),
+              ],
+            ),
           ),
         ),
       ],
-    ),
-    const SizedBox(height: 16),
+    );
+  }
 
-    Row(children: [
-      Checkbox(
-        value: _featured,
-        onChanged: (v) => setState(() => _featured = v ?? false),
-        activeColor: kGold,
-      ),
-      const Text('Featured Property', style: TextStyle(color: kCream, fontSize: 13)),
-    ]),
-  ]));
-}
+  Widget _buildFeaturedCheckbox() {
+    return Row(
+      children: [
+        Checkbox(
+          value: _featured,
+          onChanged: (value) => setState(() => _featured = value ?? false),
+          activeColor: kGold,
+        ),
+        const SizedBox(width: 8),
+        const Text('Feature this property', style: TextStyle(color: kCream, fontSize: 14)),
+      ],
+    );
+  }
 
-class _StepIndicator extends StatelessWidget {
-  final int step;
-  final int current;
-  final String label;
-  const _StepIndicator({required this.step, required this.current, required this.label});
-
-  @override
-  Widget build(BuildContext context) => Column(children: [
-    Container(
-      width: 32, height: 32,
-      decoration: BoxDecoration(
-        color: current >= step ? kGold : kBg2,
-        shape: BoxShape.circle,
-        border: Border.all(color: current >= step ? kGold : kBorder),
-      ),
-      child: Center(child: current > step
-        ? Icon(Icons.check_rounded, color: kBg, size: 16)
-        : Text('$step', style: TextStyle(color: current >= step ? kBg : kSlate, fontSize: 13, fontWeight: FontWeight.w600))),
-    ),
-    const SizedBox(height: 4),
-    Text(label, style: TextStyle(color: current >= step ? kGold : kSlate, fontSize: 10)),
-  ]);
-}
-
-class PropertyType {
-  final String value;
-  final String label;
-  final IconData icon;
-  PropertyType({required this.value, required this.label, required this.icon});
+  Widget _buildStepActions({required bool showBack, bool isSubmit = false}) {
+    return Row(
+      children: [
+        if (showBack)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _previousStep,
+              icon: const Icon(Icons.arrow_back, size: 16),
+              label: const Text('Back'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kCream,
+                side: const BorderSide(color: kBorder),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        if (showBack) const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: isSubmit ? (_isLoading ? null : _submit) : _nextStep,
+            icon: isSubmit
+                ? (_isLoading ? const SizedBox() : const Icon(Icons.add, size: 16))
+                : const Icon(Icons.arrow_forward, size: 16),
+            label: Text(isSubmit
+                ? (_isLoading ? 'Creating...' : 'Create Property')
+                : 'Next'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kGold,
+              foregroundColor: kBg,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

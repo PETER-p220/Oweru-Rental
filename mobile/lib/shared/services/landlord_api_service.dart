@@ -5,16 +5,26 @@ import '../../core/constants/api_config.dart';
 
 class LandlordApiService {
   static const String _baseUrl = ApiConfig.apiPath;
+  static Map<String, String> get _headers => {
+    'Accept': 'application/json',
+    'Authorization': 'Bearer ${AuthService.token}',
+    'Content-Type': 'application/json',
+  };
+
+  static List<Map<String, dynamic>> _asList(dynamic payload) {
+    final data = payload is Map<String, dynamic> ? (payload['data'] ?? payload) : payload;
+    if (data is List) {
+      return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+    return [];
+  }
 
   // Get Landlord Dashboard
   static Future<Map<String, dynamic>> getDashboard() async {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/owner/dashboard'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
@@ -37,15 +47,16 @@ class LandlordApiService {
         },
       );
 
+      print('getMyProperties response status: ${response.statusCode}');
+      print('getMyProperties response body: ${response.body}');
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final properties = data['data'] ?? data;
-        return List<Map<String, dynamic>>.from(
-          (properties is List ? properties : []).cast<Map<String, dynamic>>(),
-        );
+        final data = _asList(jsonDecode(response.body));
+        print('getMyProperties parsed data: $data');
+        return data;
       }
     } catch (e) {
-      print('Error: $e');
+      print('Error in getMyProperties: $e');
     }
     return [];
   }
@@ -55,18 +66,11 @@ class LandlordApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/owner/tenants'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final tenants = data['data'] ?? data;
-        return List<Map<String, dynamic>>.from(
-          (tenants is List ? tenants : []).cast<Map<String, dynamic>>(),
-        );
+        return _asList(jsonDecode(response.body));
       }
     } catch (e) {
       print('Error: $e');
@@ -79,18 +83,11 @@ class LandlordApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/owner/applications'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final applications = data['data'] ?? data;
-        return List<Map<String, dynamic>>.from(
-          (applications is List ? applications : []).cast<Map<String, dynamic>>(),
-        );
+        return _asList(jsonDecode(response.body));
       }
     } catch (e) {
       print('Error: $e');
@@ -103,10 +100,7 @@ class LandlordApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/owner/rent-collection'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
@@ -123,10 +117,7 @@ class LandlordApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/owner/rent-collection-stats'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
@@ -143,18 +134,11 @@ class LandlordApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/owner/receipts'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final receipts = data['data'] ?? data;
-        return List<Map<String, dynamic>>.from(
-          (receipts is List ? receipts : []).cast<Map<String, dynamic>>(),
-        );
+        return _asList(jsonDecode(response.body));
       }
     } catch (e) {
       print('Error: $e');
@@ -167,18 +151,11 @@ class LandlordApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/owner/digital-contracts'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final contracts = data['data'] ?? data;
-        return List<Map<String, dynamic>>.from(
-          (contracts is List ? contracts : []).cast<Map<String, dynamic>>(),
-        );
+        return _asList(jsonDecode(response.body));
       }
     } catch (e) {
       print('Error: $e');
@@ -191,10 +168,7 @@ class LandlordApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/owner/analytics'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
@@ -211,22 +185,123 @@ class LandlordApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/owner/messages'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final messages = data['data'] ?? data;
-        return List<Map<String, dynamic>>.from(
-          (messages is List ? messages : []).cast<Map<String, dynamic>>(),
-        );
+        return _asList(jsonDecode(response.body));
       }
     } catch (e) {
       print('Error: $e');
     }
     return [];
+  }
+
+  static Future<List<Map<String, dynamic>>> getCommissionReports() async {
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/owner/commission-reports'), headers: _headers);
+      if (response.statusCode == 200) return _asList(jsonDecode(response.body));
+    } catch (_) {}
+    return [];
+  }
+
+  static Future<bool> createProperty(Map<String, dynamic> payload) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/owner/properties'),
+        headers: _headers,
+        body: jsonEncode(payload),
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> approveApplication(int applicationId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/owner/applications/$applicationId/approve'),
+        headers: _headers,
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> rejectApplication(int applicationId, String reason) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/owner/applications/$applicationId/reject'),
+        headers: _headers,
+        body: jsonEncode({'reason': reason}),
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> sendContractToTenant(int contractId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/owner/digital-contracts/$contractId/send'),
+        headers: _headers,
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> approveSignedContract(int contractId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/owner/digital-contracts/$contractId/approve'),
+        headers: _headers,
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> createDigitalContract(Map<String, dynamic> payload) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/owner/digital-contracts'),
+        headers: _headers,
+        body: jsonEncode(payload),
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> downloadOwnerReceipt(int receiptId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/owner/receipts/$receiptId/download'),
+        headers: _headers,
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> createTenantFromApprovedApplication() async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/owner/tenants/create-from-approved'),
+        headers: _headers,
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return jsonDecode(response.body);
+      }
+    } catch (_) {}
+    return {};
   }
 }

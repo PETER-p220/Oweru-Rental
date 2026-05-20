@@ -2,6 +2,17 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/logout_button.dart';
 import '../../../shared/services/user_service.dart';
 import '../../../shared/services/agent_api_service.dart';
+import 'agent_analytics_page.dart';
+import 'agent_applications_page.dart';
+import 'agent_add_listing_page.dart';
+import 'agent_commissions_page.dart';
+import 'agent_messages_page.dart';
+import 'agent_linked_owners_page.dart';
+import 'agent_payout_history_page.dart';
+import 'agent_qr_codes_page.dart';
+import 'agent_share_track_page.dart';
+import 'leads_page.dart';
+import 'my_listings_page.dart';
 
 const Color kGold = Color(0xFFC89128);
 const Color kBg = Color(0xFF0A0F1E);
@@ -40,8 +51,13 @@ class _AgentDashboardState extends State<AgentDashboard> {
 
   final List<Map<String, dynamic>> _drawerItems = [
     {'label': 'Analytics', 'icon': Icons.analytics, 'index': 4},
-    {'label': 'Messages', 'icon': Icons.mail, 'index': 5},
-    {'label': 'Settings', 'icon': Icons.settings, 'index': 6},
+    {'label': 'Applications', 'icon': Icons.assignment, 'index': 5},
+    {'label': 'Linked Owners', 'icon': Icons.people_alt, 'index': 6},
+    {'label': 'Share & Track', 'icon': Icons.share, 'index': 7},
+    {'label': 'QR Codes', 'icon': Icons.qr_code, 'index': 8},
+    {'label': 'Payout History', 'icon': Icons.account_balance_wallet, 'index': 9},
+    {'label': 'Messages', 'icon': Icons.mail, 'index': 10},
+    {'label': 'Settings', 'icon': Icons.settings, 'index': 11},
   ];
 
   final Map<int, int> _bottomToPage = {0: 0, 1: 1, 2: 2, 3: 3};
@@ -143,7 +159,7 @@ class _AgentDashboardState extends State<AgentDashboard> {
           ListTile(
             leading: const Icon(Icons.settings, color: kSlate, size: 20),
             title: const Text('Settings', style: TextStyle(color: kCream, fontSize: 14)),
-            onTap: () { Navigator.pop(context); setState(() => _selectedIndex = 6); },
+            onTap: () { Navigator.pop(context); setState(() => _selectedIndex = 11); },
           ),
           const Spacer(),
           Divider(color: kGold.withOpacity(0.2)),
@@ -219,44 +235,198 @@ class _AgentDashboardState extends State<AgentDashboard> {
       case 2: return _buildLeadsContent();
       case 3: return _buildCommissionsContent();
       case 4: return _buildAnalyticsContent();
-      case 5: return _buildMessagesContent();
-      case 6: return _buildSettingsContent();
+      case 5: return const AgentApplicationsPage();
+      case 6: return const AgentLinkedOwnersPage();
+      case 7: return const AgentShareTrackPage();
+      case 8: return const AgentQrCodesPage();
+      case 9: return const AgentPayoutHistoryPage();
+      case 10: return _buildMessagesContent();
+      case 11: return _buildSettingsContent();
       default: return _buildDashboardContent();
     }
   }
 
   Widget _buildDashboardContent() {
+    final stats = _dashboardData['data'] as Map<String, dynamic>? ?? {};
+    final totalListings = stats['total_listings'] ?? 0;
+    final activeListings = stats['active_listings'] ?? 0;
+    final totalLeads = stats['total_leads'] ?? 0;
+    final totalCommissions = stats['total_commissions'] ?? 0;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         _buildWelcomeBanner(),
         const SizedBox(height: 16),
         GridView.count(
-          crossAxisCount: 3,
+          crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 0.95,
+          childAspectRatio: 1.8,
           children: [
-            _buildStatCard('Active Listings', '12', Icons.home),
-            _buildStatCard('Total Leads', '45', Icons.people),
-            _buildStatCard('Commissions', 'TZS 2.5M', Icons.attach_money),
+            _buildStatCard('Listings', '$totalListings', Icons.home, const Color(0xFF2563EB)),
+            _buildStatCard('Active Listings', '$activeListings', Icons.home_work, const Color(0xFF16A34A)),
+            _buildStatCard('Leads', '$totalLeads', Icons.people, const Color(0xFFD97706)),
+            _buildStatCard('Commissions', _formatCurrency(totalCommissions), Icons.attach_money, const Color(0xFF7C3AED)),
           ],
         ),
         const SizedBox(height: 16),
         _buildSectionCard('Quick Actions', Column(children: [
-          _buildActionRow(Icons.add_home_rounded, 'Add New Listing', kGold, () {}),
-          _buildActionRow(Icons.people_rounded, 'View All Leads', const Color(0xFF3B82F6), () {}),
-          _buildActionRow(Icons.analytics_rounded, 'Performance Report', const Color(0xFF10B981), () {}),
+          _buildActionRow(Icons.add_home_rounded, 'Add New Listing', kGold, () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AgentAddListingPage()),
+            ).then((_) => _loadData());
+          }),
+          _buildActionRow(Icons.people_rounded, 'View All Leads', const Color(0xFF3B82F6), () {
+            setState(() => _selectedIndex = 2);
+          }),
+          _buildActionRow(Icons.analytics_rounded, 'Performance Report', const Color(0xFF10B981), () {
+            setState(() => _selectedIndex = 4);
+          }),
         ])),
         const SizedBox(height: 16),
-        _buildSectionCard('Recent Activity', Column(children: [
-          _buildActivityRow(Icons.home_rounded, 'New listing published', 'Mikocheni — 3BR Apartment', kGold, '1h ago'),
-          _buildActivityRow(Icons.person_add_rounded, 'New lead received', 'James looking for 2BR', const Color(0xFF3B82F6), 'Today'),
-          _buildActivityRow(Icons.attach_money_rounded, 'Commission earned', 'TZS 250,000 — Masaki deal', const Color(0xFF10B981), 'Yesterday'),
+        _buildSectionCard('Recent Listings', Column(children: [
+          if (_listings.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No listings yet.', style: TextStyle(color: kSlate)))
+          else
+            ..._listings.take(5).map((listing) => _buildListingRow(listing)).toList(),
+          if (_listings.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedIndex = 1),
+                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  const Text('View all listings', style: TextStyle(color: kGold, fontSize: 13)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, size: 14, color: kGold),
+                ]),
+              ),
+            ),
+        ])),
+        const SizedBox(height: 16),
+        _buildSectionCard('Recent Leads', Column(children: [
+          if (_leads.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No leads yet.', style: TextStyle(color: kSlate)))
+          else
+            ..._leads.take(5).map((lead) => _buildLeadRow(lead)).toList(),
+          if (_leads.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedIndex = 2),
+                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  const Text('View all leads', style: TextStyle(color: kGold, fontSize: 13)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, size: 14, color: kGold),
+                ]),
+              ),
+            ),
         ])),
       ],
+    );
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'TZS 0';
+    final double numericValue = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (numericValue >= 1000000) {
+      return 'TZS ${(numericValue / 1000000).toStringAsFixed(1)}M';
+    } else if (numericValue >= 1000) {
+      return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
+    }
+    return 'TZS ${numericValue.toStringAsFixed(0)}';
+  }
+
+  Widget _buildListingRow(Map<String, dynamic> listing) {
+    final title = listing['title'] as String? ?? 'Untitled';
+    final location = listing['location'] as String? ?? 'No location';
+    final owner = listing['owner'] as Map<String, dynamic>?;
+    final ownerName = owner != null ? '${owner['first_name'] ?? ''} ${owner['last_name'] ?? ''}'.trim() : 'Unknown';
+    final price = listing['price'];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 2),
+          Text(location, style: const TextStyle(color: kSlate, fontSize: 11)),
+        ])),
+        const SizedBox(width: 8),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(ownerName, style: const TextStyle(color: kSlate, fontSize: 11)),
+          const SizedBox(height: 2),
+          Text(_formatCurrency(price), style: const TextStyle(color: const Color(0xFF2563EB), fontSize: 12, fontWeight: FontWeight.w600)),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildLeadRow(Map<String, dynamic> lead) {
+    final name = lead['name'] as String? ?? lead['user']?['first_name'] as String? ?? 'Lead';
+    final email = lead['email'] as String? ?? '';
+    final source = lead['source'] as String? ?? 'website';
+    final status = lead['status'] as String? ?? 'new';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(name, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 2),
+          Text(email, style: const TextStyle(color: kSlate, fontSize: 11)),
+        ])),
+        const SizedBox(width: 8),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(source, style: const TextStyle(color: kSlate, fontSize: 11)),
+          const SizedBox(height: 2),
+          _buildStatusBadge(status),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color bgColor;
+    Color textColor;
+
+    switch (status.toLowerCase()) {
+      case 'new':
+      case 'active':
+      case 'approved':
+      case 'completed':
+        bgColor = const Color(0xFFF0FDF4);
+        textColor = const Color(0xFF16A34A);
+        break;
+      case 'pending':
+      case 'processing':
+        bgColor = const Color(0xFFFFFBEB);
+        textColor = const Color(0xFFD97706);
+        break;
+      case 'rejected':
+      case 'cancelled':
+      case 'failed':
+        bgColor = const Color(0xFFFEF2F2);
+        textColor = const Color(0xFFDC2626);
+        break;
+      default:
+        bgColor = const Color(0xFFF1F5F9);
+        textColor = const Color(0xFF64748B);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
@@ -295,26 +465,11 @@ class _AgentDashboardState extends State<AgentDashboard> {
     );
   }
 
-  Widget _buildActivityRow(IconData icon, String title, String subtitle, Color color, String time) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(children: [
-        Container(width: 34, height: 34, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 16)),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w500)),
-          Text(subtitle, style: const TextStyle(color: kSlate, fontSize: 11)),
-        ])),
-        Text(time, style: TextStyle(color: kSlate.withOpacity(0.7), fontSize: 10)),
-      ]),
-    );
-  }
-
-  Widget _buildListingsContent() => _emptyDark('My Listings', Icons.home, 'No listings yet', 'Add your first property listing to start attracting clients.');
-  Widget _buildLeadsContent() => _emptyDark('Leads & Visitors', Icons.people, 'No leads yet', 'Leads from interested buyers and renters will appear here.');
-  Widget _buildCommissionsContent() => _emptyDark('My Commissions', Icons.attach_money, 'No commission data', 'Commission records from closed deals will appear here.');
-  Widget _buildAnalyticsContent() => _emptyDark('Analytics', Icons.analytics, 'Analytics coming soon', 'Performance insights, views, and conversion data.');
-  Widget _buildMessagesContent() => _emptyDark('Messages', Icons.mail, 'No messages yet', 'Client and agency conversations will appear here.');
+  Widget _buildListingsContent() => const MyListingsPage();
+  Widget _buildLeadsContent() => const LeadsPage();
+  Widget _buildCommissionsContent() => const AgentCommissionsPage();
+  Widget _buildAnalyticsContent() => const AgentAnalyticsPage();
+  Widget _buildMessagesContent() => const AgentMessagesPage();
   Widget _buildSettingsContent() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -380,12 +535,12 @@ class _AgentDashboardState extends State<AgentDashboard> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon) {
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: kBg2, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12)),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(icon, color: kGold, size: 22),
+        Icon(icon, color: color, size: 22),
         const SizedBox(height: 6),
         Text(value, style: const TextStyle(color: kCream, fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 2),

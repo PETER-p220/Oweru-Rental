@@ -3,6 +3,7 @@
 // ============================================================
 import 'package:flutter/material.dart';
 import '../../../../shared/services/tenant_api_service.dart';
+import 'payments_page.dart';
 import 'tenant_theme.dart';
 
 class ApplicationsPage extends StatefulWidget {
@@ -169,7 +170,14 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
                   style: const TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w700)),
               ]),
               if (status == 'approved')
-                TGoldButton(label: 'Make Payment', onTap: () {}, fullWidth: false),
+                TGoldButton(
+                  label: 'Make Payment',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PaymentsPage()),
+                  ),
+                  fullWidth: false,
+                ),
             ]),
             const SizedBox(height: 8),
             Text(message, style: const TextStyle(color: kSlate, fontSize: 11, height: 1.5)),

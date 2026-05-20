@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/logout_button.dart';
 import '../../../shared/services/user_service.dart';
+import '../../../shared/services/commercial_api_service.dart';
+import 'commercial_applications_page.dart';
+import 'commercial_properties_page.dart';
 
 const Color kGold = Color(0xFFC89128);
 const Color kBg = Color(0xFF0A0F1E);
@@ -21,6 +24,13 @@ class _CommercialDashboardState extends State<CommercialDashboard> {
   int _selectedIndex = 0;
   final _userService = UserService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Dashboard data
+  Map<String, dynamic> _stats = {};
+  List<Map<String, dynamic>> _properties = [];
+  List<Map<String, dynamic>> _applications = [];
+  bool _isLoading = true;
+  String _error = '';
 
   final List<Map<String, dynamic>> _bottomNavItems = [
     {'label': 'Home', 'icon': Icons.dashboard},
@@ -44,6 +54,60 @@ class _CommercialDashboardState extends State<CommercialDashboard> {
       if (e.value == _selectedIndex) return e.key;
     }
     return 4;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+
+    try {
+      final results = await Future.wait([
+        CommercialApiService.getDashboard(),
+        CommercialApiService.getProperties(),
+        CommercialApiService.getApplications(),
+      ]);
+
+      final statsData = results[0];
+      final propertiesData = results[1];
+      final applicationsData = results[2];
+
+      setState(() {
+        if (statsData is Map<String, dynamic>) {
+          _stats = (statsData['data'] as Map<String, dynamic>?) ?? {};
+        }
+        if (propertiesData is List) {
+          _properties = propertiesData.cast<Map<String, dynamic>>();
+        }
+        if (applicationsData is List) {
+          _applications = applicationsData.cast<Map<String, dynamic>>();
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load dashboard data';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'TZS 0';
+    final double numericValue = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (numericValue >= 1000000) {
+      return 'TZS ${(numericValue / 1000000).toStringAsFixed(1)}M';
+    } else if (numericValue >= 1000) {
+      return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
+    }
+    return 'TZS ${numericValue.toStringAsFixed(0)}';
   }
 
   @override
@@ -201,22 +265,36 @@ class _CommercialDashboardState extends State<CommercialDashboard> {
   }
 
   Widget _buildDashboardContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: kGold));
+    }
+
+    if (_error.isNotEmpty) {
+      return Center(child: Text(_error, style: const TextStyle(color: Colors.red)));
+    }
+
+    final totalProperties = _stats['total_properties'] ?? _properties.length;
+    final activeLeases = _stats['active_leases'] ?? 0;
+    final totalRevenue = _stats['total_revenue'] ?? 0;
+    final pendingApplications = _applications.length;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         _buildWelcomeBanner(),
         const SizedBox(height: 16),
         GridView.count(
-          crossAxisCount: 3,
+          crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 0.95,
+          childAspectRatio: 1.8,
           children: [
-            _buildStatCard('Properties', '6', Icons.domain),
-            _buildStatCard('Active Leases', '4', Icons.description),
-            _buildStatCard('Revenue', 'TZS 4.2M', Icons.attach_money),
+            _buildStatCard('Properties', '$totalProperties', Icons.domain, kGold),
+            _buildStatCard('Active Leases', '$activeLeases', Icons.description, const Color(0xFF3B82F6)),
+            _buildStatCard('Revenue', _formatCurrency(totalRevenue), Icons.attach_money, const Color(0xFF10B981)),
+            _buildStatCard('Pending Applications', '$pendingApplications', Icons.pending, const Color(0xFFF59E0B)),
           ],
         ),
         const SizedBox(height: 16),
@@ -226,12 +304,118 @@ class _CommercialDashboardState extends State<CommercialDashboard> {
           _buildActionRow(Icons.file_present_rounded, 'Generate Report', const Color(0xFF10B981), () {}),
         ])),
         const SizedBox(height: 16),
-        _buildSectionCard('Portfolio Summary', Column(children: [
-          _summaryRow('Office Spaces', '3 units', '2 leased'),
-          _summaryRow('Retail Shops', '2 units', '2 leased'),
-          _summaryRow('Warehouses', '1 unit', 'Vacant'),
+        _buildSectionCard('Recent Properties', Column(children: [
+          if (_properties.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No properties yet.', style: TextStyle(color: kSlate)))
+          else
+            ..._properties.take(3).map((property) => _buildPropertyRow(property)).toList(),
+          if (_properties.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedIndex = 1),
+                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  const Text('View all properties', style: TextStyle(color: kGold, fontSize: 13)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, size: 14, color: kGold),
+                ]),
+              ),
+            ),
+        ])),
+        const SizedBox(height: 16),
+        _buildSectionCard('Recent Applications', Column(children: [
+          if (_applications.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No applications yet.', style: TextStyle(color: kSlate)))
+          else
+            ..._applications.take(3).map((application) => _buildApplicationRow(application)).toList(),
+          if (_applications.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedIndex = 2),
+                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  const Text('View all applications', style: TextStyle(color: kGold, fontSize: 13)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, size: 14, color: kGold),
+                ]),
+              ),
+            ),
         ])),
       ],
+    );
+  }
+
+  Widget _buildPropertyRow(Map<String, dynamic> property) {
+    final title = property['title'] as String? ?? 'Untitled';
+    final location = property['location'] as String? ?? 'No location';
+    final propertyType = property['property_type'] as String? ?? 'Office';
+    final price = property['price'];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(children: [
+        Container(width: 36, height: 36, decoration: BoxDecoration(color: kGold.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.domain, color: kGold, size: 18)),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text('$propertyType · $location', style: const TextStyle(color: kSlate, fontSize: 11)),
+        ])),
+        Text(_formatCurrency(price), style: const TextStyle(color: kGold, fontSize: 11, fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+
+  Widget _buildApplicationRow(Map<String, dynamic> application) {
+    final propertyTitle = application['property']?['title'] as String? ?? 'Property #${application['property_id'] ?? ''}';
+    final applicantName = application['applicant']?['name'] as String? ?? 'Applicant';
+    final status = application['status'] as String? ?? 'pending';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(children: [
+        Container(width: 36, height: 36, decoration: BoxDecoration(color: const Color(0xFF3B82F6).withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.description, color: Color(0xFF3B82F6), size: 18)),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(propertyTitle, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(applicantName, style: const TextStyle(color: kSlate, fontSize: 11)),
+        ])),
+        _buildStatusBadge(status),
+      ]),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color bgColor;
+    Color textColor;
+
+    switch (status.toLowerCase()) {
+      case 'approved':
+        bgColor = const Color(0xFFF0FDF4);
+        textColor = const Color(0xFF10B981);
+        break;
+      case 'pending':
+        bgColor = const Color(0xFFFFFBEB);
+        textColor = const Color(0xFFF59E0B);
+        break;
+      case 'rejected':
+        bgColor = const Color(0xFFFEF2F2);
+        textColor = const Color(0xFFEF4444);
+        break;
+      default:
+        bgColor = const Color(0xFFF1F5F9);
+        textColor = const Color(0xFF94A3B8);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
@@ -247,27 +431,9 @@ class _CommercialDashboardState extends State<CommercialDashboard> {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Welcome, ${_userService.userName ?? 'Commercial'} 👋', style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          const Text('1 lease renewal due this month.', style: TextStyle(color: kSlate, fontSize: 12)),
+          Text('${_applications.length} pending applications to review.', style: TextStyle(color: kSlate, fontSize: 12)),
         ])),
         const Icon(Icons.domain_rounded, color: kGold, size: 36),
-      ]),
-    );
-  }
-
-  Widget _summaryRow(String type, String total, String status) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      child: Row(children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(2))),
-        const SizedBox(width: 10),
-        Expanded(child: Text(type, style: const TextStyle(color: kCream, fontSize: 13))),
-        Text(total, style: const TextStyle(color: kSlate, fontSize: 12)),
-        const SizedBox(width: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(color: kGold.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-          child: Text(status, style: const TextStyle(color: kGold, fontSize: 11, fontWeight: FontWeight.w500)),
-        ),
       ]),
     );
   }
@@ -288,8 +454,8 @@ class _CommercialDashboardState extends State<CommercialDashboard> {
     );
   }
 
-  Widget _buildPropertiesContent() => _emptyDark('My Properties', Icons.domain, 'No properties yet', 'Add your first commercial property to manage leases.');
-  Widget _buildApplicationsContent() => _emptyDark('Applications', Icons.description, 'No applications yet', 'Lease applications from prospective tenants will appear here.');
+  Widget _buildPropertiesContent() => const CommercialPropertiesPage();
+  Widget _buildApplicationsContent() => const CommercialApplicationsPage();
   Widget _buildAnalyticsContent() => _emptyDark('Analytics', Icons.analytics, 'Analytics coming soon', 'Occupancy rates, revenue trends, and portfolio insights.');
   Widget _buildReportsContent() => _emptyDark('Reports', Icons.file_present, 'No reports yet', 'Generated reports and documents will be listed here.');
   Widget _buildMessagesContent() => _emptyDark('Messages', Icons.mail, 'No messages yet', 'Conversations with tenants and agents will appear here.');
@@ -364,12 +530,12 @@ class _CommercialDashboardState extends State<CommercialDashboard> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon) {
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: kBg2, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12)),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(icon, color: kGold, size: 22),
+        Icon(icon, color: color, size: 22),
         const SizedBox(height: 6),
         Text(value, style: const TextStyle(color: kCream, fontWeight: FontWeight.bold, fontSize: 15)),
         const SizedBox(height: 2),

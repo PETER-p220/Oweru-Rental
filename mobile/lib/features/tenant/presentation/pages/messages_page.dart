@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/services/tenant_api_service.dart';
 import 'tenant_theme.dart';
 
 class MessagesPage extends StatefulWidget {
@@ -9,49 +10,70 @@ class MessagesPage extends StatefulWidget {
 }
 
 class _MessagesPageState extends State<MessagesPage> {
-  final List<Map<String, dynamic>> _conversations = [
-    {
-      'id': 1,
-      'name': 'John Doe',
-      'role': 'Landlord',
-      'lastMessage': 'The property will be ready for move-in next week.',
-      'timestamp': '2 hours ago',
-      'unread': 2,
-      'avatar': 'J',
-    },
-    {
-      'id': 2,
-      'name': 'Jane Smith',
-      'role': 'Property Agent',
-      'lastMessage': 'Have you scheduled a viewing for the Oyster Bay property?',
-      'timestamp': '5 hours ago',
-      'unread': 0,
-      'avatar': 'J',
-    },
-    {
-      'id': 3,
-      'name': 'Support Team',
-      'role': 'Oweru Support',
-      'lastMessage': 'Thank you for your inquiry. We will respond shortly.',
-      'timestamp': '1 day ago',
-      'unread': 0,
-      'avatar': 'S',
-    },
-  ];
-
+  List<Map<String, dynamic>> _messages = [];
+  bool _isLoading = true;
+  String _error = '';
   String _searchQuery = '';
-  int? _selectedConversationId;
+  final TextEditingController _messageCtrl = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _messageCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+    try {
+      final data = await TenantApiService.getMessages();
+      if (!mounted) return;
+      setState(() {
+        _messages = data;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load messages';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageCtrl.text.trim();
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    final ok = await TenantApiService.sendMessage(body: text);
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (ok) {
+      _messageCtrl.clear();
+      await _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to send message')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedConversationId != null) {
-      return _buildChatView();
-    }
-
-    final filtered = _conversations
-        .where((conv) =>
-            conv['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            conv['role'].toString().toLowerCase().contains(_searchQuery.toLowerCase()))
+    final filtered = _messages
+        .where((m) =>
+            ((m['subject'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase())) ||
+            ((m['body'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase())) ||
+            (((m['counterparty']?['first_name'] ?? '').toString() + (m['counterparty']?['last_name'] ?? '').toString()).toLowerCase().contains(_searchQuery.toLowerCase())))
         .toList();
 
     return Scaffold(
@@ -63,21 +85,40 @@ class _MessagesPageState extends State<MessagesPage> {
         title: const Text('Messages',
             style: TextStyle(color: kCream, fontSize: 17, fontWeight: FontWeight.w700)),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSearchBar(),
-          const SizedBox(height: 16),
-          if (filtered.isEmpty)
-            const TEmptyState(
-              icon: Icons.chat_bubble_outline_rounded,
-              title: 'No messages yet',
-              subtitle: 'Messages from your landlord and agents will appear here.',
+      body: _isLoading
+          ? ListView(
+              padding: const EdgeInsets.all(16),
+              children: List.generate(5, (_) => const TSkeletonCard(height: 78)),
             )
-          else
-            ...filtered.map((conv) => _buildConversationCard(conv)),
-        ],
-      ),
+          : _error.isNotEmpty
+              ? TErrorState(message: _error, onRetry: _load)
+              : Column(
+                  children: [
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _load,
+                        color: kGold,
+                        backgroundColor: kBg2,
+                        child: ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            _buildSearchBar(),
+                            const SizedBox(height: 16),
+                            if (filtered.isEmpty)
+                              const TEmptyState(
+                                icon: Icons.chat_bubble_outline_rounded,
+                                title: 'No messages yet',
+                                subtitle: 'Messages from your landlord will appear here.',
+                              )
+                            else
+                              ...filtered.map(_buildMessageCard),
+                          ],
+                        ),
+                      ),
+                    ),
+                    _buildMessageInput(),
+                  ],
+                ),
     );
   }
 
@@ -97,150 +138,31 @@ class _MessagesPageState extends State<MessagesPage> {
     ),
   );
 
-  Widget _buildConversationCard(Map<String, dynamic> conversation) {
-    return GestureDetector(
-      onTap: () => setState(() => _selectedConversationId = conversation['id']),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: kBg2,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kBorder),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: kGoldDim,
-              child: Text(
-                conversation['avatar'],
-                style: const TextStyle(color: kGold, fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        conversation['name'],
-                        style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        conversation['timestamp'],
-                        style: const TextStyle(color: kSlateDim, fontSize: 10),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    conversation['role'],
-                    style: const TextStyle(color: kSlate, fontSize: 10),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    conversation['lastMessage'],
-                    style: const TextStyle(color: kSlate, fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            if (conversation['unread'] > 0) ...[
-              const SizedBox(width: 10),
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(11)),
-                child: Center(
-                  child: Text(
-                    conversation['unread'].toString(),
-                    style: const TextStyle(color: kBg, fontSize: 10, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildMessageCard(Map<String, dynamic> msg) {
+    final sent = msg['direction'] == 'sent';
+    final counterparty = msg['counterparty'] as Map<String, dynamic>?;
+    final name = '${counterparty?['first_name'] ?? ''} ${counterparty?['last_name'] ?? ''}'.trim();
+    final subtitle = (msg['subject'] ?? msg['body'] ?? '').toString();
+    final time = (msg['created_at'] ?? '').toString();
 
-  Widget _buildChatView() {
-    final conversation = _conversations.firstWhere((c) => c['id'] == _selectedConversationId);
-    return Scaffold(
-      backgroundColor: kBg,
-      appBar: AppBar(
-        backgroundColor: kBg2,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: kGold),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: kCream),
-          onPressed: () => setState(() => _selectedConversationId = null),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: kBg2, borderRadius: BorderRadius.circular(12), border: Border.all(color: kBorder)),
+      child: Row(children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: sent ? kGoldDim : kInfo.withOpacity(0.15),
+          child: Icon(sent ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded, color: sent ? kGold : kInfo, size: 14),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              conversation['name'],
-              style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            Text(
-              conversation['role'],
-              style: const TextStyle(color: kSlate, fontSize: 10),
-            ),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildMessage('Hey, is the apartment still available?', false, '10:30 AM'),
-                _buildMessage('Yes, it is! When would you like to schedule a viewing?', true, '10:35 AM'),
-                _buildMessage('How about this weekend?', false, '10:40 AM'),
-                _buildMessage('Perfect! Saturday at 2 PM works for me. See you then!', true, '10:42 AM'),
-              ],
-            ),
-          ),
-          _buildMessageInput(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessage(String text, bool isReceived, String time) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: isReceived ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: isReceived ? kBg2 : kGold,
-              borderRadius: BorderRadius.circular(12),
-              border: isReceived ? Border.all(color: kBorder) : null,
-            ),
-            child: Text(
-              text,
-              style: TextStyle(
-                color: isReceived ? kCream : kBg,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(time, style: const TextStyle(color: kSlateDim, fontSize: 9)),
-        ],
-      ),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(name.isEmpty ? (sent ? 'You' : 'Landlord') : name, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: const TextStyle(color: kSlate, fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis),
+        ])),
+        Text(time, style: const TextStyle(color: kSlateDim, fontSize: 9)),
+      ]),
     );
   }
 
@@ -255,6 +177,7 @@ class _MessagesPageState extends State<MessagesPage> {
         children: [
           Expanded(
             child: TextField(
+              controller: _messageCtrl,
               style: const TextStyle(color: kCream, fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Type a message...',
@@ -269,14 +192,19 @@ class _MessagesPageState extends State<MessagesPage> {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
+          GestureDetector(
+            onTap: _sendMessage,
+            child: Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
               gradient: kGoldGradient,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.send_rounded, color: kBg, size: 18),
+            child: _sending
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: kBg))
+                : const Icon(Icons.send_rounded, color: kBg, size: 18),
+            ),
           ),
         ],
       ),

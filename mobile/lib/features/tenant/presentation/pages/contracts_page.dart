@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/services/tenant_api_service.dart';
 import 'tenant_theme.dart';
 
 class ContractsPage extends StatefulWidget {
@@ -9,33 +10,36 @@ class ContractsPage extends StatefulWidget {
 }
 
 class _ContractsPageState extends State<ContractsPage> {
-  final List<Map<String, dynamic>> _contracts = [
-    {
-      'id': 1,
-      'property': 'Masaki Apartments - Unit 3B',
-      'landlord': 'John Doe',
-      'startDate': '2024-01-15',
-      'endDate': '2025-01-14',
-      'status': 'active',
-      'signedBy': ['Tenant', 'Landlord'],
-      'terms': 12,
-      'deposit': 850000,
-    },
-  ];
+  List<Map<String, dynamic>> _contracts = [];
+  bool _isLoading = true;
+  String _error = '';
 
-  final List<Map<String, dynamic>> _expiredContracts = [
-    {
-      'id': 2,
-      'property': 'Upanga Condo',
-      'landlord': 'Jane Smith',
-      'startDate': '2023-06-01',
-      'endDate': '2024-05-31',
-      'status': 'expired',
-      'signedBy': ['Tenant', 'Landlord'],
-      'terms': 12,
-      'deposit': 650000,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+    try {
+      final data = await TenantApiService.getDigitalContracts();
+      if (!mounted) return;
+      setState(() {
+        _contracts = data;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Unable to load digital contracts';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,26 +52,31 @@ class _ContractsPageState extends State<ContractsPage> {
         title: const Text('Contracts',
             style: TextStyle(color: kCream, fontSize: 17, fontWeight: FontWeight.w700)),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (_contracts.isNotEmpty) ...[
-            const TSectionHeader('Active Contracts'),
-            ..._contracts.map((c) => _buildContractCard(c, true)),
-            const SizedBox(height: 12),
-          ],
-          if (_expiredContracts.isNotEmpty) ...[
-            const TSectionHeader('Expired Contracts'),
-            ..._expiredContracts.map((c) => _buildContractCard(c, false)),
-          ],
-          if (_contracts.isEmpty && _expiredContracts.isEmpty)
-            const TEmptyState(
-              icon: Icons.description_rounded,
-              title: 'No contracts yet',
-              subtitle: 'Your digital rental agreements will appear and be signable here.',
-            ),
-        ],
-      ),
+      body: _isLoading
+          ? ListView(
+              padding: const EdgeInsets.all(16),
+              children: List.generate(4, (_) => const TSkeletonCard(height: 120)),
+            )
+          : _error.isNotEmpty
+              ? TErrorState(message: _error, onRetry: _load)
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  color: kGold,
+                  backgroundColor: kBg2,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      if (_contracts.isEmpty)
+                        const TEmptyState(
+                          icon: Icons.description_rounded,
+                          title: 'No contracts yet',
+                          subtitle: 'Your digital rental agreements will appear here.',
+                        )
+                      else
+                        ..._contracts.map((c) => _buildContractCard(c, c['status'] == 'active' || c['status'] == 'approved')),
+                    ],
+                  ),
+                ),
     );
   }
 
@@ -107,12 +116,12 @@ class _ContractsPageState extends State<ContractsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        contract['property'],
+                        (contract['property']?['title'] ?? contract['property'] ?? 'Property').toString(),
                         style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Landlord: ${contract['landlord']}',
+                        'Contract #${contract['id']}',
                         style: const TextStyle(color: kSlate, fontSize: 10),
                       ),
                     ],
@@ -127,9 +136,8 @@ class _ContractsPageState extends State<ContractsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _infoChip(Icons.calendar_today_rounded, '${contract['terms']} months'),
-                _infoChip(Icons.today_rounded, contract['startDate']),
-                _infoChip(Icons.event_rounded, contract['endDate']),
+                _infoChip(Icons.calendar_today_rounded, (contract['created_at'] ?? '').toString()),
+                _infoChip(Icons.description_rounded, (contract['status'] ?? 'pending').toString()),
               ],
             ),
           ],
@@ -204,25 +212,36 @@ class _ContractsPageState extends State<ContractsPage> {
             ),
             const SizedBox(height: 20),
             _buildDetailSection('Property Information', [
-              ('Property', contract['property']),
-              ('Landlord', contract['landlord']),
+              ('Property', (contract['property']?['title'] ?? contract['property'] ?? 'N/A').toString()),
+              ('Status', (contract['status'] ?? 'pending').toString()),
             ]),
             const SizedBox(height: 16),
             _buildDetailSection('Contract Terms', [
-              ('Duration',         '${contract['terms']} months'),
-              ('Start Date',       contract['startDate']),
-              ('End Date',         contract['endDate']),
-              ('Security Deposit', 'TZS ${contract['deposit']}'),
-            ]),
-            const SizedBox(height: 16),
-            _buildDetailSection('Signatories', [
-              for (final signer in contract['signedBy'] as List) (signer as String, '✓ Signed'),
+              ('Created', (contract['created_at'] ?? '').toString()),
+              ('Updated', (contract['updated_at'] ?? '').toString()),
             ]),
             const SizedBox(height: 24),
             TGoldButton(
-              label: 'Download Contract',
+              label: contract['status'] == 'pending_signature' ? 'Sign & Submit' : 'Close',
               icon: Icons.download_rounded,
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                if (contract['status'] == 'pending_signature') {
+                  final ok = await TenantApiService.submitDigitalContract(
+                    contractId: (contract['id'] as num).toInt(),
+                    fields: {},
+                    signature: 'Signed on mobile',
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(ok ? 'Contract submitted' : 'Failed to submit contract')),
+                    );
+                    Navigator.pop(context);
+                    _load();
+                  }
+                  return;
+                }
+                Navigator.pop(context);
+              },
             ),
             const SizedBox(height: 10),
             TGhostButton(

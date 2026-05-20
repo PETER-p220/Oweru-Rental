@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/logout_button.dart';
 import '../../../shared/services/user_service.dart';
+import '../../../shared/services/landlord_api_service.dart';
 import 'landlord_theme.dart';
 import 'landlord_properties.dart';
 import 'landlord_tenants.dart';
@@ -29,6 +30,14 @@ class _LandlordDashboardState extends State<LandlordDashboard>
   late AnimationController _fadeCtrl;
   late Animation<double>   _fadeAnim;
 
+  // Dashboard data
+  Map<String, dynamic> _stats = {};
+  List<Map<String, dynamic>> _properties = [];
+  List<Map<String, dynamic>> _contracts = [];
+  int _applicationCount = 0;
+  bool _isLoading = true;
+  String _error = '';
+
   final _bottomNavItems = const [
     {'label': 'Home',       'icon': Icons.grid_view_rounded},
     {'label': 'Properties', 'icon': Icons.home_work_rounded},
@@ -53,10 +62,66 @@ class _LandlordDashboardState extends State<LandlordDashboard>
     _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
     _fadeAnim  = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
+    _loadDashboardData();
   }
 
   @override
   void dispose() { _fadeCtrl.dispose(); super.dispose(); }
+
+  Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+
+    try {
+      final results = await Future.wait([
+        LandlordApiService.getDashboard(),
+        LandlordApiService.getMyProperties(),
+        LandlordApiService.getApplications(),
+        LandlordApiService.getContracts().catchError((_) => Future.value(<Map<String, dynamic>>[])),
+      ]);
+
+      final statsData = results[0];
+      final propertiesData = results[1] as List<Map<String, dynamic>>;
+      final applicationsData = results[2];
+      final contractsData = results[3];
+
+      debugPrint('Dashboard loaded ${propertiesData.length} properties');
+
+      setState(() {
+        if (statsData is Map<String, dynamic>) {
+          _stats = (statsData['data'] as Map<String, dynamic>?) ?? {};
+        }
+        _properties = propertiesData.take(5).toList();
+        debugPrint('Dashboard displaying ${_properties.length} properties');
+        if (applicationsData is List) {
+          _applicationCount = applicationsData.length;
+        }
+        if (contractsData is List) {
+          _contracts = contractsData.cast<Map<String, dynamic>>();
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading dashboard: $e');
+      setState(() {
+        _error = 'Failed to load dashboard data';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'TZS 0';
+    final double numericValue = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (numericValue >= 1000000) {
+      return 'TZS ${(numericValue / 1000000).toStringAsFixed(1)}M';
+    } else if (numericValue >= 1000) {
+      return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
+    }
+    return 'TZS ${numericValue.toStringAsFixed(0)}';
+  }
 
   void _navigate(int idx) {
     if (_selectedIndex == idx) return;
@@ -237,42 +302,114 @@ class _LandlordDashboardState extends State<LandlordDashboard>
   }
 
   // ── Dashboard ────────────────────────────────────────────
-  Widget _dashboard() => ListView(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-    children: [
-      _banner(),
-      const SizedBox(height: 20),
-      LSectionHeader('Overview'),
-      GridView.count(
-        crossAxisCount: 2, shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 10, mainAxisSpacing: 10,
-        childAspectRatio: 1.9,
-        children: const [
-          _StatCard(label: 'Properties', value: '8',        icon: Icons.home_work_rounded,              color: kGold,    hint: '+2 this month'),
-          _StatCard(label: 'Tenants',    value: '12',       icon: Icons.people_alt_rounded,             color: kSuccess, hint: 'All occupied'),
-          _StatCard(label: 'Monthly',    value: 'TZS 5.2M', icon: Icons.account_balance_wallet_rounded, color: kWarning, hint: '+8% vs last month'),
-          _StatCard(label: 'Pending',    value: '3',        icon: Icons.receipt_long_rounded,           color: kDanger,  hint: 'Needs attention'),
-        ],
-      ),
-      const SizedBox(height: 20),
-      LSectionHeader('Quick Actions'),
-      LCard(child: Column(children: [
-        _ActionRow(icon: Icons.add_home_rounded,    label: 'Add Property',    color: kGold,    onTap: () => _navigate(1)),
-        _ActionRow(icon: Icons.payments_rounded,    label: 'Record Payment',  color: kSuccess, onTap: () => _navigate(3)),
-        _ActionRow(icon: Icons.chat_bubble_rounded, label: 'Send Message',    color: kInfo,    onTap: () => _navigate(6)),
-        _ActionRow(icon: Icons.summarize_rounded,   label: 'Generate Report', color: kSlate,   onTap: () => _navigate(5), last: true),
-      ])),
-      const SizedBox(height: 20),
-      LSectionHeader('Recent Activity'),
-      LCard(child: Column(children: [
-        _ActivityRow(icon: Icons.payments_rounded,    title: 'Rent received — Unit 3B',  sub: 'TZS 450,000',          color: kSuccess, time: '2h ago'),
-        _ActivityRow(icon: Icons.person_add_rounded,  title: 'New tenant — James Osei', sub: 'Unit 5A, Mikocheni',   color: kInfo,    time: 'Yesterday'),
-        _ActivityRow(icon: Icons.build_rounded,       title: 'Maintenance request',      sub: 'Unit 2 — Plumbing',    color: kWarning, time: '2d ago'),
-        _ActivityRow(icon: Icons.receipt_rounded,     title: 'Receipt issued — Unit 1A', sub: 'TZS 380,000',          color: kSlate,   time: '3d ago', last: true),
-      ])),
-    ],
-  );
+  Widget _dashboard() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: kGold));
+    }
+
+    if (_error.isNotEmpty) {
+      return Center(child: Text(_error, style: const TextStyle(color: kDanger)));
+    }
+
+    final totalProperties = _stats['total_properties'] ?? 0;
+    final activeTenants = _stats['active_tenants'] ?? 0;
+    final monthlyRevenue = _stats['monthly_revenue'] ?? 0;
+    final occupancyRate = _stats['occupancy_rate'] ?? 0;
+    final pendingContracts = _stats['pending_contracts'] ?? _contracts.where((c) => c['status'] == 'pending_signature').length;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      children: [
+        _banner(),
+        const SizedBox(height: 20),
+        LSectionHeader('Overview'),
+        // FIX: Use a Wrap or custom grid instead of GridView with fixed childAspectRatio
+        // to prevent bottom overflow in stat cards
+        _buildStatsGrid(
+          totalProperties: totalProperties,
+          applicationCount: _applicationCount,
+          activeTenants: activeTenants,
+          monthlyRevenue: monthlyRevenue,
+          occupancyRate: occupancyRate,
+          pendingContracts: pendingContracts,
+        ),
+        const SizedBox(height: 20),
+        LSectionHeader('Quick Actions'),
+        LCard(child: Column(children: [
+          _ActionRow(icon: Icons.add_home_rounded, label: 'Add Property', color: kGold, onTap: () => _navigate(1)),
+          _ActionRow(icon: Icons.home_work_rounded, label: 'My Properties', color: kInfo, onTap: () => _navigate(1)),
+          _ActionRow(icon: Icons.description_rounded, label: 'Applications', color: kSuccess, onTap: () => _navigate(4)),
+          _ActionRow(icon: Icons.description_rounded, label: 'Digital Contracts', color: kWarning, onTap: () => _navigate(8)),
+          _ActionRow(icon: Icons.bar_chart_rounded, label: 'Analytics', color: kSlate, onTap: () => _navigate(6), last: true),
+        ])),
+        const SizedBox(height: 20),
+        LSectionHeader('Recent Properties'),
+        ..._properties.map((property) => _PropertyCard(
+          property: property,
+          onTap: () {},
+        )),
+        if (_properties.isEmpty)
+          const Padding(padding: EdgeInsets.all(16), child: Text('No properties yet.', style: TextStyle(color: kSlate))),
+        if (_properties.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 18),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () => _navigate(1),
+                child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('View all properties', style: TextStyle(color: kGold, fontSize: 13)),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward, size: 14, color: kGold),
+                ]),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // FIX: Replace GridView with a manual 2-column layout using IntrinsicHeight
+  // to avoid the childAspectRatio overflow on smaller screens / larger text
+  Widget _buildStatsGrid({
+    required dynamic totalProperties,
+    required int applicationCount,
+    required dynamic activeTenants,
+    required dynamic monthlyRevenue,
+    required dynamic occupancyRate,
+    required dynamic pendingContracts,
+  }) {
+    final cards = [
+      _StatCard(label: 'Total Properties', value: '$totalProperties', icon: Icons.home_work_rounded, color: kGold, hint: 'Live owner portfolio'),
+      _StatCard(label: 'Applications', value: '$applicationCount', icon: Icons.description_rounded, color: kInfo, hint: 'Current submissions'),
+      _StatCard(label: 'Active Tenants', value: '$activeTenants', icon: Icons.people_alt_rounded, color: kSuccess, hint: 'Active contracts'),
+      _StatCard(label: 'Monthly Revenue', value: _formatCurrency(monthlyRevenue), icon: Icons.account_balance_wallet_rounded, color: kWarning, hint: '${(occupancyRate is num ? occupancyRate.toStringAsFixed(1) : '0.0')}% occupancy'),
+      _StatCard(label: 'Pending Contracts', value: '$pendingContracts', icon: Icons.receipt_long_rounded, color: kDanger, hint: 'Awaiting signature'),
+    ];
+
+    final rows = <Widget>[];
+    for (int i = 0; i < cards.length; i += 2) {
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cards[i]),
+              const SizedBox(width: 10),
+              // If odd number of cards, fill last slot with empty space
+              if (i + 1 < cards.length)
+                Expanded(child: cards[i + 1])
+              else
+                const Expanded(child: SizedBox()),
+            ],
+          ),
+        ),
+      );
+      if (i + 2 < cards.length) rows.add(const SizedBox(height: 10));
+    }
+
+    return Column(children: rows);
+  }
 
   Widget _banner() => Container(
     padding: const EdgeInsets.all(18),
@@ -280,22 +417,31 @@ class _LandlordDashboardState extends State<LandlordDashboard>
       gradient: kBannerGradient, borderRadius: BorderRadius.circular(16),
       border: Border.all(color: kGoldBorder),
       boxShadow: const [BoxShadow(color: Color(0x20C89128), blurRadius: 20, offset: Offset(0, 6))]),
-    child: Row(children: [
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Good morning, ${_userService.userName ?? 'Landlord'} 👋',
-          style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        const Text('2 rent payments are due this week.',
-          style: TextStyle(color: kSlate, fontSize: 12)),
-        const SizedBox(height: 14),
-        LGoldButton(label: 'Collect Rent →', onTap: () => _navigate(3), fullWidth: false),
-      ])),
-      const SizedBox(width: 12),
-      Container(width: 54, height: 54,
-        decoration: BoxDecoration(color: kGoldDim, borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: kGoldBorder)),
-        child: const Icon(Icons.home_work_rounded, color: kGold, size: 26)),
-    ]),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // FIX: Allow text to wrap instead of overflow on right
+            Text('Good morning, ${_userService.userName ?? 'Landlord'} 👋',
+              style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w700),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            const Text('2 rent payments are due this week.',
+              style: TextStyle(color: kSlate, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 14),
+            LGoldButton(label: 'Collect Rent →', onTap: () => _navigate(3), fullWidth: false),
+          ]),
+        ),
+        const SizedBox(width: 12),
+        Container(width: 54, height: 54,
+          decoration: BoxDecoration(color: kGoldDim, borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: kGoldBorder)),
+          child: const Icon(Icons.home_work_rounded, color: kGold, size: 26)),
+      ],
+    ),
   );
 
   // ── Settings ─────────────────────────────────────────────
@@ -322,6 +468,145 @@ class _LandlordDashboardState extends State<LandlordDashboard>
 }
 
 // ── Shared sub-widgets ────────────────────────────────────────
+class _PropertyCard extends StatelessWidget {
+  final Map<String, dynamic> property;
+  final VoidCallback onTap;
+
+  const _PropertyCard({required this.property, required this.onTap});
+
+  String _formatPrice(dynamic price) {
+    if (price == null) return 'TZS 0';
+    final double numericPrice = price is double ? price : (double.tryParse(price.toString()) ?? 0);
+    if (numericPrice >= 1000000) {
+      return 'TZS ${(numericPrice / 1000000).toStringAsFixed(1)}M';
+    } else if (numericPrice >= 1000) {
+      return 'TZS ${(numericPrice / 1000).toStringAsFixed(1)}K';
+    }
+    return 'TZS ${numericPrice.toStringAsFixed(0)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = property['images'] as List?;
+    final imageUrl = images != null && images.isNotEmpty ? images[0] as String? : null;
+    final title = property['title'] as String? ?? 'Untitled property';
+    final location = property['location'] as String? ?? 'No location';
+    final bedrooms = property['bedrooms'] ?? 0;
+    final bathrooms = property['bathrooms'] ?? 0;
+    final area = property['area'] ?? 0;
+    final price = property['price'];
+    final available = property['available'] as bool? ?? true;
+
+    return LCard(
+      child: Column(children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Thumbnail
+          Container(
+            width: 88,
+            height: 68,
+            decoration: BoxDecoration(
+              color: kBg3,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: imageUrl != null && imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.home, color: kGold, size: 24),
+                    )
+                  : const Icon(Icons.home, color: kGold, size: 24),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Details — FIX: Expanded prevents right overflow
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                title,
+                style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                location,
+                style: const TextStyle(color: kSlate, fontSize: 13, height: 1.5),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                '$bedrooms bd • $bathrooms ba • $area m²',
+                style: const TextStyle(color: kSlate, fontSize: 12, height: 1.5),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              // FIX: Status badge instead of inline text to avoid overflow
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: (available ? const Color(0xFF10B981) : const Color(0xFF3B82F6)).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  available ? 'Available' : 'Occupied',
+                  style: TextStyle(
+                    color: available ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          // FIX: Constrain price column width to prevent right overflow
+          SizedBox(
+            width: 90,
+            child: Text(
+              _formatPrice(price),
+              style: const TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w700),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        // Action buttons
+        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          _ActionButton(label: 'Edit', onTap: () {}),
+          const SizedBox(width: 8),
+          _ActionButton(label: 'View', onTap: onTap),
+        ]),
+      ]),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: kBorder),
+        borderRadius: BorderRadius.circular(999),
+        color: kBg2.withOpacity(0.5),
+      ),
+      child: Text(label, style: const TextStyle(color: kCream, fontSize: 13)),
+    ),
+  );
+}
+
 class _StatCard extends StatelessWidget {
   final String label, value, hint;
   final IconData icon;
@@ -331,22 +616,29 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
+    // FIX: Remove fixed aspect ratio; use padding only and let IntrinsicHeight in parent handle sizing
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(color: kBg2, borderRadius: BorderRadius.circular(12),
       border: Border.all(color: kBorder)),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min, // FIX: don't force expansion
       children: [
         Container(width: 28, height: 28,
           decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(7)),
           child: Icon(icon, color: color, size: 14)),
         const SizedBox(height: 6),
-        Text(value, style: const TextStyle(color: kCream, fontSize: 15,
-          fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+        Text(
+          value,
+          style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
         const SizedBox(height: 1),
-        Text(label, style: const TextStyle(color: kSlate, fontSize: 9)),
-        Text(hint, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w600)),
-      ]),
+        Text(label, style: const TextStyle(color: kSlate, fontSize: 9), overflow: TextOverflow.ellipsis, maxLines: 1),
+        Text(hint, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis, maxLines: 1),
+      ],
+    ),
   );
 }
 
@@ -414,14 +706,14 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(children: [
-    Padding(padding: const EdgeInsets.symmetric(vertical: 11),
+    Padding(padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(children: [
         Container(width: 32, height: 32,
           decoration: BoxDecoration(color: kGoldDim, borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: kGold, size: 16)),
         const SizedBox(width: 10),
-        Expanded(child: Text(title, style: const TextStyle(color: kCream, fontSize: 13))),
-        Text(value, style: const TextStyle(color: kSlate, fontSize: 12)),
+        Expanded(child: Text(title, style: const TextStyle(color: kCream, fontSize: 13), overflow: TextOverflow.ellipsis)),
+        Flexible(child: Text(value, style: const TextStyle(color: kSlate, fontSize: 12), overflow: TextOverflow.ellipsis)),
         const SizedBox(width: 4),
         const Icon(Icons.chevron_right_rounded, color: kSlateDim, size: 16),
       ]),

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/logout_button.dart';
 import '../../../shared/services/user_service.dart';
+import '../../../shared/services/bnb_api_service.dart';
+import 'bnb_bookings_page.dart';
+import 'bnb_properties_page.dart';
+import 'bnb_reviews_page.dart';
 
 const Color kGold = Color(0xFFC89128);
 const Color kBg = Color(0xFF0A0F1E);
@@ -21,6 +25,13 @@ class _BnbDashboardState extends State<BnbDashboard> {
   int _selectedIndex = 0;
   final _userService = UserService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Dashboard data
+  Map<String, dynamic> _stats = {};
+  List<Map<String, dynamic>> _bookings = [];
+  List<Map<String, dynamic>> _properties = [];
+  bool _isLoading = true;
+  String _error = '';
 
   final List<Map<String, dynamic>> _bottomNavItems = [
     {'label': 'Home', 'icon': Icons.dashboard},
@@ -44,6 +55,70 @@ class _BnbDashboardState extends State<BnbDashboard> {
       if (e.value == _selectedIndex) return e.key;
     }
     return 4;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+
+    try {
+      final results = await Future.wait([
+        BnbApiService.getDashboard(),
+        BnbApiService.getBookings(),
+        BnbApiService.getProperties(),
+      ]);
+
+      final statsData = results[0];
+      final bookingsData = results[1];
+      final propertiesData = results[2];
+
+      setState(() {
+        if (statsData is Map<String, dynamic>) {
+          _stats = (statsData['data'] as Map<String, dynamic>?) ?? {};
+        }
+        if (bookingsData is List) {
+          _bookings = bookingsData.cast<Map<String, dynamic>>().take(5).toList();
+        }
+        if (propertiesData is List) {
+          _properties = propertiesData.cast<Map<String, dynamic>>().take(3).toList();
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load dashboard data';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'TZS 0';
+    final double numericValue = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (numericValue >= 1000000) {
+      return 'TZS ${(numericValue / 1000000).toStringAsFixed(1)}M';
+    } else if (numericValue >= 1000) {
+      return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
+    }
+    return 'TZS ${numericValue.toStringAsFixed(0)}';
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '—';
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (_) {
+      return '—';
+    }
   }
 
   @override
@@ -201,37 +276,210 @@ class _BnbDashboardState extends State<BnbDashboard> {
   }
 
   Widget _buildDashboardContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: kGold));
+    }
+
+    if (_error.isNotEmpty) {
+      return Center(child: Text(_error, style: const TextStyle(color: Colors.red)));
+    }
+
+    final totalProperties = _stats['total_properties'] ?? 0;
+    final totalBookings = _stats['total_bookings'] ?? 0;
+    final totalRevenue = _stats['total_revenue'] ?? 0;
+    final occupancyRate = _stats['occupancy_rate'] ?? 0;
+    final averageRating = _stats['average_rating'] ?? 0;
+    final activeListings = _stats['active_listings'] ?? 0;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         _buildWelcomeBanner(),
         const SizedBox(height: 16),
         GridView.count(
-          crossAxisCount: 3,
+          crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 0.95,
+          childAspectRatio: 1.8,
           children: [
-            _buildStatCard('Properties', '4', Icons.home),
-            _buildStatCard('Bookings', '8', Icons.calendar_today),
-            _buildStatCard('Earnings', 'TZS 3.8M', Icons.attach_money),
+            _buildStatCard('Total Properties', '$totalProperties', Icons.home, kGold),
+            _buildStatCard('Total Bookings', '$totalBookings', Icons.calendar_today, const Color(0xFF38BDF8)),
+            _buildStatCard('Total Revenue', _formatCurrency(totalRevenue), Icons.attach_money, const Color(0xFF10B981)),
+            _buildStatCard('Occupancy Rate', '${occupancyRate}%', Icons.trending_up, const Color(0xFFA78BFA)),
+            _buildStatCard('Average Rating', averageRating.toString(), Icons.star, const Color(0xFFF59E0B)),
+            _buildStatCard('Active Listings', '$activeListings', Icons.check_circle, const Color(0xFF10B981)),
           ],
         ),
         const SizedBox(height: 16),
-        _buildSectionCard('Upcoming Bookings', Column(children: [
-          _buildBookingRow('Masaki Studio', 'May 18–21', '3 nights', 'TZS 270,000'),
-          _buildBookingRow('Oyster Bay Suite', 'May 22–25', '3 nights', 'TZS 360,000'),
-          _buildBookingRow('Mikocheni Villa', 'Jun 1–5', '4 nights', 'TZS 520,000'),
+        _buildSectionCard('Recent Bookings', Column(children: [
+          if (_bookings.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No recent bookings.', style: TextStyle(color: kSlate)))
+          else
+            ..._bookings.map((booking) => _buildBookingRow(booking)).toList(),
+          if (_bookings.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedIndex = 2),
+                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  const Text('View all bookings', style: TextStyle(color: kGold, fontSize: 13)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, size: 14, color: kGold),
+                ]),
+              ),
+            ),
         ])),
         const SizedBox(height: 16),
-        _buildSectionCard('Quick Actions', Column(children: [
-          _buildActionRow(Icons.add_home_rounded, 'Add BNB Property', kGold, () {}),
-          _buildActionRow(Icons.calendar_month_rounded, 'Manage Availability', const Color(0xFF3B82F6), () {}),
-          _buildActionRow(Icons.star_rounded, 'View Guest Reviews', const Color(0xFFF59E0B), () {}),
+        _buildSectionCard('Top Properties', Column(children: [
+          if (_properties.isEmpty)
+            const Padding(padding: EdgeInsets.all(16), child: Text('No properties yet.', style: TextStyle(color: kSlate)))
+          else
+            ..._properties.map((property) => _buildPropertyRow(property)).toList(),
+          if (_properties.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedIndex = 1),
+                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  const Text('View all properties', style: TextStyle(color: kGold, fontSize: 13)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, size: 14, color: kGold),
+                ]),
+              ),
+            ),
         ])),
       ],
+    );
+  }
+
+  Widget _buildBookingRow(Map<String, dynamic> booking) {
+    final propertyTitle = booking['property']?['title'] as String? ?? 'Property #${booking['property_id'] ?? ''}';
+    final guest = booking['guest'] as String? ?? 'Guest';
+    final checkIn = booking['check_in'] as String?;
+    final checkOut = booking['check_out'] as String?;
+    final totalPrice = booking['total_price'];
+    final status = booking['status'] as String? ?? 'pending';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(children: [
+        Container(width: 36, height: 36, decoration: BoxDecoration(color: kGold.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.bed_rounded, color: kGold, size: 18)),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(propertyTitle, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text('$guest · ${_formatDate(checkIn)} → ${_formatDate(checkOut)}', style: const TextStyle(color: kSlate, fontSize: 11)),
+        ])),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(_formatCurrency(totalPrice), style: const TextStyle(color: kGold, fontSize: 11, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          _buildStatusBadge(status),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildPropertyRow(Map<String, dynamic> property) {
+    final title = property['title'] as String? ?? 'Untitled';
+    final location = property['location'] as String? ?? 'No location';
+    final bedrooms = property['bedrooms'] ?? 1;
+    final bathrooms = property['bathrooms'] ?? 1;
+    final maxGuests = property['max_guests'] ?? 2;
+    final price = property['price'];
+    final averageRating = property['average_rating'] ?? 4.5;
+    final reviewsCount = property['reviews_count'] ?? 0;
+    final images = property['images'] as List?;
+    final imageUrl = images != null && images.isNotEmpty ? images[0] as String? : null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: kBg3,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: kBorder),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: imageUrl != null && imageUrl.isNotEmpty
+                ? Image.network(
+                    imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.home, color: kGold, size: 20),
+                  )
+                : const Icon(Icons.home, color: kGold, size: 20),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          Text(location, style: const TextStyle(color: kSlate, fontSize: 11)),
+          const SizedBox(height: 4),
+          Row(children: [
+            const Icon(Icons.bed, size: 11, color: kSlate),
+            const SizedBox(width: 2),
+            Text('$bedrooms', style: const TextStyle(color: kSlate, fontSize: 11)),
+            const SizedBox(width: 8),
+            const Icon(Icons.bathtub, size: 11, color: kSlate),
+            const SizedBox(width: 2),
+            Text('$bathrooms', style: const TextStyle(color: kSlate, fontSize: 11)),
+            const SizedBox(width: 8),
+            const Icon(Icons.people, size: 11, color: kSlate),
+            const SizedBox(width: 2),
+            Text('$maxGuests', style: const TextStyle(color: kSlate, fontSize: 11)),
+          ]),
+        ])),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(_formatCurrency(price), style: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Row(children: [
+            const Icon(Icons.star, size: 11, color: const Color(0xFF10B981)),
+            const SizedBox(width: 2),
+            Text('$averageRating ($reviewsCount)', style: const TextStyle(color: const Color(0xFF10B981), fontSize: 11)),
+          ]),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color bgColor;
+    Color textColor;
+
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+      case 'completed':
+        bgColor = const Color(0xFFF0FDF4);
+        textColor = const Color(0xFF10B981);
+        break;
+      case 'pending':
+        bgColor = const Color(0xFFFFFBEB);
+        textColor = const Color(0xFFF59E0B);
+        break;
+      case 'cancelled':
+        bgColor = const Color(0xFFFEF2F2);
+        textColor = const Color(0xFFEF4444);
+        break;
+      default:
+        bgColor = const Color(0xFFF1F5F9);
+        textColor = const Color(0xFF94A3B8);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(color: textColor, fontSize: 9, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
@@ -247,52 +495,17 @@ class _BnbDashboardState extends State<BnbDashboard> {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Welcome, ${_userService.userName ?? 'Host'} 👋', style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          const Text('3 upcoming bookings this week.', style: TextStyle(color: kSlate, fontSize: 12)),
+          Text('${_bookings.length} upcoming bookings this week.', style: TextStyle(color: kSlate, fontSize: 12)),
         ])),
         const Icon(Icons.bed_rounded, color: kGold, size: 36),
       ]),
     );
   }
 
-  Widget _buildBookingRow(String property, String dates, String duration, String amount) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      child: Row(children: [
-        Container(width: 36, height: 36, decoration: BoxDecoration(color: kGold.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.bed_rounded, color: kGold, size: 18)),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(property, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
-          Text('$dates · $duration', style: const TextStyle(color: kSlate, fontSize: 11)),
-        ])),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(color: kGold.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-          child: Text(amount, style: const TextStyle(color: kGold, fontSize: 11, fontWeight: FontWeight.w600)),
-        ),
-      ]),
-    );
-  }
-
-  Widget _buildActionRow(IconData icon, String label, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(children: [
-          Container(width: 34, height: 34, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: color, size: 16)),
-          const SizedBox(width: 12),
-          Expanded(child: Text(label, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w500))),
-          const Icon(Icons.chevron_right_rounded, color: kSlate, size: 18),
-        ]),
-      ),
-    );
-  }
-
-  Widget _buildPropertiesContent() => _emptyDark('My Properties', Icons.home, 'No properties yet', 'List your first BNB property to start accepting bookings.');
-  Widget _buildBookingsContent() => _emptyDark('Bookings', Icons.calendar_today, 'No bookings yet', 'Guest bookings will appear and be managed here.');
+  Widget _buildPropertiesContent() => const BnbPropertiesPage();
+  Widget _buildBookingsContent() => const BnbBookingsPage();
   Widget _buildEarningsContent() => _emptyDark('Earnings', Icons.attach_money, 'No earnings data', 'Your payout history and earnings breakdown will show here.');
-  Widget _buildReviewsContent() => _emptyDark('Guest Reviews', Icons.star, 'No reviews yet', 'Guest feedback and ratings will appear here after stays.');
+  Widget _buildReviewsContent() => const BnbReviewsPage();
   Widget _buildAnalyticsContent() => _emptyDark('Analytics', Icons.analytics, 'Analytics coming soon', 'Occupancy rates, booking trends, and revenue insights.');
   Widget _buildMessagesContent() => _emptyDark('Messages', Icons.mail, 'No messages yet', 'Guest conversations and notifications will appear here.');
   Widget _buildSettingsContent() {
@@ -366,12 +579,12 @@ class _BnbDashboardState extends State<BnbDashboard> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon) {
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: kBg2, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12)),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(icon, color: kGold, size: 22),
+        Icon(icon, color: color, size: 22),
         const SizedBox(height: 6),
         Text(value, style: const TextStyle(color: kCream, fontWeight: FontWeight.bold, fontSize: 15)),
         const SizedBox(height: 2),

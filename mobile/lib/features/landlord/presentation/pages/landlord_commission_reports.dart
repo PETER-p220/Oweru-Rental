@@ -1,18 +1,17 @@
-// ============================================================
-// landlord_commission_reports.dart — Commission Reports page
-// ============================================================
 import 'package:flutter/material.dart';
+import '../../../../shared/services/landlord_api_service.dart';
 import 'landlord_theme.dart';
 
 class LandlordCommissionReportsPage extends StatefulWidget {
   const LandlordCommissionReportsPage({super.key});
+
   @override
   State<LandlordCommissionReportsPage> createState() => _LandlordCommissionReportsPageState();
 }
 
 class _LandlordCommissionReportsPageState extends State<LandlordCommissionReportsPage> {
-  final List<Commission> _commissions = [];
-  bool _loading = true;
+  List<Map<String, dynamic>> _commissions = [];
+  bool _isLoading = true;
   String _error = '';
 
   @override
@@ -23,197 +22,268 @@ class _LandlordCommissionReportsPageState extends State<LandlordCommissionReport
 
   Future<void> _loadData() async {
     setState(() {
-      _loading = true;
+      _isLoading = true;
       _error = '';
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _loading = false;
-      // For now, empty list - will be populated from API
-    });
+    try {
+      final commissions = await LandlordApiService.getCommissionReports();
+      setState(() {
+        _commissions = commissions;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Unable to load commission reports.';
+        _isLoading = false;
+      });
+    }
   }
 
-  int get _totalCommissions => _commissions.fold(0, (sum, c) => sum + c.amount);
+  double get _total {
+    return _commissions.fold<double>(0, (sum, item) => sum + (double.tryParse(item['amount']?.toString() ?? '0') ?? 0));
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'TZS 0';
+    final double numericValue = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (numericValue >= 1000000) {
+      return 'TZS ${(numericValue / 1000000).toStringAsFixed(1)}M';
+    } else if (numericValue >= 1000) {
+      return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
+    }
+    return 'TZS ${numericValue.toStringAsFixed(0)}';
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (_) {
+      return '—';
+    }
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'paid':
+        return const Color(0xFF10B981);
+      case 'pending':
+        return const Color(0xFFF59E0B);
+      case 'cancelled':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF6B7280);
+    }
+  }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kBg,
-    appBar: AppBar(
-      backgroundColor: kBg2,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded, color: kGold),
-        onPressed: () => Navigator.pop(context),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBg,
+      appBar: AppBar(
+        backgroundColor: kBg2,
+        elevation: 0,
+        title: const Text('Commission Reports', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
-      title: const Text('Commission Reports',
-        style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w600)),
-    ),
-    body: _loading ? _buildLoading() : _buildContent(),
-  );
-
-  Widget _buildLoading() => const Center(
-    child: CircularProgressIndicator(color: kGold),
-  );
-
-  Widget _buildContent() => ListView(
-    padding: const EdgeInsets.all(16),
-    children: [
-      // Stats
-      Row(children: [
-        _StatCard(label: 'Commission Records', value: '${_commissions.length}', color: kGold),
-        const SizedBox(width: 12),
-        Expanded(child: _StatCard(label: 'Total Commissions', value: _formatCurrency(_totalCommissions), color: kGold)),
-      ]),
-      const SizedBox(height: 20),
-
-      // Error alert
-      if (_error.isNotEmpty) ...[
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: kDanger.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: kDanger.withOpacity(0.3)),
+      body: Column(
+        children: [
+          // Header Section
+          Container(
+            padding: const EdgeInsets.all(20),
+            color: kBg2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Landlord Workspace', style: TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+                const SizedBox(height: 16),
+                const Text('Commission Reports', style: TextStyle(color: kCream, fontSize: 28, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                const Text(
+                  'Review live commission payouts tied to your properties from the owner commission reports endpoint.',
+                  style: TextStyle(color: kSlate, fontSize: 13),
+                ),
+                const SizedBox(height: 22),
+                // Metrics Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildMetricCard('Commission records', '${_commissions.length}'),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildMetricCard('Total commissions', _formatCurrency(_total)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          child: Row(children: [
-            Icon(Icons.error_outline_rounded, color: kDanger, size: 16),
-            const SizedBox(width: 8),
-            Expanded(child: Text(_error, style: TextStyle(color: kDanger, fontSize: 12))),
-          ]),
-        ),
-        const SizedBox(height: 12),
-      ],
-
-      // Commission list
-      if (_commissions.isEmpty) ...[
-        LEmptyState(
-          icon: Icons.receipt_long_rounded,
-          title: 'No commission records found',
-          subtitle: 'Commission reports from agents will appear here.',
-        ),
-      ] else ...[
-        ..._commissions.map((commission) => _CommissionCard(commission: commission)),
-      ],
-    ],
-  );
-
-  String _formatCurrency(int amount) {
-    if (amount >= 1000000) {
-      return 'TZS ${(amount / 1000000).toStringAsFixed(1)}M';
-    } else if (amount >= 1000) {
-      return 'TZS ${(amount / 1000).toStringAsFixed(0)}K';
-    }
-    return 'TZS $amount';
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _StatCard({required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Expanded(child: LCard(child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label.toUpperCase(), style: TextStyle(color: color, fontSize: 10, letterSpacing: 1)),
-      const SizedBox(height: 8),
-      Text(value, style: TextStyle(color: kCream, fontSize: 24, fontWeight: FontWeight.w700)),
-    ],
-  )));
-}
-
-class _CommissionCard extends StatelessWidget {
-  final Commission commission;
-  const _CommissionCard({required this.commission});
-
-  @override
-  Widget build(BuildContext context) => LCard(
-    padding: const EdgeInsets.all(16),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        Container(width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: kGold.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(10),
+          // Error Alert
+          if (_error.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withOpacity(0.06),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error, size: 16, color: Color(0xFFEF4444)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(_error, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 14))),
+                ],
+              ),
+            ),
+          // Commissions List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: kGold))
+                : _commissions.isEmpty
+                    ? const Center(
+                        child: Text('No commission records found.', style: TextStyle(color: kSlate, fontSize: 13)),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _commissions.length,
+                        itemBuilder: (context, index) => _buildCommissionCard(_commissions[index]),
+                      ),
           ),
-          child: Center(child: Text(
-            commission.agentName[0].toUpperCase(),
-            style: TextStyle(color: kGold, fontSize: 18, fontWeight: FontWeight.w700),
-          )),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(commission.agentName, style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
-          Text(commission.agentEmail, style: TextStyle(color: kSlate, fontSize: 11)),
-        ])),
-        LStatusBadge(label: commission.status, color: _getStatusColor(commission.status)),
-      ]),
-      const SizedBox(height: 12),
-      Divider(color: kGold.withOpacity(0.1)),
-      const SizedBox(height: 12),
-      Row(children: [
-        Icon(Icons.home_work_rounded, color: kSlate, size: 16),
-        const SizedBox(width: 8),
-        Expanded(child: Text(commission.propertyTitle, style: TextStyle(color: kCream, fontSize: 13))),
-      ]),
-      const SizedBox(height: 12),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Amount', style: TextStyle(color: kSlate, fontSize: 10)),
-          Text(_formatCurrency(commission.amount), style: TextStyle(color: kGold, fontSize: 16, fontWeight: FontWeight.w700)),
-        ]),
-        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text('Created', style: TextStyle(color: kSlate, fontSize: 10)),
-          Text(_formatDate(commission.createdAt), style: TextStyle(color: kCream, fontSize: 12)),
-        ]),
-      ]),
-    ]),
-  );
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'paid': return kSuccess;
-      case 'pending': return kWarning;
-      case 'overdue': return kDanger;
-      default: return kSlate;
-    }
+        ],
+      ),
+    );
   }
 
-  String _formatCurrency(int amount) {
-    if (amount >= 1000000) {
-      return 'TZS ${(amount / 1000000).toStringAsFixed(1)}M';
-    } else if (amount >= 1000) {
-      return 'TZS ${(amount / 1000).toStringAsFixed(0)}K';
-    }
-    return 'TZS $amount';
+  Widget _buildMetricCard(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: kBg3,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: kGold, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.14),
+          ),
+          const SizedBox(height: 8),
+          Text(value, style: const TextStyle(color: kCream, fontSize: 30, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  Widget _buildCommissionCard(Map<String, dynamic> commission) {
+    final agent = commission['agent'] as Map<String, dynamic>? ?? {};
+    final property = commission['property'] as Map<String, dynamic>? ?? {};
+    final status = commission['status'] as String?;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kBg2,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Agent Info
+          Row(
+            children: [
+              const CircleAvatar(
+                backgroundColor: kGold,
+                child: Icon(Icons.person, color: kBg, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${agent['first_name'] ?? ''} ${agent['last_name'] ?? ''}',
+                      style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(agent['email'] ?? 'No email', style: const TextStyle(color: kSlate, fontSize: 13)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Property Info
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 12, color: kGold),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(property['title'] ?? 'Untitled property', style: const TextStyle(color: kCream, fontSize: 13)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Details Row
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Amount', style: TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text(_formatCurrency(commission['amount']), style: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Created', style: TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text(_formatDate(commission['created_at'] ?? ''), style: const TextStyle(color: kCream, fontSize: 13)),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Status', style: TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    if (status != null)
+                      _buildStatusBadge(status)
+                    else
+                      const Text('unknown', style: TextStyle(color: kSlate, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
-}
 
-class Commission {
-  final int id;
-  final String agentName;
-  final String agentEmail;
-  final String propertyTitle;
-  final int amount;
-  final DateTime createdAt;
-  final String status;
-
-  Commission({
-    required this.id,
-    required this.agentName,
-    required this.agentEmail,
-    required this.propertyTitle,
-    required this.amount,
-    required this.createdAt,
-    required this.status,
-  });
+  Widget _buildStatusBadge(String status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: _getStatusColor(status).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(color: _getStatusColor(status), fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+      ),
+    );
+  }
 }

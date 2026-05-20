@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/logout_button.dart';
 import '../../../shared/services/user_service.dart';
+import '../../../shared/services/tenant_api_service.dart';
 import 'applications_page.dart';
 import 'saved_properties_page.dart';
 import 'payments_page.dart';
@@ -11,6 +12,8 @@ import 'payment_history_page.dart';
 import 'contracts_page.dart';
 import 'messages_page.dart';
 import 'notifications_page.dart';
+import 'analytics_page.dart';
+import 'application_status_page.dart';
 import 'properties_page.dart';
 import 'tenant_theme.dart';
 
@@ -29,6 +32,13 @@ class _TenantDashboardState extends State<TenantDashboard>
   AnimationController? _fadeCtrl;
   Animation<double>? _fadeAnim;
 
+  // Dashboard data
+  Map<String, dynamic> _stats = {};
+  List<Map<String, dynamic>> _properties = [];
+  List<Map<String, dynamic>> _contracts = [];
+  bool _isLoading = true;
+  String _error = '';
+
   static const _bottomNavItems = [
     {'label': 'Home',         'icon': Icons.grid_view_rounded},
     {'label': 'Browse',       'icon': Icons.search_rounded},
@@ -42,7 +52,9 @@ class _TenantDashboardState extends State<TenantDashboard>
     {'label': 'History',    'icon': Icons.history_rounded,              'index': 6},
     {'label': 'Contracts',  'icon': Icons.gavel_rounded,                'index': 7},
     {'label': 'Messages',   'icon': Icons.chat_bubble_outline_rounded,  'index': 8},
-    {'label': 'Settings',   'icon': Icons.tune_rounded,                 'index': 9},
+    {'label': 'Application Status', 'icon': Icons.assignment_turned_in_rounded, 'index': 9},
+    {'label': 'Analytics',  'icon': Icons.analytics_rounded,            'index': 10},
+    {'label': 'Settings',   'icon': Icons.tune_rounded,                 'index': 11},
   ];
 
   @override
@@ -51,12 +63,45 @@ class _TenantDashboardState extends State<TenantDashboard>
     _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl!, curve: Curves.easeOut);
     _fadeCtrl!.forward();
+    _loadDashboardData();
   }
 
   @override
   void dispose() {
     _fadeCtrl?.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+
+    try {
+      final results = await Future.wait([
+        TenantApiService.getDashboard(),
+        TenantApiService.getDigitalContracts().catchError((_) => Future.value(<Map<String, dynamic>>[])),
+      ]);
+
+      final statsData = results[0];
+      final contractsData = results[1];
+
+      setState(() {
+        if (statsData is Map<String, dynamic>) {
+          _stats = (statsData['data'] as Map<String, dynamic>?) ?? {};
+        }
+        if (contractsData is List) {
+          _contracts = contractsData.cast<Map<String, dynamic>>();
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load dashboard data';
+        _isLoading = false;
+      });
+    }
   }
 
   void _navigate(int idx) {
@@ -159,7 +204,7 @@ class _TenantDashboardState extends State<TenantDashboard>
       ListTile(
         leading: const Icon(Icons.tune_rounded, color: kSlate, size: 20),
         title: const Text('Settings', style: TextStyle(color: kCream, fontSize: 14)),
-        onTap: () { Navigator.pop(context); _navigate(9); },
+        onTap: () { Navigator.pop(context); _navigate(11); },
       ),
       const Spacer(),
       Divider(color: kGold.withOpacity(0.15)),
@@ -233,49 +278,74 @@ class _TenantDashboardState extends State<TenantDashboard>
       case 6:  return const PaymentHistoryPage();
       case 7:  return const ContractsPage();
       case 8:  return const MessagesPage();
-      case 9:  return _settings();
+      case 9:  return const ApplicationStatusPage();
+      case 10: return const TenantAnalyticsPage();
+      case 11: return _settings();
       default: return _dashboard();
     }
   }
 
   // ── Dashboard ───────────────────────────────────────────
-  Widget _dashboard() => ListView(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-    children: [
-      _banner(),
-      const SizedBox(height: 20),
-      const TSectionHeader('Overview'),
-      GridView.count(
-        crossAxisCount: 2, shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.85,
-        children: const [
-          _StatCard(label: 'Applications', value: '2',         icon: Icons.description_rounded,            color: kInfo,    hint: 'Under review'),
-          _StatCard(label: 'Saved',        value: '5',         icon: Icons.favorite_rounded,               color: kDanger,  hint: 'Browse more'),
-          _StatCard(label: 'Due Payment',  value: 'TZS 1.5M',  icon: Icons.account_balance_wallet_rounded, color: kWarning, hint: 'In 5 days'),
-          _StatCard(label: 'Contracts',    value: '1',         icon: Icons.gavel_rounded,                  color: kSuccess, hint: 'Active'),
+  Widget _dashboard() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: kGold));
+    }
+
+    if (_error.isNotEmpty) {
+      return Center(child: Text(_error, style: const TextStyle(color: kDanger)));
+    }
+
+    final totalProperties = _stats['total_properties'] ?? 0;
+    final savedProperties = _stats['saved_properties'] ?? 0;
+    final totalApplications = _stats['total_applications'] ?? 0;
+    final contracts = _stats['contracts'] ?? _contracts.length;
+    final messages = _stats['messages'] ?? 0;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      children: [
+        _banner(),
+        const SizedBox(height: 20),
+        const TSectionHeader('Overview'),
+        GridView.count(
+          crossAxisCount: 2, shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.85,
+          children: [
+            _StatCard(label: 'Listings', value: '$totalProperties', icon: Icons.home_work_rounded, color: kGold, hint: 'Available'),
+            _StatCard(label: 'Saved', value: '$savedProperties', icon: Icons.favorite_rounded, color: kDanger, hint: 'Your favorites'),
+            _StatCard(label: 'Applications', value: '$totalApplications', icon: Icons.description_rounded, color: kInfo, hint: 'Under review'),
+            _StatCard(label: 'Contracts', value: '$contracts', icon: Icons.gavel_rounded, color: kSuccess, hint: 'Active'),
+            _StatCard(label: 'Unread Messages', value: '$messages', icon: Icons.chat_bubble_rounded, color: kWarning, hint: 'New messages'),
+          ],
+        ),
+        const SizedBox(height: 20),
+        const TSectionHeader('Quick Actions'),
+        TCard(child: Column(children: [
+          _ActionRow(icon: Icons.search_rounded, label: 'Browse Properties', color: kGold, onTap: () => _navigate(1)),
+          _ActionRow(icon: Icons.favorite_rounded, label: 'Saved Properties', color: kDanger, onTap: () => _navigate(5)),
+          _ActionRow(icon: Icons.description_rounded, label: 'My Applications', color: kInfo, onTap: () => _navigate(2)),
+          _ActionRow(icon: Icons.description_rounded, label: 'Digital Contracts', color: kSuccess, onTap: () => _navigate(7)),
+          _ActionRow(icon: Icons.chat_bubble_rounded, label: 'Messages', color: kWarning, onTap: () => _navigate(8), last: true),
+        ])),
+        const SizedBox(height: 20),
+        const TSectionHeader('Featured Picks'),
+        ..._properties.take(4).map((property) => _PropertyCard(
+          property: property,
+          onTap: () {},
+        )).toList(),
+        if (_properties.isEmpty)
+          const Padding(padding: EdgeInsets.all(16), child: Text('No featured properties available.', style: TextStyle(color: kSlate))),
+        if (_contracts.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          const TSectionHeader('My Contracts'),
+          ..._contracts.take(3).map((contract) => _ContractCard(
+            contract: contract,
+          )).toList(),
         ],
-      ),
-      const SizedBox(height: 20),
-      const TSectionHeader('Quick Actions'),
-      TCard(child: Column(children: [
-        _ActionRow(icon: Icons.search_rounded,                 label: 'Browse Properties', color: kGold,    onTap: () => _navigate(1)),
-        _ActionRow(icon: Icons.account_balance_wallet_rounded, label: 'Make a Payment',    color: kSuccess, onTap: () => _navigate(3)),
-        _ActionRow(icon: Icons.description_rounded,            label: 'My Applications',   color: kWarning, onTap: () => _navigate(2)),
-        _ActionRow(icon: Icons.download_rounded,               label: 'Download Contract', color: kSlate,   onTap: () => _navigate(7), last: true),
-      ])),
-      const SizedBox(height: 20),
-      const TSectionHeader('Recent Activity'),
-      TCard(child: const Column(children: [
-        _ActivityRow(icon: Icons.check_circle_rounded, title: 'Application approved',
-          sub: 'Masaki Apartments — Unit 3B', color: kSuccess, time: '1h ago'),
-        _ActivityRow(icon: Icons.payments_rounded, title: 'Payment received',
-          sub: 'November rent — TZS 850,000',  color: kGold,    time: 'Yesterday'),
-        _ActivityRow(icon: Icons.favorite_rounded, title: 'Property saved',
-          sub: 'Oyster Bay Villa — 4 bed',     color: kDanger,  time: '3 days ago', last: true),
-      ])),
-    ],
-  );
+      ],
+    );
+  }
 
   Widget _banner() => Container(
     padding: const EdgeInsets.all(18),
@@ -324,6 +394,155 @@ class _TenantDashboardState extends State<TenantDashboard>
 }
 
 // ── Const sub-widgets ─────────────────────────────────────────
+class _PropertyCard extends StatelessWidget {
+  final Map<String, dynamic> property;
+  final VoidCallback onTap;
+
+  const _PropertyCard({required this.property, required this.onTap});
+
+  String _formatPrice(dynamic price) {
+    if (price == null) return 'TZS 0';
+    final double numericPrice = price is double ? price : (double.tryParse(price.toString()) ?? 0);
+    if (numericPrice >= 1000000) {
+      return 'TZS ${(numericPrice / 1000000).toStringAsFixed(1)}M';
+    } else if (numericPrice >= 1000) {
+      return 'TZS ${(numericPrice / 1000).toStringAsFixed(1)}K';
+    }
+    return 'TZS ${numericPrice.toStringAsFixed(0)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = property['images'] as List?;
+    final imageUrl = images != null && images.isNotEmpty ? images[0] as String? : null;
+    final title = property['title'] as String? ?? 'Untitled property';
+    final location = property['location'] as String? ?? 'No location';
+    final bedrooms = property['bedrooms'] ?? 0;
+    final bathrooms = property['bathrooms'] ?? 0;
+    final area = property['area'] ?? 0;
+    final price = property['price'];
+
+    return TCard(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Thumbnail
+        Container(
+          width: 92,
+          height: 68,
+          decoration: BoxDecoration(
+            color: kBg3,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: imageUrl != null && imageUrl.isNotEmpty
+                ? Image.network(
+                    imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.home, color: kGold, size: 24),
+                  )
+                : const Icon(Icons.home, color: kGold, size: 24),
+          ),
+        ),
+        const SizedBox(width: 18),
+        // Details
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(
+            '$location\n$bedrooms bd • $bathrooms ba • $area m²',
+            style: const TextStyle(color: kSlate, fontSize: 13, height: 1.5),
+          ),
+        ])),
+        // Price
+        Text(_formatPrice(price), style: const TextStyle(color: kGold, fontSize: 18, fontWeight: FontWeight.w700)),
+      ]),
+    );
+  }
+}
+
+class _ContractCard extends StatelessWidget {
+  final Map<String, dynamic> contract;
+
+  const _ContractCard({required this.contract});
+
+  String _formatStatus(String? status) {
+    if (status == null) return 'Unknown';
+    return status.replaceAll('_', ' ');
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '—';
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (_) {
+      return '—';
+    }
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'TZS 0';
+    final double numericValue = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (numericValue >= 1000000) {
+      return 'TZS ${(numericValue / 1000000).toStringAsFixed(1)}M';
+    } else if (numericValue >= 1000) {
+      return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
+    }
+    return 'TZS ${numericValue.toStringAsFixed(0)}';
+  }
+
+  Color _getStatusColor(String? status) {
+    if (status == null) return kSlate;
+    final s = status.toLowerCase();
+    if (s.contains('pending')) return kGold;
+    if (s.contains('active')) return kSuccess;
+    if (s.contains('signed')) return kInfo;
+    return kSlate;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final propertyTitle = contract['property_title'] as String? ?? 'Property #${contract['property_id'] ?? ''}';
+    final status = contract['status'] as String?;
+    final startDate = contract['start_date'] as String?;
+    final endDate = contract['end_date'] as String?;
+    final paymentStatus = contract['payment_status'] as String?;
+    final rentAmount = contract['rent_amount'];
+
+    return TCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Expanded(
+            child: Text(propertyTitle,
+                style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w600)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: _getStatusColor(status).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              _formatStatus(status),
+              style: TextStyle(color: _getStatusColor(status), fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        Text(
+          'Contract: ${_formatDate(startDate)} – ${_formatDate(endDate)}\nPayment status: ${_formatStatus(paymentStatus)}',
+          style: const TextStyle(color: kSlate, fontSize: 13, height: 1.4),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${_formatCurrency(rentAmount)}/month',
+          style: const TextStyle(color: kGold, fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+      ]),
+    );
+  }
+}
+
 class _StatCard extends StatelessWidget {
   final String label, value, hint;
   final IconData icon;
@@ -373,33 +592,6 @@ class _ActionRow extends StatelessWidget {
           const Icon(Icons.chevron_right_rounded, color: kSlateDim, size: 18),
         ]),
       ),
-    ),
-    if (!last) Divider(color: kGold.withOpacity(0.1), height: 1),
-  ]);
-}
-
-class _ActivityRow extends StatelessWidget {
-  final IconData icon;
-  final String title, sub, time;
-  final Color color;
-  final bool last;
-  const _ActivityRow({required this.icon, required this.title, required this.sub,
-    required this.color, required this.time, this.last = false});
-  @override
-  Widget build(BuildContext context) => Column(children: [
-    Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(children: [
-        Container(width: 36, height: 36,
-          decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(9)),
-          child: Icon(icon, color: color, size: 17)),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
-          Text(sub,   style: const TextStyle(color: kSlate, fontSize: 11)),
-        ])),
-        Text(time, style: const TextStyle(color: kSlateDim, fontSize: 10)),
-      ]),
     ),
     if (!last) Divider(color: kGold.withOpacity(0.1), height: 1),
   ]);

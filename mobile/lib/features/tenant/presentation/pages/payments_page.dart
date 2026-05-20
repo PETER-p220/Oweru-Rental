@@ -172,25 +172,35 @@ class _PaymentsPageState extends State<PaymentsPage> {
         processing: _processing,
         methods: _methods,
         onMethodChanged: (v) => setState(() => _method = v),
-        onPay: (ctx) => _process(ctx),
+        onPay: (ctx) => _process(ctx, pay),
       ),
     );
   }
 
-  Future<void> _process(BuildContext ctx) async {
+  Future<void> _process(BuildContext ctx, Map<String, dynamic> pay) async {
     setState(() => _processing = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _processing = false);
+    final paymentId = (pay['id'] as num?)?.toInt();
+    bool success = false;
+    if (paymentId != null) {
+      success = await TenantApiService.makePayment(paymentId, paymentMethodId: _method);
+    }
     if (!mounted) return;
+    setState(() => _processing = false);
     Navigator.pop(ctx);
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
-        content: const Text('Payment submitted successfully!',
-          style: TextStyle(color: kBg, fontWeight: FontWeight.w600)),
-        backgroundColor: kGold,
+        content: Text(
+          success ? 'Payment submitted successfully!' : 'Failed to submit payment',
+          style: const TextStyle(color: kBg, fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: success ? kGold : kDanger,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ));
+      ),
+    );
+    if (success) {
+      await _load();
+    }
   }
 
   Widget _skeleton() => ListView(
@@ -277,7 +287,11 @@ class _PaymentModalState extends State<_PaymentModal> {
           ...widget.methods.map((m) {
             final sel = _method == m['id'];
             return GestureDetector(
-              onTap: () => setState(() => _method = m['id'] as String),
+              onTap: () {
+                final selected = m['id'] as String;
+                setState(() => _method = selected);
+                widget.onMethodChanged(selected);
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 margin: const EdgeInsets.only(bottom: 8),

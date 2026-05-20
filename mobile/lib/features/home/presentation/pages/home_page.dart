@@ -2,28 +2,29 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../shared/widgets/app_navbar.dart';
+import '../../../shared/pages/public_property_detail_page.dart';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const String kApiBase     = 'https://rental.oweru.com/api';
-const String kStorageBase = 'https://rental.oweru.com/api';
+const String kStorageBase = 'https://rental.oweru.com';
 
-const Color kGold       = Color(0xFFC89128);
-const Color kGoldLight  = Color(0xFFE6A830);
-const Color kBg         = Color(0xFF0A0F1E);
-const Color kBg2        = Color(0xFF0F172A);
-const Color kBg3        = Color(0xFF162035);
-const Color kCream      = Color(0xFFF1F5F9);
-const Color kSlate      = Color(0xFF94A3B8);
-const Color kSlateDim   = Color(0xFF64748B);
-const Color kBorder     = Color(0x26C89128);
-const Color kGoldBorder = Color(0x33C89128);
-const Color kGoldDim    = Color(0x1AC89128);
+// Palette: white + slate-800
+const Color kWhite      = Color(0xFFFFFFFF);
+const Color kBg         = Color(0xFFF8FAFC); // off-white page bg
+const Color kSurface    = Color(0xFFFFFFFF); // card bg
+const Color kSlate800   = Color(0xFF1E293B); // primary text / hero bg
+const Color kSlate600   = Color(0xFF475569); // secondary text
+const Color kSlate400   = Color(0xFF94A3B8); // muted / hints
+const Color kSlate200   = Color(0xFFE2E8F0); // borders / dividers
+const Color kSlate100   = Color(0xFFF1F5F9); // subtle surface
+const Color kAccent     = Color(0xFF1E293B); // same as slate-800, used for buttons
+const Color kGreen      = Color(0xFF10B981); // available dot
 
 const List<String> kCommercialTypes = [
   'office', 'retail', 'warehouse', 'commercial', 'industrial'
 ];
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 String fmtPrice(num price) => 'TZS ${price
     .toStringAsFixed(0)
     .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
@@ -45,7 +46,6 @@ String resolveStoragePath(String? path) {
 }
 
 String getImage(Map<String, dynamic> p) {
-  // Shape C — propertyImages relation
   for (final key in ['propertyImages', 'property_images']) {
     final ci = p[key];
     if (ci is List && ci.isNotEmpty) {
@@ -56,7 +56,6 @@ String getImage(Map<String, dynamic> p) {
       if (path.toString().isNotEmpty) return resolveStoragePath(path.toString());
     }
   }
-  // Shape A/B — images column
   var imgs = p['images'];
   if (imgs is String) {
     try { imgs = jsonDecode(imgs); } catch (_) { imgs = null; }
@@ -70,73 +69,82 @@ String getImage(Map<String, dynamic> p) {
   return '';
 }
 
-// ── Data fetching ────────────────────────────────────────────────────────────
+List<Map<String, dynamic>> _extractPropertyList(dynamic payload) {
+  if (payload is List) {
+    return payload.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+  if (payload is Map<String, dynamic>) {
+    final data = payload['data'];
+    if (data is List) {
+      return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+    if (data is Map<String, dynamic>) {
+      final nested = data['data'];
+      if (nested is List) {
+        return nested.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    }
+  }
+  return [];
+}
+
+// ── Data fetching ─────────────────────────────────────────────────────────────
 Future<List<Map<String, dynamic>>> fetchResidential() async {
   try {
     final r = await http.get(
-        Uri.parse('$kApiBase/api/public/properties?per_page=12'),
+        Uri.parse('$kApiBase/public/properties?per_page=12'),
         headers: {'Accept': 'application/json'});
     if (r.statusCode == 200) {
       final d = jsonDecode(r.body);
-      final raw = (d['data']?['data'] ?? d['data'] ?? (d is List ? d : [])) as List;
-      return raw.cast<Map<String, dynamic>>()
+      final raw = _extractPropertyList(d);
+      return raw
           .where((p) => !kCommercialTypes.contains(p['type']?.toString().toLowerCase()))
           .toList();
     }
-  } catch (_) {}
+  } catch (e) { debugPrint('fetchResidential error: $e'); }
   return [];
 }
 
 Future<List<Map<String, dynamic>>> fetchBnb() async {
   try {
-    final r = await http.get(Uri.parse('$kApiBase/api/public/bnb'),
+    final r = await http.get(Uri.parse('$kApiBase/public/bnb'),
         headers: {'Accept': 'application/json'});
-    if (r.statusCode == 200) {
-      final d = jsonDecode(r.body);
-      if (d is List) return d.cast<Map<String, dynamic>>();
-      if (d['data'] is List) return (d['data'] as List).cast<Map<String, dynamic>>();
-    }
-  } catch (_) {}
+    if (r.statusCode == 200) return _extractPropertyList(jsonDecode(r.body));
+  } catch (e) { debugPrint('fetchBnb error: $e'); }
   return [];
 }
 
 Future<List<Map<String, dynamic>>> fetchOweru() async {
   try {
     final r = await http.get(
-        Uri.parse('$kApiBase/api/public/properties?type=oweru_rental&per_page=8'),
+        Uri.parse('$kApiBase/public/properties?type=oweru_rental&per_page=8'),
         headers: {'Accept': 'application/json'});
-    if (r.statusCode == 200) {
-      final d = jsonDecode(r.body);
-      final raw = d['data'] is List ? d['data'] : (d['data']?['data'] ?? []);
-      return (raw as List).cast<Map<String, dynamic>>();
-    }
-  } catch (_) {}
+    if (r.statusCode == 200) return _extractPropertyList(jsonDecode(r.body));
+  } catch (e) { debugPrint('fetchOweru error: $e'); }
   return [];
 }
 
 Future<List<Map<String, dynamic>>> fetchCommercial() async {
   try {
     final r = await http.get(
-        Uri.parse('$kApiBase/api/public/properties?per_page=12'),
+        Uri.parse('$kApiBase/public/properties?per_page=12'),
         headers: {'Accept': 'application/json'});
     if (r.statusCode == 200) {
-      final d = jsonDecode(r.body);
-      final raw = (d['data']?['data'] ?? d['data'] ?? (d is List ? d : [])) as List;
-      return raw.cast<Map<String, dynamic>>()
+      final raw = _extractPropertyList(jsonDecode(r.body));
+      return raw
           .where((p) => kCommercialTypes.contains(p['type']?.toString().toLowerCase()))
           .toList();
     }
-  } catch (_) {}
+  } catch (e) { debugPrint('fetchCommercial error: $e'); }
   return [];
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // HOME PAGE
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-  @override
-  State<HomePage> createState() => _HomePageState();
+  @override State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
@@ -150,40 +158,29 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool _loadingOweru       = true;
   bool _loadingCommercial  = true;
 
-  final _searchCtrl    = TextEditingController();
+  final _searchCtrl     = TextEditingController();
   String _searchSection = 'all';
   String _priceRange    = '';
   bool   _searchActive  = false;
-
-  late AnimationController _heroAnim;
-  late Animation<double>   _heroScale;
 
   final ScrollController _scrollCtrl = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _heroAnim = AnimationController(vsync: this, duration: const Duration(seconds: 20))
-      ..repeat(reverse: true);
-    _heroScale = Tween(begin: 1.02, end: 1.08)
-        .animate(CurvedAnimation(parent: _heroAnim, curve: Curves.easeInOut));
     _loadData();
   }
 
   @override
   void dispose() {
-    _heroAnim.dispose();
     _searchCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _loadData() async {
-    // Residential first (priority)
     final res = await fetchResidential();
     if (mounted) setState(() { _residential = res; _loadingResidential = false; });
-
-    // Remaining in parallel
     final results = await Future.wait([fetchBnb(), fetchOweru(), fetchCommercial()]);
     if (mounted) {
       setState(() {
@@ -226,7 +223,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   void _doSearch() {
     setState(() => _searchActive = true);
-    // Scroll to top so results are visible
     _scrollCtrl.animateTo(0, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
   }
 
@@ -249,6 +245,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             if (_searchActive) _buildSearchResults(),
             if (!_searchActive) ...[
               _buildStatsBar(),
+              _buildCategoryBar(),
               _buildResidentialSection(),
               _buildBnbSection(),
               _buildOweruSection(),
@@ -261,243 +258,161 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  // ── HERO ──────────────────────────────────────────────────────────────────
+  // ── HERO ───────────────────────────────────────────────────────────────────
   Widget _buildHero() {
-    return LayoutBuilder(builder: (context, constraints) {
-      return SizedBox(
-        width: double.infinity,
-        child: Stack(
-          children: [
-            // ── Full-height background ──────────────────────────────────────
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _heroScale,
-                builder: (_, _) => Transform.scale(
-                  scale: _heroScale.value,
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1800&q=80',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(color: kBg2),
-                  ),
-                ),
-              ),
-            ),
-            // ── Dark overlay ────────────────────────────────────────────────
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xF50A0F1E), Color(0xD10A0F1E), Color(0xA5162035)],
-                  ),
-                ),
-              ),
-            ),
-            // ── Grid pattern ────────────────────────────────────────────────
-            Positioned.fill(child: CustomPaint(painter: _GridPainter())),
-
-            // ── Foreground content (drives the Stack's height) ───────────────
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 36, 20, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildHeroContent(),
-                    const SizedBox(height: 24),
-                    _buildSearchCard(),
-                    _buildScrollHintBar(),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget _buildHeroContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Eyebrow badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: kGoldDim,
-            border: Border.all(color: kGoldBorder),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+    return Container(
+      color: kSlate800,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 48, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _BlinkDot(),
-              const SizedBox(width: 8),
-              const Text("Tanzania's Premier Rental Platform",
+              // Eyebrow
+              Row(children: [
+                _LiveDot(),
+                const SizedBox(width: 8),
+                const Text(
+                  "Tanzania's Premier Rental Platform",
                   style: TextStyle(
-                      fontSize: 10, fontWeight: FontWeight.w600,
-                      letterSpacing: 2.0, color: kGold, fontFamily: 'Outfit')),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Hero title
-        RichText(
-          text: const TextSpan(
-            style: TextStyle(
-                fontFamily: 'Georgia', fontSize: 38,
-                fontWeight: FontWeight.w300, height: 1.08,
-                color: kCream, letterSpacing: -0.5),
-            children: [
-              TextSpan(text: 'Find Your\n'),
-              TextSpan(
-                text: 'Perfect Rental',
+                    fontSize: 11, letterSpacing: 1.6,
+                    fontWeight: FontWeight.w500, color: kSlate400),
+                ),
+              ]),
+              const SizedBox(height: 28),
+              // Headline
+              const Text(
+                'Find Your\nPerfect\nRental.',
                 style: TextStyle(
-                    fontWeight: FontWeight.w600, color: kGold, fontStyle: FontStyle.italic),
+                  fontSize: 48, fontWeight: FontWeight.w700, height: 1.05,
+                  letterSpacing: -1.5, color: kWhite,
+                ),
               ),
-              TextSpan(text: '\nProperty'),
+              const SizedBox(height: 16),
+              const Text(
+                'Residential, commercial, and short-stay\nlistings across Tanzania — all in one place.',
+                style: TextStyle(
+                    fontSize: 14, height: 1.65,
+                    color: kSlate400, fontWeight: FontWeight.w400),
+              ),
+              const SizedBox(height: 32),
+              // CTA buttons
+              Row(children: [
+                _SolidButton(
+                  label: 'Browse All',
+                  onTap: () {},
+                ),
+                const SizedBox(width: 12),
+                _OutlineButtonLight(
+                  label: 'Create Account',
+                  onTap: () {},
+                ),
+              ]),
+              const SizedBox(height: 40),
+              // Trust chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: [
+                  _TrustChip(icon: Icons.verified_outlined, label: 'Verified Landlords'),
+                  const SizedBox(width: 8),
+                  _TrustChip(icon: Icons.schedule, label: '24h Response'),
+                  const SizedBox(width: 8),
+                  _TrustChip(icon: Icons.home_work_outlined, label: '1,200+ Listings'),
+                ]),
+              ),
+              const SizedBox(height: 40),
+              // Search card
+              _buildSearchCard(),
+              const SizedBox(height: 0),
             ],
           ),
         ),
-        const SizedBox(height: 14),
-
-        // Subtitle
-        const Text(
-          'Connect with trusted landlords and agents across Tanzania. Residential, commercial, and short-stay all in one place.',
-          style: TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w300,
-              height: 1.7, color: Color(0x8CF1F5F9), fontFamily: 'Outfit'),
-        ),
-        const SizedBox(height: 24),
-
-        // CTA buttons
-        Wrap(spacing: 12, runSpacing: 12, children: [
-          _GoldButton(label: 'Browse All', icon: Icons.arrow_forward, onTap: () {}),
-          _GhostButton(label: 'Create Account', icon: Icons.chevron_right, onTap: () {}),
-        ]),
-        const SizedBox(height: 24),
-
-        // Trust badges
-        Wrap(spacing: 16, runSpacing: 8, children: [
-          _TrustBadge(icon: Icons.shield_outlined, label: 'Verified landlords'),
-          _TrustBadge(icon: Icons.access_time,     label: '24hr response'),
-          _TrustBadge(icon: Icons.trending_up,     label: '1,200+ listings'),
-        ]),
-        const SizedBox(height: 28),
-      ],
+      ),
     );
   }
 
-  // ── SEARCH CARD ───────────────────────────────────────────────────────────
+  // ── SEARCH CARD ─────────────────────────────────────────────────────────────
   Widget _buildSearchCard() {
     return Container(
+      margin: const EdgeInsets.only(bottom: 0),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xED0F172A),
-        border: Border.all(color: kBorder),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(color: Color(0x800A0F1E), blurRadius: 60, offset: Offset(0, 30))
+        color: kWhite,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 24, offset: const Offset(0, -4)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(children: [
-            Container(
-              width: 38, height: 38,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [kGold, kGoldLight]),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: const [BoxShadow(color: Color(0x4DC89128), blurRadius: 14)],
-              ),
-              child: const Icon(Icons.search, color: kBg, size: 17),
-            ),
-            const SizedBox(width: 12),
-            const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Search Properties',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700,
-                      color: kCream, fontFamily: 'Outfit')),
-              Text('Find residential, commercial & more',
-                  style: TextStyle(fontSize: 11, color: kSlate, fontFamily: 'Outfit')),
-            ]),
-          ]),
-          const SizedBox(height: 18),
-
-          // Text input
-          _SearchInput(
+          const Text('Search Properties',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: kSlate800)),
+          const SizedBox(height: 4),
+          const Text('Filter by location, category, or budget',
+              style: TextStyle(fontSize: 12, color: kSlate400)),
+          const SizedBox(height: 16),
+          _CleanSearchInput(
             controller: _searchCtrl,
-            hint: 'Location, neighbourhood, property name…',
+            hint: 'Location or property name…',
             onSubmit: _doSearch,
           ),
           const SizedBox(height: 10),
-
-          // Category dropdown
-          _DropdownField(
-            value: _searchSection,
-            items: const {
-              'all': 'All Categories',
-              'residential': '🏠 Residential',
-              'bnb': '🏝️ Short Stay',
-              'commercial': '🏢 Commercial',
-              'oweru': '👑 Oweru Special',
-            },
-            onChanged: (v) => setState(() => _searchSection = v!),
-          ),
-          const SizedBox(height: 10),
-
-          // Price dropdown
-          _DropdownField(
-            value: _priceRange.isEmpty ? '' : _priceRange,
-            items: const {
-              '': 'All Prices',
-              '0-500': 'Under TZS 500K',
-              '500-1000': 'TZS 500K – 1M',
-              '1000+': 'Above TZS 1M',
-            },
-            onChanged: (v) => setState(() => _priceRange = v ?? ''),
-          ),
+          Row(children: [
+            Expanded(child: _CleanDropdown(
+              value: _searchSection,
+              items: const {
+                'all': 'All Categories',
+                'residential': 'Residential',
+                'bnb': 'Short Stay',
+                'commercial': 'Commercial',
+                'oweru': 'Oweru Special',
+              },
+              onChanged: (v) => setState(() => _searchSection = v!),
+            )),
+            const SizedBox(width: 10),
+            Expanded(child: _CleanDropdown(
+              value: _priceRange.isEmpty ? '' : _priceRange,
+              items: const {
+                '': 'Any Price',
+                '0-500': 'Under 500K',
+                '500-1000': '500K – 1M',
+                '1000+': 'Above 1M',
+              },
+              onChanged: (v) => setState(() => _priceRange = v ?? ''),
+            )),
+          ]),
           const SizedBox(height: 14),
-
-          // Search button
-          GestureDetector(
-            onTap: _doSearch,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [kGold, kGoldLight]),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x40C89128), blurRadius: 14, offset: Offset(0, 4))
-                ],
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.search, size: 15, color: kBg),
-                  SizedBox(width: 8),
-                  Text('Search Properties',
-                      style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w700,
-                          letterSpacing: 1.1, color: kBg, fontFamily: 'Outfit')),
-                ],
+          SizedBox(
+            width: double.infinity,
+            child: GestureDetector(
+              onTap: _doSearch,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: kSlate800,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search, size: 15, color: kWhite),
+                    SizedBox(width: 8),
+                    Text('Search',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                            letterSpacing: 0.8, color: kWhite)),
+                  ],
+                ),
               ),
             ),
           ),
-
           if (_searchCtrl.text.isNotEmpty || _searchSection != 'all' || _priceRange.isNotEmpty)
             Center(
-              child: TextButton.icon(
+              child: TextButton(
                 onPressed: _clearSearch,
-                icon: const Icon(Icons.close, size: 11, color: kSlate),
-                label: const Text('Clear filters',
-                    style: TextStyle(fontSize: 12, color: kSlate, fontFamily: 'Outfit')),
+                child: const Text('Clear filters',
+                    style: TextStyle(fontSize: 12, color: kSlate400)),
               ),
             ),
         ],
@@ -505,264 +420,244 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  // ── SCROLL HINT BAR ───────────────────────────────────────────────────────
-  Widget _buildScrollHintBar() {
+  // ── STATS BAR ──────────────────────────────────────────────────────────────
+  Widget _buildStatsBar() {
+    const stats = [
+      ('1,247', 'Active Listings'),
+      ('3,842', 'Users'),
+      ('892', 'Available Now'),
+      ('24 hr', 'Avg. Response'),
+    ];
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFA0F172A),
-        border: Border(top: BorderSide(color: kBorder)),
-      ),
-      height: 50,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(children: [
-          const Text('BROWSE',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
-                  letterSpacing: 3.0, color: kSlateDim, fontFamily: 'Outfit')),
-          Container(width: 1, height: 50, color: kBorder, margin: const EdgeInsets.symmetric(horizontal: 14)),
-          _ScrollChip(label: '🏠 Residential', onTap: () {}),
-          _ScrollChip(label: '🏝️ Short Stay',  onTap: () {}),
-          _ScrollChip(label: '🏢 Commercial',  onTap: () {}),
-          _ScrollChip(label: '👑 Oweru',       onTap: () {}),
-          const SizedBox(width: 12),
-          Container(width: 1, height: 50, color: kBorder),
-          const SizedBox(width: 14),
-          GestureDetector(
-            onTap: () {},
+      color: kSlate800,
+      child: Row(
+        children: stats.asMap().entries.map((e) {
+          final isLast = e.key == stats.length - 1;
+          return Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [kGold, kGoldLight]),
-                borderRadius: BorderRadius.circular(8),
+                border: Border(
+                  right: isLast ? BorderSide.none : const BorderSide(color: Color(0xFF2D3748), width: 1),
+                ),
               ),
-              child: const Row(children: [
-                Text('All Listings',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8, color: kBg, fontFamily: 'Outfit')),
-                SizedBox(width: 5),
-                Icon(Icons.arrow_forward, size: 11, color: kBg),
+              child: Column(children: [
+                Text(e.value.$1,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700,
+                        color: kWhite, letterSpacing: -0.5)),
+                const SizedBox(height: 3),
+                Text(e.value.$2,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 9, letterSpacing: 0.8,
+                        fontWeight: FontWeight.w500, color: kSlate400)),
               ]),
             ),
-          ),
-          const SizedBox(width: 16),
-        ]),
+          );
+        }).toList(),
       ),
     );
   }
 
-  // ── SEARCH RESULTS ────────────────────────────────────────────────────────
+  // ── CATEGORY QUICK-LINKS ──────────────────────────────────────────────────
+  Widget _buildCategoryBar() {
+    const cats = [
+      (Icons.home_outlined, 'Residential'),
+      (Icons.king_bed_outlined, 'Short Stay'),
+      (Icons.business_outlined, 'Commercial'),
+      (Icons.star_border, 'Oweru'),
+    ];
+    return Container(
+      color: kWhite,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: Row(
+        children: cats.map((c) => Expanded(
+          child: Column(children: [
+            Container(
+              width: 48, height: 48,
+              decoration: BoxDecoration(
+                color: kSlate100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(c.$1, size: 20, color: kSlate800),
+            ),
+            const SizedBox(height: 6),
+            Text(c.$2,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                    color: kSlate600, letterSpacing: 0.3)),
+          ]),
+        )).toList(),
+      ),
+    );
+  }
+
+  // ── SEARCH RESULTS ─────────────────────────────────────────────────────────
   Widget _buildSearchResults() {
     final results = _filtered;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Gold top border (matches JSX borderTop: '2px solid var(--gold)')
-        Container(height: 2, color: kGold),
-        Container(
-          width: double.infinity,
-          color: kBg2,
-          padding: const EdgeInsets.fromLTRB(20, 36, 20, 48),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('SEARCH RESULTS',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
-                        letterSpacing: 3.0, color: kGold, fontFamily: 'Outfit')),
-                const SizedBox(height: 6),
-                Text(
-                  '${results.length} propert${results.length != 1 ? 'ies' : 'y'} found',
-                  style: const TextStyle(fontFamily: 'Georgia', fontSize: 24,
-                      fontWeight: FontWeight.w300, color: kCream),
-                ),
-              ])),
-              GestureDetector(
-                onTap: _clearSearch,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                      border: Border.all(color: kBorder),
-                      borderRadius: BorderRadius.circular(8)),
-                  child: const Row(children: [
-                    Icon(Icons.close, size: 12, color: kSlate),
-                    SizedBox(width: 5),
-                    Text('Clear', style: TextStyle(fontSize: 12, color: kSlate, fontFamily: 'Outfit')),
-                  ]),
-                ),
+    return Container(
+      color: kBg,
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 48),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('RESULTS',
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                    letterSpacing: 2.5, color: kSlate400)),
+            const SizedBox(height: 4),
+            Text('${results.length} propert${results.length != 1 ? 'ies' : 'y'} found',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700,
+                    color: kSlate800, letterSpacing: -0.5)),
+          ])),
+          GestureDetector(
+            onTap: _clearSearch,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: kSlate200),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ]),
-            const SizedBox(height: 28),
-            results.isEmpty ? _buildEmptySearch() : _buildPropGrid(results),
-          ]),
-        ),
-      ],
+              child: const Row(children: [
+                Icon(Icons.close, size: 12, color: kSlate600),
+                SizedBox(width: 5),
+                Text('Clear', style: TextStyle(fontSize: 12, color: kSlate600)),
+              ]),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 24),
+        results.isEmpty ? _buildEmptySearch() : _buildPropGrid(results),
+      ]),
     );
   }
 
   Widget _buildEmptySearch() => Center(
     child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48),
+      padding: const EdgeInsets.symmetric(vertical: 56),
       child: Column(children: [
-        const Icon(Icons.search, size: 36, color: Color(0x66C89128)),
-        const SizedBox(height: 14),
+        Container(
+          width: 72, height: 72,
+          decoration: BoxDecoration(color: kSlate100, shape: BoxShape.circle),
+          child: const Icon(Icons.search_off, size: 32, color: kSlate400),
+        ),
+        const SizedBox(height: 16),
         const Text('No properties found',
-            style: TextStyle(fontSize: 18, color: kCream, fontFamily: 'Outfit')),
-        const SizedBox(height: 8),
-        const Text('Try a different location or adjust your filters.',
-            style: TextStyle(fontSize: 13, color: kSlate, fontFamily: 'Outfit')),
-        const SizedBox(height: 18),
-        _GhostButtonSmall(label: 'Clear filters', onTap: _clearSearch),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: kSlate800)),
+        const SizedBox(height: 6),
+        const Text('Try a different location or adjust filters.',
+            style: TextStyle(fontSize: 13, color: kSlate400)),
+        const SizedBox(height: 20),
+        GestureDetector(
+          onTap: _clearSearch,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(color: kSlate200),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text('Clear filters',
+                style: TextStyle(fontSize: 13, color: kSlate800, fontWeight: FontWeight.w500)),
+          ),
+        ),
       ]),
     ),
   );
 
-  // ── STATS BAR ─────────────────────────────────────────────────────────────
-  Widget _buildStatsBar() {
-    const stats = [
-      ('1,247', 'Active Listings'), ('3,842', 'Registered Users'),
-      ('892',   'Available Now'),   ('24 hr', 'Avg. Response'),
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(height: 1, color: kBorder),
-        Container(
-          color: kBg2,
-          child: Wrap(
-            children: stats.map((s) => SizedBox(
-              width: MediaQuery.of(context).size.width / 2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
-                decoration: const BoxDecoration(
-                    border: Border(
-                        right: BorderSide(color: kBorder),
-                        bottom: BorderSide(color: kBorder))),
-                child: Column(children: [
-                  Text(s.$1,
-                      style: const TextStyle(fontFamily: 'Georgia', fontSize: 30,
-                          fontWeight: FontWeight.w300, color: kGold)),
-                  const SizedBox(height: 5),
-                  Text(s.$2.toUpperCase(),
-                      style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600,
-                          letterSpacing: 2.0, color: kSlate, fontFamily: 'Outfit')),
-                ]),
-              ),
-            )).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── SECTIONS ──────────────────────────────────────────────────────────────
+  // ── SECTIONS ───────────────────────────────────────────────────────────────
   Widget _buildResidentialSection() => _Section(
-    bgColor: kBg, tag: '🏠 Residential',
-    title: 'Popular ', titleEm: 'Properties',
-    sub: 'Apartments, houses, studios and more across Tanzania.',
+    tag: 'Residential',
+    title: 'Popular Properties',
+    sub: 'Apartments, houses and studios across Tanzania.',
     actionLabel: 'View All', onAction: () {},
     child: _loadingResidential
         ? const _SkeletonGrid()
         : _residential.isEmpty
-            ? const _EmptyState(text: 'No residential properties yet')
+            ? const _EmptyState(icon: Icons.home_outlined, text: 'No residential listings yet')
             : _buildPropGrid(_residential.take(6).toList()),
   );
 
   Widget _buildBnbSection() => _Section(
-    bgColor: kBg2, tag: '⭐ Vacation Rentals',
-    title: 'Premium ', titleEm: 'Short Stay',
+    bgColor: kSlate800,
+    dark: true,
+    tag: 'Short Stay',
+    title: 'Vacation Rentals',
+    sub: 'Book by the night — fully furnished and ready.',
     child: _loadingBnb
-        ? const _SkeletonGrid()
+        ? const _SkeletonGrid(dark: true)
         : _bnb.isEmpty
-            ? const _EmptyState(text: 'No BnB properties yet')
+            ? const _EmptyState(icon: Icons.king_bed_outlined, text: 'No short-stay listings yet', dark: true)
             : _buildPropGrid(_bnb, priceSuffix: '/night',
-                actionLabel: 'Book Now', onAction: (p) => _showBooking(p)),
+                onAction: (p) => _showBooking(p)),
   );
 
   Widget _buildOweruSection() => _Section(
-    bgColor: kBg, tag: '🛡️ Exclusive Offers',
-    title: 'Oweru ', titleEm: 'Special Packages',
+    tag: 'Oweru Special',
+    title: 'Exclusive Packages',
+    sub: 'Curated deals managed directly by Oweru.',
     child: _loadingOweru
         ? const _SkeletonGrid()
         : _oweru.isEmpty
-            ? const _EmptyState(text: 'No Oweru packages yet')
+            ? const _EmptyState(icon: Icons.star_border, text: 'No Oweru packages yet')
             : _buildPropGrid(_oweru, badge: 'OWERU'),
   );
 
   Widget _buildCommercialSection() => _Section(
-    bgColor: kBg2, tag: '💼 Business Spaces',
-    title: 'Commercial ', titleEm: 'Properties',
-    sub: 'Offices, retail spaces, warehouses, and industrial properties.',
+    bgColor: kSlate800,
+    dark: true,
+    tag: 'Commercial',
+    title: 'Business Spaces',
+    sub: 'Offices, retail, warehouses and industrial units.',
     actionLabel: 'All Commercial', onAction: () {},
     child: _loadingCommercial
-        ? const _SkeletonGrid(count: 4)
+        ? const _SkeletonGrid(count: 4, dark: true)
         : _commercial.isEmpty
-            ? const _EmptyState(text: 'No commercial properties yet')
+            ? const _EmptyState(icon: Icons.business_outlined, text: 'No commercial listings yet', dark: true)
             : _buildPropGrid(_commercial.take(8).toList(), isCommercial: true),
   );
 
-  // ── CTA ───────────────────────────────────────────────────────────────────
+  // ── CTA ────────────────────────────────────────────────────────────────────
   Widget _buildCta() {
-    const items = [
-      'Verified landlords & agents', 'Secure payment processing',
-      'Dedicated tenant support',    'Digital contract management',
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(height: 1, color: kBorder),
-        Container(
-          width: double.infinity,
-          color: kBg,
-          padding: const EdgeInsets.fromLTRB(20, 56, 20, 56),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                  color: kGoldDim, border: Border.all(color: kGoldBorder),
-                  borderRadius: BorderRadius.circular(4)),
-              child: const Text('GET STARTED',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
-                      letterSpacing: 2.5, color: kGold, fontFamily: 'Outfit')),
-            ),
-            const SizedBox(height: 14),
-            RichText(text: const TextSpan(
-              style: TextStyle(fontFamily: 'Georgia', fontSize: 32,
-                  fontWeight: FontWeight.w300, height: 1.1, color: kCream),
-              children: [
-                TextSpan(text: 'Ready to Find Your\n'),
-                TextSpan(text: 'Next Home?',
-                    style: TextStyle(fontStyle: FontStyle.italic, color: kGold)),
-              ],
-            )),
-            const SizedBox(height: 14),
-            const Text(
-              'Join thousands of Tanzanians who found their perfect rental through Oweru.',
-              style: TextStyle(fontSize: 14, color: kSlate, height: 1.7, fontFamily: 'Outfit'),
-            ),
-            const SizedBox(height: 28),
-            _GoldButton(label: 'Browse All Properties', icon: Icons.arrow_forward, onTap: () {}),
-            const SizedBox(height: 28),
-            ...items.map((item) => Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-              decoration: BoxDecoration(
-                  color: kBg3, border: Border.all(color: kBorder),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Row(children: [
-                Container(width: 8, height: 8,
-                    decoration: const BoxDecoration(color: kGold, shape: BoxShape.circle)),
-                const SizedBox(width: 12),
-                Expanded(child: Text(item,
-                    style: const TextStyle(fontSize: 13, color: kCream, fontFamily: 'Outfit'))),
-              ]),
-            )),
-          ]),
+    return Container(
+      color: kBg,
+      padding: const EdgeInsets.fromLTRB(24, 56, 24, 56),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('READY?',
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                letterSpacing: 3.0, color: kSlate400)),
+        const SizedBox(height: 12),
+        const Text(
+          'Find Your\nNext Home.',
+          style: TextStyle(
+              fontSize: 38, fontWeight: FontWeight.w700, height: 1.1,
+              letterSpacing: -1.2, color: kSlate800),
         ),
-      ],
+        const SizedBox(height: 12),
+        const Text(
+          'Join thousands of Tanzanians who found their perfect rental through Oweru.',
+          style: TextStyle(fontSize: 14, color: kSlate600, height: 1.65),
+        ),
+        const SizedBox(height: 28),
+        _SolidButton(label: 'Browse All Properties', onTap: () {}),
+        const SizedBox(height: 32),
+        const Divider(color: kSlate200),
+        const SizedBox(height: 24),
+        ...const [
+          'Verified landlords & agents',
+          'Secure payment processing',
+          'Dedicated tenant support',
+          'Digital contract management',
+        ].map((item) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(children: [
+            const Icon(Icons.check_circle_outline, size: 16, color: kSlate800),
+            const SizedBox(width: 12),
+            Text(item, style: const TextStyle(fontSize: 14, color: kSlate700)),
+          ]),
+        )),
+      ]),
     );
   }
 
-  // ── Property Grid (single column on mobile, 2-col on wider screens) ───────
+  // ── Property Grid ──────────────────────────────────────────────────────────
   Widget _buildPropGrid(
     List<Map<String, dynamic>> items, {
     bool isCommercial = false,
@@ -773,20 +668,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }) {
     return LayoutBuilder(builder: (ctx, constraints) {
       final cols = constraints.maxWidth > 560 ? 2 : 1;
-      final itemW = (constraints.maxWidth - (cols - 1) * 16) / cols;
+      final itemW = (constraints.maxWidth - (cols - 1) * 14) / cols;
       return Wrap(
-        spacing: 16,
-        runSpacing: 16,
+        spacing: 14,
+        runSpacing: 14,
         children: items.map((p) {
           return SizedBox(
             width: itemW,
             child: isCommercial
-                ? _CommCard(property: p, onTap: () {})
+                ? _CommCard(property: p, onTap: () => _navigateToProperty(p))
                 : _PropCard(
                     property: p,
                     priceSuffix: priceSuffix,
                     badge: badge,
-                    onTap: () {},
+                    onTap: () => _navigateToProperty(p),
                     actionLabel: actionLabel,
                     onAction: () => onAction?.call(p),
                   ),
@@ -796,18 +691,24 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     });
   }
 
-  // ── Booking modal ─────────────────────────────────────────────────────────
+  void _navigateToProperty(Map<String, dynamic> property) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => PublicPropertyDetailPage(property: property)),
+    );
+  }
+
   void _showBooking(Map<String, dynamic> property) {
     showDialog(
       context: context,
-      barrierColor: const Color(0xE50A0F1E),
+      barrierColor: Colors.black.withOpacity(0.5),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 560),
           decoration: BoxDecoration(
-            color: kBg3, border: Border.all(color: kBorder),
+            color: kWhite,
             borderRadius: BorderRadius.circular(20),
           ),
           child: SingleChildScrollView(
@@ -820,21 +721,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // SECTION WRAPPER
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 class _Section extends StatelessWidget {
-  final Color bgColor;
-  final String tag, title, titleEm;
+  final Color? bgColor;
+  final bool dark;
+  final String tag, title;
   final String? sub, actionLabel;
   final VoidCallback? onAction;
   final Widget child;
 
   const _Section({
-    required this.bgColor,
+    this.bgColor,
+    this.dark = false,
     required this.tag,
     required this.title,
-    required this.titleEm,
     this.sub,
     this.actionLabel,
     this.onAction,
@@ -843,72 +745,54 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Full-width gold divider line
-        Container(height: 1, color: kBorder),
-        // Section body
-        Container(
-          width: double.infinity,
-          color: bgColor,
-          padding: const EdgeInsets.fromLTRB(20, 52, 20, 52),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                        color: kGoldDim,
-                        border: Border.all(color: kGoldBorder),
-                        borderRadius: BorderRadius.circular(4)),
-                    child: Text(tag.toUpperCase(),
-                        style: const TextStyle(
-                            fontSize: 9, fontWeight: FontWeight.w700,
-                            letterSpacing: 2.0, color: kGold, fontFamily: 'Outfit')),
-                  ),
-                  const SizedBox(height: 10),
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                          fontFamily: 'Georgia', fontSize: 34,
-                          fontWeight: FontWeight.w300, color: kCream, height: 1.1),
-                      children: [
-                        TextSpan(text: title),
-                        TextSpan(
-                            text: titleEm,
-                            style: const TextStyle(
-                                fontStyle: FontStyle.italic, color: kGold)),
-                      ],
-                    ),
-                  ),
-                  if (sub != null) ...[
-                    const SizedBox(height: 8),
-                    Text(sub!,
-                        style: const TextStyle(
-                            fontSize: 13, color: kSlate,
-                            height: 1.6, fontFamily: 'Outfit')),
-                  ],
-                ]),
-              ),
-              if (actionLabel != null && onAction != null) ...[
-                const SizedBox(width: 12),
-                _GhostButtonSmall(label: actionLabel!, onTap: onAction!),
-              ],
-            ]),
-            const SizedBox(height: 36),
-            child,
-          ]),
-        ),
-      ],
+    final bg       = bgColor ?? kWhite;
+    final textClr  = dark ? kWhite  : kSlate800;
+    final subClr   = dark ? kSlate400 : kSlate600;
+    final tagClr   = dark ? kSlate400 : kSlate400;
+
+    return Container(
+      color: bg,
+      padding: const EdgeInsets.fromLTRB(20, 48, 20, 48),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(tag.toUpperCase(),
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                    letterSpacing: 2.5, color: tagClr)),
+            const SizedBox(height: 8),
+            Text(title,
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700,
+                    letterSpacing: -0.8, height: 1.1, color: textClr)),
+            if (sub != null) ...[
+              const SizedBox(height: 6),
+              Text(sub!, style: TextStyle(fontSize: 13, color: subClr, height: 1.6)),
+            ],
+          ])),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: onAction,
+              child: Row(children: [
+                Text(actionLabel!,
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                        color: dark ? kWhite : kSlate800)),
+                const SizedBox(width: 4),
+                Icon(Icons.arrow_forward, size: 13,
+                    color: dark ? kWhite : kSlate800),
+              ]),
+            ),
+          ],
+        ]),
+        const SizedBox(height: 28),
+        child,
+      ]),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // PROPERTY CARD
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 class _PropCard extends StatelessWidget {
   final Map<String, dynamic> property;
   final String priceSuffix;
@@ -935,78 +819,75 @@ class _PropCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-            color: kBg3, border: Border.all(color: kBorder),
-            borderRadius: BorderRadius.circular(14)),
+          color: kSurface,
+          border: Border.all(color: kSlate200),
+          borderRadius: BorderRadius.circular(14),
+        ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // Image
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
             child: Stack(children: [
               SizedBox(
-                height: 180,
+                height: 175,
                 width: double.infinity,
-                child: Image.network(imgUrl, fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                        color: kBg2,
-                        child: Center(child: Icon(Icons.home, color: kGold.withOpacity(0.4), size: 36)))),
+                child: imgUrl.isNotEmpty
+                    ? Image.network(imgUrl, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _ImgPlaceholder(Icons.home_outlined))
+                    : _ImgPlaceholder(Icons.home_outlined),
               ),
-              Positioned.fill(child: Container(
-                  decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, kBg.withOpacity(0.6)])))),
               if (p['featured'] == true || p['featured'] == 1)
                 Positioned(top: 10, left: 10,
-                    child: _Badge(label: 'Featured', bg: kGold, fg: kBg)),
+                    child: _Chip(label: 'Featured', bg: kSlate800, fg: kWhite)),
               if (badge != null)
                 Positioned(top: 10, right: 10,
-                    child: _Badge(label: badge!, bg: kGoldDim, fg: kGold, bordered: true)),
+                    child: _Chip(label: badge!, bg: kWhite, fg: kSlate800)),
             ]),
           ),
           // Body
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+            padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               if (p['type'] != null)
                 Text((p['type'] ?? '').toString().toUpperCase(),
                     style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2, color: kGold, fontFamily: 'Outfit')),
-              const SizedBox(height: 5),
+                        letterSpacing: 1.5, color: kSlate400)),
+              const SizedBox(height: 4),
               Text(p['title'] ?? 'Untitled',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
-                      color: kCream, fontFamily: 'Outfit'),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kSlate800),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 5),
+              const SizedBox(height: 4),
               Row(children: [
-                Icon(Icons.location_on, size: 10, color: kGold),
-                const SizedBox(width: 4),
+                const Icon(Icons.location_on_outlined, size: 11, color: kSlate400),
+                const SizedBox(width: 3),
                 Expanded(child: Text(p['location'] ?? p['address'] ?? 'Tanzania',
-                    style: const TextStyle(fontSize: 11, color: kSlate, fontFamily: 'Outfit'),
+                    style: const TextStyle(fontSize: 11, color: kSlate400),
                     maxLines: 1, overflow: TextOverflow.ellipsis)),
               ]),
-              const SizedBox(height: 10),
-              Row(children: [
-                Text(fmtPrice(price),
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
-                        color: kGold, fontFamily: 'Georgia')),
-                const SizedBox(width: 4),
-                Text(priceSuffix,
-                    style: const TextStyle(fontSize: 10, color: kSlate, fontFamily: 'Outfit')),
-              ]),
               const SizedBox(height: 12),
-              GestureDetector(
-                onTap: onAction,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 11),
-                  decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [kGold, kGoldLight]),
-                      borderRadius: BorderRadius.circular(8)),
-                  child: Center(child: Text(actionLabel.toUpperCase(),
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                          letterSpacing: 0.08, color: kBg, fontFamily: 'Outfit'))),
+              const Divider(color: kSlate200, height: 1),
+              const SizedBox(height: 12),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(fmtPrice(price),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: kSlate800)),
+                  Text(priceSuffix,
+                      style: const TextStyle(fontSize: 10, color: kSlate400)),
+                ]),
+                GestureDetector(
+                  onTap: onAction,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: kSlate800,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(actionLabel,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                            color: kWhite, letterSpacing: 0.3)),
+                  ),
                 ),
-              ),
+              ]),
             ]),
           ),
         ]),
@@ -1015,145 +896,102 @@ class _PropCard extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // COMMERCIAL CARD
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 class _CommCard extends StatelessWidget {
   final Map<String, dynamic> property;
   final VoidCallback onTap;
   const _CommCard({required this.property, required this.onTap});
 
-  static const _typeColors = {
-    'office': Color(0xFF22D3EE), 'retail': Color(0xFFF472B6),
-    'warehouse': Color(0xFFFB923C), 'commercial': Color(0xFFA78BFA),
-    'industrial': Color(0xFF818CF8),
-  };
-  static const _statusDots = {
-    'active': Color(0xFF10B981), 'pending': Color(0xFFF59E0B),
-    'inactive': Color(0xFF64748B),
-  };
-
   @override
   Widget build(BuildContext context) {
-    final p        = property;
-    final imgUrl   = getImage(p);
-    final type     = p['type']?.toString().toLowerCase() ?? '';
-    final tc       = _typeColors[type] ?? kGold;
-    final status   = p['status']?.toString() ?? 'active';
-    final dotColor = _statusDots[status] ?? _statusDots['inactive']!;
-    final price    = num.tryParse(p['price']?.toString() ?? '0') ?? 0;
-    final pt       = p['price_type']?.toString() ?? '';
-    final sfx      = pt == 'yearly' ? '/yr' : pt == 'sale' ? '' : '/mo';
+    final p      = property;
+    final imgUrl = getImage(p);
+    final status = p['status']?.toString() ?? 'active';
+    final price  = num.tryParse(p['price']?.toString() ?? '0') ?? 0;
+    final pt     = p['price_type']?.toString() ?? '';
+    final sfx    = pt == 'yearly' ? '/yr' : pt == 'sale' ? '' : '/mo';
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-            color: kBg3, border: Border.all(color: kBorder),
-            borderRadius: BorderRadius.circular(14)),
+          color: kWhite.withOpacity(0.08),
+          border: Border.all(color: kWhite.withOpacity(0.12)),
+          borderRadius: BorderRadius.circular(14),
+        ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
             child: Stack(children: [
               SizedBox(
-                height: 180, width: double.infinity,
-                child: Image.network(imgUrl, fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                        color: kBg2,
-                        child: const Center(child: Icon(Icons.business, color: kGold, size: 36)))),
+                height: 175, width: double.infinity,
+                child: imgUrl.isNotEmpty
+                    ? Image.network(imgUrl, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _ImgPlaceholder(Icons.business_outlined, dark: true))
+                    : _ImgPlaceholder(Icons.business_outlined, dark: true),
               ),
-              Positioned.fill(child: Container(
-                  decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, kBg.withOpacity(0.6)])))),
-              // Type badge
-              Positioned(top: 10, right: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                        color: tc.withOpacity(0.13),
-                        border: Border.all(color: tc.withOpacity(0.33)),
-                        borderRadius: BorderRadius.circular(6)),
-                    child: Text(commercialTypeLabel(p['type']).toUpperCase(),
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
-                            letterSpacing: 0.1, color: tc, fontFamily: 'Outfit')),
-                  )),
-              // Status badge
               Positioned(top: 10, left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                        color: const Color(0xB8080E1A),
-                        border: Border.all(color: Colors.white.withOpacity(0.07)),
-                        borderRadius: BorderRadius.circular(20)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Container(width: 6, height: 6,
-                          decoration: BoxDecoration(
-                              color: dotColor, shape: BoxShape.circle,
-                              boxShadow: [BoxShadow(color: dotColor, blurRadius: 5)])),
-                      const SizedBox(width: 5),
-                      Text(
-                        status == 'active' ? 'AVAILABLE'
-                            : status == 'pending' ? 'PENDING'
-                            : status.toUpperCase(),
-                        style: const TextStyle(color: Color(0xFFE2E8F0),
-                            fontSize: 9, fontWeight: FontWeight.w700,
-                            letterSpacing: 0.1, fontFamily: 'Outfit'),
-                      ),
-                    ]),
+                  child: _StatusDot(status: status)),
+              Positioned(top: 10, right: 10,
+                  child: _Chip(
+                    label: commercialTypeLabel(p['type']).toUpperCase(),
+                    bg: kWhite.withOpacity(0.12),
+                    fg: kWhite,
+                    bordered: true,
                   )),
             ]),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+            padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(commercialTypeLabel(p['type']).toUpperCase(),
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2, color: tc, fontFamily: 'Outfit')),
-              const SizedBox(height: 5),
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5, color: kSlate400)),
+              const SizedBox(height: 4),
               Text(p['title'] ?? 'Untitled',
                   maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
-                      color: kCream, fontFamily: 'Outfit')),
-              const SizedBox(height: 5),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kWhite)),
+              const SizedBox(height: 4),
               Row(children: [
-                Icon(Icons.location_on, size: 10, color: kGold),
-                const SizedBox(width: 4),
+                const Icon(Icons.location_on_outlined, size: 11, color: kSlate400),
+                const SizedBox(width: 3),
                 Expanded(child: Text(p['location'] ?? p['address'] ?? 'Tanzania',
                     maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: kSlate, fontFamily: 'Outfit'))),
+                    style: const TextStyle(fontSize: 11, color: kSlate400))),
               ]),
               if (p['area'] != null || (p['parking_spaces'] ?? 0) > 0 || p['furnished'] == true) ...[
                 const SizedBox(height: 8),
                 Wrap(spacing: 5, runSpacing: 5, children: [
-                  if (p['area'] != null) _FeatTag(label: '${p['area']} m²'),
-                  if ((p['parking_spaces'] ?? 0) > 0) _FeatTag(label: '${p['parking_spaces']} Parking'),
-                  if (p['furnished'] == true) _FeatTag(label: 'Furnished', color: const Color(0xFF10B981)),
+                  if (p['area'] != null) _Tag(label: '${p['area']} m²'),
+                  if ((p['parking_spaces'] ?? 0) > 0) _Tag(label: '${p['parking_spaces']} Parking'),
+                  if (p['furnished'] == true) _Tag(label: 'Furnished'),
                 ]),
               ],
-              const SizedBox(height: 10),
-              Row(children: [
-                Text(fmtPrice(price),
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600,
-                        color: kGold, fontFamily: 'Georgia')),
-                const SizedBox(width: 4),
-                Text(sfx, style: const TextStyle(fontSize: 10, color: kSlate, fontFamily: 'Outfit')),
-              ]),
               const SizedBox(height: 12),
-              GestureDetector(
-                onTap: onTap,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 11),
-                  decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [kGold, kGoldLight]),
-                      borderRadius: BorderRadius.circular(8)),
-                  child: const Center(child: Text('VIEW DETAILS',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                          letterSpacing: 0.08, color: kBg, fontFamily: 'Outfit'))),
+              const Divider(color: Color(0x1FFFFFFF), height: 1),
+              const SizedBox(height: 12),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(fmtPrice(price),
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: kWhite)),
+                  Text(sfx.isEmpty ? 'For Sale' : sfx,
+                      style: const TextStyle(fontSize: 10, color: kSlate400)),
+                ]),
+                GestureDetector(
+                  onTap: onTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: kWhite,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('Details',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: kSlate800)),
+                  ),
                 ),
-              ),
+              ]),
             ]),
           ),
         ]),
@@ -1162,70 +1000,127 @@ class _CommCard extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// SMALL REUSABLE WIDGETS
-// ════════════════════════════════════════════════════════════════════════════
-class _Badge extends StatelessWidget {
+// ═════════════════════════════════════════════════════════════════════════════
+// REUSABLE SMALL WIDGETS
+// ═════════════════════════════════════════════════════════════════════════════
+class _ImgPlaceholder extends StatelessWidget {
+  final IconData icon;
+  final bool dark;
+  const _ImgPlaceholder(this.icon, {this.dark = false});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: dark ? const Color(0xFF2D3748) : kSlate100,
+    child: Center(child: Icon(icon, size: 36,
+        color: dark ? kSlate400 : kSlate200)),
+  );
+}
+
+class _Chip extends StatelessWidget {
   final String label;
   final Color bg, fg;
   final bool bordered;
-  const _Badge({required this.label, required this.bg, required this.fg, this.bordered = false});
+  const _Chip({required this.label, required this.bg, required this.fg, this.bordered = false});
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
     decoration: BoxDecoration(
-        color: bg,
-        border: bordered ? Border.all(color: kGoldBorder) : null,
-        borderRadius: BorderRadius.circular(6)),
+      color: bg,
+      border: bordered ? Border.all(color: fg.withOpacity(0.3)) : null,
+      borderRadius: BorderRadius.circular(6),
+    ),
     child: Text(label,
-        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: fg, fontFamily: 'Outfit')),
+        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: fg)),
   );
 }
 
-class _FeatTag extends StatelessWidget {
+class _Tag extends StatelessWidget {
   final String label;
-  final Color? color;
-  const _FeatTag({required this.label, this.color});
+  const _Tag({required this.label});
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
     decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        border: Border.all(
-            color: color != null ? color!.withOpacity(0.3) : Colors.white.withOpacity(0.07)),
-        borderRadius: BorderRadius.circular(5)),
+      color: kWhite.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(4),
+    ),
     child: Text(label,
-        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600,
-            color: color ?? kSlate, fontFamily: 'Outfit')),
+        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w500, color: kSlate400)),
   );
 }
 
-class _BlinkDot extends StatefulWidget {
+class _StatusDot extends StatelessWidget {
+  final String status;
+  const _StatusDot({required this.status});
+
   @override
-  State<_BlinkDot> createState() => _BlinkDotState();
+  Widget build(BuildContext context) {
+    final isActive = status == 'active';
+    final dotColor = isActive ? kGreen : kSlate400;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 6, height: 6,
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
+        const SizedBox(width: 5),
+        Text(isActive ? 'AVAILABLE' : status.toUpperCase(),
+            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                color: kWhite, letterSpacing: 0.5)),
+      ]),
+    );
+  }
 }
-class _BlinkDotState extends State<_BlinkDot> with SingleTickerProviderStateMixin {
+
+class _LiveDot extends StatefulWidget {
+  @override State<_LiveDot> createState() => _LiveDotState();
+}
+class _LiveDotState extends State<_LiveDot> with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   @override void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
+      ..repeat(reverse: true);
   }
   @override void dispose() { _ctrl.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => FadeTransition(
     opacity: Tween(begin: 0.3, end: 1.0).animate(_ctrl),
     child: Container(width: 6, height: 6,
-        decoration: const BoxDecoration(color: Color(0xFF4ADE80), shape: BoxShape.circle)),
+        decoration: const BoxDecoration(color: kGreen, shape: BoxShape.circle)),
   );
 }
 
-class _GoldButton extends StatelessWidget {
-  final String label;
+class _TrustChip extends StatelessWidget {
   final IconData icon;
+  final String label;
+  const _TrustChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    decoration: BoxDecoration(
+      color: kWhite.withOpacity(0.06),
+      border: Border.all(color: kWhite.withOpacity(0.1)),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 12, color: kSlate400),
+      const SizedBox(width: 6),
+      Text(label, style: const TextStyle(fontSize: 11, color: kSlate400, fontWeight: FontWeight.w500)),
+    ]),
+  );
+}
+
+class _SolidButton extends StatelessWidget {
+  final String label;
   final VoidCallback onTap;
-  const _GoldButton({required this.label, required this.icon, required this.onTap});
+  const _SolidButton({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -1233,24 +1128,20 @@ class _GoldButton extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
       decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [kGold, kGoldLight]),
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: const [BoxShadow(color: Color(0x4DC89128), blurRadius: 24, offset: Offset(0, 6))]),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-            letterSpacing: 0.8, color: kBg, fontFamily: 'Outfit')),
-        const SizedBox(width: 8),
-        Icon(icon, size: 14, color: kBg),
-      ]),
+        color: kWhite,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(label,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+              color: kSlate800, letterSpacing: 0.3)),
     ),
   );
 }
 
-class _GhostButton extends StatelessWidget {
+class _OutlineButtonLight extends StatelessWidget {
   final String label;
-  final IconData icon;
   final VoidCallback onTap;
-  const _GhostButton({required this.label, required this.icon, required this.onTap});
+  const _OutlineButtonLight({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -1258,176 +1149,144 @@ class _GhostButton extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
       decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
-          border: Border.all(color: Colors.white.withOpacity(0.12)),
-          borderRadius: BorderRadius.circular(10)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
-            color: kCream, fontFamily: 'Outfit')),
-        const SizedBox(width: 8),
-        Icon(icon, size: 14, color: kCream),
-      ]),
+        border: Border.all(color: kWhite.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(label,
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
+              color: kWhite.withOpacity(0.8))),
     ),
   );
 }
 
-class _GhostButtonSmall extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _GhostButtonSmall({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-      decoration: BoxDecoration(
-          border: Border.all(color: kGoldBorder), borderRadius: BorderRadius.circular(8)),
-      child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-          color: kGold, letterSpacing: 0.8, fontFamily: 'Outfit')),
-    ),
-  );
-}
-
-class _TrustBadge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _TrustBadge({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-    Icon(icon, size: 12, color: kGold),
-    const SizedBox(width: 6),
-    Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-        color: Color(0x80F1F5F9), fontFamily: 'Outfit')),
-  ]);
-}
-
-class _ScrollChip extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _ScrollChip({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 9),
-      child: Text(label, style: const TextStyle(fontSize: 12, color: kSlate,
-          fontWeight: FontWeight.w500, fontFamily: 'Outfit')),
-    ),
-  );
-}
-
-class _SearchInput extends StatelessWidget {
+class _CleanSearchInput extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final VoidCallback onSubmit;
-  const _SearchInput({required this.controller, required this.hint, required this.onSubmit});
+  const _CleanSearchInput({required this.controller, required this.hint, required this.onSubmit});
 
   @override
   Widget build(BuildContext context) => TextField(
     controller: controller,
-    style: const TextStyle(color: kCream, fontSize: 13, fontFamily: 'Outfit'),
+    style: const TextStyle(color: kSlate800, fontSize: 13),
     onSubmitted: (_) => onSubmit(),
     decoration: InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: kSlateDim, fontSize: 13),
-      filled: true, fillColor: const Color(0xCC0A0F1E),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      border:        OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kBorder)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kBorder)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kGold)),
+      hintStyle: const TextStyle(color: kSlate400, fontSize: 13),
+      filled: true, fillColor: kSlate100,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border:        OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate200)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate200)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate800)),
+      prefixIcon: const Icon(Icons.search, size: 16, color: kSlate400),
       suffixIcon: ValueListenableBuilder(
         valueListenable: controller,
-        builder: (_, val, _) => val.text.isNotEmpty
-            ? IconButton(icon: const Icon(Icons.close, size: 13, color: kSlate), onPressed: () => controller.clear())
+        builder: (_, val, __) => val.text.isNotEmpty
+            ? IconButton(icon: const Icon(Icons.close, size: 13, color: kSlate400),
+                onPressed: () => controller.clear())
             : const SizedBox.shrink(),
       ),
     ),
   );
 }
 
-class _DropdownField extends StatelessWidget {
+class _CleanDropdown extends StatelessWidget {
   final String value;
   final Map<String, String> items;
   final ValueChanged<String?> onChanged;
-  const _DropdownField({required this.value, required this.items, required this.onChanged});
+  const _CleanDropdown({required this.value, required this.items, required this.onChanged});
 
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
-    initialValue: value,
-    dropdownColor: kBg2,
-    style: const TextStyle(color: kCream, fontSize: 13, fontFamily: 'Outfit'),
+    value: value,
+    dropdownColor: kWhite,
+    style: const TextStyle(color: kSlate800, fontSize: 13),
     decoration: InputDecoration(
-      filled: true, fillColor: const Color(0xCC0A0F1E),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      border:        OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kBorder)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kBorder)),
+      filled: true, fillColor: kSlate100,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border:        OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate200)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate200)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate800)),
     ),
-    icon: const Icon(Icons.keyboard_arrow_down, color: kSlate),
-    items: items.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
+    icon: const Icon(Icons.keyboard_arrow_down, color: kSlate400, size: 18),
+    items: items.entries.map((e) => DropdownMenuItem(
+      value: e.key,
+      child: Text(e.value, style: const TextStyle(color: kSlate800)),
+    )).toList(),
     onChanged: onChanged,
   );
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // SKELETON GRID
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 class _SkeletonGrid extends StatefulWidget {
   final int count;
-  const _SkeletonGrid({this.count = 3});
+  final bool dark;
+  const _SkeletonGrid({this.count = 3, this.dark = false});
   @override State<_SkeletonGrid> createState() => _SkeletonGridState();
 }
 class _SkeletonGridState extends State<_SkeletonGrid> with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   @override void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat(reverse: true);
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
+      ..repeat(reverse: true);
   }
   @override void dispose() { _ctrl.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (ctx, constraints) {
     final cols  = constraints.maxWidth > 560 ? 2 : 1;
-    final itemW = (constraints.maxWidth - (cols - 1) * 16) / cols;
+    final itemW = (constraints.maxWidth - (cols - 1) * 14) / cols;
     return FadeTransition(
-      opacity: Tween(begin: 0.4, end: 0.85).animate(_ctrl),
+      opacity: Tween(begin: 0.3, end: 0.7).animate(_ctrl),
       child: Wrap(
-        spacing: 16, runSpacing: 16,
+        spacing: 14, runSpacing: 14,
         children: List.generate(widget.count, (i) => Container(
-          width: itemW, height: 300,
+          width: itemW, height: 280,
           decoration: BoxDecoration(
-              color: kBg3, border: Border.all(color: kBorder),
-              borderRadius: BorderRadius.circular(14)),
+            color: widget.dark ? kWhite.withOpacity(0.06) : kSlate100,
+            border: Border.all(color: widget.dark ? kWhite.withOpacity(0.08) : kSlate200),
+            borderRadius: BorderRadius.circular(14),
+          ),
         )),
       ),
     );
   });
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // EMPTY STATE
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 class _EmptyState extends StatelessWidget {
   final String text;
-  const _EmptyState({required this.text});
+  final IconData icon;
+  final bool dark;
+  const _EmptyState({required this.text, required this.icon, this.dark = false});
 
   @override
   Widget build(BuildContext context) => Center(
     child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Column(children: [
-        const Icon(Icons.business, size: 36, color: Color(0x59C89128)),
+        Container(
+          width: 64, height: 64,
+          decoration: BoxDecoration(
+            color: dark ? kWhite.withOpacity(0.06) : kSlate100,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 28, color: kSlate400),
+        ),
         const SizedBox(height: 14),
-        Text(text, style: const TextStyle(fontSize: 16, color: kCream, fontFamily: 'Outfit')),
+        Text(text, style: TextStyle(fontSize: 15, color: dark ? kSlate400 : kSlate600)),
       ]),
     ),
   );
 }
 
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 // BOOKING FORM
-// ════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 class _BookingForm extends StatefulWidget {
   final Map<String, dynamic> property;
   final VoidCallback onClose;
@@ -1458,7 +1317,7 @@ class _BookingFormState extends State<_BookingForm> {
     try {
       final price = num.tryParse(widget.property['price']?.toString() ?? '0') ?? 0;
       final res = await http.post(
-        Uri.parse('$kApiBase/api/public/bnb/book'),
+        Uri.parse('$kApiBase/public/bnb/book'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'property_id': widget.property['id'],
@@ -1485,7 +1344,7 @@ class _BookingFormState extends State<_BookingForm> {
             SnackBar(content: Text(d['message'] ?? 'Booking failed')));
         }
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Network error.')));
@@ -1497,27 +1356,33 @@ class _BookingFormState extends State<_BookingForm> {
 
   InputDecoration _inp(String hint) => InputDecoration(
     hintText: hint,
-    hintStyle: const TextStyle(color: kSlateDim, fontSize: 13),
-    filled: true, fillColor: kBg,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-    border:        OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kGoldBorder)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kGoldBorder)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kGold)),
+    hintStyle: const TextStyle(color: kSlate400, fontSize: 13),
+    filled: true, fillColor: kSlate100,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    border:        OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kSlate200)),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kSlate200)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kSlate800)),
   );
 
   Widget _datePicker(String label, DateTime? value, VoidCallback onTap) =>
       GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-              color: kBg, border: Border.all(color: kGoldBorder),
-              borderRadius: BorderRadius.circular(8)),
-          child: Text(
-            value == null ? label : '${value.day}/${value.month}/${value.year}',
-            style: TextStyle(fontSize: 13, fontFamily: 'Outfit',
-                color: value == null ? kSlateDim : kCream),
+            color: kSlate100,
+            border: Border.all(color: kSlate200),
+            borderRadius: BorderRadius.circular(8),
           ),
+          child: Row(children: [
+            Icon(Icons.calendar_today_outlined, size: 13, color: kSlate400),
+            const SizedBox(width: 8),
+            Text(
+              value == null ? label : '${value.day}/${value.month}/${value.year}',
+              style: TextStyle(fontSize: 13,
+                  color: value == null ? kSlate400 : kSlate800),
+            ),
+          ]),
         ),
       );
 
@@ -1526,11 +1391,6 @@ class _BookingFormState extends State<_BookingForm> {
     initialDate: first,
     firstDate: first,
     lastDate: DateTime.now().add(const Duration(days: 365)),
-    builder: (ctx, child) => Theme(
-      data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: kGold, surface: kBg2)),
-      child: child!,
-    ),
   );
 
   @override
@@ -1539,27 +1399,28 @@ class _BookingFormState extends State<_BookingForm> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Book ${widget.property['title'] ?? ''}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
-                  color: kCream, fontFamily: 'Outfit')),
-          const SizedBox(height: 4),
-          Text(widget.property['location'] ?? '',
-              style: const TextStyle(fontSize: 12, color: kSlate, fontFamily: 'Outfit')),
+          Text('Book Stay',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kSlate800)),
+          const SizedBox(height: 2),
+          Text(widget.property['title'] ?? '',
+              style: const TextStyle(fontSize: 13, color: kSlate600)),
         ])),
-        IconButton(onPressed: widget.onClose, icon: const Icon(Icons.close, color: kSlate)),
+        IconButton(onPressed: widget.onClose,
+            icon: const Icon(Icons.close, color: kSlate600, size: 20)),
       ]),
-      const SizedBox(height: 16),
-      TextField(controller: _nameCtrl,
-          style: const TextStyle(color: kCream, fontSize: 13, fontFamily: 'Outfit'),
+      const SizedBox(height: 20),
+      const Divider(color: kSlate200, height: 1),
+      const SizedBox(height: 20),
+      TextField(controller: _nameCtrl, style: const TextStyle(color: kSlate800, fontSize: 13),
           decoration: _inp('Your name')),
       const SizedBox(height: 10),
       TextField(controller: _emailCtrl, keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color: kCream, fontSize: 13, fontFamily: 'Outfit'),
-          decoration: _inp('Email')),
+          style: const TextStyle(color: kSlate800, fontSize: 13),
+          decoration: _inp('Email address')),
       const SizedBox(height: 10),
       TextField(controller: _phoneCtrl, keyboardType: TextInputType.phone,
-          style: const TextStyle(color: kCream, fontSize: 13, fontFamily: 'Outfit'),
-          decoration: _inp('Phone')),
+          style: const TextStyle(color: kSlate800, fontSize: 13),
+          decoration: _inp('Phone number')),
       const SizedBox(height: 10),
       Row(children: [
         Expanded(child: _datePicker('Check-in', _checkIn, () async {
@@ -1574,49 +1435,51 @@ class _BookingFormState extends State<_BookingForm> {
       ]),
       const SizedBox(height: 10),
       TextField(controller: _reqCtrl, maxLines: 3,
-          style: const TextStyle(color: kCream, fontSize: 13, fontFamily: 'Outfit'),
+          style: const TextStyle(color: kSlate800, fontSize: 13),
           decoration: _inp('Special requests (optional)')),
       if (_nights > 0) ...[
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-              color: const Color(0x14C89128),
-              border: Border.all(color: kGoldBorder),
-              borderRadius: BorderRadius.circular(8)),
+            color: kSlate100,
+            border: Border.all(color: kSlate200),
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text(fmtPrice(_nights * price),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700,
-                    color: kGold, fontFamily: 'Outfit')),
-            Text('$_nights nights',
-                style: const TextStyle(fontSize: 12, color: kSlate, fontFamily: 'Outfit')),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kSlate800)),
+            Text('$_nights night${_nights != 1 ? 's' : ''}',
+                style: const TextStyle(fontSize: 12, color: kSlate600)),
           ]),
         ),
       ],
-      const SizedBox(height: 14),
+      const SizedBox(height: 20),
       Row(children: [
         Expanded(child: GestureDetector(
           onTap: widget.onClose,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
-                border: Border.all(color: kGoldBorder), borderRadius: BorderRadius.circular(8)),
+              border: Border.all(color: kSlate200),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: const Text('Cancel', textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: kSlate, fontFamily: 'Outfit')),
+                style: TextStyle(fontSize: 13, color: kSlate600)),
           ),
         )),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Expanded(flex: 2, child: GestureDetector(
           onTap: _loading ? null : _submit,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [kGold, kGoldLight]),
-                borderRadius: BorderRadius.circular(8)),
+              color: kSlate800,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Text(_loading ? 'Submitting…' : 'Book Now',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                    color: kBg, fontFamily: 'Outfit')),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kWhite)),
           ),
         )),
       ]),
@@ -1624,20 +1487,7 @@ class _BookingFormState extends State<_BookingForm> {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// GRID PAINTER
-// ════════════════════════════════════════════════════════════════════════════
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0x08C89128)..strokeWidth = 1;
-    const step = 60.0;
-    for (double x = 0; x < size.width;  x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-  @override bool shouldRepaint(_) => false;
-}
+// ═════════════════════════════════════════════════════════════════════════════
+// MISSING COLOUR — kSlate700 used in CTA list
+// ═════════════════════════════════════════════════════════════════════════════
+const Color kSlate700 = Color(0xFF334155);

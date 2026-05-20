@@ -1,50 +1,89 @@
-// ============================================================
-// landlord_applications.dart — Applications page
-// ============================================================
 import 'package:flutter/material.dart';
+import '../../../../shared/services/landlord_api_service.dart';
 import 'landlord_theme.dart';
 
 class LandlordApplicationsPage extends StatefulWidget {
   const LandlordApplicationsPage({super.key});
+
   @override
   State<LandlordApplicationsPage> createState() => _LandlordApplicationsPageState();
 }
 
 class _LandlordApplicationsPageState extends State<LandlordApplicationsPage> {
-  final List<Application> _applications = [];
-  bool _loading = true;
+  List<Map<String, dynamic>> _applications = [];
+  bool _isLoading = true;
   String _error = '';
   String _success = '';
   int? _busyId;
-  final Map<int, String> _rejectionReasons = {};
+  Map<int, String> _rejectionReasons = {};
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadApplications();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadApplications() async {
     setState(() {
-      _loading = true;
+      _isLoading = true;
       _error = '';
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _loading = false;
-      // For now, empty list - will be populated from API
-    });
+    try {
+      final applications = await LandlordApiService.getApplications();
+      setState(() {
+        _applications = applications;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Unable to load applications.';
+        _isLoading = false;
+      });
+    }
   }
 
-  ApplicationStats get _stats => ApplicationStats(
-    total: _applications.length,
-    pending: _applications.where((a) => a.status == 'pending').length,
-    approved: _applications.where((a) => a.status == 'approved').length,
-    rejected: _applications.where((a) => a.status == 'rejected').length,
-  );
+  Map<String, int> get _stats {
+    return {
+      'total': _applications.length,
+      'pending': _applications.where((a) => a['status'] == 'pending').length,
+      'approved': _applications.where((a) => a['status'] == 'approved').length,
+      'rejected': _applications.where((a) => a['status'] == 'rejected').length,
+    };
+  }
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'TZS 0';
+    final double numericValue = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (numericValue >= 1000000) {
+      return 'TZS ${(numericValue / 1000000).toStringAsFixed(1)}M';
+    } else if (numericValue >= 1000) {
+      return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
+    }
+    return 'TZS ${numericValue.toStringAsFixed(0)}';
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (_) {
+      return '—';
+    }
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return const Color(0xFFF59E0B);
+      case 'approved':
+        return const Color(0xFF10B981);
+      case 'rejected':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF6B7280);
+    }
+  }
 
   Future<void> _handleApprove(int id) async {
     setState(() {
@@ -53,24 +92,29 @@ class _LandlordApplicationsPageState extends State<LandlordApplicationsPage> {
       _success = '';
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _busyId = null;
-      _success = 'Application approved. Tenant record created.';
-    });
-
-    // Navigate to tenants page after delay
-    Future.delayed(const Duration(seconds: 2), () {
-      // Navigate to tenants
-    });
+    try {
+      await LandlordApiService.approveApplication(id);
+      await _loadApplications();
+      setState(() {
+        _success = 'Application approved successfully.';
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Unable to approve application.';
+      });
+    } finally {
+      setState(() {
+        _busyId = null;
+      });
+    }
   }
 
   Future<void> _handleReject(int id) async {
     final reason = _rejectionReasons[id]?.trim();
     if (reason == null || reason.isEmpty) {
-      setState(() => _error = 'Add a rejection reason before rejecting.');
+      setState(() {
+        _error = 'Add a rejection reason before rejecting an application.';
+      });
       return;
     }
 
@@ -80,290 +124,301 @@ class _LandlordApplicationsPageState extends State<LandlordApplicationsPage> {
       _success = '';
     });
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _busyId = null;
-      _success = 'Application rejected successfully.';
-      _rejectionReasons.remove(id);
-    });
+    try {
+      await LandlordApiService.rejectApplication(id, reason);
+      await _loadApplications();
+      setState(() {
+        _success = 'Application rejected successfully.';             
+        _rejectionReasons.remove(id);
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Unable to reject application.';
+      });
+    } finally {
+      setState(() {
+        _busyId = null;
+      });
+    }
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: kBg,
-    appBar: AppBar(
-      backgroundColor: kBg2,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded, color: kGold),
-        onPressed: () => Navigator.pop(context),
+  Widget build(BuildContext context) {
+    final stats = _stats;
+
+    return Scaffold(
+      backgroundColor: kBg,
+      appBar: AppBar(
+        backgroundColor: kBg2,
+        elevation: 0,
+        title: const Text('Applications', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
-      title: const Text('Applications',
-        style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w600)),
-    ),
-    body: _loading ? _buildLoading() : _buildContent(),
-  );
-
-  Widget _buildLoading() => const Center(
-    child: CircularProgressIndicator(color: kGold),
-  );
-
-  Widget _buildContent() => ListView(
-    padding: const EdgeInsets.all(16),
-    children: [
-      // Stats
-      Row(children: [
-        _StatCard(label: 'Total', value: '${_stats.total}', color: kGold),
-        const SizedBox(width: 12),
-        _StatCard(label: 'Pending', value: '${_stats.pending}', color: kWarning),
-        const SizedBox(width: 12),
-        _StatCard(label: 'Approved', value: '${_stats.approved}', color: kSuccess),
-      ]),
-      const SizedBox(height: 12),
-      Row(children: [
-        _StatCard(label: 'Rejected', value: '${_stats.rejected}', color: kDanger),
-      ]),
-      const SizedBox(height: 20),
-
-      // Error/Success alerts
-      if (_error.isNotEmpty) ...[
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: kDanger.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: kDanger.withOpacity(0.3)),
-          ),
-          child: Row(children: [
-            Icon(Icons.error_outline_rounded, color: kDanger, size: 16),
-            const SizedBox(width: 8),
-            Expanded(child: Text(_error, style: TextStyle(color: kDanger, fontSize: 12))),
-          ]),
-        ),
-        const SizedBox(height: 12),
-      ],
-      if (_success.isNotEmpty) ...[
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: kSuccess.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: kSuccess.withOpacity(0.3)),
-          ),
-          child: Row(children: [
-            Icon(Icons.check_circle_rounded, color: kSuccess, size: 16),
-            const SizedBox(width: 8),
-            Expanded(child: Text(_success, style: TextStyle(color: kSuccess, fontSize: 12))),
-          ]),
-        ),
-        const SizedBox(height: 12),
-      ],
-
-      // Applications list
-      if (_applications.isEmpty) ...[
-        LEmptyState(
-          icon: Icons.people_alt_rounded,
-          title: 'No applications yet',
-          subtitle: 'Applications from tenants will appear here.',
-        ),
-      ] else ...[
-        ..._applications.map((app) => _ApplicationCard(
-          application: app,
-          isBusy: _busyId == app.id,
-          rejectionReason: _rejectionReasons[app.id] ?? '',
-          onRejectionReasonChange: (reason) => setState(() => _rejectionReasons[app.id] = reason),
-          onApprove: () => _handleApprove(app.id),
-          onReject: () => _handleReject(app.id),
-        )),
-      ],
-    ],
-  );
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _StatCard({required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Expanded(child: LCard(child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label.toUpperCase(), style: TextStyle(color: color, fontSize: 10, letterSpacing: 1)),
-      const SizedBox(height: 8),
-      Text(value, style: TextStyle(color: kCream, fontSize: 28, fontWeight: FontWeight.w700)),
-    ],
-  )));
-}
-
-class _ApplicationCard extends StatelessWidget {
-  final Application application;
-  final bool isBusy;
-  final String rejectionReason;
-  final ValueChanged<String> onRejectionReasonChange;
-  final VoidCallback onApprove;
-  final VoidCallback onReject;
-  const _ApplicationCard({
-    required this.application,
-    required this.isBusy,
-    required this.rejectionReason,
-    required this.onRejectionReasonChange,
-    required this.onApprove,
-    required this.onReject,
-  });
-
-  @override
-  Widget build(BuildContext context) => LCard(
-    padding: const EdgeInsets.all(16),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        Container(width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: kGold.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(child: Text(
-            application.applicantName[0].toUpperCase(),
-            style: TextStyle(color: kGold, fontSize: 18, fontWeight: FontWeight.w700),
-          )),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(application.applicantName, style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
-          Text(application.email, style: TextStyle(color: kSlate, fontSize: 11)),
-          Text(application.phone, style: TextStyle(color: kSlate, fontSize: 11)),
-        ])),
-        LStatusBadge(label: application.status, color: _getStatusColor(application.status)),
-      ]),
-      const SizedBox(height: 12),
-      Divider(color: kGold.withOpacity(0.1)),
-      const SizedBox(height: 12),
-      Row(children: [
-        Icon(Icons.home_work_rounded, color: kSlate, size: 16),
-        const SizedBox(width: 8),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(application.propertyTitle, style: TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w500)),
-          Text(application.propertyLocation, style: TextStyle(color: kSlate, fontSize: 11)),
-        ])),
-      ]),
-      const SizedBox(height: 8),
-      Text(_formatCurrency(application.price), style: TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w600)),
-      const SizedBox(height: 8),
-      Text(application.message, style: TextStyle(color: kSlate, fontSize: 12)),
-      const SizedBox(height: 12),
-      if (application.status == 'pending') ...[
-        if (application.rejectionReason != null && application.rejectionReason!.isNotEmpty) ...[
+      body: Column(
+        children: [
+          // Stats Section
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: kDanger.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
+            padding: const EdgeInsets.all(16),
+            color: kBg2,
+            child: Row(
+              children: [
+                Expanded(child: _buildStatCard('Total', '${stats['total']}', kGold)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildStatCard('Pending', '${stats['pending']}', const Color(0xFFF59E0B))),
+                const SizedBox(width: 12),
+                Expanded(child: _buildStatCard('Approved', '${stats['approved']}', const Color(0xFF10B981))),
+                const SizedBox(width: 12),
+                Expanded(child: _buildStatCard('Rejected', '${stats['rejected']}', const Color(0xFFEF4444))),
+              ],
             ),
-            child: Text(application.rejectionReason!, style: TextStyle(color: kDanger, fontSize: 11)),
           ),
-          const SizedBox(height: 12),
-        ],
-        Row(children: [
-          Expanded(child: LGoldButton(
-            label: isBusy ? 'Working…' : '✓ Approve',
-            onTap: isBusy ? null : onApprove,
-            fullWidth: true,
-          )),
-          const SizedBox(width: 8),
-          Expanded(child: TextField(
-            onChanged: onRejectionReasonChange,
-            style: TextStyle(color: kCream, fontSize: 12),
-            decoration: InputDecoration(
-              hintText: 'Rejection reason…',
-              hintStyle: TextStyle(color: kSlate, fontSize: 11),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: BorderSide(color: kBorder),
+          // Error/Success Alerts
+          if (_error.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withOpacity(0.06),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: BorderSide(color: kBorder),
+              child: Row(
+                children: [
+                  const Icon(Icons.error, size: 16, color: Color(0xFFEF4444)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(_error, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 14))),
+                ],
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: BorderSide(color: kGold),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             ),
-          )),
-          const SizedBox(width: 8),
-          Expanded(child: LGhostButton(
-            label: isBusy ? 'Working…' : '✕ Reject',
-            onTap: isBusy ? null : onReject,
-            borderColor: kDanger,
-          )),
-        ]),
-      ] else ...[
-        Text('No further action needed.', style: TextStyle(color: kSlateDim, fontSize: 12)),
-      ],
-    ]),
-  );
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending': return kWarning;
-      case 'approved': return kSuccess;
-      case 'rejected': return kDanger;
-      default: return kSlate;
-    }
+          if (_success.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.22)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle, size: 16, color: Color(0xFF10B981)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(_success, style: const TextStyle(color: Color(0xFF10B981), fontSize: 14))),
+                ],
+              ),
+            ),
+          // Applications List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: kGold))
+                : _applications.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.people, size: 48, color: kSlate),
+                            const SizedBox(height: 16),
+                            const Text('No applications yet', style: TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            const Text('Applications from tenants will appear here.', style: TextStyle(color: kSlate, fontSize: 13)),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _applications.length,
+                        itemBuilder: (context, index) => _buildApplicationCard(_applications[index]),
+                      ),
+          ),
+        ],
+      ),
+    );
   }
 
-  String _formatCurrency(int amount) {
-    if (amount >= 1000000) {
-      return 'TZS ${(amount / 1000000).toStringAsFixed(1)}M';
-    } else if (amount >= 1000) {
-      return 'TZS ${(amount / 1000).toStringAsFixed(0)}K';
-    }
-    return 'TZS $amount';
+  Widget _buildStatCard(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: BoxDecoration(
+        color: kBg3,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+          const SizedBox(height: 6),
+          Text(value, style: TextStyle(color: color, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.02)),
+        ],
+      ),
+    );
   }
-}
 
-class Application {
-  final int id;
-  final String applicantName;
-  final String email;
-  final String phone;
-  final String propertyTitle;
-  final String propertyLocation;
-  final int price;
-  final String status;
-  final String message;
-  final String? rejectionReason;
-  final DateTime appliedAt;
+  Widget _buildApplicationCard(Map<String, dynamic> application) {
+    final user = application['user'] as Map<String, dynamic>?;
+    final property = application['property'] as Map<String, dynamic>?;
+    final status = application['status'] as String? ?? 'pending';
+    final message = application['message'] as String?;
+    final rejectionReason = application['rejection_reason'] as String?;
+    final createdAt = application['created_at'] as String?;
 
-  Application({
-    required this.id,
-    required this.applicantName,
-    required this.email,
-    required this.phone,
-    required this.propertyTitle,
-    required this.propertyLocation,
-    required this.price,
-    required this.status,
-    required this.message,
-    this.rejectionReason,
-    required this.appliedAt,
-  });
-}
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kBg2,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${user?['first_name'] ?? ''} ${user?['last_name'] ?? ''}',
+                      style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(user?['email'] ?? 'No email', style: const TextStyle(color: kSlate, fontSize: 13)),
+                    const SizedBox(height: 2),
+                    Text(user?['phone'] ?? 'No phone', style: const TextStyle(color: kSlate, fontSize: 13)),
+                  ],
+                ),
+              ),
+              _buildStatusBadge(status),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Property Info
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: kBg3,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(property?['title'] ?? 'Untitled property', style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 4),
+                Text(property?['location'] ?? 'No location', style: const TextStyle(color: kSlate, fontSize: 13)),
+                const SizedBox(height: 4),
+                Text(_formatCurrency(property?['price']), style: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text('Applied ${_formatDate(createdAt ?? '')}', style: const TextStyle(color: kSlate, fontSize: 12)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Message
+          if (message != null && message.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: kBg3,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Message:', style: TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(message, style: const TextStyle(color: kSlate, fontSize: 13, height: 1.6)),
+                ],
+              ),
+            ),
+          if (message != null && message.isNotEmpty) const SizedBox(height: 16),
+          // Rejection Reason
+          if (rejectionReason != null && rejectionReason.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Rejection Reason:', style: TextStyle(color: Color(0xFFEF4444), fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(rejectionReason, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, height: 1.5)),
+                ],
+              ),
+            ),
+          if (rejectionReason != null && rejectionReason.isNotEmpty) const SizedBox(height: 16),
+          // Actions
+          if (status == 'pending')
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ElevatedButton(
+                  onPressed: _busyId == application['id'] ? null : () => _handleApprove(application['id']),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kGold,
+                    foregroundColor: kBg,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: Text(_busyId == application['id'] ? 'Working...' : '✓ Approve', style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Rejection reason...',
+                    hintStyle: const TextStyle(color: kSlate),
+                    filled: true,
+                    fillColor: kBg3,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: kBorder),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  style: const TextStyle(color: kCream),
+                  onChanged: (value) {
+                    setState(() {
+                      _rejectionReasons[application['id']] = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: _busyId == application['id'] ? null : () => _handleReject(application['id']),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEF4444),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: Text(_busyId == application['id'] ? 'Working...' : '✕ Reject', style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ],
+            )
+          else
+            const Text('No further action needed.', style: TextStyle(color: kSlate, fontSize: 13)),
+        ],
+      ),
+    );
+  }
 
-class ApplicationStats {
-  final int total;
-  final int pending;
-  final int approved;
-  final int rejected;
-
-  ApplicationStats({
-    required this.total,
-    required this.pending,
-    required this.approved,
-    required this.rejected,
-  });
+  Widget _buildStatusBadge(String status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: _getStatusColor(status).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(color: _getStatusColor(status), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14),
+      ),
+    );
+  }
 }
