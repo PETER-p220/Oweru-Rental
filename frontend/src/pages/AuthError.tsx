@@ -7,6 +7,7 @@ const AuthError = () => {
   const [countdown, setCountdown] = useState(10);
 
   const error = searchParams.get('error') || 'unknown';
+  const registeredType = searchParams.get('registered_type') || '';
 
   const errorMessages: Record<string, { title: string; message: string; action: string }> = {
     user_not_found: {
@@ -18,6 +19,11 @@ const AuthError = () => {
       title: 'Account Inactive',
       message: 'Your account has been deactivated. Please contact support for assistance.',
       action: 'Contact Support',
+    },
+    wrong_user_type: {
+      title: 'Account Type Mismatch',
+      message: `This Google account is registered as a ${registeredType}. Please use the correct login option for your account type.`,
+      action: 'Go to Login',
     },
     auth_failed: {
       title: 'Authentication Failed',

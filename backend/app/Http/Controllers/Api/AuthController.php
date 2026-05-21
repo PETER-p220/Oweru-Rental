@@ -215,9 +215,11 @@ class AuthController extends Controller
                     return redirect()->away($redirectUrl);
                 }
                 
-                // Update user type if different (allow flexible user types for Google auth)
+                // Check if user type matches - one email can only have one user type
                 if ($user->user_type !== $userType) {
-                    $user->update(['user_type' => $userType]);
+                    $frontendUrl = config('app.frontend_url', 'https://rental.oweru.com');
+                    $redirectUrl = "{$frontendUrl}/auth/error?error=wrong_user_type&registered_type={$user->user_type}";
+                    return redirect()->away($redirectUrl);
                 }
                 
                 if (!$user->google_id) {
