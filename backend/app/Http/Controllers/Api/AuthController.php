@@ -135,10 +135,13 @@ class AuthController extends Controller
     public function redirectToGoogle(Request $request): JsonResponse
     {
         $userType = $request->query('user_type', 'tenant');
-        session(['google_user_type' => $userType]);
-        session(['google_auth_type' => 'login']);
+        $state = json_encode(['user_type' => $userType, 'auth_type' => 'login']);
         
-        $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
+        $url = Socialite::driver('google')
+            ->stateless()
+            ->with(['state' => $state])
+            ->redirect()
+            ->getTargetUrl();
         
         return response()->json(['url' => $url]);
     }
@@ -146,10 +149,13 @@ class AuthController extends Controller
     public function redirectToGoogleRegister(Request $request): JsonResponse
     {
         $userType = $request->query('user_type', 'tenant');
-        session(['google_user_type' => $userType]);
-        session(['google_auth_type' => 'register']);
+        $state = json_encode(['user_type' => $userType, 'auth_type' => 'register']);
         
-        $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
+        $url = Socialite::driver('google')
+            ->stateless()
+            ->with(['state' => $state])
+            ->redirect()
+            ->getTargetUrl();
         
         return response()->json(['url' => $url]);
     }
@@ -158,8 +164,13 @@ class AuthController extends Controller
     {
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
-            $userType = session('google_user_type', 'tenant');
-            $authType = session('google_auth_type', 'login');
+            
+            // Try to get auth type from state parameter
+            $state = $request->query('state');
+            $stateData = $state ? json_decode($state, true) : [];
+            
+            $userType = $stateData['user_type'] ?? session('google_user_type', 'tenant');
+            $authType = $stateData['auth_type'] ?? session('google_auth_type', 'login');
             
             $user = User::where('email', $googleUser->email)->first();
             
