@@ -168,4 +168,124 @@ class AuthService {
     } catch (_) {}
     return null;
   }
+
+  // ── Google Auth ───────────────────────────────────────────────────────────
+  static Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+    String userType = 'tenant',
+  }) async {
+    try {
+      print('🔵 Google Login STARTING - UserType: $userType');
+      print('🔵 API Base URL: $_baseUrl');
+      
+      final response = await http.post(
+        Uri.parse('$_baseUrl/auth/google'),
+        headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'token': idToken,
+          'user_type': userType,
+        }),
+      );
+
+      print('🔵 Google Login Response Status: ${response.statusCode}');
+      print('🔵 Google Login Response Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        print('🟢 Google Login Success - Data: $data');
+        _token = data['data']['token'];
+        print('🟢 Token Set: $_token');
+        return {'success': true, 'data': data};
+      } else {
+        print('🔴 Google Login Failed - Status Code: ${response.statusCode}');
+        try {
+          final error = jsonDecode(response.body);
+          print('🔴 Error Response: $error');
+          return {
+            'success': false,
+            'message': error['message'] ?? 'Google login failed (status: ${response.statusCode})',
+          };
+        } catch (e) {
+          print('🔴 Error parsing response: $e');
+          return {
+            'success': false,
+            'message': 'Server error (${response.statusCode}): ${response.body}',
+          };
+        }
+      }
+    } catch (e) {
+      print('🔴 Google Login Exception: $e');
+      return {
+        'success': false,
+        'message': 'Connection error: $e',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> registerWithGoogle({
+    required String idToken,
+    String userType = 'tenant',
+    String? phone,
+  }) async {
+    try {
+      print('🔵 Google Register STARTING - UserType: $userType');
+      
+      final response = await http.post(
+        Uri.parse('$_baseUrl/auth/google/register'),
+        headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'token': idToken,
+          'user_type': userType,
+          if (phone != null) 'phone': phone,
+        }),
+      );
+
+      print('🔵 Google Register Response Status: ${response.statusCode}');
+      print('🔵 Google Register Response Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        print('🟢 Google Register Success - Data: $data');
+        _token = data['data']['token'];
+        print('🟢 Token Set: $_token');
+        return {'success': true, 'data': data};
+      } else {
+        print('🔴 Google Register Failed - Status Code: ${response.statusCode}');
+        try {
+          final error = jsonDecode(response.body);
+          print('🔴 Error Response: $error');
+          if (error['errors'] is Map) {
+            final errors = error['errors'] as Map<String, dynamic>;
+            final messages = <String>[];
+            errors.forEach((key, value) {
+              if (value is List) {
+                messages.addAll(value.cast<String>());
+              }
+            });
+            return {
+              'success': false,
+              'message': messages.join(', '),
+              'errors': messages,
+            };
+          }
+          return {
+            'success': false,
+            'message': error['message'] ?? 'Google registration failed',
+          };
+        } catch (e) {
+          print('🔴 Error parsing response: $e');
+          return {
+            'success': false,
+            'message': 'Server error (${response.statusCode}): ${response.body}',
+          };
+        }
+      }
+    } catch (e) {
+      print('🔴 Google Register Exception: $e');
+      return {
+        'success': false,
+        'message': 'Connection error: $e',
+      };
+    }
+  }
 }

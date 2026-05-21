@@ -48,6 +48,11 @@ const Register = () => {
   const handleNext = () => { if (validateStep1()) { setStep(2); setErrors([]); } };
   const handleBack = () => { setStep(1); setErrors([]); };
 
+  const handleGoogleRegister = () => {
+    const googleRegisterUrl = Api.getGoogleRegisterUrl(formData.userType);
+    window.location.href = googleRegisterUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateStep2()) return;
@@ -352,6 +357,23 @@ const Register = () => {
               <div style={{ marginTop: 24 }}>
                 <button type="button" className="rg-btn-primary" style={{ width: '100%' }} onClick={handleNext}>
                   Continue <ArrowRight size={14} />
+                </button>
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                  <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'DM Sans, sans-serif' }}>Or continue with</span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                </div>
+                <button type="button" onClick={handleGoogleRegister} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--dark-2)', border: '1px solid var(--border)', color: 'var(--cream)', padding: '13px 24px', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', fontWeight: '400', cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 12 4.9c1.69 0 3.22.6 4.41 1.58l3.3-3.3A11.95 11.95 0 0 0 12 1C8.37 1 5.17 2.91 3.27 5.76l2 4z"/>
+                    <path fill="#34A853" d="M16.04 18.01A7.05 7.05 0 0 1 12 19.1c-2.86 0-5.3-1.69-6.49-4.15l-3.95 3.06A11.97 11.97 0 0 0 12 23c2.93 0 5.63-1.05 7.69-2.77l-3.65-2.22z"/>
+                    <path fill="#FBBC05" d="M19.69 20.23A12 12 0 0 0 23 12c0-.73-.08-1.44-.2-2.12H12v4.5h6.2a5.27 5.27 0 0 1-2.17 3.47l3.66 2.38z"/>
+                    <path fill="#4285F4" d="M5.51 14.95A7.11 7.11 0 0 1 4.9 12c0-1.03.18-2.03.51-2.95L3.27 5.76A12 12 0 0 0 1 12c0 2.1.54 4.08 1.51 5.79l3-2.84z"/>
+                  </svg>
+                  Sign up with Google
                 </button>
               </div>
             </>

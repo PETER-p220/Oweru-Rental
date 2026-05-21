@@ -15,7 +15,7 @@ class _LandlordApplicationsPageState extends State<LandlordApplicationsPage> {
   String _error = '';
   String _success = '';
   int? _busyId;
-  Map<int, String> _rejectionReasons = {};
+  final Map<int, String> _rejectionReasons = {};
 
   @override
   void initState() {

@@ -111,7 +111,7 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
                     return Image.network(
                       img.startsWith('http') ? img : 'https://rental.oweru.com/storage/$img',
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         color: kBg3,
                         child: const Center(
                           child: Icon(Icons.apartment, color: kSlate, size: 48),

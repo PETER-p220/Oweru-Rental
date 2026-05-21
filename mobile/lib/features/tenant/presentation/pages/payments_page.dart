@@ -36,12 +36,14 @@ class _PaymentsPageState extends State<PaymentsPage> {
     setState(() { _isLoading = true; _error = ''; });
     try {
       final payments = await TenantApiService.getPayments();
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _pending  = payments.where((p) => p['status'] != 'paid').toList();
         _upcoming = payments.where((p) =>
           p['status'] == 'paid' || p['status'] == 'scheduled').toList();
         _isLoading = false;
       });
+      }
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
     }

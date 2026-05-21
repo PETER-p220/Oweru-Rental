@@ -212,7 +212,7 @@ class _MyListingsPageState extends State<MyListingsPage> {
                       ),
                       const SizedBox(height: 8),
                       // Table Rows
-                      ...filtered.map((item) => _buildListingRow(item)).toList(),
+                      ...filtered.map((item) => _buildListingRow(item)),
                     ],
                   ),
               ],

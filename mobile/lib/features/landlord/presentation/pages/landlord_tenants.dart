@@ -26,8 +26,11 @@ class _LandlordTenantsPageState extends State<LandlordTenantsPage> {
 
   Future<void> _loadTenants({bool silent = false}) async {
     setState(() {
-      if (!silent) _isLoading = true;
-      else _refreshing = true;
+      if (!silent) {
+        _isLoading = true;
+      } else {
+        _refreshing = true;
+      }
       _error = '';
     });
 

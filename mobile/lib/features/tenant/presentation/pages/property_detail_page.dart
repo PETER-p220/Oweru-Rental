@@ -208,7 +208,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
                         child: const Center(child: CircularProgressIndicator(
                           color: kGold, strokeWidth: 1.5)))
                     : child,
-                errorBuilder: (_, __, ___) => Container(color: kBg2,
+                errorBuilder: (_, _, _) => Container(color: kBg2,
                   child: const Center(child: Icon(Icons.image_rounded, color: kSlateDim, size: 48))),
               ),
             ),
@@ -301,7 +301,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
                     child: Opacity(
                       opacity: active ? 1.0 : 0.42,
                       child: Image.network(imgs[i], fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(color: kBg2)),
+                        errorBuilder: (_, _, _) => Container(color: kBg2)),
                     ),
                   ),
                 );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../../shared/services/auth_service.dart';
 import '../../../shared/services/user_service.dart';
 
@@ -17,6 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   String _error = '';
   String _userType = 'tenant';
   final _userService = UserService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   final List<Map<String, String>> userTypes = [
     {'value': 'tenant', 'label': 'Tenant'},
@@ -30,7 +32,79 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _googleSignIn.disconnect();
     super.dispose();
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    _error = '';
+
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        setState(() {
+          _error = 'Failed to get Google ID token';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final result = await AuthService.loginWithGoogle(
+        idToken: idToken,
+        userType: _userType,
+      );
+
+      if (result['success']) {
+        if (mounted) {
+          final userData = result['data']?['data']?['user'] ?? {};
+          _userService.setUserData(
+            userType: _userType,
+            token: result['data']?['data']?['token'],
+            userName: '${userData['first_name'] ?? ''} ${userData['last_name'] ?? ''}',
+            userEmail: userData['email'] ?? '',
+          );
+
+          String route = '/tenant-dashboard';
+          switch (_userType) {
+            case 'agent':
+              route = '/agent-dashboard';
+              break;
+            case 'landlord':
+              route = '/landlord-dashboard';
+              break;
+            case 'tenant':
+              route = '/tenant-dashboard';
+              break;
+            case 'bnb_owner':
+              route = '/bnb-dashboard';
+              break;
+            case 'commercial':
+              route = '/commercial-dashboard';
+              break;
+          }
+          Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
+        }
+      } else {
+        setState(() {
+          _error = result['message'] ?? 'Google login failed';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Google login error: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -316,6 +390,31 @@ class _LoginPageState extends State<LoginPage> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Google Sign-In Button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _handleGoogleLogin,
+                  icon: const Icon(Icons.login, color: kGold, size: 20),
+                  label: const Text(
+                    'Sign in with Google',
+                    style: TextStyle(
+                      color: kCream,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: kBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),

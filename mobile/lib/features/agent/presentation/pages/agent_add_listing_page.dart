@@ -62,7 +62,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
       return;
     }
     
-    final List<XFile>? images = await _imagePicker.pickMultiImage();
+    final List<XFile> images = await _imagePicker.pickMultiImage();
     if (images == null) return;
 
     for (var image in images) {
@@ -503,15 +503,15 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
             fillColor: const Color(0xFF1E2D4A),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: const Color(0xFF2A2418)),
+              borderSide: const BorderSide(color: Color(0xFF2A2418)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: const Color(0xFF2A2418)),
+              borderSide: const BorderSide(color: Color(0xFF2A2418)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: const Color(0xFFC9A84C)),
+              borderSide: const BorderSide(color: Color(0xFFC9A84C)),
             ),
           ),
           style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14),
@@ -537,15 +537,15 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
             fillColor: const Color(0xFF1E2D4A),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: const Color(0xFF2A2418)),
+              borderSide: const BorderSide(color: Color(0xFF2A2418)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: const Color(0xFF2A2418)),
+              borderSide: const BorderSide(color: Color(0xFF2A2418)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: const Color(0xFFC9A84C)),
+              borderSide: const BorderSide(color: Color(0xFFC9A84C)),
             ),
           ),
           style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14),

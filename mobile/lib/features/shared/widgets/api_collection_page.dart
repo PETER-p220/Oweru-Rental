@@ -77,7 +77,7 @@ class ApiCollectionPage extends StatelessWidget {
                 ),
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(height: 6),
+            separatorBuilder: (_, _) => const SizedBox(height: 6),
             itemCount: rows.length,
           );
         },

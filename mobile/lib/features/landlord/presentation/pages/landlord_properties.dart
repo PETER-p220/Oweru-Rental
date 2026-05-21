@@ -19,7 +19,7 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
   String _typeFilter = 'all';
   String _sortBy = 'listedDate';
   Map<String, int> _stats = {'total': 0, 'available': 0, 'rented': 0, 'monthlyRevenue': 0};
-  Map<int, int> _carouselStates = {};
+  final Map<int, int> _carouselStates = {};
 
   @override
   void initState() {
@@ -308,7 +308,7 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
     required ValueChanged<T?> onChanged,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
       dropdownColor: kBg3,
       decoration: InputDecoration(
@@ -403,7 +403,7 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
                                 ? Image.network(
                                     img.startsWith('http') ? img : 'https://rental.oweru.com/storage/$img',
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Center(
+                                    errorBuilder: (_, _, _) => const Center(
                                       child: Icon(Icons.apartment, color: kSlate, size: 48),
                                     ),
                                   )

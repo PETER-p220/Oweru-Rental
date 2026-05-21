@@ -34,7 +34,7 @@ class _LandlordRentCollectionPageState extends State<LandlordRentCollectionPage>
       ]);
       setState(() {
         _payments = results[0] as List<Map<String, dynamic>>;
-        _stats = results[1] as Map<String, dynamic>;
+        _stats = results[1];
         _isLoading = false;
       });
     } catch (e) {

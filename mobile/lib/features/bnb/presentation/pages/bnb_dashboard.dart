@@ -307,7 +307,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
             _buildStatCard('Total Properties', '$totalProperties', Icons.home, kGold),
             _buildStatCard('Total Bookings', '$totalBookings', Icons.calendar_today, const Color(0xFF38BDF8)),
             _buildStatCard('Total Revenue', _formatCurrency(totalRevenue), Icons.attach_money, const Color(0xFF10B981)),
-            _buildStatCard('Occupancy Rate', '${occupancyRate}%', Icons.trending_up, const Color(0xFFA78BFA)),
+            _buildStatCard('Occupancy Rate', '$occupancyRate%', Icons.trending_up, const Color(0xFFA78BFA)),
             _buildStatCard('Average Rating', averageRating.toString(), Icons.star, const Color(0xFFF59E0B)),
             _buildStatCard('Active Listings', '$activeListings', Icons.check_circle, const Color(0xFF10B981)),
           ],
@@ -317,7 +317,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
           if (_bookings.isEmpty)
             const Padding(padding: EdgeInsets.all(16), child: Text('No recent bookings.', style: TextStyle(color: kSlate)))
           else
-            ..._bookings.map((booking) => _buildBookingRow(booking)).toList(),
+            ..._bookings.map((booking) => _buildBookingRow(booking)),
           if (_bookings.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -336,7 +336,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
           if (_properties.isEmpty)
             const Padding(padding: EdgeInsets.all(16), child: Text('No properties yet.', style: TextStyle(color: kSlate)))
           else
-            ..._properties.map((property) => _buildPropertyRow(property)).toList(),
+            ..._properties.map((property) => _buildPropertyRow(property)),
           if (_properties.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -409,7 +409,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
                 ? Image.network(
                     imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.home, color: kGold, size: 20),
+                    errorBuilder: (_, _, _) => const Icon(Icons.home, color: kGold, size: 20),
                   )
                 : const Icon(Icons.home, color: kGold, size: 20),
           ),
@@ -438,9 +438,9 @@ class _BnbDashboardState extends State<BnbDashboard> {
           Text(_formatCurrency(price), style: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
           Row(children: [
-            const Icon(Icons.star, size: 11, color: const Color(0xFF10B981)),
+            const Icon(Icons.star, size: 11, color: Color(0xFF10B981)),
             const SizedBox(width: 2),
-            Text('$averageRating ($reviewsCount)', style: const TextStyle(color: const Color(0xFF10B981), fontSize: 11)),
+            Text('$averageRating ($reviewsCount)', style: const TextStyle(color: Color(0xFF10B981), fontSize: 11)),
           ]),
         ]),
       ]),

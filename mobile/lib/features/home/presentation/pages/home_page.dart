@@ -833,7 +833,7 @@ class _PropCard extends StatelessWidget {
                 width: double.infinity,
                 child: imgUrl.isNotEmpty
                     ? Image.network(imgUrl, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _ImgPlaceholder(Icons.home_outlined))
+                        errorBuilder: (_, _, _) => _ImgPlaceholder(Icons.home_outlined))
                     : _ImgPlaceholder(Icons.home_outlined),
               ),
               if (p['featured'] == true || p['featured'] == 1)
@@ -929,7 +929,7 @@ class _CommCard extends StatelessWidget {
                 height: 175, width: double.infinity,
                 child: imgUrl.isNotEmpty
                     ? Image.network(imgUrl, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _ImgPlaceholder(Icons.business_outlined, dark: true))
+                        errorBuilder: (_, _, _) => _ImgPlaceholder(Icons.business_outlined, dark: true))
                     : _ImgPlaceholder(Icons.business_outlined, dark: true),
               ),
               Positioned(top: 10, left: 10,
@@ -1181,7 +1181,7 @@ class _CleanSearchInput extends StatelessWidget {
       prefixIcon: const Icon(Icons.search, size: 16, color: kSlate400),
       suffixIcon: ValueListenableBuilder(
         valueListenable: controller,
-        builder: (_, val, __) => val.text.isNotEmpty
+        builder: (_, val, _) => val.text.isNotEmpty
             ? IconButton(icon: const Icon(Icons.close, size: 13, color: kSlate400),
                 onPressed: () => controller.clear())
             : const SizedBox.shrink(),
@@ -1198,7 +1198,7 @@ class _CleanDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
-    value: value,
+    initialValue: value,
     dropdownColor: kWhite,
     style: const TextStyle(color: kSlate800, fontSize: 13),
     decoration: InputDecoration(

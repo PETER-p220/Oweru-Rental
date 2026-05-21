@@ -308,7 +308,7 @@ class _CommercialDashboardState extends State<CommercialDashboard> {
           if (_properties.isEmpty)
             const Padding(padding: EdgeInsets.all(16), child: Text('No properties yet.', style: TextStyle(color: kSlate)))
           else
-            ..._properties.take(3).map((property) => _buildPropertyRow(property)).toList(),
+            ..._properties.take(3).map((property) => _buildPropertyRow(property)),
           if (_properties.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -327,7 +327,7 @@ class _CommercialDashboardState extends State<CommercialDashboard> {
           if (_applications.isEmpty)
             const Padding(padding: EdgeInsets.all(16), child: Text('No applications yet.', style: TextStyle(color: kSlate)))
           else
-            ..._applications.take(3).map((application) => _buildApplicationRow(application)).toList(),
+            ..._applications.take(3).map((application) => _buildApplicationRow(application)),
           if (_applications.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12),

@@ -190,6 +190,14 @@ class Api {
     return this.request('logout', { method: 'POST' });
   }
 
+  static getGoogleAuthUrl(userType: string) {
+    return `${API_BASE_URL}/api/auth/google/redirect?user_type=${userType}`;
+  }
+
+  static getGoogleRegisterUrl(userType: string) {
+    return `${API_BASE_URL}/api/auth/google/register/redirect?user_type=${userType}`;
+  }
+
   static async getUser() {
     return this.request<User>('user');
   }

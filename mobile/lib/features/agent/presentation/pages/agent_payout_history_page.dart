@@ -137,7 +137,7 @@ class _AgentPayoutHistoryPageState extends State<AgentPayoutHistoryPage> {
                       : SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
-                            headingRowColor: MaterialStateProperty.all(const Color(0xFF2A2418)),
+                            headingRowColor: WidgetStateProperty.all(const Color(0xFF2A2418)),
                             columns: const [
                               DataColumn(label: Text('Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
                               DataColumn(label: Text('Amount', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),

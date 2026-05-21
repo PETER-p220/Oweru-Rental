@@ -204,7 +204,7 @@ class _AgentApplicationsPageState extends State<AgentApplicationsPage> {
               child: const Center(child: Text('No applications found.', style: TextStyle(color: kSlate))),
             )
           else
-            ..._applications.map((app) => _buildApplicationCard(app)).toList(),
+            ..._applications.map((app) => _buildApplicationCard(app)),
         ],
       ),
     );

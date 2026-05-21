@@ -22,8 +22,8 @@ class _CommercialApplicationsPageState extends State<CommercialApplicationsPage>
   String _error = '';
   String _searchQuery = '';
   String _statusFilter = 'all';
-  int _currentPage = 1;
-  int _lastPage = 1;
+  final int _currentPage = 1;
+  final int _lastPage = 1;
   int _total = 0;
 
   @override
@@ -152,7 +152,7 @@ class _CommercialApplicationsPageState extends State<CommercialApplicationsPage>
                     ),
                     const SizedBox(width: 12),
                     DropdownButtonFormField<String>(
-                      value: _statusFilter,
+                      initialValue: _statusFilter,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: kBg3,

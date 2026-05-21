@@ -292,7 +292,7 @@ class _AgentDashboardState extends State<AgentDashboard> {
           if (_listings.isEmpty)
             const Padding(padding: EdgeInsets.all(16), child: Text('No listings yet.', style: TextStyle(color: kSlate)))
           else
-            ..._listings.take(5).map((listing) => _buildListingRow(listing)).toList(),
+            ..._listings.take(5).map((listing) => _buildListingRow(listing)),
           if (_listings.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -311,7 +311,7 @@ class _AgentDashboardState extends State<AgentDashboard> {
           if (_leads.isEmpty)
             const Padding(padding: EdgeInsets.all(16), child: Text('No leads yet.', style: TextStyle(color: kSlate)))
           else
-            ..._leads.take(5).map((lead) => _buildLeadRow(lead)).toList(),
+            ..._leads.take(5).map((lead) => _buildLeadRow(lead)),
           if (_leads.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12),
@@ -359,7 +359,7 @@ class _AgentDashboardState extends State<AgentDashboard> {
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Text(ownerName, style: const TextStyle(color: kSlate, fontSize: 11)),
           const SizedBox(height: 2),
-          Text(_formatCurrency(price), style: const TextStyle(color: const Color(0xFF2563EB), fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(_formatCurrency(price), style: const TextStyle(color: Color(0xFF2563EB), fontSize: 12, fontWeight: FontWeight.w600)),
         ]),
       ]),
     );

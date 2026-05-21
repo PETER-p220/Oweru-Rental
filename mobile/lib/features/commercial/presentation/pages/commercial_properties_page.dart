@@ -23,8 +23,8 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
   String _searchQuery = '';
   String _statusFilter = 'all';
   String _typeFilter = 'all';
-  int _currentPage = 1;
-  int _lastPage = 1;
+  final int _currentPage = 1;
+  final int _lastPage = 1;
   int _total = 0;
 
   @override
@@ -192,7 +192,7 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _statusFilter,
+                        initialValue: _statusFilter,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: kBg3,
@@ -216,7 +216,7 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _typeFilter,
+                        initialValue: _typeFilter,
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: kBg3,
@@ -326,7 +326,7 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
                       ? Image.network(
                           imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Center(
+                          errorBuilder: (_, _, _) => const Center(
                             child: Icon(Icons.domain_outlined, color: kSlate, size: 36),
                           ),
                         )

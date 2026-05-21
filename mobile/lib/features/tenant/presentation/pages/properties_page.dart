@@ -68,7 +68,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
       backgroundColor: kBg,
       body: NestedScrollView(
         controller: _scrollCtrl,
-        headerSliverBuilder: (_, __) => [
+        headerSliverBuilder: (_, _) => [
           _buildSliverAppBar(),
           SliverToBoxAdapter(child: _buildSearchBar()),
           SliverToBoxAdapter(child: _buildTypeChips()),
@@ -339,7 +339,7 @@ class _PropertyCard extends StatelessWidget {
                         }
                         return child;
                       },
-                      errorBuilder: (_, __, ___) => Container(color: kBg3,
+                      errorBuilder: (_, _, _) => Container(color: kBg3,
                         child: const Center(child: Icon(Icons.image_rounded, color: kSlateDim, size: 36))),
                     )
                   : Container(color: kBg3,

@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -126,5 +128,273 @@ class AuthController extends Controller
             'createdAt'        => $user->created_at,
             'updatedAt'        => $user->updated_at,
         ];
+    }
+
+    // ── Google OAuth for Web (Redirect Flow) ─────────────────────────────────────
+
+    public function redirectToGoogle(Request $request): JsonResponse
+    {
+        $userType = $request->query('user_type', 'tenant');
+        session(['google_user_type' => $userType]);
+        session(['google_auth_type' => 'login']);
+        
+        $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
+        
+        return response()->json(['url' => $url]);
+    }
+
+    public function redirectToGoogleRegister(Request $request): JsonResponse
+    {
+        $userType = $request->query('user_type', 'tenant');
+        session(['google_user_type' => $userType]);
+        session(['google_auth_type' => 'register']);
+        
+        $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
+        
+        return response()->json(['url' => $url]);
+    }
+
+    public function handleGoogleCallback(Request $request): JsonResponse
+    {
+        try {
+            $googleUser = Socialite::driver('google')->stateless()->user();
+            $userType = session('google_user_type', 'tenant');
+            $authType = session('google_auth_type', 'login');
+            
+            $user = User::where('email', $googleUser->email)->first();
+            
+            if ($authType === 'register') {
+                // Registration flow
+                if ($user) {
+                    return response()->json([
+                        'message' => 'User already exists. Please login instead.',
+                    ], 400);
+                }
+                
+                $nameParts = explode(' ', $googleUser->name, 2);
+                $firstName = $nameParts[0] ?? '';
+                $lastName = $nameParts[1] ?? '';
+                
+                $user = User::create([
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'email' => $googleUser->email,
+                    'password' => Hash::make(Str::random(16)), // Random password for OAuth users
+                    'phone' => '',
+                    'user_type' => $userType,
+                    'google_id' => $googleUser->id,
+                    'email_verified_at' => now(),
+                ]);
+            } else {
+                // Login flow
+                if (!$user) {
+                    return response()->json([
+                        'message' => 'User not found. Please register first.',
+                    ], 404);
+                }
+                
+                if ($user->user_type !== $userType) {
+                    return response()->json([
+                        'message' => 'User type mismatch',
+                    ], 401);
+                }
+                
+                if (!$user->google_id) {
+                    $user->update(['google_id' => $googleUser->id]);
+                }
+            }
+            
+            if (!$user->is_active) {
+                return response()->json(['message' => 'Account is inactive'], 401);
+            }
+            
+            // Revoke previous tokens
+            $user->tokens()->delete();
+            
+            $token = $user->createToken('auth_token')->plainTextToken;
+            
+            return response()->json([
+                'message' => 'Authentication successful',
+                'data' => [
+                    'user' => $this->formatUser($user),
+                    'token' => $token,
+                ],
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Google authentication failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // ── Google OAuth for Mobile (ID Token Flow) ─────────────────────────────────
+
+    public function loginWithGoogle(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+            'user_type' => 'required|in:tenant,landlord,agent,bnb_owner,commercial,admin',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $idToken = $request->token;
+            $userType = $request->user_type;
+            
+            // Verify Google ID token by calling Google's token info endpoint
+            $response = \Http::get('https://oauth2.googleapis.com/tokeninfo', [
+                'id_token' => $idToken,
+            ]);
+            
+            if (!$response->successful()) {
+                return response()->json(['message' => 'Invalid Google ID token'], 401);
+            }
+            
+            $tokenInfo = $response->json();
+            $googleEmail = $tokenInfo['email'] ?? null;
+            $googleId = $tokenInfo['sub'] ?? null;
+            
+            if (!$googleEmail || !$googleId) {
+                return response()->json(['message' => 'Invalid token data'], 401);
+            }
+            
+            // Verify the token is issued to our client
+            $clientId = config('services.google.client_id');
+            if ($tokenInfo['aud'] !== $clientId) {
+                return response()->json(['message' => 'Token issued to wrong client'], 401);
+            }
+            
+            $user = User::where('email', $googleEmail)->first();
+            
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not found. Please register first.',
+                ], 404);
+            }
+            
+            if ($user->user_type !== $userType) {
+                return response()->json(['message' => 'User type mismatch'], 401);
+            }
+            
+            if (!$user->google_id) {
+                $user->update(['google_id' => $googleId]);
+            }
+            
+            if (!$user->is_active) {
+                return response()->json(['message' => 'Account is inactive'], 401);
+            }
+            
+            // Revoke previous tokens
+            $user->tokens()->delete();
+            
+            $token = $user->createToken('auth_token')->plainTextToken;
+            
+            return response()->json([
+                'message' => 'Login successful',
+                'data' => [
+                    'user' => $this->formatUser($user),
+                    'token' => $token,
+                ],
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Google authentication failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function registerWithGoogle(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+            'user_type' => 'required|in:tenant,landlord,agent,bnb_owner,commercial',
+            'phone' => 'nullable|string|max:20',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $idToken = $request->token;
+            $userType = $request->user_type;
+            $phone = $request->phone;
+            
+            // Verify Google ID token by calling Google's token info endpoint
+            $response = \Http::get('https://oauth2.googleapis.com/tokeninfo', [
+                'id_token' => $idToken,
+            ]);
+            
+            if (!$response->successful()) {
+                return response()->json(['message' => 'Invalid Google ID token'], 401);
+            }
+            
+            $tokenInfo = $response->json();
+            $googleEmail = $tokenInfo['email'] ?? null;
+            $googleId = $tokenInfo['sub'] ?? null;
+            $googleName = $tokenInfo['name'] ?? '';
+            
+            if (!$googleEmail || !$googleId) {
+                return response()->json(['message' => 'Invalid token data'], 401);
+            }
+            
+            // Verify the token is issued to our client
+            $clientId = config('services.google.client_id');
+            if ($tokenInfo['aud'] !== $clientId) {
+                return response()->json(['message' => 'Token issued to wrong client'], 401);
+            }
+            
+            $existingUser = User::where('email', $googleEmail)->first();
+            
+            if ($existingUser) {
+                return response()->json([
+                    'message' => 'User already exists. Please login instead.',
+                ], 400);
+            }
+            
+            $nameParts = explode(' ', $googleName, 2);
+            $firstName = $nameParts[0] ?? '';
+            $lastName = $nameParts[1] ?? '';
+            
+            $user = User::create([
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $googleEmail,
+                'password' => Hash::make(Str::random(16)),
+                'phone' => $phone ?? '',
+                'user_type' => $userType,
+                'google_id' => $googleId,
+                'email_verified_at' => now(),
+            ]);
+            
+            $token = $user->createToken('auth_token')->plainTextToken;
+            
+            return response()->json([
+                'message' => 'Registration successful',
+                'data' => [
+                    'user' => $this->formatUser($user),
+                    'token' => $token,
+                ],
+            ], 201);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Google registration failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

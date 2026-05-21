@@ -17,6 +17,11 @@ const Login = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const handleGoogleLogin = () => {
+    const googleAuthUrl = Api.getGoogleAuthUrl(formData.userType);
+    window.location.href = googleAuthUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -623,7 +628,7 @@ const Login = () => {
             </div>
 
             <div className="lg-socials">
-              <button className="lg-social">
+              <button className="lg-social" onClick={handleGoogleLogin}>
                 <svg width="14" height="14" viewBox="0 0 24 24">
                   <path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 12 4.9c1.69 0 3.22.6 4.41 1.58l3.3-3.3A11.95 11.95 0 0 0 12 1C8.37 1 5.17 2.91 3.27 5.76l2 4z"/>
                   <path fill="#34A853" d="M16.04 18.01A7.05 7.05 0 0 1 12 19.1c-2.86 0-5.3-1.69-6.49-4.15l-3.95 3.06A11.97 11.97 0 0 0 12 23c2.93 0 5.63-1.05 7.69-2.77l-3.65-2.22z"/>

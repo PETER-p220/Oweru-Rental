@@ -514,7 +514,7 @@ class _PropertyCard extends StatelessWidget {
                   ? Image.network(
                       imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.home, color: kGold, size: 24),
+                      errorBuilder: (_, _, _) => const Icon(Icons.home, color: kGold, size: 24),
                     )
                   : const Icon(Icons.home, color: kGold, size: 24),
             ),
@@ -675,6 +675,7 @@ class _ActivityRow extends StatelessWidget {
   final IconData icon;
   final String title, sub, time;
   final Color color;
+  // AFTER (fixed)
   final bool last;
   const _ActivityRow({required this.icon, required this.title, required this.sub,
     required this.color, required this.time, this.last = false});

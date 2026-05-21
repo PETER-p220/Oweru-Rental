@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../../shared/services/auth_service.dart';
 import '../../../shared/services/user_service.dart';
 
@@ -29,6 +30,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _isLoading = false;
   List<String> _errors = [];
   final _userService = UserService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   final List<Map<String, String>> userTypes = [
     {'value': 'tenant', 'label': 'Tenant', 'desc': 'Looking to rent'},
@@ -46,6 +48,7 @@ class _RegisterPageState extends State<RegisterPage> {
     _phoneCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmPasswordCtrl.dispose();
+    _googleSignIn.disconnect();
     super.dispose();
   }
 
@@ -75,6 +78,82 @@ class _RegisterPageState extends State<RegisterPage> {
 
     setState(() => _errors = errs);
     return errs.isEmpty;
+  }
+
+  Future<void> _handleGoogleRegister() async {
+    setState(() => _isLoading = true);
+    _errors.clear();
+
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        setState(() {
+          _errors = ['Failed to get Google ID token'];
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final result = await AuthService.registerWithGoogle(
+        idToken: idToken,
+        userType: _userType,
+        phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+      );
+
+      if (result['success']) {
+        if (mounted) {
+          final userData = result['data']?['data']?['user'] ?? {};
+          _userService.setUserData(
+            userType: _userType,
+            token: result['data']?['data']?['token'],
+            userName: '${userData['first_name'] ?? ''} ${userData['last_name'] ?? ''}',
+            userEmail: userData['email'] ?? '',
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registration successful!')),
+          );
+
+          String route = '/tenant-dashboard';
+          switch (_userType) {
+            case 'agent':
+              route = '/agent-dashboard';
+              break;
+            case 'landlord':
+              route = '/landlord-dashboard';
+              break;
+            case 'tenant':
+              route = '/tenant-dashboard';
+              break;
+            case 'bnb_owner':
+              route = '/bnb-dashboard';
+              break;
+            case 'commercial':
+              route = '/commercial-dashboard';
+              break;
+          }
+          Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
+        }
+      } else {
+        setState(() {
+          _errors = [result['message'] ?? 'Google registration failed'];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errors = ['Google registration error: $e'];
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _handleRegister() async {
@@ -397,6 +476,31 @@ class _RegisterPageState extends State<RegisterPage> {
                         color: Color(0xFF0A0F1E),
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Google Sign-In Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _handleGoogleRegister,
+                    icon: const Icon(Icons.login, color: kGold, size: 20),
+                    label: const Text(
+                      'Sign up with Google',
+                      style: TextStyle(
+                        color: kCream,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: kBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                   ),

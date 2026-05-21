@@ -27,6 +27,13 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
+// Google OAuth routes
+Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+Route::get('/auth/google/register/redirect', [AuthController::class, 'redirectToGoogleRegister']);
+Route::post('/auth/google', [AuthController::class, 'loginWithGoogle']);
+Route::post('/auth/google/register', [AuthController::class, 'registerWithGoogle']);
+
 // Public property routes
 Route::get('/public/properties',            [PropertyController::class, 'publicIndex']);
 Route::get('/public/properties/{property}', [PropertyController::class, 'publicShow']);

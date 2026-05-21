@@ -54,4 +54,10 @@ return [
         'payment_timeout_minutes' => env('PAYMENT_TIMEOUT_MINUTES', 2),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', 'https://rental.oweru.com/api/auth/google/callback'),
+    ],
+
 ];

@@ -10,19 +10,47 @@ class AgentShareTrackPage extends StatefulWidget {
   State<AgentShareTrackPage> createState() => _AgentShareTrackPageState();
 }
 
-class _AgentShareTrackPageState extends State<AgentShareTrackPage> {
+class _AgentShareTrackPageState extends State<AgentShareTrackPage>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _links = [];
   bool _isLoading = true;
   bool _refreshing = false;
   String _error = '';
-  String _searchQuery = '';                   
+  String _searchQuery = '';
   DateTime? _lastUpdated;
-  Map<int, bool> _copied = {};
+  final Map<int, bool> _copied = {};
+  late AnimationController _pulseController;
+
+  // ── Design tokens ──────────────────────────────────────────────
+  static const _bg = Color(0xFF0C0F18);
+  static const _surface = Color(0xFF131720);
+  static const _card = Color(0xFF181D2A);
+  static const _cardBorder = Color(0xFF242B3D);
+  static const _gold = Color(0xFFC9A84C);
+  static const _goldLight = Color(0xFFE8C76A);
+  static const _green = Color(0xFF10B981);
+  static const _blue = Color(0xFF38BDF8);
+  static const _amber = Color(0xFFF59E0B);
+  static const _red = Color(0xFFEF4444);
+  static const _textPrimary = Color(0xFFECE8E1);
+  static const _textSecondary = Color(0xFF7A7670);
+  static const _textMuted = Color(0xFF4A4745);
+  // ───────────────────────────────────────────────────────────────
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData({bool silent = false}) async {
@@ -42,7 +70,7 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Unable to load tracking links.';
+        _error = 'Unable to load tracking links. Please try again.';
         _isLoading = false;
         _refreshing = false;
       });
@@ -59,31 +87,38 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage> {
     }).toList();
   }
 
-  int get _totalClicks => _links.fold(0, (sum, item) => sum + (int.tryParse(item['clicks']?.toString() ?? '0') ?? 0));
-  int get _totalShares => _links.fold(0, (sum, item) => sum + (int.tryParse(item['shares']?.toString() ?? '0') ?? 0));
+  int get _totalClicks => _links.fold(
+        0,
+        (sum, item) =>
+            sum + (int.tryParse(item['clicks']?.toString() ?? '0') ?? 0),
+      );
+
+  int get _totalShares => _links.fold(
+        0,
+        (sum, item) =>
+            sum + (int.tryParse(item['shares']?.toString() ?? '0') ?? 0),
+      );
 
   Future<void> _handleCopy(Map<String, dynamic> item) async {
     final url = item['tracking_url'] as String? ?? '';
     await Clipboard.setData(ClipboardData(text: url));
     setState(() => _copied[item['id']] = true);
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _copied[item['id']] = false);
-      }
+      if (mounted) setState(() => _copied[item['id']] = false);
     });
   }
 
   Future<void> _handleWhatsApp(Map<String, dynamic> item) async {
     final url = item['tracking_url'] as String? ?? '';
-    final whatsappUrl = 'https://wa.me/?text=${Uri.encodeComponent('Check out this property: $url')}';
-    final Uri uri = Uri.parse(whatsappUrl);
+    final wa = 'https://wa.me/?text=${Uri.encodeComponent('Check out this property: $url')}';
+    final uri = Uri.parse(wa);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
   Future<void> _openUrl(String url) async {
-    final Uri uri = Uri.parse(url);
+    final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -91,231 +126,251 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage> {
 
   String _formatDate(String dateStr) {
     try {
-      final date = DateTime.parse(dateStr);
-      return '${date.day}/${date.month}/${date.year}';
+      final d = DateTime.parse(dateStr);
+      final months = [
+        'Jan','Feb','Mar','Apr','May','Jun',
+        'Jul','Aug','Sep','Oct','Nov','Dec',
+      ];
+      return '${months[d.month - 1]} ${d.day}, ${d.year}';
     } catch (_) {
       return '—';
     }
   }
 
+  // ── Build ───────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1218),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1D26),
-        elevation: 0,
-        title: const Text('Share & Track', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 18, fontWeight: FontWeight.w700)),
-      ),
+      backgroundColor: _bg,
+      appBar: _buildAppBar(),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Section
+          _buildHeader(),
+          _buildSearchBar(),
+          if (_error.isNotEmpty) _buildErrorBanner(),
+          if (_lastUpdated != null) _buildLiveIndicator(),
+          Expanded(child: _buildBody()),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: _surface,
+      elevation: 0,
+      centerTitle: false,
+      titleSpacing: 20,
+      title: Row(
+        children: [
           Container(
-            padding: const EdgeInsets.all(20),
-            color: const Color(0xFF1A1D26),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Agent Workspace', style: TextStyle(color: Color(0xFF8B8680), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
-                const SizedBox(height: 16),
-                const Text('Share & Track', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 28, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
-                const Text(
-                  'Tracking links for your listings. Clicks are recorded automatically when someone opens your link.',
-                  style: TextStyle(color: Color(0xFF8B8680), fontSize: 13),
-                ),
-                const SizedBox(height: 22),
-                // Stats Grid
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard('Total Links', '${_links.length}', const Color(0xFFC9A84C)),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard('Total Clicks', '$_totalClicks', const Color(0xFF10B981)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard('Total Shares', '$_totalShares', const Color(0xFFF59E0B)),
-                    ),
-                  ],
-                ),
-              ],
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [_gold, _goldLight],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.track_changes_rounded, size: 16, color: Colors.black),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Share & Track',
+            style: TextStyle(
+              color: _textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
             ),
           ),
-          // Search and Refresh Section
+        ],
+      ),
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(height: 1, color: _cardBorder),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      color: _surface,
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Container(
-            padding: const EdgeInsets.all(20),
-            color: const Color(0xFF1A1D26),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                    decoration: InputDecoration(
-                      hintText: 'Search properties...',
-                      hintStyle: const TextStyle(color: Color(0xFF8B8680)),
-                      filled: true,
-                      fillColor: const Color(0xFF162035),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(9),
-                        borderSide: const BorderSide(color: Color(0xFF2A2418)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(9),
-                        borderSide: const BorderSide(color: Color(0xFF2A2418)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(9),
-                        borderSide: const BorderSide(color: Color(0xFFC9A84C)),
-                      ),
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF8B8680), size: 14),
-                    ),
-                    style: const TextStyle(color: Color(0xFFE8E1D5)),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _refreshing ? null : () => _loadData(silent: true),
-                  icon: SizedBox(
-                    width: 13,
-                    height: 13,
-                    child: _refreshing
-                        ? const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B8680))
-                        : const Icon(Icons.refresh, size: 13),
-                  ),
-                  label: Text(_refreshing ? 'Refreshing...' : 'Refresh'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFC9A84C),
-                    backgroundColor: Color(0xFFC9A84C).withOpacity(0.12),
-                    side: BorderSide(color: Color(0xFFC9A84C).withOpacity(0.3)),
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: _gold.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: _gold.withOpacity(0.25)),
+            ),
+            child: const Text(
+              'AGENT WORKSPACE',
+              style: TextStyle(
+                color: _gold,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
             ),
           ),
-          // Last Updated
-          if (_lastUpdated != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text('Live · last updated just now', style: TextStyle(color: Color(0xFF8B8680), fontSize: 11)),
-                ],
+          const SizedBox(height: 12),
+          const Text(
+            'Tracking Links',
+            style: TextStyle(
+              color: _textPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Clicks are recorded automatically when someone opens your link.',
+            style: TextStyle(color: _textSecondary, fontSize: 13, height: 1.4),
+          ),
+          const SizedBox(height: 20),
+          // Stats row
+          Row(
+            children: [
+              _buildStatCard(
+                icon: Icons.link_rounded,
+                label: 'Total Links',
+                value: '${_links.length}',
+                color: _gold,
+              ),
+              const SizedBox(width: 12),
+              _buildStatCard(
+                icon: Icons.visibility_rounded,
+                label: 'Total Clicks',
+                value: '$_totalClicks',
+                color: _green,
+              ),
+              const SizedBox(width: 12),
+              _buildStatCard(
+                icon: Icons.share_rounded,
+                label: 'Total Shares',
+                value: '$_totalShares',
+                color: _amber,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
               ),
             ),
-          // Error Alert
-          if (_error.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.06),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error, size: 16, color: Color(0xFFEF4444)),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(_error, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 14))),
-                ],
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: color.withOpacity(0.7),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          // Table Section
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      color: _surface,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: Row(
+        children: [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(20),
-              color: const Color(0xFF1A1D26),
-              child: _isLoading
-                  ? _buildLoadingSkeleton()
-                  : _filtered.isEmpty
-                      ? _buildEmptyState()
-                      : SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            headingRowColor: MaterialStateProperty.all(const Color(0xFF2A2418)),
-                            columns: const [
-                              DataColumn(label: Text('#', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Tracking URL', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Stats', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Actions', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                            ],
-                            rows: _filtered.asMap().entries.map((entry) {
-                              final idx = entry.key;
-                              final item = entry.value;
-                              return DataRow(
-                                cells: [
-                                  DataCell(Center(
-                                    child: Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFC9A84C).withOpacity(0.12),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: const Color(0xFF2A2418)),
-                                      ),
-                                      child: Center(
-                                        child: Text('${idx + 1}', style: const TextStyle(color: Color(0xFFC9A84C), fontSize: 11, fontWeight: FontWeight.w700)),
-                                      ),
-                                    ),
-                                  )),
-                                  DataCell(Text(item['title'] ?? 'Unknown', style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14))),
-                                  DataCell(GestureDetector(
-                                    onTap: () => _openUrl(item['tracking_url'] ?? ''),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.link, size: 12, color: Color(0xFFC9A84C)),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            item['tracking_url'] ?? '',
-                                            style: const TextStyle(color: Color(0xFFC9A84C), fontSize: 11),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )),
-                                  DataCell(Row(
-                                    children: [
-                                      _buildStatBadge(Icons.visibility, '${item['clicks'] ?? 0}', const Color(0xFF38BDF8)),
-                                      const SizedBox(width: 8),
-                                      _buildStatBadge(Icons.share, '${item['shares'] ?? 0}', const Color(0xFFF59E0B)),
-                                      const SizedBox(width: 8),
-                                      Text(_formatDate(item['created_at'] ?? ''), style: const TextStyle(color: Color(0xFF8B8680), fontSize: 11)),
-                                    ],
-                                  )),
-                                  DataCell(Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      _buildActionButton(
-                                        _copied[item['id']] == true ? Icons.check : Icons.copy,
-                                        _copied[item['id']] == true ? 'Copied!' : 'Copy',
-                                        _copied[item['id']] == true ? const Color(0xFF10B981) : const Color(0xFFC9A84C),
-                                        () => _handleCopy(item),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _buildActionButton(Icons.message, 'WhatsApp', const Color(0xFF25D366), () => _handleWhatsApp(item)),
-                                    ],
-                                  )),
-                                ],
-                              );
-                            }).toList(),
-                          ),
-                        ),
+              height: 44,
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _cardBorder),
+              ),
+              child: TextField(
+                onChanged: (v) => setState(() => _searchQuery = v),
+                style: const TextStyle(color: _textPrimary, fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Search properties...',
+                  hintStyle: TextStyle(color: _textMuted, fontSize: 14),
+                  prefixIcon: Icon(Icons.search_rounded, color: _textMuted, size: 18),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: _refreshing ? null : () => _loadData(silent: true),
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: _gold.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _gold.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: _refreshing
+                        ? CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: _gold.withOpacity(0.7),
+                          )
+                        : const Icon(Icons.refresh_rounded, size: 14, color: _gold),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _refreshing ? 'Updating' : 'Refresh',
+                    style: const TextStyle(
+                      color: _gold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -323,129 +378,483 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color) {
+  Widget _buildLiveIndicator() {
     return Container(
-      padding: const EdgeInsets.all(18),
+      color: _surface,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Row(
+        children: [
+          AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, _) => Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: _green.withOpacity(
+                  0.5 + 0.5 * _pulseController.value,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _green.withOpacity(0.3 * _pulseController.value),
+                    blurRadius: 6,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Live · Last updated ${_formatTime(_lastUpdated!)}',
+            style: const TextStyle(color: _textMuted, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt).inSeconds;
+    if (diff < 10) return 'just now';
+    if (diff < 60) return '$diff seconds ago';
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildErrorBanner() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: _red.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _red.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded, size: 16, color: _red),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _error,
+              style: const TextStyle(color: _red, fontSize: 13),
+            ),
+          ),
+          GestureDetector(
+            onTap: _loadData,
+            child: const Text(
+              'Retry',
+              style: TextStyle(
+                color: _red,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) return _buildSkeletonList();
+    if (_filtered.isEmpty) return _buildEmptyState();
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      itemCount: _filtered.length,
+      itemBuilder: (context, index) {
+        return _buildLinkCard(_filtered[index], index);
+      },
+    );
+  }
+
+  Widget _buildLinkCard(Map<String, dynamic> item, int index) {
+    final isCopied = _copied[item['id']] == true;
+    final clicks = item['clicks']?.toString() ?? '0';
+    final shares = item['shares']?.toString() ?? '0';
+    final title = item['title'] ?? 'Untitled Property';
+    final trackingUrl = item['tracking_url'] ?? '';
+    final createdAt = item['created_at'] ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.14),
+          // Card header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Index badge
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: _gold.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _gold.withOpacity(0.25)),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(
+                        color: _gold,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Title and date
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: _textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 11,
+                            color: _textMuted,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatDate(createdAt),
+                            style: const TextStyle(
+                              color: _textMuted,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(value, style: TextStyle(color: color, fontSize: 30, fontWeight: FontWeight.w700)),
+
+          // Tracking URL chip
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: GestureDetector(
+              onTap: () => _openUrl(trackingUrl),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _gold.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _gold.withOpacity(0.15)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.link_rounded, size: 13, color: _gold),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        trackingUrl,
+                        style: const TextStyle(
+                          color: _gold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.open_in_new_rounded,
+                      size: 11,
+                      color: _textMuted,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Divider
+          Container(height: 1, color: _cardBorder),
+
+          // Stats row
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                _buildInlineStatBadge(
+                  icon: Icons.visibility_rounded,
+                  label: '$clicks clicks',
+                  color: _blue,
+                ),
+                const SizedBox(width: 8),
+                _buildInlineStatBadge(
+                  icon: Icons.share_rounded,
+                  label: '$shares shares',
+                  color: _amber,
+                ),
+                const Spacer(),
+                // Action buttons
+                _buildCardAction(
+                  icon: isCopied ? Icons.check_rounded : Icons.copy_rounded,
+                  label: isCopied ? 'Copied' : 'Copy',
+                  color: isCopied ? _green : _gold,
+                  onTap: () => _handleCopy(item),
+                ),
+                const SizedBox(width: 8),
+                _buildCardAction(
+                  icon: Icons.message_rounded,
+                  label: 'Share',
+                  color: const Color(0xFF25D366),
+                  onTap: () => _handleWhatsApp(item),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatBadge(IconData icon, String value, Color color) {
+  Widget _buildInlineStatBadge({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
+        color: color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.18)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 8, color: color),
-          const SizedBox(width: 4),
-          Text(value, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildCardAction({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: color == const Color(0xFFC9A84C) ? color.withOpacity(0.12) : color.withOpacity(0.08),
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withOpacity(0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 12, color: color),
-            const SizedBox(width: 6),
-            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLoadingSkeleton() {
-    return DataTable(
-      headingRowColor: MaterialStateProperty.all(const Color(0xFF2A2418)),
-      columns: const [
-        DataColumn(label: Text('#', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-        DataColumn(label: Text('Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-        DataColumn(label: Text('Tracking URL', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-        DataColumn(label: Text('Stats', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-        DataColumn(label: Text('Actions', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-      ],
-      rows: List.generate(3, (index) {
-        return DataRow(
-          cells: [
-            DataCell(Center(child: Container(width: 28, height: 28, color: const Color(0xFF1E2D4A)))),
-            DataCell(Container(height: 14, width: 100, color: const Color(0xFF1E2D4A))),
-            DataCell(Container(height: 11, width: 150, color: const Color(0xFF1E2D4A))),
-            DataCell(Row(
-              children: [
-                Container(width: 50, height: 20, color: const Color(0xFF1E2D4A)),
-                const SizedBox(width: 8),
-                Container(width: 50, height: 20, color: const Color(0xFF1E2D4A)),
-              ],
-            )),
-            DataCell(Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(width: 60, height: 28, color: const Color(0xFF1E2D4A)),
-                const SizedBox(width: 8),
-                Container(width: 60, height: 28, color: const Color(0xFF1E2D4A)),
-              ],
-            )),
-          ],
-        );
-      }),
+  // ── Skeleton ───────────────────────────────────────────────────
+
+  Widget _buildSkeletonList() {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      itemCount: 4,
+      itemBuilder: (_, i) => _buildSkeletonCard(),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
+  Widget _buildSkeletonCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _cardBorder),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFFC9A84C).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2A2418)),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                _shimmer(width: 32, height: 32, radius: 8),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _shimmer(width: 160, height: 14, radius: 4),
+                    const SizedBox(height: 8),
+                    _shimmer(width: 80, height: 10, radius: 4),
+                  ],
+                ),
+              ],
             ),
-            child: const Icon(Icons.link, size: 22, color: Color(0xFFC9A84C)),
           ),
-          const SizedBox(height: 16),
-          const Text('No tracking links found', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 20, fontWeight: FontWeight.w300)),
-          const SizedBox(height: 6),
-          Text(
-            _searchQuery.isNotEmpty ? 'Try a different search term.' : 'Tracking links will appear here once your listings are live.',
-            style: const TextStyle(color: Color(0xFF8B8680), fontSize: 14),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: _shimmer(width: double.infinity, height: 36, radius: 8),
+          ),
+          Container(height: 1, color: _cardBorder),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                _shimmer(width: 72, height: 26, radius: 6),
+                const SizedBox(width: 8),
+                _shimmer(width: 72, height: 26, radius: 6),
+                const Spacer(),
+                _shimmer(width: 64, height: 30, radius: 7),
+                const SizedBox(width: 8),
+                _shimmer(width: 64, height: 30, radius: 7),
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _shimmer({
+    required double width,
+    required double height,
+    required double radius,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E2840),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+
+  // ── Empty State ────────────────────────────────────────────────
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: _gold.withOpacity(0.08),
+                shape: BoxShape.circle,
+                border: Border.all(color: _gold.withOpacity(0.2)),
+              ),
+              child: const Icon(
+                Icons.link_off_rounded,
+                size: 26,
+                color: _gold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _searchQuery.isNotEmpty ? 'No results found' : 'No tracking links yet',
+              style: const TextStyle(
+                color: _textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _searchQuery.isNotEmpty
+                  ? 'Try a different search term.'
+                  : 'Tracking links will appear here once your listings are live.',
+              style: const TextStyle(
+                color: _textSecondary,
+                fontSize: 13,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (_searchQuery.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () => setState(() => _searchQuery = ''),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _gold.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _gold.withOpacity(0.3)),
+                  ),
+                  child: const Text(
+                    'Clear search',
+                    style: TextStyle(
+                      color: _gold,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

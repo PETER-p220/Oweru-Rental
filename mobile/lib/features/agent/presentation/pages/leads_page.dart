@@ -186,7 +186,7 @@ class _LeadsPageState extends State<LeadsPage> {
               child: const Center(child: Text('No leads found.', style: TextStyle(color: kSlate))),
             )
           else
-            ...filtered.map((lead) => _buildLeadCard(lead)).toList(),
+            ...filtered.map((lead) => _buildLeadCard(lead)),
         ],
       ),
     );

@@ -145,7 +145,7 @@ class _AgentAnalyticsPageState extends State<AgentAnalyticsPage> {
                           : SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: DataTable(
-                                headingRowColor: MaterialStateProperty.all(const Color(0xFF2A2418)),
+                                headingRowColor: WidgetStateProperty.all(const Color(0xFF2A2418)),
                                 columns: const [
                                   DataColumn(label: Text('Top Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
                                   DataColumn(label: Text('Applications', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),

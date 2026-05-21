@@ -260,7 +260,7 @@ class _BnbPropertiesPageState extends State<BnbPropertiesPage> {
                       ? Image.network(
                           imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Center(
+                          errorBuilder: (_, _, _) => const Center(
                             child: Icon(Icons.home_work_outlined, color: kSlate, size: 48),
                           ),
                         )
@@ -463,7 +463,7 @@ class _PropertyDetailDialog extends StatelessWidget {
     final images = property['images'] as List?;
     final imageUrl = images != null && images.isNotEmpty ? images[0] as String? : null;
 
-    String _formatCurrency(dynamic value) {
+    String formatCurrency(dynamic value) {
       if (value == null) return 'TZS 0';
       final double numericValue = value is double ? value : (double.tryParse(value.toString()) ?? 0);
       if (numericValue >= 1000000) {
@@ -535,7 +535,7 @@ class _PropertyDetailDialog extends StatelessWidget {
                           child: Image.network(
                             imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Center(
+                            errorBuilder: (_, _, _) => const Center(
                               child: Icon(Icons.home_work_outlined, color: kSlate, size: 48),
                             ),
                           ),
@@ -551,7 +551,7 @@ class _PropertyDetailDialog extends StatelessWidget {
                       mainAxisSpacing: 12,
                       childAspectRatio: 2.5,
                       children: [
-                        _buildInfoItem('Price', '${_formatCurrency(price)}/night'),
+                        _buildInfoItem('Price', '${formatCurrency(price)}/night'),
                         _buildInfoItem('Status', status.toUpperCase()),
                         _buildInfoItem('Bedrooms', '$bedrooms'),
                         _buildInfoItem('Bathrooms', '$bathrooms'),
@@ -780,7 +780,7 @@ class _AddPropertyDialogState extends State<_AddPropertyDialog> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _propertyType,
+                        initialValue: _propertyType,
                         decoration: const InputDecoration(
                           labelText: 'Property Type',
                           labelStyle: TextStyle(color: kSlate),

@@ -16,10 +16,11 @@ return new class extends Migration
             $table->string('first_name')->after('id');
             $table->string('last_name')->after('first_name');
             $table->string('phone')->nullable()->after('email');
-            $table->enum('user_type', ['tenant', 'landlord', 'agent', 'admin'])->default('tenant')->after('phone');
+            $table->enum('user_type', ['tenant', 'landlord', 'agent', 'admin', 'bnb_owner', 'commercial'])->default('tenant')->after('phone');
             $table->string('profile_image')->nullable()->after('user_type');
             $table->text('bio')->nullable()->after('profile_image');
             $table->boolean('is_active')->default(true)->after('bio');
+            $table->string('google_id')->nullable()->after('is_active');
             
             // Drop the old name column if it exists
             if (Schema::hasColumn('users', 'name')) {
@@ -41,7 +42,8 @@ return new class extends Migration
                 'user_type',
                 'profile_image',
                 'bio',
-                'is_active'
+                'is_active',
+                'google_id'
             ]);
             
             // Add back the name column

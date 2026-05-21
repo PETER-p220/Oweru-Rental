@@ -17,7 +17,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
   String _error = '';
   String _success = '';
   bool _showModal = false;
-  bool _uploading = false;
+  final bool _uploading = false;
   bool _creating = false;
   Map<String, dynamic> _previewContract = {};
   String _title = '';
@@ -25,7 +25,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
   String _tenantId = '';
   String _fileUrl = '';
   String _fileName = '';
-  String _contractType = 'nyumba';
+  final String _contractType = 'nyumba';
 
   @override
   void initState() {

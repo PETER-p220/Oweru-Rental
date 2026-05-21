@@ -14,7 +14,7 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
   List<Map<String, dynamic>> _items = [];
   bool _isLoading = true;
   String _error = '';
-  Map<int, bool> _copied = {};
+  final Map<int, bool> _copied = {};
 
   @override
   void initState() {
@@ -144,7 +144,7 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
                       : SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: DataTable(
-                            headingRowColor: MaterialStateProperty.all(const Color(0xFF2A2418)),
+                            headingRowColor: WidgetStateProperty.all(const Color(0xFF2A2418)),
                             columns: const [
                               DataColumn(label: Text('Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
                               DataColumn(label: Text('QR Code', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
@@ -328,7 +328,7 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
 
   Widget _buildLoadingSkeleton() {
     return DataTable(
-      headingRowColor: MaterialStateProperty.all(const Color(0xFF2A2418)),
+      headingRowColor: WidgetStateProperty.all(const Color(0xFF2A2418)),
       columns: const [
         DataColumn(label: Text('Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
         DataColumn(label: Text('QR Code', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),

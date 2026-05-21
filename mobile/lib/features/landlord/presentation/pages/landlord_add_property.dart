@@ -28,8 +28,8 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
   final _longitudeController = TextEditingController();
 
   String _propertyType = 'house';
-  List<String> _amenities = [];
-  List<File> _images = [];
+  final List<String> _amenities = [];
+  final List<File> _images = [];
   bool _featured = false;
 
   final ImagePicker _imagePicker = ImagePicker();

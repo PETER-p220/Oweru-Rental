@@ -91,7 +91,7 @@ class TSectionHeader extends StatelessWidget {
     child: Row(children: [
       Expanded(child: Text(title,
         style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w700))),
-      if (trailing != null) trailing!,
+      ?trailing,
     ]),
   );
 }

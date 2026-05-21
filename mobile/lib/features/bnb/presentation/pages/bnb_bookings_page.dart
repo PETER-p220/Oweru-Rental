@@ -408,7 +408,7 @@ class _BnbBookingsPageState extends State<BnbBookingsPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_formatCurrency(totalPrice), style: const TextStyle(color: const Color(0xFF10B981), fontSize: 18, fontWeight: FontWeight.w700)),
+                  Text(_formatCurrency(totalPrice), style: const TextStyle(color: Color(0xFF10B981), fontSize: 18, fontWeight: FontWeight.w700)),
                   Text('$nights night${nights != 1 ? 's' : ''} · $guests guest${guests != 1 ? 's' : ''}', style: const TextStyle(color: kSlate, fontSize: 11)),
                 ],
               ),

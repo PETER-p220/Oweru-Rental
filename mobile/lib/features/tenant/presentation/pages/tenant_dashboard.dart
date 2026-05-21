@@ -34,7 +34,7 @@ class _TenantDashboardState extends State<TenantDashboard>
 
   // Dashboard data
   Map<String, dynamic> _stats = {};
-  List<Map<String, dynamic>> _properties = [];
+  final List<Map<String, dynamic>> _properties = [];
   List<Map<String, dynamic>> _contracts = [];
   bool _isLoading = true;
   String _error = '';
@@ -295,11 +295,11 @@ class _TenantDashboardState extends State<TenantDashboard>
       return Center(child: Text(_error, style: const TextStyle(color: kDanger)));
     }
 
-    final totalProperties = _stats['total_properties'] ?? 0;
-    final savedProperties = _stats['saved_properties'] ?? 0;
+    final totalProperties  = _stats['total_properties']  ?? 0;
+    final savedProperties  = _stats['saved_properties']  ?? 0;
     final totalApplications = _stats['total_applications'] ?? 0;
-    final contracts = _stats['contracts'] ?? _contracts.length;
-    final messages = _stats['messages'] ?? 0;
+    final contracts        = _stats['contracts']         ?? _contracts.length;
+    final messages         = _stats['messages']          ?? 0;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
@@ -307,46 +307,82 @@ class _TenantDashboardState extends State<TenantDashboard>
         _banner(),
         const SizedBox(height: 20),
         const TSectionHeader('Overview'),
-        GridView.count(
-          crossAxisCount: 2, shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.85,
-          children: [
-            _StatCard(label: 'Listings', value: '$totalProperties', icon: Icons.home_work_rounded, color: kGold, hint: 'Available'),
-            _StatCard(label: 'Saved', value: '$savedProperties', icon: Icons.favorite_rounded, color: kDanger, hint: 'Your favorites'),
-            _StatCard(label: 'Applications', value: '$totalApplications', icon: Icons.description_rounded, color: kInfo, hint: 'Under review'),
-            _StatCard(label: 'Contracts', value: '$contracts', icon: Icons.gavel_rounded, color: kSuccess, hint: 'Active'),
-            _StatCard(label: 'Unread Messages', value: '$messages', icon: Icons.chat_bubble_rounded, color: kWarning, hint: 'New messages'),
-          ],
+        _buildStatsGrid(
+          totalProperties: totalProperties,
+          savedProperties: savedProperties,
+          totalApplications: totalApplications,
+          contracts: contracts,
+          messages: messages,
         ),
         const SizedBox(height: 20),
         const TSectionHeader('Quick Actions'),
         TCard(child: Column(children: [
-          _ActionRow(icon: Icons.search_rounded, label: 'Browse Properties', color: kGold, onTap: () => _navigate(1)),
-          _ActionRow(icon: Icons.favorite_rounded, label: 'Saved Properties', color: kDanger, onTap: () => _navigate(5)),
-          _ActionRow(icon: Icons.description_rounded, label: 'My Applications', color: kInfo, onTap: () => _navigate(2)),
+          _ActionRow(icon: Icons.search_rounded,      label: 'Browse Properties', color: kGold,    onTap: () => _navigate(1)),
+          _ActionRow(icon: Icons.favorite_rounded,    label: 'Saved Properties',  color: kDanger,  onTap: () => _navigate(5)),
+          _ActionRow(icon: Icons.description_rounded, label: 'My Applications',   color: kInfo,    onTap: () => _navigate(2)),
           _ActionRow(icon: Icons.description_rounded, label: 'Digital Contracts', color: kSuccess, onTap: () => _navigate(7)),
-          _ActionRow(icon: Icons.chat_bubble_rounded, label: 'Messages', color: kWarning, onTap: () => _navigate(8), last: true),
+          _ActionRow(icon: Icons.chat_bubble_rounded, label: 'Messages',          color: kWarning, onTap: () => _navigate(8), last: true),
         ])),
         const SizedBox(height: 20),
         const TSectionHeader('Featured Picks'),
         ..._properties.take(4).map((property) => _PropertyCard(
           property: property,
           onTap: () {},
-        )).toList(),
+        )),
         if (_properties.isEmpty)
-          const Padding(padding: EdgeInsets.all(16), child: Text('No featured properties available.', style: TextStyle(color: kSlate))),
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('No featured properties available.', style: TextStyle(color: kSlate)),
+          ),
         if (_contracts.isNotEmpty) ...[
           const SizedBox(height: 32),
           const TSectionHeader('My Contracts'),
-          ..._contracts.take(3).map((contract) => _ContractCard(
-            contract: contract,
-          )).toList(),
+          ..._contracts.take(3).map((contract) => _ContractCard(contract: contract)),
         ],
       ],
     );
   }
 
+  // ── Stats Grid ──────────────────────────────────────────
+  Widget _buildStatsGrid({
+    required dynamic totalProperties,
+    required dynamic savedProperties,
+    required dynamic totalApplications,
+    required dynamic contracts,
+    required dynamic messages,
+  }) {
+    final cards = [
+      _StatCard(label: 'Listings',        value: '$totalProperties',   icon: Icons.home_work_rounded,   color: kGold,    hint: 'Available'),
+      _StatCard(label: 'Saved',           value: '$savedProperties',   icon: Icons.favorite_rounded,    color: kDanger,  hint: 'Your favorites'),
+      _StatCard(label: 'Applications',    value: '$totalApplications', icon: Icons.description_rounded, color: kInfo,    hint: 'Under review'),
+      _StatCard(label: 'Contracts',       value: '$contracts',         icon: Icons.gavel_rounded,       color: kSuccess, hint: 'Active'),
+      _StatCard(label: 'Unread Messages', value: '$messages',          icon: Icons.chat_bubble_rounded, color: kWarning, hint: 'New messages'),
+    ];
+
+    final rows = <Widget>[];
+    for (int i = 0; i < cards.length; i += 2) {
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cards[i]),
+              const SizedBox(width: 10),
+              if (i + 1 < cards.length)
+                Expanded(child: cards[i + 1])
+              else
+                const Expanded(child: SizedBox()),
+            ],
+          ),
+        ),
+      );
+      if (i + 2 < cards.length) rows.add(const SizedBox(height: 10));
+    }
+
+    return Column(children: rows);
+  }
+
+  // ── Banner ──────────────────────────────────────────────
   Widget _banner() => Container(
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
@@ -356,10 +392,16 @@ class _TenantDashboardState extends State<TenantDashboard>
     child: Row(children: [
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Hello, ${_userService.userName ?? 'Tenant'} 👋',
-          style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w700)),
+          style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w700),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         const SizedBox(height: 4),
         const Text('You have a payment due in 5 days.',
-          style: TextStyle(color: kSlate, fontSize: 12)),
+          style: TextStyle(color: kSlate, fontSize: 12),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         const SizedBox(height: 14),
         TGoldButton(label: 'Pay Now →', onTap: () => _navigate(3), fullWidth: false),
       ])),
@@ -378,8 +420,8 @@ class _TenantDashboardState extends State<TenantDashboard>
       const TSectionHeader('Account Settings'),
       TCard(child: Column(children: [
         _SettingsRow(title: 'Full Name', value: _userService.userName ?? 'Tenant', icon: Icons.person_rounded),
-        const _SettingsRow(title: 'Email',  value: 'Not set', icon: Icons.email_rounded),
-        const _SettingsRow(title: 'Phone',  value: 'Not set', icon: Icons.phone_rounded, last: true),
+        const _SettingsRow(title: 'Email', value: 'Not set', icon: Icons.email_rounded),
+        const _SettingsRow(title: 'Phone', value: 'Not set', icon: Icons.phone_rounded, last: true),
       ])),
       const SizedBox(height: 12),
       TCard(child: const Column(children: [
@@ -393,7 +435,8 @@ class _TenantDashboardState extends State<TenantDashboard>
   );
 }
 
-// ── Const sub-widgets ─────────────────────────────────────────
+// ── Shared sub-widgets ────────────────────────────────────────
+
 class _PropertyCard extends StatelessWidget {
   final Map<String, dynamic> property;
   final VoidCallback onTap;
@@ -403,35 +446,28 @@ class _PropertyCard extends StatelessWidget {
   String _formatPrice(dynamic price) {
     if (price == null) return 'TZS 0';
     final double numericPrice = price is double ? price : (double.tryParse(price.toString()) ?? 0);
-    if (numericPrice >= 1000000) {
-      return 'TZS ${(numericPrice / 1000000).toStringAsFixed(1)}M';
-    } else if (numericPrice >= 1000) {
-      return 'TZS ${(numericPrice / 1000).toStringAsFixed(1)}K';
-    }
+    if (numericPrice >= 1000000) return 'TZS ${(numericPrice / 1000000).toStringAsFixed(1)}M';
+    if (numericPrice >= 1000)    return 'TZS ${(numericPrice / 1000).toStringAsFixed(1)}K';
     return 'TZS ${numericPrice.toStringAsFixed(0)}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final images = property['images'] as List?;
+    final images   = property['images'] as List?;
     final imageUrl = images != null && images.isNotEmpty ? images[0] as String? : null;
-    final title = property['title'] as String? ?? 'Untitled property';
+    final title    = property['title']    as String? ?? 'Untitled property';
     final location = property['location'] as String? ?? 'No location';
-    final bedrooms = property['bedrooms'] ?? 0;
+    final bedrooms  = property['bedrooms']  ?? 0;
     final bathrooms = property['bathrooms'] ?? 0;
-    final area = property['area'] ?? 0;
-    final price = property['price'];
+    final area      = property['area']      ?? 0;
+    final price     = property['price'];
 
     return TCard(
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Thumbnail
         Container(
-          width: 92,
-          height: 68,
-          decoration: BoxDecoration(
-            color: kBg3,
-            borderRadius: BorderRadius.circular(16),
-          ),
+          width: 88, height: 68,
+          decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(16)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: imageUrl != null && imageUrl.isNotEmpty
@@ -443,18 +479,30 @@ class _PropertyCard extends StatelessWidget {
                 : const Icon(Icons.home, color: kGold, size: 24),
           ),
         ),
-        const SizedBox(width: 18),
+        const SizedBox(width: 12),
         // Details
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          Text(
-            '$location\n$bedrooms bd • $bathrooms ba • $area m²',
-            style: const TextStyle(color: kSlate, fontSize: 13, height: 1.5),
-          ),
-        ])),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title,
+              style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 4),
+            Text(location,
+              style: const TextStyle(color: kSlate, fontSize: 13, height: 1.5),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text('$bedrooms bd • $bathrooms ba • $area m²',
+              style: const TextStyle(color: kSlate, fontSize: 12, height: 1.5),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+          ]),
+        ),
+        const SizedBox(width: 8),
         // Price
-        Text(_formatPrice(price), style: const TextStyle(color: kGold, fontSize: 18, fontWeight: FontWeight.w700)),
+        SizedBox(
+          width: 90,
+          child: Text(_formatPrice(price),
+            style: const TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w700),
+            overflow: TextOverflow.ellipsis, maxLines: 1, textAlign: TextAlign.right),
+        ),
       ]),
     );
   }
@@ -462,70 +510,60 @@ class _PropertyCard extends StatelessWidget {
 
 class _ContractCard extends StatelessWidget {
   final Map<String, dynamic> contract;
-
   const _ContractCard({required this.contract});
 
-  String _formatStatus(String? status) {
-    if (status == null) return 'Unknown';
-    return status.replaceAll('_', ' ');
-  }
+  String _formatStatus(String? status) =>
+      status == null ? 'Unknown' : status.replaceAll('_', ' ');
 
   String _formatDate(String? dateStr) {
     if (dateStr == null) return '—';
     try {
       final date = DateTime.parse(dateStr);
       return '${date.day}/${date.month}/${date.year}';
-    } catch (_) {
-      return '—';
-    }
+    } catch (_) { return '—'; }
   }
 
   String _formatCurrency(dynamic value) {
     if (value == null) return 'TZS 0';
-    final double numericValue = value is double ? value : (double.tryParse(value.toString()) ?? 0);
-    if (numericValue >= 1000000) {
-      return 'TZS ${(numericValue / 1000000).toStringAsFixed(1)}M';
-    } else if (numericValue >= 1000) {
-      return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
-    }
-    return 'TZS ${numericValue.toStringAsFixed(0)}';
+    final double v = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (v >= 1000000) return 'TZS ${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000)    return 'TZS ${(v / 1000).toStringAsFixed(1)}K';
+    return 'TZS ${v.toStringAsFixed(0)}';
   }
 
   Color _getStatusColor(String? status) {
     if (status == null) return kSlate;
     final s = status.toLowerCase();
     if (s.contains('pending')) return kGold;
-    if (s.contains('active')) return kSuccess;
-    if (s.contains('signed')) return kInfo;
+    if (s.contains('active'))  return kSuccess;
+    if (s.contains('signed'))  return kInfo;
     return kSlate;
   }
 
   @override
   Widget build(BuildContext context) {
-    final propertyTitle = contract['property_title'] as String? ?? 'Property #${contract['property_id'] ?? ''}';
-    final status = contract['status'] as String?;
-    final startDate = contract['start_date'] as String?;
-    final endDate = contract['end_date'] as String?;
+    final propertyTitle = contract['property_title'] as String?
+        ?? 'Property #${contract['property_id'] ?? ''}';
+    final status        = contract['status']         as String?;
+    final startDate     = contract['start_date']     as String?;
+    final endDate       = contract['end_date']       as String?;
     final paymentStatus = contract['payment_status'] as String?;
-    final rentAmount = contract['rent_amount'];
+    final rentAmount    = contract['rent_amount'];
 
     return TCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Expanded(
-            child: Text(propertyTitle,
-                style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w600)),
-          ),
+        Row(children: [
+          Expanded(child: Text(propertyTitle,
+            style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600),
+            maxLines: 1, overflow: TextOverflow.ellipsis)),
+          const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: _getStatusColor(status).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              _formatStatus(status),
-              style: TextStyle(color: _getStatusColor(status), fontSize: 11, fontWeight: FontWeight.w600),
-            ),
+              borderRadius: BorderRadius.circular(12)),
+            child: Text(_formatStatus(status),
+              style: TextStyle(color: _getStatusColor(status), fontSize: 11, fontWeight: FontWeight.w600)),
           ),
         ]),
         const SizedBox(height: 8),
@@ -534,10 +572,8 @@ class _ContractCard extends StatelessWidget {
           style: const TextStyle(color: kSlate, fontSize: 13, height: 1.4),
         ),
         const SizedBox(height: 4),
-        Text(
-          '${_formatCurrency(rentAmount)}/month',
-          style: const TextStyle(color: kGold, fontSize: 18, fontWeight: FontWeight.w600),
-        ),
+        Text('${_formatCurrency(rentAmount)}/month',
+          style: const TextStyle(color: kGold, fontSize: 16, fontWeight: FontWeight.w600)),
       ]),
     );
   }
@@ -547,24 +583,48 @@ class _StatCard extends StatelessWidget {
   final String label, value, hint;
   final IconData icon;
   final Color color;
-  const _StatCard({required this.label, required this.value, required this.hint,
-    required this.icon, required this.color});
+
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.hint,
+    required this.icon,
+    required this.color,
+  });
+
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(color: kBg2, borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: kBorder)),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center,
+    decoration: BoxDecoration(
+      color: kBg2,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: kBorder),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min, // FIX: shrink to content, no forced height
       children: [
-        Container(width: 28, height: 28,
-          decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(7)),
+        Container(
+          width: 28, height: 28,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(7)),
           child: Icon(icon, color: color, size: 14)),
         const SizedBox(height: 6),
-        Text(value, style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+        Text(value,
+          style: const TextStyle(
+            color: kCream, fontSize: 15,
+            fontWeight: FontWeight.w800, letterSpacing: -0.5),
+          overflow: TextOverflow.ellipsis, maxLines: 1),
         const SizedBox(height: 1),
-        Text(label, style: const TextStyle(color: kSlate, fontSize: 9)),
-        Text(hint,  style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w600)),
-      ]),
+        Text(label,
+          style: const TextStyle(color: kSlate, fontSize: 9),
+          overflow: TextOverflow.ellipsis, maxLines: 1),
+        Text(hint,
+          style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w600),
+          overflow: TextOverflow.ellipsis, maxLines: 1),
+      ],
+    ),
   );
 }
 
@@ -574,17 +634,28 @@ class _ActionRow extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
   final bool last;
-  const _ActionRow({required this.icon, required this.label, required this.color,
-    required this.onTap, this.last = false});
+
+  const _ActionRow({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.last = false,
+  });
+
   @override
   Widget build(BuildContext context) => Column(children: [
     InkWell(
-      onTap: onTap, borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 11),
         child: Row(children: [
-          Container(width: 36, height: 36,
-            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(9)),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(9)),
             child: Icon(icon, color: color, size: 17)),
           const SizedBox(width: 12),
           Expanded(child: Text(label,
@@ -601,18 +672,32 @@ class _SettingsRow extends StatelessWidget {
   final String title, value;
   final IconData icon;
   final bool last;
-  const _SettingsRow({required this.title, required this.value, required this.icon, this.last = false});
+
+  const _SettingsRow({
+    required this.title,
+    required this.value,
+    required this.icon,
+    this.last = false,
+  });
+
   @override
   Widget build(BuildContext context) => Column(children: [
     Padding(
       padding: const EdgeInsets.symmetric(vertical: 11),
       child: Row(children: [
-        Container(width: 32, height: 32,
-          decoration: BoxDecoration(color: kGold.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+        Container(
+          width: 32, height: 32,
+          decoration: BoxDecoration(
+            color: kGold.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: kGold, size: 16)),
         const SizedBox(width: 10),
-        Expanded(child: Text(title, style: const TextStyle(color: kCream, fontSize: 13))),
-        Text(value, style: const TextStyle(color: kSlate, fontSize: 12)),
+        Expanded(child: Text(title,
+          style: const TextStyle(color: kCream, fontSize: 13),
+          overflow: TextOverflow.ellipsis)),
+        Flexible(child: Text(value,
+          style: const TextStyle(color: kSlate, fontSize: 12),
+          overflow: TextOverflow.ellipsis)),
         const SizedBox(width: 4),
         const Icon(Icons.chevron_right_rounded, color: kSlateDim, size: 16),
       ]),
