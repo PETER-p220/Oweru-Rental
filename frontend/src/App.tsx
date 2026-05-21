@@ -9,6 +9,7 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import GoogleCallback from './pages/GoogleCallback';
+import AuthError from './pages/AuthError';
 import TenantDashboard from './pages/TenantDashboard';
 import LandlordDashboard from './pages/LandlordDashboard';
 import SettingsPage from './pages/Settings';
@@ -101,6 +102,7 @@ const PublicRoutes = () => (
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        <Route path="/auth/error" element={<AuthError />} />
       </Routes>
     </main>
     <Footer />

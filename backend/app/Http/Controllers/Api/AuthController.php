@@ -160,7 +160,7 @@ class AuthController extends Controller
         return response()->json(['url' => $url]);
     }
 
-    public function handleGoogleCallback(Request $request): JsonResponse
+    public function handleGoogleCallback(Request $request): \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
     {
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
@@ -210,15 +210,14 @@ class AuthController extends Controller
             } else {
                 // Login flow
                 if (!$user) {
-                    return response()->json([
-                        'message' => 'User not found. Please register first.',
-                    ], 404);
+                    $frontendUrl = config('app.frontend_url', 'https://rental.oweru.com');
+                    $redirectUrl = "{$frontendUrl}/auth/error?error=user_not_found";
+                    return redirect()->away($redirectUrl);
                 }
                 
+                // Update user type if different (allow flexible user types for Google auth)
                 if ($user->user_type !== $userType) {
-                    return response()->json([
-                        'message' => 'User type mismatch',
-                    ], 401);
+                    $user->update(['user_type' => $userType]);
                 }
                 
                 if (!$user->google_id) {
@@ -227,7 +226,9 @@ class AuthController extends Controller
             }
             
             if (!$user->is_active) {
-                return response()->json(['message' => 'Account is inactive'], 401);
+                $frontendUrl = config('app.frontend_url', 'https://rental.oweru.com');
+                $redirectUrl = "{$frontendUrl}/auth/error?error=account_inactive";
+                return redirect()->away($redirectUrl);
             }
             
             // Revoke previous tokens
@@ -242,10 +243,9 @@ class AuthController extends Controller
             return redirect()->away($redirectUrl);
             
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Google authentication failed',
-                'error' => $e->getMessage(),
-            ], 500);
+            $frontendUrl = config('app.frontend_url', 'https://rental.oweru.com');
+            $redirectUrl = "{$frontendUrl}/auth/error?error=auth_failed";
+            return redirect()->away($redirectUrl);
         }
     }
 
