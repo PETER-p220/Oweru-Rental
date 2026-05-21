@@ -195,6 +195,7 @@ class AuthController extends Controller
                     'user_type' => $userType,
                     'google_id' => $googleUser->id,
                     'email_verified_at' => now(),
+                    'is_active' => true,
                 ]);
             } else {
                 // Login flow
@@ -389,6 +390,7 @@ class AuthController extends Controller
                 'user_type' => $userType,
                 'google_id' => $googleId,
                 'email_verified_at' => now(),
+                'is_active' => true,
             ]);
             
             $token = $user->createToken('auth_token')->plainTextToken;
