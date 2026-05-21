@@ -176,9 +176,19 @@ class AuthController extends Controller
             
             if ($authType === 'register') {
                 // Registration flow
-                if ($user) {
+                // Check if user already exists with this Google ID (any user type)
+                $existingUser = User::where('google_id', $googleUser->id)->first();
+                if ($existingUser) {
                     return response()->json([
-                        'message' => 'User already exists. Please login instead.',
+                        'message' => 'This Google account is already registered. Please login instead.',
+                    ], 400);
+                }
+                
+                // Also check by email to prevent duplicate accounts
+                $existingEmailUser = User::where('email', $googleUser->email)->first();
+                if ($existingEmailUser) {
+                    return response()->json([
+                        'message' => 'This email is already registered. Please login instead.',
                     ], 400);
                 }
                 
@@ -225,13 +235,11 @@ class AuthController extends Controller
             
             $token = $user->createToken('auth_token')->plainTextToken;
             
-            return response()->json([
-                'message' => 'Authentication successful',
-                'data' => [
-                    'user' => $this->formatUser($user),
-                    'token' => $token,
-                ],
-            ]);
+            // Redirect to frontend with token and user data
+            $frontendUrl = config('app.frontend_url', 'https://rental.oweru.com');
+            $redirectUrl = "{$frontendUrl}/auth/google/callback?token={$token}&user_type={$user->user_type}";
+            
+            return redirect()->away($redirectUrl);
             
         } catch (\Exception $e) {
             return response()->json([

@@ -8,6 +8,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import GoogleCallback from './pages/GoogleCallback';
 import TenantDashboard from './pages/TenantDashboard';
 import LandlordDashboard from './pages/LandlordDashboard';
 import SettingsPage from './pages/Settings';
@@ -99,6 +100,7 @@ const PublicRoutes = () => (
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/auth/google/callback" element={<GoogleCallback />} />
       </Routes>
     </main>
     <Footer />
@@ -246,7 +248,7 @@ const DashboardRedirect = () => {
     return <Navigate to="/login" replace />;
   }
   
-  const userType: UserRole = (user.userType || user.user_type || user.role || 'tenant') as UserRole;
+  const userType: UserRole = (user.user_type || user.role || 'tenant') as UserRole;
   
   switch (userType) {
     case 'admin':
