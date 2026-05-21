@@ -17,9 +17,14 @@ const Login = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleGoogleLogin = () => {
-    const googleAuthUrl = Api.getGoogleAuthUrl(formData.userType);
-    window.location.href = googleAuthUrl;
+  const handleGoogleLogin = async () => {
+    try {
+      const response = await fetch(Api.getGoogleAuthUrl(formData.userType));
+      const data = await response.json();
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Failed to get Google auth URL:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
