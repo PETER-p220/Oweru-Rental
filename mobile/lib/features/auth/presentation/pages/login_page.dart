@@ -32,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
-    _googleSignIn.disconnect();
+    _googleSignIn.disconnect();                 
     super.dispose();
   }
 
@@ -58,47 +58,11 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      final result = await AuthService.loginWithGoogle(
-        idToken: idToken,
-        userType: _userType,
-      );
-
-      if (result['success']) {
-        if (mounted) {
-          final userData = result['data']?['data']?['user'] ?? {};
-          _userService.setUserData(
-            userType: _userType,
-            token: result['data']?['data']?['token'],
-            userName: '${userData['first_name'] ?? ''} ${userData['last_name'] ?? ''}',
-            userEmail: userData['email'] ?? '',
-          );
-
-          String route = '/tenant-dashboard';
-          switch (_userType) {
-            case 'agent':
-              route = '/agent-dashboard';
-              break;
-            case 'landlord':
-              route = '/landlord-dashboard';
-              break;
-            case 'tenant':
-              route = '/tenant-dashboard';
-              break;
-            case 'bnb_owner':
-              route = '/bnb-dashboard';
-              break;
-            case 'commercial':
-              route = '/commercial-dashboard';
-              break;
-          }
-          Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
-        }
-      } else {
-        setState(() {
-          _error = result['message'] ?? 'Google login failed';
-          _isLoading = false;
-        });
-      }
+      // Google OAuth not yet implemented
+      setState(() {
+        _error = 'Google login coming soon';
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = 'Google login error: $e';
@@ -127,8 +91,8 @@ class _LoginPageState extends State<LoginPage> {
 
       if (result['success']) {
         if (mounted) {
-          // Store user data
-          _userService.setUserData(
+          // Store user data (now async with SharedPreferences)
+          await _userService.setUserData(
             userType: _userType,
             token: result['data']?['data']?['token'],
             userName: result['data']?['data']?['user']?['first_name'],

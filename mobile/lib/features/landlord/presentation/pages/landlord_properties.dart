@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/services/landlord_api_service.dart';
+import '../../../../shared/services/user_service.dart';
 import 'landlord_add_property.dart';
 import 'landlord_theme.dart';
 
@@ -32,6 +33,11 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
       _isLoading = true;
       _error = '';
     });
+
+    // Debug: Check token status
+    final userService = UserService();
+    debugPrint('Token check in properties page: ${userService.token != null ? "Token exists" : "Token is null"}');
+    debugPrint('Token value: ${userService.token}');
 
     try {
       final properties = await LandlordApiService.getMyProperties();

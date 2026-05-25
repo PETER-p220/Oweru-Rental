@@ -50,9 +50,36 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
   String get _location => (p['location']    ?? p['address'] ?? 'Location not specified').toString();
   String get _type     => (p['type']        ?? '').toString();
   String get _desc     => (p['description'] ?? '').toString();
-  num    get _price    => (p['price']        ?? 0) as num;
-  int    get _beds     => (p['bedrooms']     ?? 0) as int;
-  int    get _baths    => (p['bathrooms']    ?? 0) as int;
+  num get _price {
+    final price = p['price'];
+    if (price is num) return price;
+    if (price is String) {
+      try {
+        return double.parse(price);
+      } catch (_) {
+        return 0;
+      }
+    }
+    return 0;
+  }
+  int get _beds {
+    final beds = p['bedrooms'];
+    if (beds is int) return beds;
+    if (beds is num) return beds.toInt();
+    if (beds is String) {
+      try { return int.parse(beds); } catch (_) { return 0; }
+    }
+    return 0;
+  }
+  int get _baths {
+    final baths = p['bathrooms'];
+    if (baths is int) return baths;
+    if (baths is num) return baths.toInt();
+    if (baths is String) {
+      try { return int.parse(baths); } catch (_) { return 0; }
+    }
+    return 0;
+  }
   bool   get _featured  => p['featured']  == true;
   bool   get _available => p['available'] != false;
   bool   get _furnished => p['furnished'] == true;

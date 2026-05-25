@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
 import '../../core/constants/api_config.dart';
 
 class LandlordApiService {
   static const String _baseUrl = ApiConfig.apiPath;
   static Map<String, String> get _headers => {
     'Accept': 'application/json',
-    'Authorization': 'Bearer ${AuthService.token}',
+    'Authorization': 'Bearer ${UserService().token ?? AuthService.token}',
     'Content-Type': 'application/json',
   };
 

@@ -282,13 +282,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ]),
               const SizedBox(height: 28),
               // Headline
-              const Text(
-                'Find Your\nPerfect\nRental.',
-                style: TextStyle(
-                  fontSize: 48, fontWeight: FontWeight.w700, height: 1.05,
-                  letterSpacing: -1.5, color: kWhite,
-                ),
-              ),
+             
               const SizedBox(height: 16),
               const Text(
                 'Residential, commercial, and short-stay\nlistings across Tanzania — all in one place.',
@@ -298,28 +292,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 32),
               // CTA buttons
-              Row(children: [
-                _SolidButton(
-                  label: 'Browse All',
-                  onTap: () {},
-                ),
-                const SizedBox(width: 12),
-                _OutlineButtonLight(
-                  label: 'Create Account',
-                  onTap: () {},
-                ),
-              ]),
+             
               const SizedBox(height: 40),
               // Trust chips
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: Row(children: [
-                  _TrustChip(icon: Icons.verified_outlined, label: 'Verified Landlords'),
-                  const SizedBox(width: 8),
-                  _TrustChip(icon: Icons.schedule, label: '24h Response'),
-                  const SizedBox(width: 8),
-                  _TrustChip(icon: Icons.home_work_outlined, label: '1,200+ Listings'),
-                ]),
+               
               ),
               const SizedBox(height: 40),
               // Search card
@@ -423,10 +401,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   // ── STATS BAR ──────────────────────────────────────────────────────────────
   Widget _buildStatsBar() {
     const stats = [
-      ('1,247', 'Active Listings'),
-      ('3,842', 'Users'),
-      ('892', 'Available Now'),
-      ('24 hr', 'Avg. Response'),
+      
     ];
     return Container(
       color: kSlate800,
@@ -461,11 +436,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   // ── CATEGORY QUICK-LINKS ──────────────────────────────────────────────────
   Widget _buildCategoryBar() {
     const cats = [
-      (Icons.home_outlined, 'Residential'),
-      (Icons.king_bed_outlined, 'Short Stay'),
-      (Icons.business_outlined, 'Commercial'),
-      (Icons.star_border, 'Oweru'),
-    ];
+      ];
     return Container(
       color: kWhite,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -572,7 +543,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ? const _SkeletonGrid()
         : _residential.isEmpty
             ? const _EmptyState(icon: Icons.home_outlined, text: 'No residential listings yet')
-            : _buildPropGrid(_residential.take(6).toList()),
+            : _buildPropGrid(_residential.take(6).toList(), onAction: (p) => _navigateToProperty(p)),
   );
 
   Widget _buildBnbSection() => _Section(
@@ -597,7 +568,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ? const _SkeletonGrid()
         : _oweru.isEmpty
             ? const _EmptyState(icon: Icons.star_border, text: 'No Oweru packages yet')
-            : _buildPropGrid(_oweru, badge: 'OWERU'),
+            : _buildPropGrid(_oweru, badge: 'OWERU', onAction: (p) => _navigateToProperty(p)),
   );
 
   Widget _buildCommercialSection() => _Section(
@@ -1487,7 +1458,7 @@ class _BookingFormState extends State<_BookingForm> {
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════
 // MISSING COLOUR — kSlate700 used in CTA list
 // ═════════════════════════════════════════════════════════════════════════════
 const Color kSlate700 = Color(0xFF334155);

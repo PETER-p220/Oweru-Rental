@@ -102,52 +102,11 @@ class _RegisterPageState extends State<RegisterPage> {
         return;
       }
 
-      final result = await AuthService.registerWithGoogle(
-        idToken: idToken,
-        userType: _userType,
-        phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
-      );
-
-      if (result['success']) {
-        if (mounted) {
-          final userData = result['data']?['data']?['user'] ?? {};
-          _userService.setUserData(
-            userType: _userType,
-            token: result['data']?['data']?['token'],
-            userName: '${userData['first_name'] ?? ''} ${userData['last_name'] ?? ''}',
-            userEmail: userData['email'] ?? '',
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registration successful!')),
-          );
-
-          String route = '/tenant-dashboard';
-          switch (_userType) {
-            case 'agent':
-              route = '/agent-dashboard';
-              break;
-            case 'landlord':
-              route = '/landlord-dashboard';
-              break;
-            case 'tenant':
-              route = '/tenant-dashboard';
-              break;
-            case 'bnb_owner':
-              route = '/bnb-dashboard';
-              break;
-            case 'commercial':
-              route = '/commercial-dashboard';
-              break;
-          }
-          Navigator.pushNamedAndRemoveUntil(context, route, (route) => false);
-        }
-      } else {
-        setState(() {
-          _errors = [result['message'] ?? 'Google registration failed'];
-          _isLoading = false;
-        });
-      }
+      // Google OAuth not yet implemented
+      setState(() {
+        _errors = ['Google registration coming soon'];
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _errors = ['Google registration error: $e'];

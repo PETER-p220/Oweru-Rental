@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/services/tenant_api_service.dart';
+import '../../../../shared/services/messages_service.dart';
 import 'tenant_theme.dart';
 
 class MessagesPage extends StatefulWidget {
@@ -10,7 +10,7 @@ class MessagesPage extends StatefulWidget {
 }
 
 class _MessagesPageState extends State<MessagesPage> {
-  List<Map<String, dynamic>> _messages = [];
+  List<Conversation> _conversations = [];
   bool _isLoading = true;
   String _error = '';
   String _searchQuery = '';
@@ -35,16 +35,17 @@ class _MessagesPageState extends State<MessagesPage> {
       _error = '';
     });
     try {
-      final data = await TenantApiService.getMessages();
+      final data = await MessagesService.getConversations();
       if (!mounted) return;
+      final conversationsList = data['conversations'] as List?;
       setState(() {
-        _messages = data;
+        _conversations = conversationsList?.map((json) => Conversation.fromJson(json)).toList() ?? [];
         _isLoading = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Unable to load messages';
+        _error = 'Unable to load messages: $e';
         _isLoading = false;
       });
     }
@@ -54,17 +55,20 @@ class _MessagesPageState extends State<MessagesPage> {
     final text = _messageCtrl.text.trim();
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
-    final ok = await TenantApiService.sendMessage(body: text);
-    if (!mounted) return;
-    setState(() => _sending = false);
-    if (ok) {
-      _messageCtrl.clear();
-      await _load();
-    } else {
+    try {
+      // For now, we need a receiver_id to send a message
+      // This will need to be updated when we implement conversation selection
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send message')),
+        const SnackBar(content: Text('Select a conversation to send a message')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send message: $e')),
       );
     }
+    if (!mounted) return;
+    setState(() => _sending = false);
   }
 
   @override

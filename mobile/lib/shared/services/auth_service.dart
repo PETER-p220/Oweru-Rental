@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/constants/api_config.dart';
+import 'user_service.dart';
 
 class AuthService {
   static const String _baseUrl = ApiConfig.apiPath;
@@ -152,13 +153,15 @@ class AuthService {
 
   // ── Get Current User ────────────────────────────────────────────────────
   static Future<Map<String, dynamic>?> getCurrentUser() async {
-    if (_token == null) return null;
+    // Use UserService token since login page stores it there
+    final token = UserService().token ?? _token;
+    if (token == null) return null;
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/user'),
         headers: {
           'Accept': 'application/json',
-          'Authorization': 'Bearer $_token',
+          'Authorization': 'Bearer $token',
         },
       );
 
