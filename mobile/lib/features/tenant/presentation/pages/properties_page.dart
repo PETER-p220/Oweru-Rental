@@ -112,7 +112,7 @@ Color _sourceBadgeTextColor(SourceFilter s) {
 List<int?> _getPageNumbers(int current, int total) {
   if (total <= 7) return List.generate(total, (i) => i + 1);
   final pages = <int?>[1];
-  if (current > 3) pages.add(null); // null = '...'
+  if (current > 3) pages.add(null);
   final start = (current - 1).clamp(2, total - 1);
   final end = (current + 1).clamp(2, total - 1);
   for (int i = start; i <= end; i++) pages.add(i);
@@ -172,7 +172,6 @@ class _PropertiesPageState extends State<PropertiesPage> {
   @override
   void initState() {
     super.initState();
-    // Reset enum fields — guards against hot-reload stale state
     _sourceFilter = SourceFilter.all;
     _modal = ModalStep.none;
     _viewMode = ViewMode.grid;
@@ -214,11 +213,9 @@ class _PropertiesPageState extends State<PropertiesPage> {
     if (_priceRange == '1000+') p['min_price'] = '1000000';
     if (_bedrooms != null) p['bedrooms'] = _bedrooms.toString();
     if (_furnished != null) p['furnished'] = _furnished! ? 'true' : 'false';
-    if (_sourceFilter is SourceFilter) {
-      if (_sourceFilter == SourceFilter.agent) p['has_agent'] = 'true';
-      if (_sourceFilter == SourceFilter.landlord) p['no_agent'] = 'true';
-      if (_sourceFilter == SourceFilter.admin) p['admin_only'] = 'true';
-    }
+    if (_sourceFilter == SourceFilter.agent) p['has_agent'] = 'true';
+    if (_sourceFilter == SourceFilter.landlord) p['no_agent'] = 'true';
+    if (_sourceFilter == SourceFilter.admin) p['admin_only'] = 'true';
     return p;
   }
 
@@ -315,7 +312,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
     if (_priceRange.isNotEmpty) c++;
     if (_bedrooms != null) c++;
     if (_furnished != null) c++;
-    if (_sourceFilter is SourceFilter && _sourceFilter != SourceFilter.all) c++;
+    if (_sourceFilter != SourceFilter.all) c++;
     return c;
   }
 
@@ -344,7 +341,6 @@ class _PropertiesPageState extends State<PropertiesPage> {
   void _handleApply(PropertyMap property) {
     setState(() {
       _selProp = property;
-      // In real app: check token. For now always show apply (logged in flow).
       _modal = ModalStep.apply;
     });
   }
@@ -375,12 +371,10 @@ class _PropertiesPageState extends State<PropertiesPage> {
         return;
       }
 
-      // Get user data from backend for payment
       final userService = UserService();
       await userService.ensureLoaded();
       final token = userService.token;
-      print('Token from UserService: $token');
-      
+
       if (token == null) {
         _addToast(ToastType.error, 'Authentication required',
             message: 'Please log in to continue.', durationMs: 7000);
@@ -388,7 +382,6 @@ class _PropertiesPageState extends State<PropertiesPage> {
         return;
       }
 
-      // Fetch user data using the token
       final response = await http.get(
         Uri.parse('$kApiBase/user'),
         headers: {
@@ -396,9 +389,6 @@ class _PropertiesPageState extends State<PropertiesPage> {
           'Authorization': 'Bearer $token',
         },
       );
-
-      print('User data response status: ${response.statusCode}');
-      print('User data response body: ${response.body}');
 
       Map<String, dynamic>? userData;
       if (response.statusCode == 200) {
@@ -413,28 +403,22 @@ class _PropertiesPageState extends State<PropertiesPage> {
           ? '$firstName $lastName'
           : (firstName.isNotEmpty ? firstName : 'Customer');
 
-      print('Payment parameters: tenantId=$tenantId, customerEmail=$customerEmail, customerName=$customerName');
-
-      // Initiate real Selcom payment - backend will handle authentication via token in headers
       final paymentResponse = await TenantApiService.initiateSelcomPayment(
-        amount: 20000.0, // TZS 20,000 site visit fee
+        amount: 20000.0,
         phoneNumber: _phoneNumber,
         provider: _paymentMethod,
         propertyId: propertyId,
-        tenantId: tenantId, // Use actual tenant ID from backend
+        tenantId: tenantId,
         paymentType: 'site_visit',
         customerEmail: customerEmail,
         customerName: customerName,
       );
-
-      print('Payment response: $paymentResponse');
 
       if (paymentResponse['success'] == true) {
         final transactionId = paymentResponse['data']?['transaction_id'] ?? paymentResponse['transaction_id'];
         _addToast(ToastType.success, 'Payment initiated',
             message: 'Check your ${_paymentMethod.toUpperCase()} prompt. Ref: $transactionId', durationMs: 8000);
 
-        // Create application after successful payment initiation
         final applicationData = {
           'property_id': propertyId,
           'status': 'pending',
@@ -442,17 +426,13 @@ class _PropertiesPageState extends State<PropertiesPage> {
           'payment_method': _paymentMethod,
           'transaction_id': transactionId,
         };
-
         await TenantApiService.createApplication(applicationData);
-
         if (mounted) setState(() { _modal = ModalStep.success; });
       } else {
         final errorMessage = paymentResponse['message'] ?? paymentResponse['error'] ?? 'Payment initiation failed';
-        _addToast(ToastType.error, 'Payment failed',
-            message: errorMessage, durationMs: 7000);
+        _addToast(ToastType.error, 'Payment failed', message: errorMessage, durationMs: 7000);
       }
     } catch (e) {
-      print('Payment error: $e');
       _addToast(ToastType.error, 'Payment failed',
           message: 'Something went wrong. Please try again.', durationMs: 7000);
     } finally {
@@ -533,7 +513,8 @@ class _PropertiesPageState extends State<PropertiesPage> {
       // Toasts
       Positioned(
         top: MediaQuery.of(context).padding.top + 12,
-        right: 16,
+        right: 12,
+        left: 12,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: _toasts.map((t) => _ToastItem(
@@ -545,11 +526,12 @@ class _PropertiesPageState extends State<PropertiesPage> {
     ]);
   }
 
-  // ── Header (sliver) ──────────────────────────────────────
+  // ── Header ───────────────────────────────────────────────
+  // FIX: Reduced expandedHeight, tightened padding, smaller text, safe pill wrapping
   Widget _buildHeader() => SliverAppBar(
     automaticallyImplyLeading: false,
     backgroundColor: kBg,
-    expandedHeight: 170,
+    expandedHeight: 155,
     pinned: true,
     flexibleSpace: FlexibleSpaceBar(
       background: Container(
@@ -562,41 +544,53 @@ class _PropertiesPageState extends State<PropertiesPage> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
               // Eyebrow
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: kGoldDim,
                   border: Border.all(color: kGoldBorder),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.list_rounded, color: kGold, size: 10),
-                  SizedBox(width: 6),
+                  Icon(Icons.list_rounded, color: kGold, size: 9),
+                  SizedBox(width: 5),
                   Text('BROWSE LISTINGS',
-                    style: TextStyle(color: kGold, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+                    style: TextStyle(color: kGold, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1.4)),
                 ]),
               ),
-              const SizedBox(height: 10),
-              // Title
-              RichText(text: const TextSpan(
-                style: TextStyle(fontFamily: 'serif', fontSize: 28, fontWeight: FontWeight.w300, color: kCream, height: 1.1),
+              const SizedBox(height: 7),
+              // Title row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  TextSpan(text: 'Available\n'),
-                  TextSpan(text: 'Properties', style: TextStyle(color: kGold, fontStyle: FontStyle.italic)),
+                  RichText(text: const TextSpan(
+                    style: TextStyle(fontFamily: 'serif', fontSize: 24, fontWeight: FontWeight.w300, color: kCream, height: 1.1),
+                    children: [
+                      TextSpan(text: 'Available '),
+                      TextSpan(text: 'Properties', style: TextStyle(color: kGold, fontStyle: FontStyle.italic)),
+                    ],
+                  )),
                 ],
-              )),
-              const SizedBox(height: 10),
-              // Source pills
-              Wrap(spacing: 6, children: [
-                _buildHeaderPill('Agent listings', kGoldDim, kGold, kGoldBorder),
-                _buildHeaderPill('Landlord listings',
-                  Colors.white.withOpacity(0.08), Colors.white.withOpacity(0.65), Colors.white.withOpacity(0.12)),
-                _buildHeaderPill('Oweru Rentals',
-                  const Color(0xFF10B981).withOpacity(0.12), const Color(0xFF34D399), const Color(0xFF10B981).withOpacity(0.25)),
-              ]),
+              ),
+              const SizedBox(height: 7),
+              // Source pills in a scrollable row instead of Wrap to prevent overflow
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildHeaderPill('Agent listings', kGoldDim, kGold, kGoldBorder),
+                    const SizedBox(width: 5),
+                    _buildHeaderPill('Landlord listings',
+                      Colors.white.withOpacity(0.08), Colors.white.withOpacity(0.65), Colors.white.withOpacity(0.12)),
+                    const SizedBox(width: 5),
+                    _buildHeaderPill('Oweru Rentals',
+                      const Color(0xFF10B981).withOpacity(0.12), const Color(0xFF34D399), const Color(0xFF10B981).withOpacity(0.25)),
+                  ],
+                ),
+              ),
             ]),
           ),
         ),
@@ -604,10 +598,10 @@ class _PropertiesPageState extends State<PropertiesPage> {
       title: Padding(
         padding: const EdgeInsets.only(right: 8),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          const Text('Properties', style: TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w600)),
+          const Text('Properties', style: TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600)),
           Text(
-            _loading ? 'Loading…' : '${_paginationTotal} listings',
-            style: const TextStyle(color: kSlate, fontSize: 12),
+            _loading ? 'Loading…' : '$_paginationTotal listings',
+            style: const TextStyle(color: kSlate, fontSize: 11),
           ),
         ]),
       ),
@@ -615,66 +609,98 @@ class _PropertiesPageState extends State<PropertiesPage> {
   );
 
   Widget _buildHeaderPill(String label, Color bg, Color fg, Color border) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
     decoration: BoxDecoration(
       color: bg, border: Border.all(color: border), borderRadius: BorderRadius.circular(20)),
-    child: Text(label, style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.1)),
+    child: Text(label, style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.w600)),
   );
 
   // ── Search Bar ───────────────────────────────────────────
+  // FIX: Split into two rows to avoid overflow. Row 1: search + filter toggle + view.
+  //      Row 2: type and price dropdowns (scrollable).
   Widget _buildSearchBar() => Container(
     color: kBg2,
-    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-    child: Column(children: [
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          // Search input
-          SizedBox(
-            width: 200,
-            child: Container(
-              decoration: BoxDecoration(
-                color: kBg3,
-                border: Border.all(color: kBorder),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Icon(Icons.search_rounded, color: kSlate, size: 16),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _searchCtrl,
-                    onChanged: _onSearchChanged,
-                    style: const TextStyle(color: kCream, fontSize: 13),
-                    decoration: const InputDecoration(
-                      hintText: 'Location or property name…',
-                      hintStyle: TextStyle(color: kSlateDim, fontSize: 13),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 10),
-                    ),
-                  ),
-                ),
-                if (_search.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, color: kSlate, size: 16),
-                    onPressed: () {
-                      _searchCtrl.clear();
-                      _onSearchChanged('');
-                    },
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                  ),
-              ]),
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // Row 1: search field + filter btn + view toggles
+      Row(children: [
+        // Search input — takes remaining space
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: kBg3,
+              border: Border.all(color: kBorder),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: Row(children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Icon(Icons.search_rounded, color: kSlate, size: 16),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: _onSearchChanged,
+                  style: const TextStyle(color: kCream, fontSize: 13),
+                  decoration: const InputDecoration(
+                    hintText: 'Search location or name…',
+                    hintStyle: TextStyle(color: kSlateDim, fontSize: 13),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(vertical: 10),
+                  ),
+                ),
+              ),
+              if (_search.isNotEmpty)
+                GestureDetector(
+                  onTap: () { _searchCtrl.clear(); _onSearchChanged(''); },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(Icons.close_rounded, color: kSlate, size: 16),
+                  ),
+                ),
+            ]),
           ),
-          // Type dropdown
+        ),
+        const SizedBox(width: 8),
+        // Filter toggle
+        GestureDetector(
+          onTap: () => setState(() => _showFilters = !_showFilters),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            decoration: BoxDecoration(
+              color: _showFilters ? kGoldDim : kBg3,
+              border: Border.all(color: _showFilters ? kGold : kBorder),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.tune_rounded, color: _showFilters ? kGold : kSlate, size: 14),
+              if (_activeFilterCount > 0) ...[
+                const SizedBox(width: 4),
+                Container(
+                  width: 15, height: 15,
+                  decoration: const BoxDecoration(color: kGold, shape: BoxShape.circle),
+                  child: Center(child: Text('$_activeFilterCount',
+                    style: const TextStyle(color: kBg, fontSize: 9, fontWeight: FontWeight.w700))),
+                ),
+              ],
+            ]),
+          ),
+        ),
+        const SizedBox(width: 6),
+        // View toggle
+        _buildViewBtn(Icons.grid_view_rounded, ViewMode.grid),
+        const SizedBox(width: 4),
+        _buildViewBtn(Icons.list_rounded, ViewMode.list),
+      ]),
+      const SizedBox(height: 8),
+      // Row 2: dropdowns in a horizontal scroll
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
           _buildDropdown(
             value: _selectedType,
+            hint: 'All types',
             items: const [
               DropdownMenuItem(value: '', child: Text('All types')),
               DropdownMenuItem(value: 'house', child: Text('House')),
@@ -686,9 +712,10 @@ class _PropertiesPageState extends State<PropertiesPage> {
             ],
             onChanged: (v) { setState(() => _selectedType = v ?? ''); _onFilterChanged(); },
           ),
-          // Price dropdown
+          const SizedBox(width: 8),
           _buildDropdown(
             value: _priceRange,
+            hint: 'All prices',
             items: const [
               DropdownMenuItem(value: '', child: Text('All prices')),
               DropdownMenuItem(value: '0-500', child: Text('Under 500K')),
@@ -697,43 +724,14 @@ class _PropertiesPageState extends State<PropertiesPage> {
             ],
             onChanged: (v) { setState(() => _priceRange = v ?? ''); _onFilterChanged(); },
           ),
-          // Filter toggle
-          GestureDetector(
-            onTap: () => setState(() => _showFilters = !_showFilters),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-              decoration: BoxDecoration(
-                color: _showFilters ? kGoldDim : kBg3,
-                border: Border.all(color: _showFilters ? kGold : kBorder),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.tune_rounded, color: _showFilters ? kGold : kSlate, size: 14),
-                const SizedBox(width: 5),
-                Text('Filters', style: TextStyle(color: _showFilters ? kGold : kSlate, fontSize: 12, fontWeight: FontWeight.w600)),
-                if (_activeFilterCount > 0) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 16, height: 16,
-                  decoration: const BoxDecoration(color: kGold, shape: BoxShape.circle),
-                  child: Center(child: Text('$_activeFilterCount',
-                    style: const TextStyle(color: kBg, fontSize: 9, fontWeight: FontWeight.w700))),
-                ),
-              ],
-            ]),
-          ),
-        ),
-        const SizedBox(width: 8),
-        // View toggle
-        _buildViewBtn(Icons.grid_view_rounded, ViewMode.grid),
-        const SizedBox(width: 4),
-        _buildViewBtn(Icons.list_rounded, ViewMode.list),
-      ]),
+        ]),
+      ),
     ]),
   );
 
   Widget _buildDropdown({
     required String value,
+    required String hint,
     required List<DropdownMenuItem<String>> items,
     required ValueChanged<String?> onChanged,
   }) => Container(
@@ -755,7 +753,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
   Widget _buildViewBtn(IconData icon, ViewMode mode) => GestureDetector(
     onTap: () => setState(() => _viewMode = mode),
     child: Container(
-      width: 34, height: 34,
+      width: 36, height: 36,
       decoration: BoxDecoration(
         color: _viewMode == mode ? kGold : kBg3,
         border: Border.all(color: _viewMode == mode ? kGold : kBorder),
@@ -768,11 +766,11 @@ class _PropertiesPageState extends State<PropertiesPage> {
   // ── Source tabs ──────────────────────────────────────────
   Widget _buildSourceTabs() => Container(
     color: kBg2,
-    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+    padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
     child: SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(children: SourceFilter.values.map((s) {
-        final sel = (_sourceFilter is SourceFilter) && _sourceFilter == s;
+        final sel = _sourceFilter == s;
         Color bg, border, fg;
         if (!sel) {
           bg = kBg3; border = kBorder; fg = kSlate;
@@ -790,18 +788,18 @@ class _PropertiesPageState extends State<PropertiesPage> {
           SourceFilter.admin: Icons.business_rounded,
         };
         return Padding(
-          padding: const EdgeInsets.only(right: 4),
+          padding: const EdgeInsets.only(right: 6),
           child: GestureDetector(
             onTap: () { setState(() => _sourceFilter = s); _onFilterChanged(); },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: bg, border: Border.all(color: border), borderRadius: BorderRadius.circular(8)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(icons[s]!, size: 12, color: fg),
                 const SizedBox(width: 5),
-                Text(_sourceLabel(s), style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600)),
+                Text(_sourceLabel(s), style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w600)),
               ]),
             ),
           ),
@@ -812,57 +810,64 @@ class _PropertiesPageState extends State<PropertiesPage> {
 
   // ── Advanced filters ─────────────────────────────────────
   Widget _buildAdvancedFilters() => AnimatedCrossFade(
-    firstChild: const SizedBox(height: 12),
+    firstChild: const SizedBox(height: 0),
     secondChild: Container(
       color: kBg2,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Row(children: [
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('REFINE', style: TextStyle(
           color: kSlate, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 2)),
-        const SizedBox(width: 12),
-        _buildDropdown(
-          value: _bedrooms?.toString() ?? '',
-          items: const [
-            DropdownMenuItem(value: '', child: Text('Bedrooms')),
-            DropdownMenuItem(value: '1', child: Text('1+')),
-            DropdownMenuItem(value: '2', child: Text('2+')),
-            DropdownMenuItem(value: '3', child: Text('3+')),
-            DropdownMenuItem(value: '4', child: Text('4+')),
-          ],
-          onChanged: (v) {
-            setState(() => _bedrooms = (v != null && v.isNotEmpty) ? int.tryParse(v) : null);
-            _onFilterChanged();
-          },
-        ),
-        const SizedBox(width: 8),
-        _buildDropdown(
-          value: _furnished == null ? '' : (_furnished! ? 'true' : 'false'),
-          items: const [
-            DropdownMenuItem(value: '', child: Text('Furnishing')),
-            DropdownMenuItem(value: 'true', child: Text('Furnished')),
-            DropdownMenuItem(value: 'false', child: Text('Unfurnished')),
-          ],
-          onChanged: (v) {
-            setState(() => _furnished = v == null || v.isEmpty ? null : v == 'true');
-            _onFilterChanged();
-          },
-        ),
-        if (_activeFilterCount > 0 || _search.isNotEmpty) ...[
-          const Spacer(),
-          GestureDetector(
-            onTap: _clearFilters,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
-              child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.close, color: kSlate, size: 11),
-                SizedBox(width: 5),
-                Text('Clear all', style: TextStyle(color: kSlate, fontSize: 12)),
-              ]),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: [
+            _buildDropdown(
+              value: _bedrooms?.toString() ?? '',
+              hint: 'Bedrooms',
+              items: const [
+                DropdownMenuItem(value: '', child: Text('Any bedrooms')),
+                DropdownMenuItem(value: '1', child: Text('1+ beds')),
+                DropdownMenuItem(value: '2', child: Text('2+ beds')),
+                DropdownMenuItem(value: '3', child: Text('3+ beds')),
+                DropdownMenuItem(value: '4', child: Text('4+ beds')),
+              ],
+              onChanged: (v) {
+                setState(() => _bedrooms = (v != null && v.isNotEmpty) ? int.tryParse(v) : null);
+                _onFilterChanged();
+              },
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            _buildDropdown(
+              value: _furnished == null ? '' : (_furnished! ? 'true' : 'false'),
+              hint: 'Furnishing',
+              items: const [
+                DropdownMenuItem(value: '', child: Text('Any furnishing')),
+                DropdownMenuItem(value: 'true', child: Text('Furnished')),
+                DropdownMenuItem(value: 'false', child: Text('Unfurnished')),
+              ],
+              onChanged: (v) {
+                setState(() => _furnished = v == null || v.isEmpty ? null : v == 'true');
+                _onFilterChanged();
+              },
+            ),
+            if (_activeFilterCount > 0 || _search.isNotEmpty) ...[
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: _clearFilters,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.close, color: kSlate, size: 11),
+                    SizedBox(width: 4),
+                    Text('Clear all', style: TextStyle(color: kSlate, fontSize: 12)),
+                  ]),
+                ),
+              ),
+            ],
+          ]),
+        ),
       ]),
     ),
     crossFadeState: _showFilters ? CrossFadeState.showSecond : CrossFadeState.showFirst,
@@ -883,7 +888,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
           SliverFillRemaining(child: _buildEmpty())
         else ...[
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.fromLTRB(12, 14, 12, 0),
             sliver: _viewMode == ViewMode.grid
                 ? SliverGrid(
                     delegate: SliverChildBuilderDelegate(
@@ -898,8 +903,15 @@ class _PropertiesPageState extends State<PropertiesPage> {
                       ),
                       childCount: _properties.length,
                     ),
+                    // FIX: Changed crossAxisCount to 1 for mobile so cards are full-width
+                    // and are large enough. Uses LayoutBuilder for adaptive count.
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 0.95),
+                      crossAxisCount: 1,
+                      mainAxisSpacing: 14,
+                      // FIX: childAspectRatio controls card height. Lower = taller card.
+                      // With full width on ~360px screen, 0.9 gives a comfortable card.
+                      childAspectRatio: 0.85,
+                    ),
                   )
                 : SliverList(delegate: SliverChildBuilderDelegate(
                     (_, i) => Padding(
@@ -927,18 +939,19 @@ class _PropertiesPageState extends State<PropertiesPage> {
   }
 
   // ── Skeleton ─────────────────────────────────────────────
-  Widget _buildSkeleton() => GridView.builder(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 0.95),
-    itemCount: kItemsPerPage,
-    itemBuilder: (_, __) => const _SkeletonCard(),
+  Widget _buildSkeleton() => ListView.builder(
+    padding: const EdgeInsets.fromLTRB(12, 14, 12, 28),
+    itemCount: 6,
+    itemBuilder: (_, __) => const Padding(
+      padding: EdgeInsets.only(bottom: 14),
+      child: _SkeletonCard(),
+    ),
   );
 
   // ── Error banner ─────────────────────────────────────────
   Widget _buildErrorBanner() => Container(
-    margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     decoration: BoxDecoration(
       color: const Color(0xFFEF4444).withOpacity(0.08),
       border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.25)),
@@ -955,76 +968,90 @@ class _PropertiesPageState extends State<PropertiesPage> {
 
   // ── Empty ────────────────────────────────────────────────
   Widget _buildEmpty() => Center(
-    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Container(
-        width: 60, height: 60,
-        decoration: BoxDecoration(
-          color: kGoldDim, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(16)),
-        child: const Icon(Icons.search_rounded, color: kGold, size: 22),
-      ),
-      const SizedBox(height: 20),
-      const Text('No properties found', style: TextStyle(
-        color: kCream, fontSize: 22, fontWeight: FontWeight.w300)),
-      const SizedBox(height: 6),
-      const Text('Try adjusting your filters or search terms.',
-        style: TextStyle(color: kSlate, fontSize: 14)),
-      if (_activeFilterCount > 0 || _search.isNotEmpty) ...[
-        const SizedBox(height: 24),
-        GestureDetector(
-          onTap: _clearFilters,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-            decoration: BoxDecoration(
-              border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.close, color: kSlate, size: 13),
-              SizedBox(width: 6),
-              Text('Clear filters', style: TextStyle(color: kSlate, fontSize: 13)),
-            ]),
-          ),
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Container(
+          width: 60, height: 60,
+          decoration: BoxDecoration(
+            color: kGoldDim, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(16)),
+          child: const Icon(Icons.search_rounded, color: kGold, size: 22),
         ),
-      ],
-    ]),
+        const SizedBox(height: 20),
+        const Text('No properties found', style: TextStyle(
+          color: kCream, fontSize: 20, fontWeight: FontWeight.w300)),
+        const SizedBox(height: 6),
+        const Text('Try adjusting your filters or search terms.',
+          style: TextStyle(color: kSlate, fontSize: 13), textAlign: TextAlign.center),
+        if (_activeFilterCount > 0 || _search.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: _clearFilters,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.close, color: kSlate, size: 13),
+                SizedBox(width: 6),
+                Text('Clear filters', style: TextStyle(color: kSlate, fontSize: 13)),
+              ]),
+            ),
+          ),
+        ],
+      ]),
+    ),
   );
 
   // ── Pagination ───────────────────────────────────────────
+  // FIX: Wrapped in SingleChildScrollView for horizontal overflow, plus
+  //      page info and jump-to in their own rows to avoid overflow.
   Widget _buildPagination() => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 32, 16, 0),
+    padding: const EdgeInsets.fromLTRB(12, 28, 12, 0),
     child: Column(children: [
       Text(
-        'Showing $_pageStart–$_pageEnd of $_paginationTotal properties',
-        style: const TextStyle(color: kSlate, fontSize: 13),
+        'Showing $_pageStart–$_pageEnd of $_paginationTotal',
+        style: const TextStyle(color: kSlate, fontSize: 12),
       ),
-      const SizedBox(height: 14),
-      Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 4,
-        runSpacing: 4,
-        children: [
-          // Prev
-          _PagBtn(
-            label: '← Prev',
-            disabled: _currentPage == 1,
-            onTap: () => _goToPage(_currentPage - 1),
+      const SizedBox(height: 12),
+      // Prev / Next always visible, page numbers in horizontal scroll
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        _PagBtn(
+          label: '←',
+          disabled: _currentPage == 1,
+          onTap: () => _goToPage(_currentPage - 1),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: _getPageNumbers(_currentPage, _totalPages).map((p) {
+                if (p == null) return const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 2),
+                  child: _PagBtn(label: '…', disabled: true, isDots: true),
+                );
+                return Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: _PagBtn(
+                    label: '$p',
+                    active: p == _currentPage,
+                    onTap: () => _goToPage(p),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-          // Page numbers
-          ..._getPageNumbers(_currentPage, _totalPages).map((p) {
-            if (p == null) return const _PagBtn(label: '…', disabled: true, isDots: true);
-            return _PagBtn(
-              label: '$p',
-              active: p == _currentPage,
-              onTap: () => _goToPage(p),
-            );
-          }),
-          // Next
-          _PagBtn(
-            label: 'Next →',
-            disabled: _currentPage == _totalPages,
-            onTap: () => _goToPage(_currentPage + 1),
-          ),
-        ],
-      ),
-      const SizedBox(height: 14),
+        ),
+        const SizedBox(width: 6),
+        _PagBtn(
+          label: '→',
+          disabled: _currentPage == _totalPages,
+          onTap: () => _goToPage(_currentPage + 1),
+        ),
+      ]),
+      const SizedBox(height: 12),
       // Jump to page
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         const Text('Go to page', style: TextStyle(color: kSlate, fontSize: 13)),
@@ -1039,18 +1066,9 @@ class _PropertiesPageState extends State<PropertiesPage> {
             decoration: InputDecoration(
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: kBorder),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: kBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: kGold, width: 1.5),
-              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kBorder)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kBorder)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kGold, width: 1.5)),
               fillColor: kBg3,
               filled: true,
             ),
@@ -1092,9 +1110,9 @@ class _PagBtn extends StatelessWidget {
     return GestureDetector(
       onTap: (disabled || isDots) ? null : onTap,
       child: Container(
-        height: 38,
-        constraints: const BoxConstraints(minWidth: 38),
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        height: 36,
+        constraints: const BoxConstraints(minWidth: 36),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: active ? kGold : kBg2,
           border: Border.all(color: active ? kGold : (isDots ? Colors.transparent : kBorder)),
@@ -1117,6 +1135,7 @@ class _SkeletonCard extends StatefulWidget {
   const _SkeletonCard();
   @override State<_SkeletonCard> createState() => _SkeletonCardState();
 }
+
 class _SkeletonCardState extends State<_SkeletonCard> with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   @override void initState() {
@@ -1129,30 +1148,29 @@ class _SkeletonCardState extends State<_SkeletonCard> with SingleTickerProviderS
   Widget build(BuildContext context) => FadeTransition(
     opacity: Tween<double>(begin: 0.25, end: 0.6).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut)),
     child: Container(
+      height: 340,
       decoration: BoxDecoration(
-        color: kBg2, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12)),
+        color: kBg2, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(16)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        // Image placeholder
+        Container(
+          height: 200,
+          decoration: const BoxDecoration(
+            color: kBg3, borderRadius: BorderRadius.vertical(top: Radius.circular(16)))),
         Expanded(
-          flex: 5,
-          child: Container(
-            decoration: const BoxDecoration(
-              color: kBg3, borderRadius: BorderRadius.vertical(top: Radius.circular(12)))),
-        ),
-        Expanded(
-          flex: 4,
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
               Container(height: 10, width: 80, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(4))),
-              const SizedBox(height: 6),
-              Container(height: 12, width: 120, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(4))),
-              const SizedBox(height: 6),
-              Container(height: 8, width: 90, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(4))),
               const SizedBox(height: 8),
+              Container(height: 14, width: double.infinity, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(4))),
+              const SizedBox(height: 8),
+              Container(height: 10, width: 120, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(4))),
+              const SizedBox(height: 10),
               Row(children: [
-                Container(height: 8, width: 40, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(4))),
-                const SizedBox(width: 6),
-                Container(height: 8, width: 40, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(4))),
+                Container(height: 10, width: 50, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(4))),
+                const SizedBox(width: 8),
+                Container(height: 10, width: 50, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(4))),
               ]),
             ]),
           ),
@@ -1163,6 +1181,11 @@ class _SkeletonCardState extends State<_SkeletonCard> with SingleTickerProviderS
 }
 
 // ── Property Card ─────────────────────────────────────────────
+// FIX: Completely reworked grid card layout. No more tiny text (7px, 9px).
+//      Uses a fixed image height instead of Expanded/flex ratio (which causes
+//      RenderFlex overflow in grid cells with tight constraints).
+//      Info section uses Column with proper sizing — no more Expanded causing
+//      unbounded height issues.
 class _PropertyCard extends StatelessWidget {
   final PropertyMap property;
   final bool isSaved;
@@ -1172,7 +1195,7 @@ class _PropertyCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool isList;
   const _PropertyCard({
-    required this.property, 
+    required this.property,
     required this.isSaved,
     required this.onSave,
     required this.onApply,
@@ -1204,23 +1227,28 @@ class _PropertyCard extends StatelessWidget {
     return _buildGridCard();
   }
 
+  // FIX: Grid card now uses a Column with a fixed-height image section (200px)
+  //      and an intrinsic-height info section — no Expanded in a Column that
+  //      sits inside a grid cell with constrained height.
   Widget _buildGridCard() => GestureDetector(
     onTap: onTap,
     child: Container(
       decoration: BoxDecoration(
-        color: kBg2, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 14, offset: const Offset(0, 4))]),
+        color: kBg2,
+        border: Border.all(color: kBorder),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 4))],
+      ),
       clipBehavior: Clip.hardEdge,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Expanded(
-          flex: 4,
-          child: _buildImageSection(),          
-        ),
-        Expanded(
-          flex: 5,
-          child: _buildInfoSection(),
-        ),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Image — fixed height, no Expanded
+          SizedBox(height: 200, child: _buildImageSection(imageHeight: 200)),
+          // Info section — intrinsic height, no overflow
+          _buildGridInfoSection(),
+        ],
+      ),
     ),
   );
 
@@ -1228,193 +1256,272 @@ class _PropertyCard extends StatelessWidget {
     onTap: onTap,
     child: Container(
       decoration: BoxDecoration(
-        color: kBg2, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 14, offset: const Offset(0, 4))]),
+        color: kBg2,
+        border: Border.all(color: kBorder),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 4))],
+      ),
       clipBehavior: Clip.hardEdge,
-      child: Row(children: [
-        SizedBox(width: 200, child: _buildImageSection()),
-        Expanded(child: _buildInfoSection()),
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // In list mode, image is at top, full width but shorter
+          SizedBox(height: 180, child: _buildImageSection(imageHeight: 180)),
+          _buildListInfoSection(),
+        ],
+      ),
     ),
   );
 
-  Widget _buildImageSection() => SizedBox(
-    child: AspectRatio(
-      aspectRatio: isList ? 0.75 : 4 / 3,
-      child: Stack(fit: StackFit.expand, children: [
-        _imageUrl.isNotEmpty
-            ? Image.network(
-                _imageUrl,
-                fit: BoxFit.cover,
-                frameBuilder: (_, child, frame, __) => frame == null
-                    ? Container(color: kBg3, child: const Icon(Icons.image_rounded, color: kSlateDim, size: 32))
-                    : child,
-                errorBuilder: (_, __, ___) =>
-                    Container(color: kBg3, child: const Icon(Icons.image_rounded, color: kSlateDim, size: 32)),
-              )
-            : Container(color: kBg3, child: const Icon(Icons.image_rounded, color: kSlateDim, size: 32)),
+  Widget _buildImageSection({required double imageHeight}) => Stack(
+    fit: StackFit.expand,
+    children: [
+      _imageUrl.isNotEmpty
+          ? Image.network(
+              _imageUrl,
+              fit: BoxFit.cover,
+              frameBuilder: (_, child, frame, __) => frame == null
+                  ? Container(color: kBg3, child: const Center(child: Icon(Icons.image_rounded, color: kSlateDim, size: 40)))
+                  : child,
+              errorBuilder: (_, __, ___) =>
+                  Container(color: kBg3, child: const Center(child: Icon(Icons.image_rounded, color: kSlateDim, size: 40))),
+            )
+          : Container(color: kBg3, child: const Center(child: Icon(Icons.image_rounded, color: kSlateDim, size: 40))),
 
-        // Gradient overlay
-        Container(decoration: const BoxDecoration(gradient: LinearGradient(
-          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Color(0xEE0A0F1E)], stops: [0.3, 1.0]))),
+      // Gradient overlay
+      Container(decoration: const BoxDecoration(gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Colors.transparent, Color(0xCC0A0F1E)], stops: [0.4, 1.0]))),
 
-        // Featured badge
-        if (_featured)
-          Positioned(top: 10, left: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(4)),
-              child: const Text('Featured', style: TextStyle(color: kBg, fontSize: 9, fontWeight: FontWeight.w700)),
-            )),
+      // Featured badge
+      if (_featured)
+        Positioned(top: 10, left: 10,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(5)),
+            child: const Text('FEATURED', style: TextStyle(color: kBg, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+          )),
 
-        // Source badge
-        Positioned(top: 10, right: 10,
+      // Source badge
+      Positioned(top: 10, right: 10,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: _sourceBadgeColor(_source).withOpacity(0.9), borderRadius: BorderRadius.circular(5)),
+          child: Text(
+            _source == SourceFilter.agent ? 'AGENT' :
+            _source == SourceFilter.admin ? 'OWERU' : 'LANDLORD',
+            style: TextStyle(color: _sourceBadgeTextColor(_source), fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+          ),
+        )),
+
+      // Type badge (bottom left)
+      if (_type.isNotEmpty)
+        Positioned(bottom: 10, left: 10,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: _sourceBadgeColor(_source).withOpacity(0.9), borderRadius: BorderRadius.circular(4)),
+              color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(5)),
             child: Text(
-              _source == SourceFilter.agent ? 'AGENT' :
-              _source == SourceFilter.admin ? 'OWERU' : 'LANDLORD',
-              style: TextStyle(color: _sourceBadgeTextColor(_source), fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5),
-            ),
+              _type[0].toUpperCase() + _type.substring(1),
+              style: const TextStyle(color: kCream, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
           )),
 
-        // Type badge
-        if (_type.isNotEmpty)
-          Positioned(bottom: 10, left: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.75), borderRadius: BorderRadius.circular(4)),
-              child: Text(
-                _type[0].toUpperCase() + _type.substring(1),
-                style: const TextStyle(color: kCream, fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: 1)),
-            )),
-
-        // Price
-        Positioned(bottom: 10, right: 10,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(_formatPrice(property['price']),
-              style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w400)),
-            const Text('/month', style: TextStyle(color: kSlateDim, fontSize: 10)),
-          ])),
-      ]),
-    ),
+      // Price (bottom right)
+      Positioned(bottom: 8, right: 10,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text(_formatPrice(property['price']),
+            style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w500,
+              shadows: [Shadow(color: Colors.black54, blurRadius: 8)])),
+          const Text('/mo', style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 10)),
+        ])),
+    ],
   );
 
-  Widget _buildInfoSection() => Padding(
-    padding: EdgeInsets.fromLTRB(isList ? 16 : 8, isList ? 16 : 6, isList ? 16 : 8, isList ? 16 : 6),
+  // FIX: Grid info section with proper readable font sizes (no 7px or 9px text)
+  Widget _buildGridInfoSection() => Padding(
+    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: _buildInfoContent(),
+      children: [
+        // Location
+        if (_location.isNotEmpty)
+          Row(children: [
+            const Icon(Icons.location_on_rounded, color: kGold, size: 11),
+            const SizedBox(width: 3),
+            Expanded(child: Text(_location,
+              style: const TextStyle(color: kSlate, fontSize: 11),
+              maxLines: 1, overflow: TextOverflow.ellipsis)),
+          ]),
+        const SizedBox(height: 5),
+        // Title
+        Text((property['title'] ?? 'Untitled Property').toString(),
+          style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w700),
+          maxLines: 2, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 10),
+        // Specs row
+        Wrap(
+          spacing: 10,
+          runSpacing: 4,
+          children: [
+            if (_beds > 0) _spec(Icons.bed_rounded, '$_beds bed'),
+            if (_baths > 0) _spec(Icons.bathtub_rounded, '$_baths bath'),
+            if (_size > 0) _spec(Icons.square_foot_rounded, '${_size}m²'),
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Furnished tag
+        if (_furnished)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: kGoldDim, border: Border.all(color: kGoldBorder), borderRadius: BorderRadius.circular(4)),
+              child: const Text('Furnished', style: TextStyle(color: kGold, fontSize: 10, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        // Action buttons — no overflow because they're in a Row with defined widths
+        Row(children: [
+          // Save button
+          GestureDetector(
+            onTap: onSave,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: isSaved ? kGold : Colors.transparent,
+                border: Border.all(color: isSaved ? kGold : kBorder),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(
+                isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                color: isSaved ? kBg : kSlate, size: 14),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Share button
+          GestureDetector(
+            onTap: onShare,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(6)),
+              child: const Icon(Icons.share_rounded, color: kSlate, size: 14),
+            ),
+          ),
+          const Spacer(),
+          // Visit / Apply button — uses IntrinsicWidth, won't overflow
+          GestureDetector(
+            onTap: onApply,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(6)),
+              child: const Text('Book Visit',
+                style: TextStyle(color: kBg, fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ]),
+      ],
     ),
   );
 
-  List<Widget> _buildInfoContent() => [
-    if (_location.isNotEmpty)
-      Row(children: [
-        const Icon(Icons.location_on_rounded, color: kGold, size: 8),
-        const SizedBox(width: 2),
-        Expanded(child: Text(_location,
-          style: TextStyle(color: kSlate, fontSize: isList ? 12 : 7),
-          maxLines: 1, overflow: TextOverflow.ellipsis)),
-      ]),
-    SizedBox(height: isList ? 6 : 1),
-    Text((property['title'] ?? 'Untitled Property').toString(),
-      style: TextStyle(color: kCream, fontSize: isList ? 16 : 10, fontWeight: FontWeight.w700),
-      maxLines: isList ? 2 : 1, overflow: TextOverflow.ellipsis),
-    if (isList && property['description'] != null && property['description'].toString().isNotEmpty) ...[
-      const SizedBox(height: 5),
-      Text(property['description'].toString(),
-        style: const TextStyle(color: kSlate, fontSize: 12, fontWeight: FontWeight.w300, height: 1.4),
-        maxLines: 3, overflow: TextOverflow.ellipsis),
-    ],
-    // Specs divider - only for list view
-    if (isList)
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Divider(color: kGold.withOpacity(0.1), height: 1)),
-    // Specs row - use Wrap for overflow handling
-    Wrap(
-      spacing: 3,
-      runSpacing: 1,
-      crossAxisAlignment: WrapCrossAlignment.center,
+  Widget _buildListInfoSection() => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (_beds > 0) _spec(Icons.bed_rounded, '$_beds'),
-        if (_baths > 0) _spec(Icons.bathtub_rounded, '$_baths'),
-        if (_size > 0) _spec(Icons.square_foot_rounded, '$_size'),
-      ],
-    ),
-    SizedBox(height: isList ? 12 : 2),
-    // Footer: furnished tag + action buttons - use Wrap for overflow handling
-    Wrap(
-      spacing: 2,
-      runSpacing: 2,
-      alignment: WrapAlignment.spaceBetween,
-      children: [
-        if (_furnished && isList)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: kGoldDim, border: Border.all(color: kGoldBorder), borderRadius: BorderRadius.circular(4)),
-            child: const Text('Furnished', style: TextStyle(color: kGold, fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
-          ),
-        // Save
-        GestureDetector(
-          onTap: onSave,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: isList ? 10 : 4, vertical: isList ? 6 : 2),
-            decoration: BoxDecoration(
-              color: isSaved ? kGold : Colors.transparent,
-              border: Border.all(color: isSaved ? kGold : kBorder),
-              borderRadius: BorderRadius.circular(3),
+        if (_location.isNotEmpty)
+          Row(children: [
+            const Icon(Icons.location_on_rounded, color: kGold, size: 12),
+            const SizedBox(width: 4),
+            Expanded(child: Text(_location,
+              style: const TextStyle(color: kSlate, fontSize: 12),
+              maxLines: 1, overflow: TextOverflow.ellipsis)),
+          ]),
+        const SizedBox(height: 6),
+        Text((property['title'] ?? 'Untitled Property').toString(),
+          style: const TextStyle(color: kCream, fontSize: 17, fontWeight: FontWeight.w700),
+          maxLines: 2, overflow: TextOverflow.ellipsis),
+        if (property['description'] != null && property['description'].toString().isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(property['description'].toString(),
+            style: const TextStyle(color: kSlate, fontSize: 12, height: 1.5),
+            maxLines: 2, overflow: TextOverflow.ellipsis),
+        ],
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Divider(color: kGold.withOpacity(0.12), height: 1)),
+        Wrap(
+          spacing: 12,
+          runSpacing: 4,
+          children: [
+            if (_beds > 0) _spec(Icons.bed_rounded, '$_beds bed'),
+            if (_baths > 0) _spec(Icons.bathtub_rounded, '$_baths bath'),
+            if (_size > 0) _spec(Icons.square_foot_rounded, '${_size}m²'),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(children: [
+          if (_furnished)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: kGoldDim, border: Border.all(color: kGoldBorder), borderRadius: BorderRadius.circular(4)),
+              child: const Text('Furnished', style: TextStyle(color: kGold, fontSize: 10, fontWeight: FontWeight.w600)),
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                color: isSaved ? kBg : kSlate, size: isList ? 12 : 7),
-              if (isList) const SizedBox(width: 4),
-              if (isList) Text(isSaved ? 'Saved' : 'Save',
-                style: TextStyle(color: isSaved ? kBg : kSlate, fontSize: 11, fontWeight: FontWeight.w600)),
-            ]),
+          const Spacer(),
+          GestureDetector(
+            onTap: onSave,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: isSaved ? kGold : Colors.transparent,
+                border: Border.all(color: isSaved ? kGold : kBorder),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                  color: isSaved ? kBg : kSlate, size: 13),
+                const SizedBox(width: 4),
+                Text(isSaved ? 'Saved' : 'Save',
+                  style: TextStyle(color: isSaved ? kBg : kSlate, fontSize: 12, fontWeight: FontWeight.w600)),
+              ]),
+            ),
           ),
-        ),
-        // Share
-        GestureDetector(
-          onTap: onShare,
-          child: Container(
-            width: isList ? 30 : 22, height: isList ? 30 : 22,
-            decoration: BoxDecoration(border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(3)),
-            child: Icon(Icons.share_rounded, color: kSlate, size: isList ? 14 : 8),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onShare,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(6)),
+              child: const Icon(Icons.share_rounded, color: kSlate, size: 14),
+            ),
           ),
-        ),
-        // Apply
-        GestureDetector(
-          onTap: onApply,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: isList ? 14 : 5, vertical: isList ? 6 : 2),
-            decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(3)),
-            child: Text('Visit', style: TextStyle(color: kBg, fontSize: isList ? 12 : 7, fontWeight: FontWeight.w700)),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onApply,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(6)),
+              child: const Text('Book Visit',
+                style: TextStyle(color: kBg, fontSize: 13, fontWeight: FontWeight.w700)),
+            ),
           ),
-        ),
+        ]),
       ],
     ),
-  ];
+  );
 
-  Widget _spec(IconData icon, String label) => Row(children: [
-    Icon(icon, color: kGold, size: isList ? 12 : 10),
-    SizedBox(width: isList ? 4 : 2),
-    Text(label, style: TextStyle(color: kSlate, fontSize: isList ? 11 : 9)),
-  ]);
-}
-
-class _SpecDiv extends StatelessWidget {
-  const _SpecDiv();
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 1, height: 12, margin: const EdgeInsets.symmetric(horizontal: 8), color: kBorder);
+  Widget _spec(IconData icon, String label) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, color: kGold, size: 13),
+      const SizedBox(width: 4),
+      Text(label, style: const TextStyle(color: kSlate, fontSize: 12)),
+    ],
+  );
 }
 
 // ── Toast Item ───────────────────────────────────────────────
@@ -1443,41 +1550,41 @@ class _ToastItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    constraints: const BoxConstraints(maxWidth: 340, minWidth: 240),
+    margin: const EdgeInsets.only(bottom: 8),
+    // FIX: use double.infinity constrained by parent Positioned (left+right=12+12)
+    // instead of a fixed maxWidth that could overflow narrow screens
+    width: double.infinity,
     decoration: BoxDecoration(
       color: kBg2,
       border: Border.all(color: kBorder),
-      borderRadius: BorderRadius.circular(14),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 24)],
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 20)],
     ),
     child: Stack(children: [
-      // Left color bar
       Positioned(left: 0, top: 0, bottom: 0, child: Container(
         width: 3, decoration: BoxDecoration(
-          color: _color, borderRadius: const BorderRadius.horizontal(left: Radius.circular(14))))),
+          color: _color, borderRadius: const BorderRadius.horizontal(left: Radius.circular(12))))),
       Padding(
-        padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(color: _color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-            child: Icon(_icon, color: _color, size: 16),
+            width: 32, height: 32,
+            decoration: BoxDecoration(color: _color.withOpacity(0.12), borderRadius: BorderRadius.circular(9)),
+            child: Icon(_icon, color: _color, size: 15),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(toast.title, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
             if (toast.message != null) ...[
               const SizedBox(height: 2),
-              Text(toast.message!, style: const TextStyle(color: kSlate, fontSize: 12, height: 1.5)),
+              Text(toast.message!, style: const TextStyle(color: kSlate, fontSize: 12, height: 1.4)),
             ],
           ])),
           GestureDetector(
             onTap: onDismiss,
-            child: Container(
-              width: 24, height: 24,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(6)),
-              child: const Icon(Icons.close, color: kSlate, size: 13),
+            child: const Padding(
+              padding: EdgeInsets.only(left: 4),
+              child: Icon(Icons.close, color: kSlate, size: 14),
             ),
           ),
         ]),
@@ -1501,8 +1608,8 @@ class _ModalShell extends StatelessWidget {
         child: GestureDetector(
           onTap: () {},
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            constraints: const BoxConstraints(maxWidth: 460, maxHeight: 680),
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 40),
+            constraints: const BoxConstraints(maxWidth: 460),
             decoration: BoxDecoration(
               color: kBg2,
               borderRadius: BorderRadius.circular(20),
@@ -1527,7 +1634,7 @@ class _ModalHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.fromLTRB(24, 24, 14, 20),
+    padding: const EdgeInsets.fromLTRB(20, 20, 12, 16),
     decoration: BoxDecoration(
       gradient: const LinearGradient(
         colors: [Color(0xFF0F172A), Color(0xFF1E2D4A)],
@@ -1535,11 +1642,10 @@ class _ModalHeader extends StatelessWidget {
       border: Border(bottom: BorderSide(color: kBorder)),
     ),
     child: Stack(children: [
-      // Gold top bar
-      Positioned(top: -24, left: -24, right: -14, child: Container(height: 2, color: kGold)),
+      Positioned(top: -20, left: -20, right: -12, child: Container(height: 2, color: kGold)),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: const TextStyle(
-          color: kCream, fontSize: 20, fontWeight: FontWeight.w300, letterSpacing: -0.01)),
+          color: kCream, fontSize: 18, fontWeight: FontWeight.w300, letterSpacing: -0.01)),
         if (subtitle != null) ...[
           const SizedBox(height: 3),
           Text(subtitle!, style: const TextStyle(color: kSlate, fontSize: 12)),
@@ -1549,11 +1655,11 @@ class _ModalHeader extends StatelessWidget {
         child: GestureDetector(
           onTap: onClose,
           child: Container(
-            width: 32, height: 32,
+            width: 30, height: 30,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.08),
-              border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(9)),
-            child: const Icon(Icons.close, color: kSlate, size: 15),
+              border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.close, color: kSlate, size: 14),
           ),
         )),
     ]),
@@ -1571,87 +1677,89 @@ class _AuthModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _ModalShell(
     onClose: onClose,
-    child: Column(mainAxisSize: MainAxisSize.min, children: [
-      // Hero
-      Container(
-        padding: const EdgeInsets.fromLTRB(28, 34, 28, 24),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0F172A), Color(0xFF1E2D4A)],
-            begin: Alignment.topLeft, end: Alignment.bottomRight),
-        ),
-        child: Stack(children: [
-          Positioned(top: -34, left: -28, right: -28, child: Container(height: 2, color: kGold)),
-          Column(children: [
-            GestureDetector(onTap: onClose, child: Align(alignment: Alignment.centerRight,
-              child: Container(width: 32, height: 32,
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(9)),
-                child: const Icon(Icons.close, color: kSlate, size: 15)))),
-            const SizedBox(height: 8),
-            Container(
-              width: 58, height: 58,
-              decoration: BoxDecoration(color: kGoldDim, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(17)),
-              child: const Icon(Icons.shield_outlined, color: kGold, size: 24)),
-            const SizedBox(height: 18),
-            const Text('Sign in to Book Visit',
-              style: TextStyle(color: kCream, fontSize: 21, fontWeight: FontWeight.w300, letterSpacing: -0.01)),
-            const SizedBox(height: 7),
-            const Text('You need an account to book a site visit and connect with agents.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: kSlate, fontSize: 13, height: 1.55)),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
-                border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(9)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.location_on_rounded, color: kGold, size: 11),
-                const SizedBox(width: 6),
-                const Text('Visiting '),
-                Text((property['title'] ?? 'Property').toString(),
-                  style: const TextStyle(color: kCream, fontWeight: FontWeight.w600, fontSize: 12)),
-              ].map((w) => DefaultTextStyle(style: const TextStyle(color: kSlate, fontSize: 12), child: w)).toList()),
-            ),
+    child: SingleChildScrollView(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0F172A), Color(0xFF1E2D4A)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight),
+          ),
+          child: Stack(children: [
+            Positioned(top: -28, left: -24, right: -24, child: Container(height: 2, color: kGold)),
+            Column(children: [
+              GestureDetector(onTap: onClose, child: Align(alignment: Alignment.centerRight,
+                child: Container(width: 30, height: 30,
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.close, color: kSlate, size: 14)))),
+              const SizedBox(height: 10),
+              Container(
+                width: 54, height: 54,
+                decoration: BoxDecoration(color: kGoldDim, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(15)),
+                child: const Icon(Icons.shield_outlined, color: kGold, size: 22)),
+              const SizedBox(height: 14),
+              const Text('Sign in to Book Visit',
+                style: TextStyle(color: kCream, fontSize: 19, fontWeight: FontWeight.w300, letterSpacing: -0.01)),
+              const SizedBox(height: 6),
+              const Text('You need an account to book a site visit and connect with agents.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: kSlate, fontSize: 12, height: 1.55)),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.06),
+                  border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.location_on_rounded, color: kGold, size: 11),
+                  const SizedBox(width: 6),
+                  Flexible(child: Text(
+                    (property['title'] ?? 'Property').toString(),
+                    style: const TextStyle(color: kCream, fontWeight: FontWeight.w600, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  )),
+                ]),
+              ),
+            ]),
           ]),
-        ]),
-      ),
-      // Options
-      Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(children: [
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text('CHOOSE AN OPTION TO CONTINUE',
-              style: TextStyle(color: kSlate, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.6))),
-          const SizedBox(height: 12),
-          _AuthOption(icon: Icons.login_rounded, iconBg: kGoldDim, iconColor: kGold,
-            title: 'Sign in to my account', subtitle: 'I already have an account', onTap: onLogin),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(children: [
-              Expanded(child: Divider(color: kBorder)),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('or', style: TextStyle(color: kSlate, fontSize: 11))),
-              Expanded(child: Divider(color: kBorder)),
-            ])),
-          _AuthOption(
-            icon: Icons.person_add_rounded,
-            iconBg: const Color(0xFF10B981).withOpacity(0.1),
-            iconColor: const Color(0xFF10B981),
-            title: 'Create a free account',
-            subtitle: 'New here? Sign up takes under a minute',
-            onTap: onSignup),
-        ]),
-      ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
-        child: TextButton(
-          onPressed: onClose,
-          child: const Text('Continue browsing', style: TextStyle(color: kSlate, fontSize: 12)),
         ),
-      ),
-    ]),
+        Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('CHOOSE AN OPTION',
+                style: TextStyle(color: kSlate, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.6))),
+            const SizedBox(height: 10),
+            _AuthOption(icon: Icons.login_rounded, iconBg: kGoldDim, iconColor: kGold,
+              title: 'Sign in to my account', subtitle: 'I already have an account', onTap: onLogin),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(children: [
+                Expanded(child: Divider(color: kBorder)),
+                Padding(padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text('or', style: TextStyle(color: kSlate, fontSize: 11))),
+                Expanded(child: Divider(color: kBorder)),
+              ])),
+            _AuthOption(
+              icon: Icons.person_add_rounded,
+              iconBg: const Color(0xFF10B981).withOpacity(0.1),
+              iconColor: const Color(0xFF10B981),
+              title: 'Create a free account',
+              subtitle: 'Sign up takes under a minute',
+              onTap: onSignup),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 14),
+          child: TextButton(
+            onPressed: onClose,
+            child: const Text('Continue browsing', style: TextStyle(color: kSlate, fontSize: 12)),
+          ),
+        ),
+      ]),
+    ),
   );
 }
 
@@ -1666,21 +1774,21 @@ class _AuthOption extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
     child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: kBg3, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12)),
       child: Row(children: [
         Container(
-          width: 42, height: 42,
-          decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(11)),
-          child: Icon(icon, color: iconColor, size: 18)),
-        const SizedBox(width: 14),
+          width: 40, height: 40,
+          decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: iconColor, size: 17)),
+        const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(title, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 2),
           Text(subtitle, style: const TextStyle(color: kSlate, fontSize: 11)),
         ])),
-        const Icon(Icons.arrow_forward_rounded, color: kSlate, size: 15),
+        const Icon(Icons.arrow_forward_rounded, color: kSlate, size: 14),
       ]),
     ),
   );
@@ -1697,20 +1805,19 @@ class _ApplyModal extends StatelessWidget {
   Widget build(BuildContext context) => _ModalShell(
     onClose: onClose,
     child: Column(mainAxisSize: MainAxisSize.min, children: [
-      _ModalHeader(title: 'Book Property Site Visit', subtitle: 'Review the details before proceeding', onClose: onClose),
+      _ModalHeader(title: 'Book Site Visit', subtitle: 'Review before proceeding', onClose: onClose),
       Flexible(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(22),
+          padding: const EdgeInsets.all(18),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Property info card
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: kBg3, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12)),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text((property['title'] ?? 'Property').toString(),
-                  style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w400)),
-                const SizedBox(height: 12),
+                  style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 10),
                 if ((property['location'] ?? property['address']) != null)
                   _InfoRow(Icons.location_on_rounded, (property['location'] ?? property['address']).toString()),
                 _InfoRow(Icons.credit_card_rounded, 'Monthly rent: ${_formatPrice(property['price'])}'),
@@ -1720,19 +1827,17 @@ class _ApplyModal extends StatelessWidget {
                   _InfoRow(Icons.check_circle_outline_rounded, 'Furnished', color: const Color(0xFF10B981)),
               ]),
             ),
-            const SizedBox(height: 16),
-            // Fee block
-            _FeeBlock(),
             const SizedBox(height: 14),
+            _FeeBlock(),
+            const SizedBox(height: 12),
             const Text(
-              'This fee covers the site visit arrangement. Once paid, the agent is notified immediately and will contact you within 24 hours to schedule the visit.',
-              style: TextStyle(color: kSlate, fontSize: 12, height: 1.65)),
+              'This fee covers the site visit arrangement. Once paid, the agent is notified immediately and will contact you within 24 hours.',
+              style: TextStyle(color: kSlate, fontSize: 12, height: 1.6)),
           ]),
         ),
       ),
-      // Footer
       Container(
-        padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
         decoration: BoxDecoration(border: Border(top: BorderSide(color: kBorder))),
         child: Row(children: [
           Expanded(child: _ModalBtn(label: 'Cancel', onTap: onClose)),
@@ -1769,10 +1874,10 @@ class _PaymentModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final providers = [
-      {'value': 'tigo',     'label': 'Tigo Pesa',    'color': const Color(0xFF00D4AA)},
-      {'value': 'mpesa',    'label': 'M-Pesa',        'color': const Color(0xFF00C853)},
-      {'value': 'airtel',   'label': 'Airtel Money',  'color': const Color(0xFFFF6B35)},
-      {'value': 'halopesa', 'label': 'Halopesa',      'color': const Color(0xFF9C27B0)},
+      {'value': 'tigo',     'label': 'Tigo Pesa',   'color': const Color(0xFF00D4AA)},
+      {'value': 'mpesa',    'label': 'M-Pesa',       'color': const Color(0xFF00C853)},
+      {'value': 'airtel',   'label': 'Airtel',       'color': const Color(0xFFFF6B35)},
+      {'value': 'halopesa', 'label': 'Halopesa',     'color': const Color(0xFF9C27B0)},
     ];
 
     return _ModalShell(
@@ -1781,54 +1886,56 @@ class _PaymentModal extends StatelessWidget {
         _ModalHeader(title: 'Complete Payment', subtitle: 'Secure checkout · TZS 20,000', onClose: processing ? () {} : onClose),
         Flexible(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(18),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _FeeBlock(),
-              const SizedBox(height: 18),
-              // Provider label
+              const SizedBox(height: 16),
               const Text('MOBILE MONEY PROVIDER', style: TextStyle(
-                color: kSlate, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.6)),
-              const SizedBox(height: 10),
-              // Provider buttons
-              Row(children: providers.map((p) {
-                final sel = paymentMethod == p['value'];
-                final col = p['color'] as Color;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: GestureDetector(
-                      onTap: processing ? null : () => onMethodChanged(p['value'] as String),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(vertical: 11),
-                        decoration: BoxDecoration(
-                          color: sel ? col.withOpacity(0.1) : kBg3,
-                          border: Border.all(color: sel ? col : kBorder, width: sel ? 1.5 : 1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                color: kSlate, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+              const SizedBox(height: 8),
+              // FIX: 2x2 grid for providers instead of a single row that overflows
+              GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 3,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: providers.map((p) {
+                  final sel = paymentMethod == p['value'];
+                  final col = p['color'] as Color;
+                  return GestureDetector(
+                    onTap: processing ? null : () => onMethodChanged(p['value'] as String),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      decoration: BoxDecoration(
+                        color: sel ? col.withOpacity(0.1) : kBg3,
+                        border: Border.all(color: sel ? col : kBorder, width: sel ? 1.5 : 1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
                         child: Text(
                           p['label'] as String,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: sel ? col : kSlate,
-                            fontSize: 11, fontWeight: FontWeight.w600),
+                            fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
-                  ),
-                );
-              }).toList()),
-              const SizedBox(height: 18),
-              // Phone label
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
               const Text('PHONE NUMBER', style: TextStyle(
-                color: kSlate, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.6)),
+                color: kSlate, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
               const SizedBox(height: 8),
               TextField(
                 controller: phoneCtrl,
                 enabled: !processing,
                 onChanged: onPhoneChanged,
                 keyboardType: TextInputType.phone,
-                style: const TextStyle(color: kCream, fontSize: 13),
+                style: const TextStyle(color: kCream, fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'e.g. 0712 345 678',
                   hintStyle: const TextStyle(color: kSlateDim),
@@ -1840,28 +1947,26 @@ class _PaymentModal extends StatelessWidget {
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(9), borderSide: const BorderSide(color: kGold, width: 1.5)),
                 ),
               ),
-              const SizedBox(height: 14),
-              // Secure badge
+              const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFF10B981).withOpacity(0.08),
                   border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: const Row(children: [
-                  Icon(Icons.shield_outlined, color: Color(0xFF10B981), size: 14),
+                  Icon(Icons.shield_outlined, color: Color(0xFF10B981), size: 13),
                   SizedBox(width: 8),
-                  Text('Powered by Selcom · 256-bit encrypted',
-                    style: TextStyle(color: Color(0xFF10B981), fontSize: 12)),
+                  Expanded(child: Text('Powered by Selcom · 256-bit encrypted',
+                    style: TextStyle(color: Color(0xFF10B981), fontSize: 12))),
                 ]),
               ),
             ]),
           ),
         ),
-        // Footer
         Container(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 22),
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
           decoration: BoxDecoration(border: Border(top: BorderSide(color: kBorder))),
           child: Row(children: [
             Expanded(child: _ModalBtn(label: 'Cancel', onTap: processing ? null : onClose, disabled: processing)),
@@ -1888,52 +1993,52 @@ class _SuccessModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _ModalShell(
     onClose: onClose,
-    child: Column(mainAxisSize: MainAxisSize.min, children: [
-      // Green hero
-      Container(
-        padding: const EdgeInsets.fromLTRB(28, 34, 28, 26),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF064E3B), Color(0xFF065F46)]),
-        ),
-        child: Column(children: [
-          Container(
-            width: 64, height: 64,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.14),
-              border: Border.all(color: Colors.white.withOpacity(0.22)),
-              shape: BoxShape.circle),
-            child: const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 28)),
-          const SizedBox(height: 18),
-          const Text('Site Visit Booked!',
-            style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w300, letterSpacing: -0.01)),
-          const SizedBox(height: 7),
-          const Text(
-            'Payment confirmed. The agent has been notified and will contact you shortly.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0x8CFFFFFF), fontSize: 13, height: 1.55)),
-        ]),
-      ),
-      // Steps
-      Padding(
-        padding: const EdgeInsets.fromLTRB(22, 18, 22, 8),
-        child: Container(
-          decoration: BoxDecoration(
-            color: kBg3, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12)),
+    child: SingleChildScrollView(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF064E3B), Color(0xFF065F46)]),
+          ),
           child: Column(children: [
-            _SuccessStep(Icons.check_rounded, 'Site visit fee received & confirmed'),
-            Divider(height: 1, color: kBorder),
-            _SuccessStep(Icons.auto_awesome_rounded, 'Agent notified instantly via SMS & email'),
-            Divider(height: 1, color: kBorder),
-            _SuccessStep(Icons.check_circle_outline_rounded, 'Expect a call or message within 24 hours'),
+            Container(
+              width: 60, height: 60,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.14),
+                border: Border.all(color: Colors.white.withOpacity(0.22)),
+                shape: BoxShape.circle),
+              child: const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 26)),
+            const SizedBox(height: 14),
+            const Text('Site Visit Booked!',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w300, letterSpacing: -0.01)),
+            const SizedBox(height: 6),
+            const Text(
+              'Payment confirmed. The agent has been notified and will contact you shortly.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0x8CFFFFFF), fontSize: 12, height: 1.55)),
           ]),
         ),
-      ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(22, 8, 22, 22),
-        child: _ModalBtn(label: 'View My Applications', primary: true, fullWidth: true, onTap: onClose),
-      ),
-    ]),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: kBg3, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12)),
+            child: Column(children: [
+              _SuccessStep(Icons.check_rounded, 'Site visit fee received & confirmed'),
+              Divider(height: 1, color: kBorder),
+              _SuccessStep(Icons.auto_awesome_rounded, 'Agent notified via SMS & email'),
+              Divider(height: 1, color: kBorder),
+              _SuccessStep(Icons.check_circle_outline_rounded, 'Expect a call within 24 hours'),
+            ]),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
+          child: _ModalBtn(label: 'View My Applications', primary: true, fullWidth: true, onTap: onClose),
+        ),
+      ]),
+    ),
   );
 }
 
@@ -1944,15 +2049,15 @@ class _SuccessStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     child: Row(children: [
       Container(
         width: 28, height: 28,
         decoration: BoxDecoration(
           color: const Color(0xFF10B981).withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-        child: Icon(icon, color: const Color(0xFF10B981), size: 14)),
-      const SizedBox(width: 12),
-      Expanded(child: Text(label, style: const TextStyle(color: kCream, fontSize: 13))),
+        child: Icon(icon, color: const Color(0xFF10B981), size: 13)),
+      const SizedBox(width: 10),
+      Expanded(child: Text(label, style: const TextStyle(color: kCream, fontSize: 12))),
     ]),
   );
 }
@@ -1979,7 +2084,7 @@ class _FeeBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.symmetric(vertical: 20),
+    padding: const EdgeInsets.symmetric(vertical: 18),
     decoration: BoxDecoration(
       gradient: const LinearGradient(
         colors: [Color(0xFF0F172A), Color(0xFF1E2D4A)],
@@ -1997,15 +2102,15 @@ class _FeeBlock extends StatelessWidget {
       )),
       Column(children: const [
         Text('TZS 20,000', style: TextStyle(
-          color: kGold, fontSize: 28, fontWeight: FontWeight.w300, letterSpacing: -0.02)),
-        SizedBox(height: 5),
+          color: kGold, fontSize: 26, fontWeight: FontWeight.w300, letterSpacing: -0.02)),
+        SizedBox(height: 4),
         Text('Site visit fee · non-refundable', style: TextStyle(color: kSlate, fontSize: 11)),
       ]),
     ]),
   );
 }
 
-class _ModalBtn extends StatelessWidget {    
+class _ModalBtn extends StatelessWidget {
   final String label;
   final bool primary;
   final bool loading;
@@ -2026,7 +2131,7 @@ class _ModalBtn extends StatelessWidget {
     onTap: (disabled || loading) ? null : onTap,
     child: Container(
       width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
         color: loading ? kGoldDim : (primary ? kGold : kBg3),
         border: Border.all(color: primary ? kGold : kBorder),

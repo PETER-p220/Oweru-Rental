@@ -684,7 +684,7 @@ const DigitalContractPage = () => {
 
             {error && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#dc2626', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 14 }}>
-                <AlertCircle size={16} /> {error}
+                <AlertCircle size={16} /> {error} 
               </div>
             )}
 

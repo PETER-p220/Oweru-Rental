@@ -60,10 +60,65 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
 
   Map<String, int> _calculateStats(List<Map<String, dynamic>> properties) {
     int total = properties.length;
-    int available = properties.where((p) => (p['available'] as bool? ?? false) == true).length;
-    int rented = properties.where((p) => (p['available'] as bool? ?? false) == false).length;
-    int monthlyRevenue = properties.fold(0, (sum, p) => sum + (p['price'] as int? ?? 0));
+    int available = properties.where((p) => (p['available'] is bool ? p['available'] as bool : false) == true).length;
+    int rented = properties.where((p) => (p['available'] is bool ? p['available'] as bool : false) == false).length;
+    int monthlyRevenue = properties.fold(0, (sum, p) {
+      final price = double.tryParse(p['price']?.toString() ?? '0') ?? 0;
+      return sum + price.toInt();
+    });
     return {'total': total, 'available': available, 'rented': rented, 'monthlyRevenue': monthlyRevenue};
+  }
+
+  Future<void> _handleEditProperty(Map<String, dynamic> property) async {
+    // Navigate to edit property page (to be implemented)
+    // For now, show a message that edit functionality will be added
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Edit functionality - navigate to edit page')),
+    );
+  }
+
+  Future<void> _handleDeleteProperty(int propertyId, String title) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: kBg2,
+        title: const Text('Delete Property', style: TextStyle(color: kCream)),
+        content: Text('Are you sure you want to delete "$title"? This action cannot be undone.', style: const TextStyle(color: kSlate)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: kSlate)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Color(0xFFEF4444))),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isLoading = true);
+      try {
+        final success = await LandlordApiService.deleteProperty(propertyId);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Property deleted successfully')),
+          );
+          await _loadProperties();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to delete property')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting property: $e')),
+        );
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   List<Map<String, dynamic>> get _filteredAndSortedProperties {
@@ -95,9 +150,13 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
     filtered.sort((a, b) {
       switch (_sortBy) {
         case 'price-low':
-          return (a['price'] as int? ?? 0).compareTo(b['price'] as int? ?? 0);
+          final aPrice = double.tryParse(a['price']?.toString() ?? '0') ?? 0;
+          final bPrice = double.tryParse(b['price']?.toString() ?? '0') ?? 0;
+          return aPrice.compareTo(bPrice);
         case 'price-high':
-          return (b['price'] as int? ?? 0).compareTo(a['price'] as int? ?? 0);
+          final aPrice = double.tryParse(a['price']?.toString() ?? '0') ?? 0;
+          final bPrice = double.tryParse(b['price']?.toString() ?? '0') ?? 0;
+          return bPrice.compareTo(aPrice);
         case 'listedDate':
         default:
           final aDate = DateTime.parse(a['created_at'] ?? DateTime.now().toIso8601String());
@@ -503,14 +562,14 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
                       color: kGold,
                       icon: Icons.edit,
                       iconColor: kBg,
-                      onPressed: () {},
+                      onPressed: () => _handleEditProperty(property),
                     ),
                     const SizedBox(width: 8),
                     _OverlayButton(
                       color: const Color(0xFFEF4444),
                       icon: Icons.delete,
                       iconColor: Colors.white,
-                      onPressed: () {},
+                      onPressed: () => _handleDeleteProperty(propertyId ?? 0, title),
                     ),
                   ],
                 ),

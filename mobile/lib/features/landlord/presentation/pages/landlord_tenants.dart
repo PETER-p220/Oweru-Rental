@@ -156,21 +156,7 @@ class _LandlordTenantsPageState extends State<LandlordTenantsPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Landlord Workspace', style: TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
-                    Row(
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _creatingTenants ? null : _handleCreateFromApproved,
-                          icon: const Icon(Icons.person_add, size: 14),
-                          label: Text(_creatingTenants ? 'Creating...' : 'Sync from Approved Apps'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kGold,
-                            foregroundColor: kBg,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ],
-                    ),
+                   
                   ],
                 ),
                 const SizedBox(height: 16),

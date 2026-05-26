@@ -144,6 +144,22 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
     });
 
     try {
+      // Upload images first if there are any
+      List<String> uploadedImageUrls = [];
+      if (_images.isNotEmpty) {
+        final imagePaths = _images.map((file) => file.path).toList();
+        final uploadedImages = await LandlordApiService.uploadPropertyImages(imagePaths);
+        if (uploadedImages != null) {
+          uploadedImageUrls = uploadedImages;
+        } else {
+          setState(() {
+            _errors = ['Failed to upload images. Please try again.'];
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+
       await LandlordApiService.createProperty({
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
@@ -157,6 +173,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
         'featured': _featured,
         'latitude': _latitudeController.text.trim(),
         'longitude': _longitudeController.text.trim(),
+        'images': uploadedImageUrls,
       });
 
       if (!mounted) return;
