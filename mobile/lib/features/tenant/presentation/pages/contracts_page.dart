@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../shared/digital_contract/digital_contract_utils.dart';
 import '../../../../shared/services/tenant_api_service.dart';
+import '../../../../shared/widgets/tenant_contract_signing_sheet.dart';
 import 'tenant_theme.dart';
 
+/// Tenant digital contracts — mirrors web `DigitalContractPage` flow.
 class ContractsPage extends StatefulWidget {
   const ContractsPage({super.key});
 
@@ -29,7 +33,7 @@ class _ContractsPageState extends State<ContractsPage> {
       final data = await TenantApiService.getDigitalContracts();
       if (!mounted) return;
       setState(() {
-        _contracts = data;
+        _contracts = data.where(contractIsVisibleToTenant).toList();
         _isLoading = false;
       });
     } catch (_) {
@@ -41,6 +45,65 @@ class _ContractsPageState extends State<ContractsPage> {
     }
   }
 
+  Future<void> _openContract(Map<String, dynamic> contract) async {
+    final refreshed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => TenantContractSigningSheet(
+        contract: contract,
+        onSubmit: (id, fields, signature) => TenantApiService.submitDigitalContract(
+          contractId: id,
+          fields: fields,
+          signature: signature,
+        ),
+        onDownload: _downloadContract,
+      ),
+    );
+    if (refreshed == true) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mkataba umewasilishwa kwa mafanikio')),
+      );
+      _load();
+    }
+  }
+
+  Future<void> _downloadContract(int contractId, String fileName) async {
+    try {
+      final body = await TenantApiService.downloadDigitalContract(contractId);
+      if (body.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Imeshindwa kupakua hati')),
+          );
+        }
+        return;
+      }
+      // API may return a URL string in JSON
+      String? url;
+      if (body.startsWith('http')) {
+        url = body;
+      } else if (body.contains('url')) {
+        final match = RegExp(r'https?://[^\s"]+').firstMatch(body);
+        url = match?.group(0);
+      }
+      if (url != null && await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Pakua: $fileName')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Imeshindwa kupakua hati')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,7 +112,7 @@ class _ContractsPageState extends State<ContractsPage> {
         backgroundColor: kBg2,
         elevation: 0,
         iconTheme: const IconThemeData(color: kGold),
-        title: const Text('Contracts',
+        title: const Text('Digital Contracts',
             style: TextStyle(color: kCream, fontSize: 17, fontWeight: FontWeight.w700)),
       ),
       body: _isLoading
@@ -70,29 +133,32 @@ class _ContractsPageState extends State<ContractsPage> {
                         const TEmptyState(
                           icon: Icons.description_rounded,
                           title: 'No contracts yet',
-                          subtitle: 'Your digital rental agreements will appear here.',
+                          subtitle: 'Digital rental agreements from your landlord will appear here.',
                         )
                       else
-                        ..._contracts.map((c) => _buildContractCard(c, c['status'] == 'active' || c['status'] == 'approved')),
+                        ..._contracts.map(_buildContractCard),
                     ],
                   ),
                 ),
     );
   }
 
-  Widget _buildContractCard(Map<String, dynamic> contract, bool isActive) {
-    final statusColor = isActive ? kSuccess : kSlateDim;
-    final statusLabel = isActive ? 'Active' : 'Expired';
+  Widget _buildContractCard(Map<String, dynamic> contract) {
+    final status = contract['status']?.toString() ?? '';
+    final sm = contractStatusMeta(status);
+    final property = contract['property'] as Map<String, dynamic>?;
+    final title = contract['title']?.toString() ?? 'Mkataba';
+    final propertyLabel = property?['title']?.toString() ?? 'Property';
 
     return GestureDetector(
-      onTap: () => _showContractDetails(context, contract),
+      onTap: () => _openContract(contract),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: kBg2,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isActive ? kGoldBorder : kBorder),
+          border: Border.all(color: status == 'approved' ? kGoldBorder : kBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,40 +170,37 @@ class _ContractsPageState extends State<ContractsPage> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
+                    color: sm.color.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: statusColor.withOpacity(0.25)),
+                    border: Border.all(color: sm.color.withOpacity(0.25)),
                   ),
-                  child: Icon(Icons.description_rounded, color: statusColor, size: 22),
+                  child: Icon(Icons.description_rounded, color: sm.color, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        (contract['property']?['title'] ?? contract['property'] ?? 'Property').toString(),
-                        style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
+                      Text(title, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 3),
-                      Text(
-                        'Contract #${contract['id']}',
-                        style: const TextStyle(color: kSlate, fontSize: 10),
-                      ),
+                      Text(propertyLabel, style: const TextStyle(color: kSlate, fontSize: 11)),
                     ],
                   ),
                 ),
-                TStatusBadge(label: statusLabel, color: statusColor),
+                TStatusBadge(label: sm.label, color: sm.color),
               ],
             ),
             const SizedBox(height: 12),
             Divider(color: kGold.withOpacity(0.1), height: 1),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _infoChip(Icons.calendar_today_rounded, (contract['created_at'] ?? '').toString()),
-                _infoChip(Icons.description_rounded, (contract['status'] ?? 'pending').toString()),
+                if (status == 'pending_signature')
+                  const Text('Gusa kusaini →', style: TextStyle(color: kGold, fontSize: 11, fontWeight: FontWeight.w600))
+                else
+                  const Text('Angalia →', style: TextStyle(color: kSlate, fontSize: 11)),
               ],
             ),
           ],
@@ -147,147 +210,12 @@ class _ContractsPageState extends State<ContractsPage> {
   }
 
   Widget _infoChip(IconData icon, String label) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 11, color: kGold),
-      const SizedBox(width: 5),
-      Text(label, style: const TextStyle(color: kSlate, fontSize: 10, fontWeight: FontWeight.w500)),
-    ],
-  );
-
-  void _showContractDetails(BuildContext context, Map<String, dynamic> contract) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: kBg2,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _buildContractDetailsModal(ctx, contract),
-    );
-  }
-
-  Widget _buildContractDetailsModal(BuildContext context, Map<String, dynamic> contract) {
-    return SingleChildScrollView(
-      child: Container(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 28,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: kGold.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Contract Details',
-                    style: TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w700)),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 32, height: 32,
-                    decoration: BoxDecoration(
-                      color: kBg3,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: kBorder),
-                    ),
-                    child: const Icon(Icons.close_rounded, color: kSlate, size: 18),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildDetailSection('Property Information', [
-              ('Property', (contract['property']?['title'] ?? contract['property'] ?? 'N/A').toString()),
-              ('Status', (contract['status'] ?? 'pending').toString()),
-            ]),
-            const SizedBox(height: 16),
-            _buildDetailSection('Contract Terms', [
-              ('Created', (contract['created_at'] ?? '').toString()),
-              ('Updated', (contract['updated_at'] ?? '').toString()),
-            ]),
-            const SizedBox(height: 24),
-            TGoldButton(
-              label: contract['status'] == 'pending_signature' ? 'Sign & Submit' : 'Close',
-              icon: Icons.download_rounded,
-              onTap: () async {
-                if (contract['status'] == 'pending_signature') {
-                  final ok = await TenantApiService.submitDigitalContract(
-                    contractId: (contract['id'] as num).toInt(),
-                    fields: {},
-                    signature: 'Signed on mobile',
-                  );
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(ok ? 'Contract submitted' : 'Failed to submit contract')),
-                    );
-                    Navigator.pop(context);
-                    _load();
-                  }
-                  return;
-                }
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(height: 10),
-            TGhostButton(
-              label: 'Close',
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailSection(String title, List<(String, String)> items) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TLabel(title),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: kBg3,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: kBorder),
-          ),
-          child: Column(
-            children: items.asMap().entries.map((entry) {
-              final isLast = entry.key == items.length - 1;
-              final item = entry.value;
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                decoration: BoxDecoration(
-                  border: isLast ? null : const Border(bottom: BorderSide(color: kBorder)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(item.$1, style: const TextStyle(color: kSlate, fontSize: 12)),
-                    Text(item.$2,
-                        style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: kGold),
+          const SizedBox(width: 5),
+          Text(label.length > 20 ? '${label.substring(0, 20)}…' : label,
+              style: const TextStyle(color: kSlate, fontSize: 10, fontWeight: FontWeight.w500)),
+        ],
+      );
 }

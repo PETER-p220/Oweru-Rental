@@ -166,7 +166,12 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final body = jsonDecode(response.body);
+        if (body is Map<String, dynamic> && body['data'] is Map) {
+          return Map<String, dynamic>.from(body['data'] as Map);
+        }
+        if (body is Map<String, dynamic>) return body;
+        if (body is Map) return Map<String, dynamic>.from(body);
       }
     } catch (_) {}
     return null;

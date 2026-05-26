@@ -217,7 +217,7 @@ class MessagesService {
     Map<String, dynamic>? body,
   }) async {
     final token = await _getToken();
-    final url = '$kApiBase/$endpoint';
+    final url = '${ApiConfig.apiPath}/$endpoint';
     final headers = _getHeaders(token);
 
     http.Response response;
@@ -286,7 +286,7 @@ class MessagesService {
   // Upload file attachment
   static Future<Map<String, dynamic>> uploadFile(String filePath) async {
     final token = await _getToken();
-    final url = '$kApiBase/messages/upload';
+    final url = '${ApiConfig.apiPath}/messages/upload';
     final request = http.MultipartRequest('POST', Uri.parse(url));
     request.headers['Authorization'] = 'Bearer $token';
     request.files.add(await http.MultipartFile.fromPath('file', filePath));
@@ -316,17 +316,24 @@ class MessagesService {
 
   // Search users to start conversation
   static Future<List<User>> searchUsers(String search) async {
-    final response = await _request('messages/search-users?search=$search');
-    final usersList = response['users'] as List?;
-    return usersList?.map((json) => User.fromJson(json)).toList() ?? [];
+    final encoded = Uri.encodeQueryComponent(search);
+    final response = await _request('messages/search-users?search=$encoded');
+    return _parseUsersList(response['users']);
+  }
+
+  static List<User> _parseUsersList(dynamic raw) {
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((json) => User.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
   }
 
   // Get online users for messaging
   static Future<List<User>> getOnlineUsers() async {
     try {
       final response = await _request('messages/online-users');
-      final usersList = response['users'] as List?;
-      return usersList?.map((json) => User.fromJson(json)).toList() ?? [];
+      return _parseUsersList(response['users']);
     } catch (e) {
       print('Failed to fetch online users: $e');
       return [];
@@ -336,8 +343,7 @@ class MessagesService {
   // Get all users
   static Future<List<User>> getAllUsers() async {
     final response = await _request('messages/all-users');
-    final usersList = response['users'] as List?;
-    return usersList?.map((json) => User.fromJson(json)).toList() ?? [];
+    return _parseUsersList(response['users']);
   }
 
   // Start conversation about a property

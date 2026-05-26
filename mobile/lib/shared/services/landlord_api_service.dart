@@ -246,7 +246,7 @@ class LandlordApiService {
 
   static Future<bool> sendContractToTenant(int contractId) async {
     try {
-      final response = await http.post(
+      final response = await http.put(
         Uri.parse('$_baseUrl/owner/digital-contracts/$contractId/send'),
         headers: _headers,
       );
@@ -258,7 +258,7 @@ class LandlordApiService {
 
   static Future<bool> approveSignedContract(int contractId) async {
     try {
-      final response = await http.post(
+      final response = await http.put(
         Uri.parse('$_baseUrl/owner/digital-contracts/$contractId/approve'),
         headers: _headers,
       );
@@ -266,6 +266,26 @@ class LandlordApiService {
     } catch (_) {
       return false;
     }
+  }
+
+  static Future<Map<String, dynamic>?> uploadContractFile(String filePath) async {
+    try {
+      final token = UserService().token ?? AuthService.token;
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse(ApiConfig.landlordUploadContractFile),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Accept'] = 'application/json';
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(response.body);
+        return data is Map<String, dynamic> ? data : Map<String, dynamic>.from(data as Map);
+      }
+    } catch (_) {}
+    return null;
   }
 
   static Future<bool> createDigitalContract(Map<String, dynamic> payload) async {

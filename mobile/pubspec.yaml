@@ -37,6 +37,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.6.0
   image_picker: ^1.0.7
+  file_picker: ^8.1.6
   url_launcher: ^6.2.2
   google_sign_in: ^6.2.1
   shared_preferences: ^2.2.2

@@ -156,7 +156,7 @@ class TenantApiService {
 
   static Future<bool> submitDigitalContract({
     required int contractId,
-    required Map<String, dynamic> fields,
+    required Map<String, String> fields,
     required String signature,
   }) async {
     try {
@@ -343,6 +343,37 @@ class TenantApiService {
       }
     } catch (_) {}
     return [];
+  }
+
+  static Future<Map<String, dynamic>> updateApplicationPaymentStatus({
+    required int applicationId,
+    required String paymentStatus,
+    required String paymentMethod,
+    required String transactionId,
+    required double amountPaid,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$_baseUrl/tenant/applications/$applicationId/payment-status'),
+        headers: _headers,
+        body: jsonEncode({
+          'payment_status': paymentStatus,
+          'payment_method': paymentMethod,
+          'transaction_id': transactionId,
+          'amount_paid': amountPaid,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true, ...Map<String, dynamic>.from(data is Map ? data : {})};
+      }
+      return {
+        'success': false,
+        'message': data is Map ? (data['message'] ?? 'Failed to update payment status') : 'Failed to update payment status',
+      };
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
   }
 
   static Future<Map<String, dynamic>> initiateSelcomPayment({

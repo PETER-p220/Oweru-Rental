@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../../shared/services/landlord_api_service.dart';
 import 'landlord_theme.dart';
@@ -16,8 +17,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
   bool _isLoading = true;
   String _error = '';
   String _success = '';
-  bool _showModal = false;
-  final bool _uploading = false;
+  bool _uploading = false;
   bool _creating = false;
   Map<String, dynamic> _previewContract = {};
   String _title = '';
@@ -84,7 +84,6 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
       });
       setState(() {
         _success = 'Contract created successfully.';
-        _showModal = false;
         _title = '';
         _propertyId = '';
         _tenantId = '';
@@ -130,6 +129,127 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
       return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
     }
     return 'TZS ${numericValue.toStringAsFixed(0)}';
+  }
+
+  Future<void> _pickAndUploadFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+    );
+    if (result == null || result.files.single.path == null) return;
+    final path = result.files.single.path!;
+    final name = result.files.single.name;
+    setState(() {
+      _uploading = true;
+      _error = '';
+    });
+    try {
+      final uploaded = await LandlordApiService.uploadContractFile(path);
+      if (uploaded != null) {
+        setState(() {
+          _fileUrl = uploaded['url']?.toString() ?? uploaded['file_url']?.toString() ?? '';
+          _fileName = uploaded['file_name']?.toString() ?? name;
+        });
+      } else {
+        setState(() => _error = 'Failed to upload file.');
+      }
+    } catch (_) {
+      setState(() => _error = 'Failed to upload file.');
+    } finally {
+      setState(() => _uploading = false);
+    }
+  }
+
+  void _openCreateSheet() {
+  showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: kBg2,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Create Digital Contract',
+                    style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 16),
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Title', labelStyle: TextStyle(color: kSlate)),
+                  style: const TextStyle(color: kCream),
+                  onChanged: (v) => _title = v,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _propertyId.isEmpty ? null : _propertyId,
+                  dropdownColor: kBg3,
+                  style: const TextStyle(color: kCream),
+                  decoration: const InputDecoration(labelText: 'Property', labelStyle: TextStyle(color: kSlate)),
+                  items: _properties
+                      .map((p) => DropdownMenuItem(
+                            value: '${p['id']}',
+                            child: Text(p['title']?.toString() ?? 'Property #${p['id']}'),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setModalState(() => _propertyId = v ?? ''),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _tenantId.isEmpty ? null : _tenantId,
+                  dropdownColor: kBg3,
+                  style: const TextStyle(color: kCream),
+                  decoration: const InputDecoration(labelText: 'Tenant', labelStyle: TextStyle(color: kSlate)),
+                  items: _tenants
+                      .map((t) {
+                        final user = t['user'] as Map<String, dynamic>? ?? {};
+                        final name = '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}'.trim();
+                        return DropdownMenuItem(
+                          value: '${t['id']}',
+                          child: Text(name.isEmpty ? 'Tenant #${t['id']}' : name),
+                        );
+                      })
+                      .toList(),
+                  onChanged: (v) => setModalState(() => _tenantId = v ?? ''),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: _uploading ? null : () async {
+                    await _pickAndUploadFile();
+                    setModalState(() {});
+                  },
+                  icon: _uploading
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.upload_file_rounded),
+                  label: Text(_fileName.isEmpty ? 'Upload contract file (PDF/DOC)' : _fileName),
+                  style: OutlinedButton.styleFrom(foregroundColor: kGold, side: const BorderSide(color: kGold)),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _creating
+                      ? null
+                      : () async {
+                          await _handleCreateContract();
+                          if (mounted && _error.isEmpty) Navigator.pop(ctx);
+                        },
+                  style: ElevatedButton.styleFrom(backgroundColor: kGold, foregroundColor: kBg),
+                  child: Text(_creating ? 'Creating...' : 'Create Contract'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   String _formatDate(String dateStr) {
@@ -198,7 +318,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: kGold),
-            onPressed: () => setState(() => _showModal = true),
+            onPressed: _openCreateSheet,
           ),
         ],
       ),
@@ -302,7 +422,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => setState(() => _showModal = true),
+        onPressed: _openCreateSheet,
         backgroundColor: kGold,
         foregroundColor: kBg,
         icon: const Icon(Icons.add),

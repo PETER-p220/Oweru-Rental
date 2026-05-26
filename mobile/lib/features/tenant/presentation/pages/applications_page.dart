@@ -2,8 +2,8 @@
 // APPLICATIONS PAGE — homepage color scheme
 // ============================================================
 import 'package:flutter/material.dart';
+import '../../../../shared/widgets/tenant_rent_payment_sheet.dart';
 import '../../../../shared/services/tenant_api_service.dart';
-import 'payments_page.dart';
 import 'tenant_theme.dart';
 
 class ApplicationsPage extends StatefulWidget {
@@ -17,6 +17,7 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
   bool _isLoading = true;
   String _error = '';
   String _filter = 'all';
+  final Set<int> _rentPaidAppIds = {};
 
   static const _filters = ['all', 'approved', 'pending', 'rejected'];
 
@@ -41,6 +42,25 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
     }
+  }
+
+  void _openRentPayment(Map<String, dynamic> app) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: kBg2,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => TenantRentPaymentSheet(
+        application: app,
+        onPaid: () {
+          final id = (app['id'] as num).toInt();
+          setState(() => _rentPaidAppIds.add(id));
+          _load();
+        },
+      ),
+    );
   }
 
   List<Map<String, dynamic>> get _filtered => _filter == 'all'
@@ -125,6 +145,8 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
     final rent      = property?['price'] ?? app['rent'] ?? 0;
     final message   = app['message']?.toString() ?? 'Application submitted';
     final createdAt = app['created_at']?.toString() ?? 'Recently';
+    final needsRent = tenantApplicationNeedsRentPayment(app, locallyPaidIds: _rentPaidAppIds);
+    final rentPaid  = tenantApplicationRentPaid(app, locallyPaidIds: _rentPaidAppIds);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -132,7 +154,6 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
         color: kBg2, borderRadius: BorderRadius.circular(14),
         border: Border.all(color: kBorder)),
       child: Column(children: [
-        // Header row
         Padding(
           padding: const EdgeInsets.all(14),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -149,7 +170,7 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
                 Row(children: [
                   const Icon(Icons.location_on, size: 10, color: kGold),
                   const SizedBox(width: 3),
-                  Text(location, style: const TextStyle(color: kSlate, fontSize: 11)),
+                  Expanded(child: Text(location, style: const TextStyle(color: kSlate, fontSize: 11))),
                 ]),
               ],
               const SizedBox(height: 6),
@@ -159,7 +180,6 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
           ]),
         ),
         Divider(color: kGold.withOpacity(0.1), height: 1),
-        // Footer row
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -169,16 +189,33 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
                 Text('TZS $rent',
                   style: const TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w700)),
               ]),
-              if (status == 'approved')
-                TGoldButton(
-                  label: 'Make Payment',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PaymentsPage()),
-                  ),
-                  fullWidth: false,
-                ),
             ]),
+            const SizedBox(height: 10),
+            if (needsRent)
+              TGoldButton(
+                label: 'Pay Rent Now',
+                icon: Icons.payments_rounded,
+                onTap: () => _openRentPayment(app),
+              )
+            else if (status == 'approved' && rentPaid)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: kSuccess.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: kSuccess.withOpacity(0.3)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_rounded, color: kSuccess, size: 18),
+                    SizedBox(width: 8),
+                    Text('Rent Paid Successfully',
+                        style: TextStyle(color: kSuccess, fontWeight: FontWeight.w600, fontSize: 13)),
+                  ],
+                ),
+              ),
             const SizedBox(height: 8),
             Text(message, style: const TextStyle(color: kSlate, fontSize: 11, height: 1.5)),
           ]),
