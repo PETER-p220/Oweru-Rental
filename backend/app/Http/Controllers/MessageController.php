@@ -402,6 +402,7 @@ class MessageController extends Controller
 
     /**
      * Get user IDs that share property connections with the current user
+     * Checks property connections through applications and property ownership/agent assignments
      */
     private function getUserConnectedUserIds($user): array
     {
@@ -409,66 +410,77 @@ class MessageController extends Controller
         
         switch ($user->user_type) {
             case 'tenant':
-                // Tenants can see agents/landlords for properties they've inquired about
-                $propertyIds = Message::where('sender_id', $user->id)
-                                     ->where('type', 'property')
-                                     ->whereNotNull('property_id')
-                                     ->pluck('property_id')
-                                     ->toArray();
+                // Tenants can message agents/landlords for properties they've applied to
+                $propertyIds = Application::where('user_id', $user->id)
+                                         ->pluck('property_id')
+                                         ->toArray();
                 
-                // Get agents/landlords who received messages about these properties
-                $receiverIds = Message::whereIn('property_id', $propertyIds)
-                                    ->where('sender_id', '!=', $user->id)
-                                    ->pluck('receiver_id')
-                                    ->toArray();
-                
-                // Also get other tenants who inquired about same properties
-                $otherTenantIds = Message::whereIn('property_id', $propertyIds)
-                                        ->where('sender_id', '!=', $user->id)
-                                        ->pluck('sender_id')
-                                        ->toArray();
-                
-                $connectedUserIds = array_unique(array_merge($receiverIds, $otherTenantIds));
+                if (!empty($propertyIds)) {
+                    // Get agents of these properties
+                    $agentIds = Property::whereIn('id', $propertyIds)
+                                       ->whereNotNull('agent_id')
+                                       ->where('agent_id', '!=', $user->id)
+                                       ->pluck('agent_id')
+                                       ->toArray();
+                    
+                    // Get landlords (owners) of these properties
+                    $landlordIds = Property::whereIn('id', $propertyIds)
+                                          ->whereNotNull('owner_id')
+                                          ->where('owner_id', '!=', $user->id)
+                                          ->pluck('owner_id')
+                                          ->toArray();
+                    
+                    $connectedUserIds = array_unique(array_merge($agentIds, $landlordIds));
+                }
                 break;
                 
             case 'agent':
-                // Agents can see tenants who inquired about properties they manage
+                // Agents can message tenants who applied to properties they manage
                 $managedProperties = Property::where('agent_id', $user->id)->pluck('id')->toArray();
                 
-                // Get tenants who sent messages about these properties
-                $tenantIds = Message::whereIn('property_id', $managedProperties)
-                                   ->where('sender_id', '!=', $user->id)
-                                   ->pluck('sender_id')
-                                   ->toArray();
-                
-                // Also get landlords of these properties
-                $landlordIds = Property::whereIn('id', $managedProperties)
-                                      ->whereNotNull('owner_id')
-                                      ->where('owner_id', '!=', $user->id)
-                                      ->pluck('owner_id')
-                                      ->toArray();
-                
-                $connectedUserIds = array_unique(array_merge($tenantIds, $landlordIds));
+                if (!empty($managedProperties)) {
+                    // Get tenants who applied to these properties
+                    $tenantIds = Application::whereIn('property_id', $managedProperties)
+                                          ->where('user_id', '!=', $user->id)
+                                          ->pluck('user_id')
+                                          ->toArray();
+                    
+                    // Get landlords of these properties
+                    $landlordIds = Property::whereIn('id', $managedProperties)
+                                          ->whereNotNull('owner_id')
+                                          ->where('owner_id', '!=', $user->id)
+                                          ->pluck('owner_id')
+                                          ->toArray();
+                    
+                    $connectedUserIds = array_unique(array_merge($tenantIds, $landlordIds));
+                }
                 break;
                 
             case 'landlord':
-                // Landlords can see tenants who inquired about their properties
+                // Landlords can message tenants who applied to their properties
                 $ownedProperties = Property::where('owner_id', $user->id)->pluck('id')->toArray();
                 
-                // Get tenants who sent messages about these properties
-                $tenantIds = Message::whereIn('property_id', $ownedProperties)
-                                   ->where('sender_id', '!=', $user->id)
-                                   ->pluck('sender_id')
-                                   ->toArray();
+                if (!empty($ownedProperties)) {
+                    // Get tenants who applied to these properties
+                    $tenantIds = Application::whereIn('property_id', $ownedProperties)
+                                          ->where('user_id', '!=', $user->id)
+                                          ->pluck('user_id')
+                                          ->toArray();
+                    
+                    // Get agents managing these properties
+                    $agentIds = Property::whereIn('id', $ownedProperties)
+                                       ->whereNotNull('agent_id')
+                                       ->where('agent_id', '!=', $user->id)
+                                       ->pluck('agent_id')
+                                       ->toArray();
+                    
+                    $connectedUserIds = array_unique(array_merge($tenantIds, $agentIds));
+                }
+                break;
                 
-                // Also get agents managing these properties
-                $agentIds = Property::whereIn('id', $ownedProperties)
-                                   ->whereNotNull('agent_id')
-                                   ->where('agent_id', '!=', $user->id)
-                                   ->pluck('agent_id')
-                                   ->toArray();
-                
-                $connectedUserIds = array_unique(array_merge($tenantIds, $agentIds));
+            default:
+                // For other user types, return empty array
+                $connectedUserIds = [];
                 break;
         }
         

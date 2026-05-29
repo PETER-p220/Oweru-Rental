@@ -570,7 +570,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
                     style: TextStyle(fontFamily: 'serif', fontSize: 24, fontWeight: FontWeight.w300, color: kCream, height: 1.1),
                     children: [
                       TextSpan(text: 'Available '),
-                      TextSpan(text: 'Properties', style: TextStyle(color: kGold, fontStyle: FontStyle.italic)),
+                      TextSpan(text: 'Properties', style: TextStyle(color: kGold)),
                     ],
                   )),
                 ],
@@ -1417,7 +1417,7 @@ class _PropertyCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(6)),
-              child: const Text('Book Visit',
+              child: const Text('Visit Site',
                 style: TextStyle(color: kBg, fontSize: 12, fontWeight: FontWeight.w700)),
             ),
           ),

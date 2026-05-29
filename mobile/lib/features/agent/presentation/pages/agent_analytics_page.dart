@@ -48,8 +48,7 @@ class _AgentAnalyticsPageState extends State<AgentAnalyticsPage> {
       return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
     }
     return 'TZS ${numericValue.toStringAsFixed(0)}';
-  }
-
+  } 
   @override
   Widget build(BuildContext context) {
     final performanceMetrics = _analytics['performance_metrics'] as Map<String, dynamic>? ?? {};
