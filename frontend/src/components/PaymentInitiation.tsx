@@ -39,7 +39,7 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
   const totalAmount = rentAmount + serviceCharge;
 
   const validatePhoneNumber = (phone: string): boolean => {
-    // Accept Tanzania phone numbers in various formats
+    // Accept Africa phone numbers in various formats
     const cleaned = phone.replace(/\D/g, '');
     return cleaned.length === 12 || cleaned.length === 10 || cleaned.length === 9;
   };
@@ -49,7 +49,7 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
     setError(null);
 
     if (!validatePhoneNumber(phoneNumber)) {
-      setError('Please enter a valid Tanzania phone number');
+      setError('Please enter a valid Africa phone number');
       return;
     }
 
@@ -220,7 +220,7 @@ export const PaymentInitiation: React.FC<PaymentInstructionsProps> = ({
             <p className="font-semibold">Accepted Payment Methods:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>Tigo Pesa</li>
-              <li>M-Pesa Tanzania</li>
+              <li>M-Pesa Africa</li>
               <li>Airtel Money</li>
               <li>Halopesa</li>
             </ul>

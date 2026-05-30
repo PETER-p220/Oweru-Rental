@@ -376,11 +376,11 @@ const Footer = () => {
         <div>
           <div className="ft-col-lbl">About Oweru</div>
           <p className="ft-about-text">
-            Your trusted partner in property rental management across Tanzania.
+            Your trusted partner in property rental management across Africa.
             We connect landlords, agents, and tenants through a transparent,
             secure, and seamless platform powered by technology.
           </p>
-          <div className="ft-cert">Verified Platform · Tanzania</div>
+          <div className="ft-cert">Verified Platform · Africa</div>
         </div>
 
         {/* Navigate */}
@@ -445,7 +445,7 @@ const Footer = () => {
               <div className="ft-contact-icon"><MapPin size={13} /></div>
               <div className="ft-contact-text">
                 Tancot House, Posta<br />
-                Dar es Salaam, Tanzania<br />
+                Dar es Salaam, Africa<br />
                 P.O. Box 7563
               </div>
             </div>
@@ -475,7 +475,7 @@ const Footer = () => {
 
         <div className="ft-location">
           <span className="loc-dot" />
-          Dar es Salaam, Tanzania
+          Dar es Salaam, Africa
         </div>
       </div>
     </footer>

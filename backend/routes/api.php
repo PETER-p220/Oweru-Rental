@@ -397,11 +397,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Reviews
         Route::get('/bnb/reviews',                          [BnbReviewController::class, 'index']);
-        Route::get('/bnb/reviews/{review}',                  [BnbReviewController::class, 'show']);
-        Route::post('/bnb/reviews/{review}/respond',         [BnbReviewController::class, 'respond']);
-        Route::post('/bnb/reviews/{review}/helpful',         [BnbReviewController::class, 'markHelpful']);
+        Route::get('/bnb/reviews/{review}',                 [BnbReviewController::class, 'show']);
+        Route::post('/bnb/reviews/{review}/respond',        [BnbReviewController::class, 'respond']);
+        Route::post('/bnb/reviews/{review}/helpful',        [BnbReviewController::class, 'markHelpful']);
         Route::get('/bnb/reviews/property/{propertyId}',    [BnbReviewController::class, 'propertyReviews']);
-        Route::get('/bnb/reviews/analytics',                 [BnbReviewController::class, 'analytics']);
+        Route::get('/bnb/reviews/analytics',                [BnbReviewController::class, 'analytics']);
 
         // Image Upload
         Route::post('/upload-image',    [ImageUploadController::class, 'upload']);

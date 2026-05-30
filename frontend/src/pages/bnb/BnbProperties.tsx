@@ -585,7 +585,7 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
           </div>
           <div>
             <label style={lbl}>Location *</label>
-            <input value={form.location} onChange={e => set('location', e.target.value)} style={inp({ borderColor: errors.location ? t.red : t.border })} placeholder="Dar es Salaam, Tanzania"/>
+            <input value={form.location} onChange={e => set('location', e.target.value)} style={inp({ borderColor: errors.location ? t.red : t.border })} placeholder="Dar es Salaam, Africa"/>
             {errors.location && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.location}</div>}
           </div>
           <div>

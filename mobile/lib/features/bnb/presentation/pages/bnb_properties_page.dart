@@ -766,7 +766,7 @@ class _AddPropertyDialogState extends State<_AddPropertyDialog> {
                         controller: _locationController,
                         decoration: const InputDecoration(
                           labelText: 'Location *',
-                          hintText: 'Dar es Salaam, Tanzania',
+                          hintText: 'Dar es Salaam, Africa',
                           labelStyle: TextStyle(color: kSlate),
                           hintStyle: TextStyle(color: kSlate),
                           filled: true,

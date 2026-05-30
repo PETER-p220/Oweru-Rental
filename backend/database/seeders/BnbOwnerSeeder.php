@@ -27,7 +27,7 @@ class BnbOwnerSeeder extends Seeder
                 'phone' => '+255714123456',
                 'user_type' => 'bnb_owner',
                 'is_active' => true,
-                'bio' => 'Passionate BNB host with 5 years of experience in hospitality. I love providing exceptional stays for my guests and showcasing the beauty of Tanzania.',
+                'bio' => 'Passionate BNB host with 5 years of experience in hospitality. I love providing exceptional stays for my guests and showcasing the beauty of Africa.',
                 'password' => Hash::make('password123'),
             ],
             [
@@ -47,7 +47,7 @@ class BnbOwnerSeeder extends Seeder
                 'phone' => '+255733456789',
                 'user_type' => 'bnb_owner',
                 'is_active' => true,
-                'bio' => 'Local host who loves sharing Tanzanian culture with international guests. I offer authentic experiences and personalized recommendations for the best local attractions.',
+                'bio' => 'Local host who loves sharing African culture with international guests. I offer authentic experiences and personalized recommendations for the best local attractions.',
                 'password' => Hash::make('password123'),
             ],
             [
@@ -67,7 +67,7 @@ class BnbOwnerSeeder extends Seeder
                 'phone' => '+255756789012',
                 'user_type' => 'bnb_owner',
                 'is_active' => true,
-                'bio' => 'Hospitality enthusiast with beautifully decorated properties. I pay attention to every detail to ensure my guests feel at home and have an unforgettable Tanzanian experience.',
+                'bio' => 'Hospitality enthusiast with beautifully decorated properties. I pay attention to every detail to ensure my guests feel at home and have an unforgettable African experience.',
                 'password' => Hash::make('password123'),
             ],
         ];

@@ -109,7 +109,7 @@ Our Service is not intended for individuals under the age of 18. We do not knowi
 
 ## 9. International Data Transfers
 
-Your information may be transferred to and processed in countries other than Tanzania. We ensure that such transfers comply with applicable data protection laws and that adequate safeguards are in place.
+Your information may be transferred to and processed in countries other than Africa. We ensure that such transfers comply with applicable data protection laws and that adequate safeguards are in place.
 
 ## 10. Changes to This Privacy Policy
 
@@ -128,18 +128,18 @@ If you have any questions, concerns, or requests regarding this Privacy Policy, 
 **Oweru Rental**  
 Email: privacy@oweru.co.tz  
 Phone: +255 XXX XXX XXX  
-Address: [Physical Address in Tanzania]  
+Address: [Physical Address in Africa]  
 Website: www.oweru.co.tz
 
-## 12. Tanzania Data Protection Compliance
+## 12. Africa Data Protection Compliance
 
-This Privacy Policy is designed to comply with Tanzania's data protection laws and regulations, including:
+This Privacy Policy is designed to comply with Africa's data protection laws and regulations, including:
 
 - The Electronic and Postal Communications Act (EPOCA)
 - The Data Protection Act (when enacted)
-- Any other applicable Tanzanian laws and regulations
+- Any other applicable African laws and regulations
 
-We are committed to protecting your privacy in accordance with Tanzanian law and international best practices.
+We are committed to protecting your privacy in accordance with African law and international best practices.
 
 ---
 

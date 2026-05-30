@@ -11,7 +11,7 @@ const About = () => {
 
   const values = [
     { icon: Shield,     num: '01', title: 'Trust & Security', description: 'We verify all properties and users to ensure a safe rental experience for every party involved.' },
-    { icon: Users,      num: '02', title: 'Community First',  description: 'Building a trusted community of landlords, agents, and tenants across Tanzania.' },
+    { icon: Users,      num: '02', title: 'Community First',  description: 'Building a trusted community of landlords, agents, and tenants across Africa.' },
     { icon: TrendingUp, num: '03', title: 'Innovation',       description: 'Using technology to simplify the rental process and deliver better everyday experiences.' },
     { icon: Clock,      num: '04', title: 'Efficiency',       description: 'Streamlined processes that save time and reduce complexity for all users.' },
   ];
@@ -488,7 +488,7 @@ const About = () => {
             <div className="ab-tag">Our Story</div>
             <h1 className="ab-hero-h1">About<br /><b>Oweru</b></h1>
             <p className="ab-hero-p">
-              Transforming Tanzania's rental market with technology, trust, and
+              Transforming Africa's rental market with technology, trust, and
               transparency — making property rental simple, secure, and accessible for everyone.
             </p>
           </div>
@@ -496,7 +496,7 @@ const About = () => {
             <div className="founding-yr">2024</div>
             <div className="founding-lbl">Founded</div>
             <p className="founding-desc">
-              Born from a simple observation: Tanzania's rental market was
+              Born from a simple observation: Africa's rental market was
               fragmented, inefficient, and lacked trust. We set out to fix that
               with technology and transparency.
             </p>
@@ -526,14 +526,14 @@ const About = () => {
               <h2 className="ab-section-title">Our <span>Story</span></h2>
             </div>
             <p className="ab-section-desc">
-              From a fragmented market to Tanzania's fastest-growing rental platform — here's how we got here.
+              From a fragmented market to Africa's fastest-growing rental platform — here's how we got here.
             </p>
           </div>
           <div className="ab-story-grid">
             <div>
               <div className="ab-story-body">
                 <p>
-                  Founded in 2024, Oweru was born from a simple observation: Tanzania's rental market
+                  Founded in 2024, Oweru was born from a simple observation: Africa's rental market
                   was fragmented, inefficient, and lacked trust. Landlords struggled to find reliable
                   tenants, agents lacked proper tools to track their performance, and tenants faced
                   uncertainty in their search for quality housing.
@@ -544,17 +544,17 @@ const About = () => {
                 <p>
                   Our smart tracking system ensures agents get credited for their work, our verification
                   process builds trust, and our streamlined application process makes renting simple for
-                  everyone. Today, Oweru is Tanzania's fastest-growing rental platform.
+                  everyone. Today, Oweru is Africa's fastest-growing rental platform.
                 </p>
               </div>
             </div>
             <div className="ab-timeline">
               {[
-                { yr: 'Q1 2024', title: 'Platform Founded',     desc: "Oweru launched with a mission to fix Tanzania's fragmented rental market." },
+                { yr: 'Q1 2024', title: 'Platform Founded',     desc: "Oweru launched with a mission to fix Africa's fragmented rental market." },
                 { yr: 'Q2 2024', title: 'First 1,000 Listings', desc: 'Reached our first milestone with verified properties across Dar es Salaam.' },
                 { yr: 'Q3 2024', title: 'Agent Dashboard Live', desc: 'Launched our agent tracking system, helping professionals grow their business.' },
                 { yr: 'Q4 2024', title: '10,000 Active Users',  desc: 'Crossed the milestone with landlords, agents, and tenants on board nationwide.' },
-                { yr: '2025',    title: 'National Expansion',   desc: 'Expanding to Arusha, Mwanza, Dodoma, and beyond across Tanzania.' },
+                { yr: '2025',    title: 'National Expansion',   desc: 'Expanding to Arusha, Mwanza, Dodoma, and beyond across Africa.' },
               ].map(t => (
                 <div key={t.yr} className="ab-tl-item">
                   <div className="ab-tl-yr">{t.yr}</div>
@@ -600,7 +600,7 @@ const About = () => {
           <div className="ab-section">
             <div className="ab-tag" style={{ marginBottom: 28 }}>Why We Exist</div>
             <div className="ab-mission-stmt">
-              To make <b>quality housing</b> accessible to everyone in Tanzania, while creating a
+              To make <b>quality housing</b> accessible to everyone in Africa, while creating a
               transparent, efficient, and trustworthy rental ecosystem that benefits
               landlords, agents, and tenants <b>alike.</b>
             </div>

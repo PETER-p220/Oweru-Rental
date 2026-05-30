@@ -387,7 +387,7 @@ const Home = () => {
         <div className="prop-body">
           <div className="prop-type" style={{ color: tc }}>{commercialTypeLabel(p.type)}</div>
           <div className="prop-title">{p.title}</div>
-          <div className="prop-loc"><MapPin size={11} style={{ color: 'var(--gold)', flexShrink: 0 }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.location || p.address || 'Tanzania'}</span></div>
+          <div className="prop-loc"><MapPin size={11} style={{ color: 'var(--gold)', flexShrink: 0 }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.location || p.address || 'Africa'}</span></div>
           {(p.area || p.parking_spaces || p.furnished) && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
               {p.area               && <span className="feat-tag">{p.area} m²</span>}
@@ -523,9 +523,9 @@ const Home = () => {
         <div className="hero-body">
           {/* Left */}
           <div>
-            <div className="hero-eyebrow"><span className="hero-dot" /> Tanzania's Premier Rental Platform</div>
+            <div className="hero-eyebrow"><span className="hero-dot" /> Africa's Premier Rental Platform</div>
             <h1 className="hero-title">Find Your<br /><strong>Perfect Rental</strong><br />Property</h1>
-            <p className="hero-sub">Connect with trusted landlords and professional agents across Tanzania. Residential, commercial, and short-stay all in one place.</p>
+            <p className="hero-sub">Connect with trusted landlords and professional agents across Africa. Residential, commercial, and short-stay all in one place.</p>
             <div className="hero-btns">
               <Link to="/properties" className="btn-primary">Browse All <ArrowRight size={15} /></Link>
               <Link to="/register"   className="btn-ghost-hero">Create Account <ChevronRight size={14} /></Link>
@@ -664,7 +664,7 @@ const Home = () => {
               <div>
                 <div className="section-tag"><HomeIcon size={10} /> Residential</div>
                 <h2 className="section-title">Popular <em>Properties</em></h2>
-                <p className="section-sub">Apartments, houses, studios and more across Tanzania.</p>
+                <p className="section-sub">Apartments, houses, studios and more across Africa.</p>
               </div>
               <Link to="/properties" className="btn-ghost">View All <ArrowRight size={14} /></Link>
             </div>
@@ -685,7 +685,7 @@ const Home = () => {
                 <div className="section-tag"><Star size={10} /> Vacation Rentals</div>
                 <h2 className="section-title">Premium <em>Short Stay</em></h2>
               </div>
-              <p style={{ fontSize: 14, color: 'var(--slate)', maxWidth: 280, textAlign: 'right' }}>Handpicked short-term rentals across Tanzania.</p>
+              <p style={{ fontSize: 14, color: 'var(--slate)', maxWidth: 280, textAlign: 'right' }}>Handpicked short-term rentals across Africa.</p>
             </div>
             {bnbLoading ? <SkeletonGrid /> : bnbProperties.length === 0 ? <EmptyState text="No BNB properties yet" /> : (
               <div className="bnb-grid">
@@ -731,7 +731,7 @@ const Home = () => {
                     </div>
                     <div className="prop-body">
                       <div className="prop-title">{p.title}</div>
-                      <div className="prop-loc"><MapPin size={11} style={{ color: 'var(--gold)', flexShrink: 0 }} />{p.location || p.address || 'Tanzania'}</div>
+                      <div className="prop-loc"><MapPin size={11} style={{ color: 'var(--gold)', flexShrink: 0 }} />{p.location || p.address || 'Africa'}</div>
                       <div><span className="prop-price">{fmtPrice(p.price)}</span><span className="prop-price-sfx">/month</span></div>
                       <button className="view-btn">View Details</button>
                     </div>
@@ -785,7 +785,7 @@ const Home = () => {
                 <h2 style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 'clamp(28px,3.5vw,48px)', fontWeight: 300, color: 'var(--cream)', marginBottom: 16, lineHeight: 1.1 }}>
                   Ready to Find Your<br /><em style={{ color: 'var(--gold)' }}>Next Home?</em>
                 </h2>
-                <p style={{ fontSize: 14, color: 'var(--slate)', marginBottom: 32, lineHeight: 1.7 }}>Join thousands of Tanzanians who found their perfect rental through Oweru.</p>
+                <p style={{ fontSize: 14, color: 'var(--slate)', marginBottom: 32, lineHeight: 1.7 }}>Join thousands of Africans who found their perfect rental through Oweru.</p>
                 <Link to="/properties" className="btn-primary">Browse All Properties <ArrowRight size={15} /></Link>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/commercial_api_service.dart';
 
-const Color kGold = Color(0xFFC89128);
-const Color kBg = Color(0xFF0A0F1E);
-const Color kBg2 = Color(0xFF0F172A);
-const Color kBg3 = Color(0xFF162035);
-const Color kCream = Color(0xFFF1F5F9);
-const Color kSlate = Color(0xFF94A3B8);
-const Color kBorder = Color(0x26C89128);
+// ── Palette (matches CommercialDashboard) ─────────────────────────────────────
+const Color kWhite    = Color(0xFFFFFFFF);
+const Color kBg       = Color(0xFFF8FAFC);
+const Color kSurface  = Color(0xFFFFFFFF);
+const Color kSurface2 = Color(0xFFF1F5F9);
+const Color kBorder   = Color(0xFFE2E8F0);
+const Color kSlate900 = Color(0xFF0F172A);
+const Color kSlate700 = Color(0xFF334155);
+const Color kSlate500 = Color(0xFF64748B);
+const Color kSlate300 = Color(0xFFCBD5E1);
+const Color kSlate100 = Color(0xFFF1F5F9);
+
+const Color kEmerald  = Color(0xFF10B981);
+const Color kAmber    = Color(0xFFF59E0B);
+const Color kRose     = Color(0xFFF43F5E);
 
 class CommercialApplicationsPage extends StatefulWidget {
   const CommercialApplicationsPage({super.key});
@@ -22,8 +30,6 @@ class _CommercialApplicationsPageState extends State<CommercialApplicationsPage>
   String _error = '';
   String _searchQuery = '';
   String _statusFilter = 'all';
-  final int _currentPage = 1;
-  final int _lastPage = 1;
   int _total = 0;
 
   @override
@@ -33,11 +39,7 @@ class _CommercialApplicationsPageState extends State<CommercialApplicationsPage>
   }
 
   Future<void> _loadApplications() async {
-    setState(() {
-      _isLoading = true;
-      _error = '';
-    });
-
+    setState(() { _isLoading = true; _error = ''; });
     try {
       final applications = await CommercialApiService.getApplications();
       setState(() {
@@ -45,340 +47,324 @@ class _CommercialApplicationsPageState extends State<CommercialApplicationsPage>
         _total = applications.length;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _error = 'Unable to load applications.';
-        _isLoading = false;
-      });
+    } catch (_) {
+      setState(() { _error = 'Unable to load applications.'; _isLoading = false; });
     }
   }
 
   List<Map<String, dynamic>> get _filteredApplications {
     var filtered = _applications;
-
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((item) {
-        final propertyTitle = (item['property_title'] as String? ?? '').toLowerCase();
-        final applicantName = (item['applicant_name'] as String? ?? '').toLowerCase();
-        final applicantEmail = (item['applicant_email'] as String? ?? '').toLowerCase();
-        return propertyTitle.contains(_searchQuery.toLowerCase()) ||
-               applicantName.contains(_searchQuery.toLowerCase()) ||
-               applicantEmail.contains(_searchQuery.toLowerCase());
+        final t = (item['property_title'] as String? ?? '').toLowerCase();
+        final n = (item['applicant_name']  as String? ?? '').toLowerCase();
+        final e = (item['applicant_email'] as String? ?? '').toLowerCase();
+        final q = _searchQuery.toLowerCase();
+        return t.contains(q) || n.contains(q) || e.contains(q);
       }).toList();
     }
-
     if (_statusFilter != 'all') {
       filtered = filtered.where((item) => item['status'] == _statusFilter).toList();
     }
-
     return filtered;
   }
 
   String _formatDate(String dateStr) {
     try {
-      final date = DateTime.parse(dateStr);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (_) {
-      return '—';
+      final d = DateTime.parse(dateStr);
+      return '${d.day}/${d.month}/${d.year}';
+    } catch (_) { return '—'; }
+  }
+
+  Color _statusColor(String? s) {
+    switch (s?.toLowerCase()) {
+      case 'approved': return kEmerald;
+      case 'rejected': return kRose;
+      case 'pending':  return kAmber;
+      default:         return kSlate500;
     }
   }
 
-  Color _getStatusColor(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return const Color(0xFFF59E0B);
-      case 'approved':
-        return const Color(0xFF10B981);
-      case 'rejected':
-        return const Color(0xFFEF4444);
-      default:
-        return const Color(0xFF64748B);
+  IconData _statusIcon(String? s) {
+    switch (s?.toLowerCase()) {
+      case 'approved': return Icons.check_circle_rounded;
+      case 'rejected': return Icons.cancel_rounded;
+      default:         return Icons.access_time_rounded;
     }
   }
 
-  IconData _getStatusIcon(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return Icons.access_time;
-      case 'approved':
-        return Icons.check_circle;
-      case 'rejected':
-        return Icons.cancel;
-      default:
-        return Icons.access_time;
-    }
-  }
-
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredApplications;
 
     return Scaffold(
       backgroundColor: kBg,
-      appBar: AppBar(
-        backgroundColor: kBg2,
-        elevation: 0,
-        title: const Text('Property Applications', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
-      ),
-      body: Column(
-        children: [
-          // Search and Filter Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: kBg2,
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Search applications...',
-                          hintStyle: const TextStyle(color: kSlate),
-                          filled: true,
-                          fillColor: kBg3,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                          prefixIcon: const Icon(Icons.search, color: kSlate, size: 14),
-                        ),
-                        style: const TextStyle(color: kCream),
-                        onChanged: (value) {
-                          setState(() => _searchQuery = value);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _statusFilter,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: kBg3,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                      ),
-                      style: const TextStyle(color: kCream, fontSize: 13),
-                      items: const [
-                        DropdownMenuItem(value: 'all', child: Text('All Status')),
-                        DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                        DropdownMenuItem(value: 'approved', child: Text('Approved')),
-                        DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-                      ],
-                      onChanged: (value) => setState(() => _statusFilter = value ?? 'all'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Applications List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: kGold))
-                : _error.isNotEmpty
-                    ? Center(child: Text(_error, style: const TextStyle(color: Color(0xFFE07070))))
-                    : filtered.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.assignment_outlined, size: 48, color: kSlate),
-                                const SizedBox(height: 16),
-                                const Text('No applications found', style: TextStyle(color: kCream, fontSize: 16)),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _searchQuery.isNotEmpty || _statusFilter != 'all'
-                                      ? 'Try adjusting your filters'
-                                      : 'Applications will appear here when tenants apply for your properties',
-                                  style: const TextStyle(color: kSlate, fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) => _buildApplicationCard(filtered[index]),
-                          ),
-          ),
-        ],
+      body: Column(children: [
+        _buildSearchBar(),
+        _buildFilterChips(),
+        Expanded(child: _buildBody(filtered)),
+      ]),
+    );
+  }
+
+  // ── Search bar ─────────────────────────────────────────────────────────────
+  Widget _buildSearchBar() {
+    return Container(
+      color: kSurface,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: TextField(
+        onChanged: (v) => setState(() => _searchQuery = v),
+        style: const TextStyle(color: kSlate900, fontSize: 13),
+        decoration: InputDecoration(
+          hintText: 'Search by property, name or email…',
+          hintStyle: const TextStyle(color: kSlate300, fontSize: 13),
+          prefixIcon: const Icon(Icons.search_rounded, color: kSlate300, size: 18),
+          filled: true,
+          fillColor: kSurface2,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: kBorder)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: kSlate900, width: 1.5)),
+        ),
       ),
     );
   }
 
-  Widget _buildApplicationCard(Map<String, dynamic> application) {
-    final propertyTitle = application['property_title'] as String? ?? 'Property';
-    final propertyType = application['property_type'] as String? ?? 'Commercial';
-    final propertyLocation = application['property_location'] as String? ?? '';
-    final applicantName = application['applicant_name'] as String? ?? 'Applicant';
-    final applicantEmail = application['applicant_email'] as String? ?? '';
-    final applicantPhone = application['applicant_phone'] as String? ?? '';
-    final status = application['status'] as String? ?? 'pending';
-    final message = application['message'] as String?;
-    final createdAt = application['created_at'] as String?;
+  // ── Filter chips ───────────────────────────────────────────────────────────
+  Widget _buildFilterChips() {
+    final filters = ['all', 'pending', 'approved', 'rejected'];
+    final labels  = {'all': 'All', 'pending': 'Pending', 'approved': 'Approved', 'rejected': 'Rejected'};
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: kBg2,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: kBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
+      color: kSurface,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(children: [
+        ...filters.map((f) {
+          final selected = _statusFilter == f;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => setState(() => _statusFilter = f),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
-                  color: kGold.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: kBorder),
+                  color: selected ? kSlate900 : kSurface2,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: selected ? kSlate900 : kBorder),
                 ),
-                child: const Icon(Icons.business, color: kGold, size: 20),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(propertyTitle, style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600)),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildStatusBadge(status),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text('$propertyType · $propertyLocation', style: const TextStyle(color: kSlate, fontSize: 12)),
-                    const SizedBox(height: 2),
-                    Text('Applied ${_formatDate(createdAt ?? '')}', style: const TextStyle(color: kSlate, fontSize: 11)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          // Applicant Info
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(applicantName, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
-                  Text(applicantEmail, style: const TextStyle(color: kSlate, fontSize: 11)),
-                  Text(applicantPhone, style: const TextStyle(color: kSlate, fontSize: 11)),
-                ],
-              ),
-              // Actions
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.visibility, size: 14),
-                    onPressed: () {},
-                    style: IconButton.styleFrom(
-                      backgroundColor: kGold.withOpacity(0.06),
-                      foregroundColor: kGold,
-                      padding: const EdgeInsets.all(8),
-                      minimumSize: const Size(36, 36),
-                    ),
-                  ),
-                  if (status == 'pending') ...[
-                    const SizedBox(width: 6),
-                    IconButton(
-                      icon: const Icon(Icons.check, size: 14),
-                      onPressed: () => _handleApprove(application['id']),
-                      style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF10B981).withOpacity(0.1),
-                        foregroundColor: const Color(0xFF10B981),
-                        padding: const EdgeInsets.all(8),
-                        minimumSize: const Size(36, 36),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 14),
-                      onPressed: () => _handleReject(application['id']),
-                      style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFFEF4444).withOpacity(0.1),
-                        foregroundColor: const Color(0xFFEF4444),
-                        padding: const EdgeInsets.all(8),
-                        minimumSize: const Size(36, 36),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
-          // Message
-          if (message != null && message.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.only(top: 12),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: kBorder)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Message:', style: TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 4),
-                  Text(message, style: const TextStyle(color: kSlate, fontSize: 12)),
-                ],
+                child: Text(labels[f]!, style: TextStyle(
+                  color: selected ? kWhite : kSlate500,
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                )),
               ),
             ),
-          ],
-        ],
-      ),
+          );
+        }),
+        const Spacer(),
+        Text('${_filteredApplications.length} result${_filteredApplications.length == 1 ? '' : 's'}',
+          style: const TextStyle(color: kSlate300, fontSize: 11)),
+      ]),
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _getStatusColor(status).withOpacity(0.25)),
+  // ── Body ───────────────────────────────────────────────────────────────────
+  Widget _buildBody(List<Map<String, dynamic>> filtered) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator(color: kSlate900, strokeWidth: 2));
+    if (_error.isNotEmpty) return Center(child: Text(_error, style: const TextStyle(color: kRose, fontSize: 13)));
+    if (filtered.isEmpty) return _buildEmpty();
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+      itemCount: filtered.length,
+      itemBuilder: (context, index) {
+        final app = filtered[index];
+        return Container(
+          key: ValueKey('app_${app['id'] ?? index}'),
+          child: _buildCard(app),
+        );
+      },
+    );
+  }
+
+  // ── Empty state ────────────────────────────────────────────────────────────
+  Widget _buildEmpty() {
+    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Container(
+        width: 56, height: 56,
+        decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(14), border: Border.all(color: kBorder)),
+        child: const Icon(Icons.assignment_outlined, color: kSlate300, size: 24),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(_getStatusIcon(status), size: 11, color: _getStatusColor(status)),
-          const SizedBox(width: 5),
-          Text(
-            status[0].toUpperCase() + status.substring(1),
-            style: TextStyle(color: _getStatusColor(status), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+      const SizedBox(height: 14),
+      const Text('No applications found', style: TextStyle(color: kSlate900, fontSize: 14, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 4),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Text(
+          _searchQuery.isNotEmpty || _statusFilter != 'all'
+              ? 'Try adjusting your search or filters.'
+              : 'Applications will appear here when tenants apply.',
+          style: const TextStyle(color: kSlate500, fontSize: 12),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    ]));
+  }
+
+  // ── Application card ───────────────────────────────────────────────────────
+  Widget _buildCard(Map<String, dynamic> app) {
+    final propertyTitle    = app['property_title']    as String? ?? 'Property';
+    final propertyType     = app['property_type']     as String? ?? 'Commercial';
+    final propertyLocation = app['property_location'] as String? ?? '';
+    final applicantName    = app['applicant_name']    as String? ?? 'Applicant';
+    final applicantEmail   = app['applicant_email']   as String? ?? '';
+    final applicantPhone   = app['applicant_phone']   as String? ?? '';
+    final status           = app['status']            as String? ?? 'pending';
+    final message          = app['message']           as String?;
+    final createdAt        = app['created_at']        as String?;
+    final isPending        = status == 'pending';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kBorder),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 1))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // ── Top section ──────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Icon
+            Container(
+              width: 38, height: 38,
+              decoration: BoxDecoration(color: kSurface2, borderRadius: BorderRadius.circular(10), border: Border.all(color: kBorder)),
+              child: const Icon(Icons.apartment_rounded, color: kSlate500, size: 18),
+            ),
+            const SizedBox(width: 12),
+            // Property info
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(child: Text(propertyTitle,
+                  style: const TextStyle(color: kSlate900, fontSize: 13, fontWeight: FontWeight.w700),
+                  maxLines: 1, overflow: TextOverflow.ellipsis)),
+                const SizedBox(width: 8),
+                _buildStatusBadge(status),
+              ]),
+              const SizedBox(height: 2),
+              Text('$propertyType · $propertyLocation',
+                style: const TextStyle(color: kSlate500, fontSize: 11),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            ])),
+          ]),
+        ),
+
+        // ── Divider ──────────────────────────────────────────────────────────
+        Divider(height: 1, color: kBorder),
+
+        // ── Applicant row ─────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+          child: Row(children: [
+            // Avatar initial
+            Container(
+              width: 30, height: 30,
+              decoration: BoxDecoration(color: kSlate100, shape: BoxShape.circle),
+              child: Center(child: Text(
+                applicantName.isNotEmpty ? applicantName[0].toUpperCase() : 'A',
+                style: const TextStyle(color: kSlate700, fontSize: 12, fontWeight: FontWeight.w700),
+              )),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(applicantName, style: const TextStyle(color: kSlate900, fontSize: 12, fontWeight: FontWeight.w600)),
+              Text(applicantEmail.isNotEmpty ? applicantEmail : applicantPhone,
+                style: const TextStyle(color: kSlate500, fontSize: 11),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+            ])),
+            // Date
+            Text('${_formatDate(createdAt ?? '')}',
+              style: const TextStyle(color: kSlate300, fontSize: 10)),
+            const SizedBox(width: 8),
+            // Action buttons
+            _actionBtn(Icons.visibility_rounded, kSlate500, () {}),
+            if (isPending) ...[
+              const SizedBox(width: 6),
+              _actionBtn(Icons.check_rounded, kEmerald, () => _handleApprove(app['id'])),
+              const SizedBox(width: 6),
+              _actionBtn(Icons.close_rounded, kRose, () => _handleReject(app['id'])),
+            ],
+          ]),
+        ),
+
+        // ── Message ───────────────────────────────────────────────────────────
+        if (message != null && message.isNotEmpty) ...[
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: kSurface2,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(message,
+              style: const TextStyle(color: kSlate700, fontSize: 11, height: 1.4),
+              maxLines: 3, overflow: TextOverflow.ellipsis),
           ),
         ],
+      ]),
+    );
+  }
+
+  Widget _actionBtn(IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 30, height: 30,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Icon(icon, color: color, size: 14),
       ),
     );
   }
 
-  void _handleApprove(int id) {
-    // TODO: Implement approve action
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Approve action to be implemented')),
+  // ── Status badge ───────────────────────────────────────────────────────────
+  Widget _buildStatusBadge(String status) {
+    final color = _statusColor(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(_statusIcon(status), size: 10, color: color),
+        const SizedBox(width: 4),
+        Text(
+          status[0].toUpperCase() + status.substring(1),
+          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+        ),
+      ]),
     );
   }
 
-  void _handleReject(int id) {
-    // TODO: Implement reject action
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  void _handleApprove(dynamic id) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Reject action to be implemented')),
-    );
+      const SnackBar(content: Text('Approve action to be implemented')));
+  }
+
+  void _handleReject(dynamic id) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Reject action to be implemented')));
   }
 }

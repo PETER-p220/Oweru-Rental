@@ -225,7 +225,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                   const Text('Add New Property', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 28, fontWeight: FontWeight.w300)),
                   const SizedBox(height: 8),
                   const Text(
-                    'List your property for rent and reach potential tenants across Tanzania',
+                    'List your property for rent and reach potential tenants across Africa',
                     style: TextStyle(color: Color(0xFF8B8680), fontSize: 14),
                   ),
                 ],

@@ -217,7 +217,7 @@ const AddListing: React.FC = () => {
           </Link>
           <div className="al-eyebrow"><Building size={10} /> New Listing</div>
           <h1 className="al-title">Add New <em>Property</em></h1>
-          <p className="al-subtitle">List your property for rent and reach potential tenants across Tanzania</p>
+          <p className="al-subtitle">List your property for rent and reach potential tenants across Africa</p>
         </div>
 
         {error && <div className="al-err"><X size={15} style={{flexShrink:0}}/>{error}</div>}

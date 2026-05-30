@@ -274,7 +274,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 _LiveDot(),
                 const SizedBox(width: 8),
                 const Text(
-                  "Tanzania's Premier Rental Platform",
+                  "Africa's Premier Rental Platform",
                   style: TextStyle(
                     fontSize: 11, letterSpacing: 1.6,
                     fontWeight: FontWeight.w500, color: kSlate400),
@@ -285,7 +285,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
              
               const SizedBox(height: 16),
               const Text(
-                'Residential, commercial, and short-stay\nlistings across Tanzania — all in one place.',
+                'Residential, commercial, and short-stay\nlistings across Africa — all in one place.',
                 style: TextStyle(
                     fontSize: 14, height: 1.65,
                     color: kSlate400, fontWeight: FontWeight.w400),
@@ -537,7 +537,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _buildResidentialSection() => _Section(
     tag: 'Residential',
     title: 'Popular Properties',
-    sub: 'Apartments, houses and studios across Tanzania.',
+    sub: 'Apartments, houses and studios across Africa.',
     actionLabel: 'View All', onAction: () {},
     child: _loadingResidential
         ? const _SkeletonGrid()
@@ -603,7 +603,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
         const SizedBox(height: 12),
         const Text(
-          'Join thousands of Tanzanians who found their perfect rental through Oweru.',
+          'Join thousands of Africans who found their perfect rental through Oweru.',
           style: TextStyle(fontSize: 14, color: kSlate600, height: 1.65),
         ),
         const SizedBox(height: 28),
@@ -831,7 +831,7 @@ class _PropCard extends StatelessWidget {
               Row(children: [
                 const Icon(Icons.location_on_outlined, size: 11, color: kSlate400),
                 const SizedBox(width: 3),
-                Expanded(child: Text(p['location'] ?? p['address'] ?? 'Tanzania',
+                Expanded(child: Text(p['location'] ?? p['address'] ?? 'Africa',
                     style: const TextStyle(fontSize: 11, color: kSlate400),
                     maxLines: 1, overflow: TextOverflow.ellipsis)),
               ]),
@@ -928,7 +928,7 @@ class _CommCard extends StatelessWidget {
               Row(children: [
                 const Icon(Icons.location_on_outlined, size: 11, color: kSlate400),
                 const SizedBox(width: 3),
-                Expanded(child: Text(p['location'] ?? p['address'] ?? 'Tanzania',
+                Expanded(child: Text(p['location'] ?? p['address'] ?? 'Africa',
                     maxLines: 1, overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 11, color: kSlate400))),
               ]),

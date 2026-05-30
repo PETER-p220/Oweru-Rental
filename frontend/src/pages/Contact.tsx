@@ -24,7 +24,7 @@ const Contact = () => {
   const contactInfo = [
     { icon: Phone,  label: 'Phone',   value: '+255 711 890 764',    sub: 'Mon–Fri  9AM – 6PM',       href: 'tel:+255711890764' },
     { icon: Mail,   label: 'Email',   value: 'info@oweru.com',      sub: 'Response within 24 hours', href: 'mailto:info@oweru.com' },
-    { icon: MapPin, label: 'Office',  value: 'Tancot House, Posta', sub: 'Dar es Salaam, Tanzania',  href: '#map' },
+    { icon: MapPin, label: 'Office',  value: 'Tancot House, Posta', sub: 'Dar es Salaam, Africa',  href: '#map' },
     { icon: Globe,  label: 'Website', value: 'www.oweru.com',       sub: 'Available 24 / 7',         href: 'https://www.oweru.com' },
   ];
 
@@ -822,7 +822,7 @@ const Contact = () => {
             <h2 className="ct-map-title">Visit Our <b>Office</b></h2>
             <div className="ct-map-addr">
               Tancot House, Posta<br />
-              Dar es Salaam, Tanzania<br />
+              Dar es Salaam, Africa<br />
               P.O. Box 7563
             </div>
           </div>

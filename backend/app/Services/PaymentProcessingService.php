@@ -404,7 +404,7 @@ class PaymentProcessingService
         // Remove spaces and special characters
         $cleaned = preg_replace('/\D/', '', $phoneNumber);
 
-        // Handle different Tanzania phone number formats
+        // Handle different Africa phone number formats
         if (str_starts_with($cleaned, '255')) {
             return $cleaned;
         } elseif (str_starts_with($cleaned, '0')) {

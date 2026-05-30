@@ -227,7 +227,7 @@ class PropertyController extends Controller
                     'title'          => $property->title ?? 'Property ' . $property->id,
                     'description'    => $property->description ?? 'Beautiful property',
                     'price'          => $property->price ?? 100000,
-                    'location'       => $property->location ?? 'Tanzania',
+                    'location'       => $property->location ?? 'Africa',
                     'type'           => $property->type ?? 'apartment',
                     'bedrooms'       => $property->bedrooms ?? 2,
                     'bathrooms'      => $property->bathrooms ?? 1,

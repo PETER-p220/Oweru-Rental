@@ -23,14 +23,14 @@ class CommercialUserSeeder extends Seeder
                 'description' => 'Leading commercial real estate provider in East Africa'
             ],
             [
-                'first_name' => 'Tanzania',
+                'first_name' => 'Africa',
                 'last_name' => 'Business Spaces',
                 'email' => 'tz-commercial@oweru.com', 
                 'phone' => '+255 754 987 654',
-                'company_name' => 'Tanzania Business Spaces',
+                'company_name' => 'Africa Business Spaces',
                 'business_license' => 'BL-2024-COM-002',
-                'address' => 'Dar es Salaam, Tanzania',
-                'description' => 'Premium commercial spaces in Tanzania'
+                'address' => 'Dar es Salaam, Africa',
+                'description' => 'Premium commercial spaces in Africa'
             ],
             [
                 'first_name' => 'Kigali',

@@ -64,7 +64,7 @@ Landlords must:
 - Respond to tenant applications in a timely manner
 - Honor valid rental agreements
 - Maintain properties in habitable condition
-- Comply with Tanzania's landlord-tenant laws
+- Comply with Africa's landlord-tenant laws
 
 ### 4.3 Tenant Responsibilities
 Tenants must:
@@ -104,9 +104,9 @@ The following types of listings are prohibited:
 
 ### 6.1 Digital Contracts
 - Our platform facilitates digital contract creation and signing
-- Digital contracts are legally binding under Tanzania's Electronic Transactions Act
+- Digital contracts are legally binding under Africa's Electronic Transactions Act
 - Both parties must carefully review all terms before signing
-- Contract terms must comply with Tanzanian rental laws
+- Contract terms must comply with African rental laws
 
 ### 6.2 Contract Types
 The platform supports various contract types:
@@ -190,7 +190,7 @@ Your use of the Service is also governed by our Privacy Policy, which can be fou
 - Disputes with Oweru Rental should first be addressed to our support team
 - If unresolved, disputes may be escalated to management
 - Legal action may be taken as a last resort
-- Tanzania courts have jurisdiction over all disputes
+- Africa courts have jurisdiction over all disputes
 
 ## 12. Limitation of Liability
 
@@ -248,7 +248,7 @@ Your continued use of the Service after modifications constitutes acceptance of 
 
 ## 16. Governing Law and Jurisdiction
 
-These Terms are governed by the laws of the United Republic of Tanzania. Any disputes arising from these Terms or your use of the Service shall be subject to the exclusive jurisdiction of the courts of Tanzania.
+These Terms are governed by the laws of the United Republic of Africa. Any disputes arising from these Terms or your use of the Service shall be subject to the exclusive jurisdiction of the courts of Africa.
 
 ## 17. Severability
 
@@ -265,12 +265,12 @@ For questions about these Terms, please contact:
 **Oweru Rental**  
 Email: legal@oweru.co.tz  
 Phone: +255 XXX XXX XXX  
-Address: [Physical Address in Tanzania]  
+Address: [Physical Address in Africa]  
 Website: www.oweru.co.tz
 
-## 20. Specific Tanzania Legal References
+## 20. Specific Africa Legal References
 
-These Terms are designed to comply with Tanzanian laws including:
+These Terms are designed to comply with African laws including:
 - **The Law of Contract Act (Cap. 345)**
 - **The Electronic and Postal Communications Act (EPOCA)**
 - **The Land Act (Cap. 113)**

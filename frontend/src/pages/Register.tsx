@@ -243,10 +243,10 @@ const Register = () => {
         <div className="rg-left-watermark">JOIN</div>
         <div className="rg-left-content">
           <div className="rg-left-eyebrow">Why Oweru</div>
-          <h2 className="rg-left-title">Tanzania's<br /><em>Trusted</em><br />Rental Platform</h2>
+          <h2 className="rg-left-title">Africa's<br /><em>Trusted</em><br />Rental Platform</h2>
           <p className="rg-left-desc">
             Join thousands of landlords, agents, and tenants already
-            using Oweru to simplify property rental across Tanzania.
+            using Oweru to simplify property rental across Africa.
           </p>
           <div className="rg-benefits">
             {[

@@ -661,16 +661,16 @@ const Login = () => {
         {/* ── Right panel ── */}
         <div className="lg-right">
           <div className="lg-right-geo" />
-          <div className="lg-right-stamp">Tanzania · Est. 2024</div>
+          <div className="lg-right-stamp">Africa · Est. 2024</div>
           <div className="lg-right-content">
-            <div className="lg-right-tag">Tanzania's #1 Platform</div>
+            <div className="lg-right-tag">Africa's #1 Platform</div>
             <h2 className="lg-right-title">
               Smart, Secure<br />Real Estate
               <strong>Powered by Tech.</strong>
             </h2>
             <p className="lg-right-desc">
               Join thousands of landlords, agents, and tenants using
-              Oweru to simplify property rental across Tanzania.
+              Oweru to simplify property rental across Africa.
             </p>
             <div className="lg-right-stats">
               {[
