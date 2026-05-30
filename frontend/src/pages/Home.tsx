@@ -663,7 +663,7 @@ const Home = () => {
             <div className="section-header">
               <div>
                 <div className="section-tag"><HomeIcon size={10} /> Residential</div>
-                <h2 className="section-title">Popular <em>Properties</em></h2>
+                <h2 className="section-title">Popular Properties</h2>
                 <p className="section-sub">Apartments, houses, studios and more across Africa.</p>
               </div>
               <Link to="/properties" className="btn-ghost">View All <ArrowRight size={14} /></Link>
@@ -683,7 +683,7 @@ const Home = () => {
             <div className="section-header">
               <div>
                 <div className="section-tag"><Star size={10} /> Vacation Rentals</div>
-                <h2 className="section-title">Premium <em>Short Stay</em></h2>
+                <h2 className="section-title">Premium Short Stay</h2>
               </div>
               <p style={{ fontSize: 14, color: 'var(--slate)', maxWidth: 280, textAlign: 'right' }}>Handpicked short-term rentals across Africa.</p>
             </div>
@@ -716,7 +716,7 @@ const Home = () => {
             <div className="section-header">
               <div>
                 <div className="section-tag"><Shield size={10} /> Exclusive Offers</div>
-                <h2 className="section-title">Oweru <em>Special Packages</em></h2>
+                <h2 className="section-title">Oweru Special Packages</h2>
               </div>
               <p style={{ fontSize: 14, color: 'var(--slate)', maxWidth: 280, textAlign: 'right' }}>Premium properties handpicked by Oweru.</p>
             </div>
@@ -750,7 +750,7 @@ const Home = () => {
             <div className="section-header">
               <div>
                 <div className="section-tag"><Briefcase size={10} /> Business Spaces</div>
-                <h2 className="section-title">Commercial <em>Properties</em></h2>
+                <h2 className="section-title">Commercial Properties</h2>
                 <p className="section-sub">Offices, retail spaces, warehouses, and industrial properties for your business.</p>
               </div>
               <Link to="/properties?type=commercial" className="btn-outline">All Commercial <ChevronRight size={15} /></Link>
@@ -782,7 +782,7 @@ const Home = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
               <div>
                 <div className="section-tag">Get Started</div>
-                <h2 style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 'clamp(28px,3.5vw,48px)', fontWeight: 300, color: 'var(--cream)', marginBottom: 16, lineHeight: 1.1 }}>
+                <h2 style={{fontSize: 'clamp(28px,3.5vw,48px)', fontWeight: 300, color: 'var(--cream)', marginBottom: 16, lineHeight: 1.1 }}>
                   Ready to Find Your<br /><em style={{ color: 'var(--gold)' }}>Next Home?</em>
                 </h2>
                 <p style={{ fontSize: 14, color: 'var(--slate)', marginBottom: 32, lineHeight: 1.7 }}>Join thousands of Africans who found their perfect rental through Oweru.</p>
