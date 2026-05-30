@@ -17,6 +17,7 @@ use App\Http\Controllers\Bnb\BnbReviewController;
 use App\Http\Controllers\Api\ImageUploadController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Commercial\PropertyController as CommercialPropertyController;
+use App\Http\Controllers\Commercial\CommercialController;
 use App\Http\Controllers\MessageController;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -221,7 +222,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ── Commercial routes ────────────────────────────────────────────────────
     Route::middleware('role:commercial')->group(function () {
         // Dashboard
-        Route::get('/commercial/dashboard', [DashboardController::class, 'commercialDashboard']);
+        Route::get('/commercial/dashboard', [CommercialController::class, 'dashboard']);
 
         // Amenities
         Route::get('/commercial/amenities', [CommercialPropertyController::class, 'getAmenities']);
@@ -251,11 +252,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/commercial/applications/{application}/reject', [ApplicationController::class, 'rejectCommercialApplication']);
         
         // Analytics, Reports, Profile, Settings
-        Route::get('/commercial/analytics', [DashboardController::class, 'getCommercialAnalytics']);
+        Route::get('/commercial/analytics', [CommercialController::class, 'propertyAnalytics']);
         Route::get('/commercial/reports', [ApplicationController::class, 'getCommercialReports']);
         Route::post('/commercial/reports', [ApplicationController::class, 'generateCommercialReport']);
-        Route::get('/commercial/profile', [DashboardController::class, 'getCommercialProfile']);
-        Route::put('/commercial/profile', [DashboardController::class, 'updateCommercialProfile']);
+        Route::get('/commercial/profile', [CommercialController::class, 'profile']);
+        Route::put('/commercial/profile', [CommercialController::class, 'updateProfile']);
         Route::get('/commercial/settings', [DashboardController::class, 'getCommercialSettings']);
         Route::put('/commercial/settings', [DashboardController::class, 'updateCommercialSettings']);
     });
@@ -395,9 +396,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/bnb/bookings/{booking}/status',    [BnbBookingController::class, 'updateStatus']);
 
         // Reviews
-        Route::get('/bnb/reviews',                       [BnbReviewController::class, 'index']);
-        Route::get('/bnb/reviews/{review}',               [BnbReviewController::class, 'show']);
-        Route::post('/bnb/reviews/{review}/respond',      [BnbReviewController::class, 'respond']);
+        Route::get('/bnb/reviews',                          [BnbReviewController::class, 'index']);
+        Route::get('/bnb/reviews/{review}',                  [BnbReviewController::class, 'show']);
+        Route::post('/bnb/reviews/{review}/respond',         [BnbReviewController::class, 'respond']);
+        Route::post('/bnb/reviews/{review}/helpful',         [BnbReviewController::class, 'markHelpful']);
+        Route::get('/bnb/reviews/property/{propertyId}',    [BnbReviewController::class, 'propertyReviews']);
+        Route::get('/bnb/reviews/analytics',                 [BnbReviewController::class, 'analytics']);
 
         // Image Upload
         Route::post('/upload-image',    [ImageUploadController::class, 'upload']);
