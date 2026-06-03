@@ -135,8 +135,12 @@ class AgentApiService {
   static Future<List<Map<String, dynamic>>> getLinkedOwners() async {
     try {
       final response = await http.get(Uri.parse('$_baseUrl/agent/linked-owners'), headers: _headers);
+      print('Linked Owners Response Status: ${response.statusCode}');
+      print('Linked Owners Response Body: ${response.body}');
       if (response.statusCode == 200) return _asList(jsonDecode(response.body));
-    } catch (_) {}
+    } catch (e) {
+      print('Error fetching linked owners: $e');
+    }
     return [];
   }
 

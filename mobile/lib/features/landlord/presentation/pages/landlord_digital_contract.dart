@@ -201,8 +201,8 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
         builder: (context, setModalState) {
           return Container(
             height: MediaQuery.of(context).size.height * 0.85,
-            decoration: const BoxDecoration(
-              color: kBg2,
+            decoration: BoxDecoration(
+              color: kCardBg,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
@@ -216,11 +216,11 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         height: 2,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
                               Colors.transparent,
-                              kGold,
+                              kSlate300,
                               Colors.transparent,
                             ],
                           ),
@@ -237,8 +237,8 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                                   Container(
                                     width: 6,
                                     height: 6,
-                                    decoration: const BoxDecoration(
-                                      color: kGold,
+                                    decoration: BoxDecoration(
+                                      color: kSlate800,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
@@ -246,7 +246,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                                   const Text(
                                     'Mkataba Mpya',
                                     style: TextStyle(
-                                      color: kSlate,
+                                      color: kSlate500,
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: 0.14,
@@ -258,7 +258,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                               const Text(
                                 'Unda Mkataba wa Kidijitali',
                                 style: TextStyle(
-                                  color: kCream,
+                                  color: kSlate800,
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -267,12 +267,12 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                           ),
                           Container(
                             decoration: BoxDecoration(
-                              color: kBg3,
+                              color: kSlate100,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: IconButton(
                               icon: const Icon(Icons.close,
-                                  color: kSlate, size: 16),
+                                  color: kSlate500, size: 16),
                               onPressed: () => Navigator.pop(ctx),
                               padding: const EdgeInsets.all(8),
                               constraints: const BoxConstraints(),
@@ -295,24 +295,22 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             margin: const EdgeInsets.only(bottom: 16),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color:
-                                  const Color(0xFFEF4444).withOpacity(0.08),
+                              color: kDanger.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: const Color(0xFFEF4444)
-                                    .withOpacity(0.25),
+                                color: kDanger.withOpacity(0.25),
                               ),
                             ),
                             child: Row(
                               children: [
                                 const Icon(Icons.error,
-                                    size: 16, color: Color(0xFFEF4444)),
+                                    size: 16, color: kDanger),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     _error,
                                     style: const TextStyle(
-                                        color: Color(0xFFEF4444),
+                                        color: kDanger,
                                         fontSize: 14),
                                   ),
                                 ),
@@ -327,14 +325,12 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             const Text(
                               'Aina ya Mkataba *',
                               style: TextStyle(
-                                color: kCream,
+                                color: kSlate800,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 10),
-                            // FIX: Use Row with Expanded instead of Wrap+SizedBox
-                            // to avoid overflow in the contract type buttons
                             Row(
                               children: [
                                 Expanded(
@@ -375,7 +371,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             const Text(
                               'Kichwa cha Mkataba *',
                               style: TextStyle(
-                                color: kCream,
+                                color: kSlate800,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -386,9 +382,9 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                                 hintText: _contractType == 'chumba'
                                     ? 'Mfano: Chumba Namba 5'
                                     : 'Mfano: Nyumba — Mikocheni A',
-                                hintStyle: const TextStyle(color: kSlate),
+                                hintStyle: const TextStyle(color: kSlate400),
                                 filled: true,
-                                fillColor: kBg3,
+                                fillColor: kSlate100,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                   borderSide: BorderSide.none,
@@ -397,7 +393,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                                     const EdgeInsets.symmetric(
                                         horizontal: 16, vertical: 14),
                               ),
-                              style: const TextStyle(color: kCream),
+                              style: const TextStyle(color: kSlate800),
                               onChanged: (v) =>
                                   setModalState(() => _title = v),
                             ),
@@ -411,7 +407,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             const Text(
                               'Mali / Nyumba *',
                               style: TextStyle(
-                                color: kCream,
+                                color: kSlate800,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -421,15 +417,15 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                               value: _propertyId.isEmpty
                                   ? null
                                   : _propertyId,
-                              isExpanded: true, // FIX: prevents text overflow
-                              dropdownColor: kBg3,
-                              style: const TextStyle(color: kCream),
+                              isExpanded: true,
+                              dropdownColor: kCardBg,
+                              style: const TextStyle(color: kSlate800),
                               decoration: InputDecoration(
                                 hintText: 'Chagua mali…',
                                 hintStyle:
-                                    const TextStyle(color: kSlate),
+                                    const TextStyle(color: kSlate400),
                                 filled: true,
-                                fillColor: kBg3,
+                                fillColor: kSlate100,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                   borderSide: BorderSide.none,
@@ -443,7 +439,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                                   value: p['id'].toString(),
                                   child: Text(
                                     '${p['title']}${p['location'] != null ? ' — ${p['location']}' : ''}',
-                                    style: const TextStyle(color: kCream),
+                                    style: const TextStyle(color: kSlate800),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 );
@@ -461,7 +457,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             const Text(
                               'Mpangaji *',
                               style: TextStyle(
-                                color: kCream,
+                                color: kSlate800,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -470,15 +466,15 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             DropdownButtonFormField<String>(
                               value:
                                   _tenantId.isEmpty ? null : _tenantId,
-                              isExpanded: true, // FIX: prevents text overflow
-                              dropdownColor: kBg3,
-                              style: const TextStyle(color: kCream),
+                              isExpanded: true,
+                              dropdownColor: kCardBg,
+                              style: const TextStyle(color: kSlate800),
                               decoration: InputDecoration(
                                 hintText: 'Chagua mpangaji…',
                                 hintStyle:
-                                    const TextStyle(color: kSlate),
+                                    const TextStyle(color: kSlate400),
                                 filled: true,
-                                fillColor: kBg3,
+                                fillColor: kSlate100,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
                                   borderSide: BorderSide.none,
@@ -496,7 +492,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                                     '${user?['first_name'] ?? ''} ${user?['last_name'] ?? ''}'
                                         .trim(),
                                     style:
-                                        const TextStyle(color: kCream),
+                                        const TextStyle(color: kSlate800),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 );
@@ -510,7 +506,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                                 child: Text(
                                   '${_tenants.length} mpangaji ${_tenants.length != 1 ? 'waliopatikana' : 'aliyepatikana'}',
                                   style: const TextStyle(
-                                      color: kSlate, fontSize: 11),
+                                      color: kSlate500, fontSize: 11),
                                 ),
                               ),
                           ],
@@ -523,7 +519,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             const Text(
                               'Hati ya Mkataba * (PDF/Word, max 10 MB)',
                               style: TextStyle(
-                                color: kCream,
+                                color: kSlate800,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -541,24 +537,24 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                                       width: 16,
                                       height: 16,
                                       child: CircularProgressIndicator(
-                                          strokeWidth: 2, color: kGold),
+                                          strokeWidth: 2, color: kSlate800),
                                     )
                                   : const Icon(
                                       Icons.upload_file_rounded,
-                                      color: kGold,
+                                      color: kSlate800,
                                     ),
                               label: Flexible(
                                 child: Text(
                                   _fileName.isEmpty
                                       ? 'Chagua faili la mkataba'
                                       : _fileName,
-                                  style: const TextStyle(color: kGold),
+                                  style: const TextStyle(color: kSlate800),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: kGold,
-                                side: const BorderSide(color: kGold),
+                                foregroundColor: kSlate800,
+                                side: const BorderSide(color: kSlate300),
                                 minimumSize:
                                     const Size(double.infinity, 48),
                                 shape: RoundedRectangleBorder(
@@ -582,8 +578,8 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                                     }
                                   },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: kGold,
-                              foregroundColor: kBg,
+                              backgroundColor: kSlate800,
+                              foregroundColor: kWhite,
                               minimumSize:
                                   const Size(double.infinity, 48),
                               shape: RoundedRectangleBorder(
@@ -620,15 +616,14 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
     return GestureDetector(
       onTap: () => setModalState(() => _contractType = type),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? kGold.withOpacity(0.12)
-              : kBg3.withOpacity(0.3),
+              ? kSlate800.withOpacity(0.12)
+              : kSlate100.withOpacity(0.3),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? kGold : kBorder,
+            color: isSelected ? kSlate800 : kBorder,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -637,7 +632,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? kGold : kSlate,
+                color: isSelected ? kSlate800 : kSlate500,
                 fontWeight: FontWeight.w600,
                 fontSize: 11,
               ),
@@ -649,7 +644,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
             Text(
               sublabel,
               style: TextStyle(
-                color: isSelected ? kGold.withOpacity(0.7) : kSlate,
+                color: isSelected ? kSlate800.withOpacity(0.7) : kSlate400,
                 fontSize: 10,
               ),
               textAlign: TextAlign.center,
@@ -674,17 +669,17 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
   Color _getStatusColor(String? status) {
     switch (status?.toLowerCase()) {
       case 'draft':
-        return const Color(0xFF6B7280);
+        return kSlate500;
       case 'pending_signature':
-        return const Color(0xFFC9A84C);
+        return kWarning;
       case 'pending_review':
-        return const Color(0xFF3B82F6);
+        return kInfo;
       case 'approved':
-        return const Color(0xFF16A34A);
+        return kSuccess;
       case 'rejected':
-        return const Color(0xFFDC2626);
+        return kDanger;
       default:
-        return const Color(0xFF6B7280);
+        return kSlate500;
     }
   }
 
@@ -723,219 +718,135 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
     final stats = _stats;
 
     return Scaffold(
-      backgroundColor: kBg,
-      appBar: AppBar(
-        backgroundColor: kBg2,
-        elevation: 0,
-        title: const Text(
-          'Mikataba ya Kidijitali',
-          style: TextStyle(
-              color: kCream, fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: kGold),
-            onPressed: _openCreateSheet,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Header Section
-          Container(
-            padding: const EdgeInsets.all(20),
-            color: kBg2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Eneo la Mpangishaji',
-                  style: TextStyle(
-                    color: kSlate,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.14,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Mikataba ya Kidijitali',
-                  style: TextStyle(
-                      color: kCream,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Pakia mikataba ya kukodisha na simamia sahihi za kidijitali kwa mpangaji wako.',
-                  style: TextStyle(color: kSlate, fontSize: 13),
-                ),
-                const SizedBox(height: 24),
-                // FIX: Stats wrapped in a scrollable row to avoid overflow
-                if (!_isLoading && _contracts.isNotEmpty)
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildStatCard('Total', '${stats['total']}', kSlate),
-                        const SizedBox(width: 10),
-                        _buildStatCard(
-                            'Rasimu', '${stats['draft']}', kSlate),
-                        const SizedBox(width: 10),
-                        _buildStatCard(
-                          'Zinasubiri',
-                          '${stats['pending']}',
-                          const Color(0xFFC9A84C),
-                        ),
-                        const SizedBox(width: 10),
-                        _buildStatCard(
-                          'Zinakaguliwa',
-                          '${stats['review']}',
-                          const Color(0xFF3B82F6),
-                        ),
-                        const SizedBox(width: 10),
-                        _buildStatCard(
-                          'Zilizoidhinishwa',
-                          '${stats['approved']}',
-                          const Color(0xFF16A34A),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
+      backgroundColor: kPageBg,
+      extendBodyBehindAppBar: true,
+      body: CustomScrollView(
+        slivers: [
+          // ── Slate header (matching dashboard) ──────
+          SliverToBoxAdapter(child: _slateHeader()),
+          
+          // ── Stats row (horizontal scrollable) ──────
+          if (!_isLoading && _contracts.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              sliver: SliverToBoxAdapter(child: _statsRow(stats)),
             ),
-          ),
-          // Error/Success Alerts
+          
+          // ── Error/Success Alerts ─────────────────────
           if (_error.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.06),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: const Color(0xFFEF4444).withOpacity(0.18)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error,
-                      size: 16, color: Color(0xFFEF4444)),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _error,
-                      style: const TextStyle(
-                          color: Color(0xFFEF4444), fontSize: 14),
-                    ),
-                  ),
-                ],
-              ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              sliver: SliverToBoxAdapter(child: _alertBanner(_error, kDanger, Icons.error)),
             ),
           if (_success.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: const Color(0xFF10B981).withOpacity(0.22)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle,
-                      size: 16, color: Color(0xFF10B981)),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _success,
-                      style: const TextStyle(
-                          color: Color(0xFF10B981), fontSize: 14),
-                    ),
-                  ),
-                ],
-              ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              sliver: SliverToBoxAdapter(child: _alertBanner(_success, kSuccess, Icons.check_circle)),
             ),
-          // Contracts List
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: kGold))
-                : _contracts.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.shield,
-                                size: 48, color: kSlate),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'No digital contracts',
-                              style: TextStyle(
-                                color: kCream,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Create your first digital contract for your tenants.',
-                              style: TextStyle(
-                                  color: kSlate, fontSize: 13),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _contracts.length,
-                        itemBuilder: (context, index) =>
-                            _buildContractCard(_contracts[index]),
-                      ),
-          ),
+          
+          // ── Contracts list ──────────────────────────
+          if (_isLoading)
+            SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: kSlate800, strokeWidth: 2)))
+          else if (_contracts.isEmpty)
+            SliverFillRemaining(child: _emptyState())
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+              sliver: SliverList(delegate: SliverChildBuilderDelegate(
+                (_, i) => Padding(padding: const EdgeInsets.only(bottom: 12), child: _ContractCard(contract: _contracts[i], downloadingId: _downloadingId, onDownload: _downloadContract, onSend: _sendToTenant, onApprove: _approveContract)),
+                childCount: _contracts.length,
+              )),
+            ),
         ],
       ),
-     
-    );
-  }
-
-  // FIX: stat cards are now fixed-width (not Expanded inside a non-flex parent)
-  Widget _buildStatCard(String label, String value, Color color) {
-    return Container(
-      width: 90,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: kBg3,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: kBorder),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-                color: color, fontSize: 22, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(color: kSlate, fontSize: 10),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openCreateSheet,
+        backgroundColor: kSlate800,
+        child: const Icon(Icons.add, color: kWhite),
       ),
     );
   }
 
+  // ── Slate header block ───────────────────────────────────
+  Widget _slateHeader() => Container(
+    color: kHeaderBg,
+    padding: EdgeInsets.only(
+      top: MediaQuery.of(context).padding.top + 12,
+      left: 18, right: 18, bottom: 20),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // Top bar
+      Row(children: [
+        const Text('Mikataba ya Kidijitali',
+          style: TextStyle(color: kWhite, fontSize: 20,
+            fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+      ]),
+      const SizedBox(height: 16),
+      // Stats summary
+      Text('${_contracts.length} mkataba${_contracts.length != 1 ? 'ya' : ''}',
+        style: const TextStyle(color: kSlate400, fontSize: 13)),
+    ]),
+  );
+
+  // ── Horizontal stats row ───────────────────────────────────
+  Widget _statsRow(Map<String, int> stats) {
+    final items = [
+      _StatItem(value: '${stats['total']}',          label: 'Jumla',       icon: Icons.description,               accent: kSlate800, bg: kSlate100),
+      _StatItem(value: '${stats['draft']}',          label: 'Rasimu',      icon: Icons.edit_document,             accent: kSlate500, bg: kSlate100),
+      _StatItem(value: '${stats['pending']}',        label: 'Zinasubiri',  icon: Icons.pending_actions,           accent: kWarning,  bg: kWarningBg),
+      _StatItem(value: '${stats['review']}',         label: 'Zinakaguliwa',icon: Icons.rate_review,               accent: kInfo,     bg: kInfoBg),
+      _StatItem(value: '${stats['approved']}',       label: 'Zilizoidhinishwa', icon: Icons.check_circle,               accent: kSuccess,  bg: kSuccessBg),
+    ];
+
+    return SizedBox(
+      height: 96,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) => _StatCard2(item: items[i]),
+      ),
+    );
+  }
+
+  // ── Alert banner ───────────────────────────────────────────
+  Widget _alertBanner(String message, Color color, IconData icon) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: color.withOpacity(0.2)),
+    ),
+    child: Row(children: [
+      Icon(icon, size: 16, color: color),
+      const SizedBox(width: 10),
+      Expanded(child: Text(message, style: TextStyle(color: color, fontSize: 13))),
+    ]),
+  );
+
+  // ── Empty state ────────────────────────────────────────────
+  Widget _emptyState() => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 64),
+    child: Center(child: Column(children: [
+      Container(
+        width: 56, height: 56,
+        decoration: BoxDecoration(
+          color: kSlate200, borderRadius: BorderRadius.circular(14)),
+        child: const Icon(Icons.description, color: kSlate400, size: 26)),
+      const SizedBox(height: 12),
+      const Text('Hakuna mikataba ya kidijitali.',
+        style: TextStyle(color: kSlate500, fontSize: 13)),
+      const SizedBox(height: 4),
+      const Text('Unda mkataba wako wa kwanza kwa mpangaji.',
+        style: TextStyle(color: kSlate400, fontSize: 12)),
+    ])),
+  );
+
+  // ── Contract card (old method, kept for modal reference) ──────
   Widget _buildContractCard(Map<String, dynamic> contract) {
     final id = contract['id'] as int?;
-    final property =
-        contract['property'] as Map<String, dynamic>? ?? {};
-    final tenant =
-        contract['tenant'] as Map<String, dynamic>? ?? {};
+    final property = contract['property'] as Map<String, dynamic>? ?? {};
+    final tenant = contract['tenant'] as Map<String, dynamic>? ?? {};
     final status = contract['status'] as String? ?? 'draft';
     final fileName = contract['file_name'] as String?;
     final fields = contract['fields'] as List?;
@@ -944,9 +855,9 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: kBg2,
+        color: kCardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: kBorder),
       ),
@@ -964,8 +875,8 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                     Text(
                       contract['title'] ?? 'Contract',
                       style: const TextStyle(
-                        color: kCream,
-                        fontSize: 16,
+                        color: kSlate800,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -974,8 +885,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                       const SizedBox(height: 4),
                       Text(
                         '📄 $fileName',
-                        style:
-                            const TextStyle(color: kSlate, fontSize: 12),
+                        style: const TextStyle(color: kSlate400, fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -983,8 +893,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                       const SizedBox(height: 2),
                       Text(
                         '${fields.length} sehemu',
-                        style: const TextStyle(
-                            color: kGold, fontSize: 11),
+                        style: const TextStyle(color: kSlate500, fontSize: 11),
                       ),
                     ],
                   ],
@@ -994,62 +903,55 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
               _buildStatusBadge(status),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           // Property Info
-          Row(
-            children: [
-              const Icon(Icons.location_on, size: 13, color: kGold),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  property['title'] ??
-                      'Mali #${contract['property_id']}',
-                  style: const TextStyle(
-                    color: kCream,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: kSlate100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 11, color: kSlate400),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        property['title'] ?? 'Mali #${contract['property_id']}',
+                        style: const TextStyle(color: kSlate800, fontSize: 13, fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                if (property['location'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(property['location'], style: const TextStyle(color: kSlate500, fontSize: 11)),
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+                if (property['price'] != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text('${_formatCurrency(property['price'])}/mwezi', style: const TextStyle(color: kSlate600, fontSize: 11, fontWeight: FontWeight.w600)),
+                  ),
+              ],
+            ),
           ),
-          if (property['location'] != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 19, top: 2),
-              child: Text(
-                property['location'],
-                style: const TextStyle(color: kSlate, fontSize: 12),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          if (property['price'] != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 19, top: 2),
-              child: Text(
-                '${_formatCurrency(property['price'])}/mwezi',
-                style: const TextStyle(
-                  color: kGold,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
           const SizedBox(height: 12),
           // Tenant Info
           Row(
             children: [
-              const Icon(Icons.person, size: 13, color: kSlate),
-              const SizedBox(width: 6),
+              const Icon(Icons.person, size: 11, color: kSlate400),
+              const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  '${tenant['user']?['first_name'] ?? ''} ${tenant['user']?['last_name'] ?? ''}'
-                      .trim()
-                      .isNotEmpty
-                      ? '${tenant['user']?['first_name'] ?? ''} ${tenant['user']?['last_name'] ?? ''}'
-                          .trim()
+                  '${tenant['user']?['first_name'] ?? ''} ${tenant['user']?['last_name'] ?? ''}'.trim().isNotEmpty
+                      ? '${tenant['user']?['first_name'] ?? ''} ${tenant['user']?['last_name'] ?? ''}'.trim()
                       : 'Mpangaji #${contract['tenant_id']}',
-                  style: const TextStyle(color: kCream, fontSize: 14),
+                  style: const TextStyle(color: kSlate700, fontSize: 13),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1057,45 +959,31 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
           ),
           if (tenant['user']?['email'] != null)
             Padding(
-              padding: const EdgeInsets.only(left: 19, top: 2),
-              child: Text(
-                tenant['user']['email'],
-                style: const TextStyle(color: kSlate, fontSize: 11),
-                overflow: TextOverflow.ellipsis,
-              ),
+              padding: const EdgeInsets.only(left: 15, top: 2),
+              child: Text(tenant['user']['email'], style: const TextStyle(color: kSlate400, fontSize: 11)),
             ),
           const SizedBox(height: 12),
           // Date and Actions Row
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 13, color: kSlate),
-              const SizedBox(width: 6),
-              Text(
-                _formatDate(createdAt ?? ''),
-                style: const TextStyle(color: kSlate, fontSize: 12),
-              ),
+              const Icon(Icons.calendar_today, size: 11, color: kSlate400),
+              const SizedBox(width: 4),
+              Text(_formatDate(createdAt ?? ''), style: const TextStyle(color: kSlate500, fontSize: 12)),
               const Spacer(),
               // Actions
               if (fileName != null)
                 IconButton(
                   icon: isDownloading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: kGold),
-                        )
-                      : const Icon(Icons.download,
-                          size: 18, color: kGold),
-                  onPressed:
-                      isDownloading ? null : () => _downloadContract(id!),
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: kSlate800))
+                      : const Icon(Icons.download, size: 16, color: kSlate600),
+                  onPressed: isDownloading ? null : () => _downloadContract(id!),
                   tooltip: 'Pakua',
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(6),
                 ),
               if (status == 'draft')
                 IconButton(
-                  icon: const Icon(Icons.send, size: 18, color: kGold),
+                  icon: const Icon(Icons.send, size: 16, color: kSlate600),
                   onPressed: () => _sendToTenant(id!),
                   tooltip: 'Tuma kwa Mpangaji',
                   constraints: const BoxConstraints(),
@@ -1103,8 +991,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                 ),
               if (status == 'pending_review')
                 IconButton(
-                  icon: const Icon(Icons.check_circle,
-                      size: 18, color: Color(0xFF16A34A)),
+                  icon: const Icon(Icons.check_circle, size: 16, color: kSuccess),
                   onPressed: () => _approveContract(id!),
                   tooltip: 'Idhinisha',
                   constraints: const BoxConstraints(),
@@ -1123,16 +1010,288 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
       decoration: BoxDecoration(
         color: _getStatusColor(status).withOpacity(0.12),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-            color: _getStatusColor(status).withOpacity(0.3)),
+        border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
       ),
       child: Text(
         _getStatusLabel(status).toUpperCase(),
-        style: TextStyle(
-          color: _getStatusColor(status),
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
+        style: TextStyle(color: _getStatusColor(status), fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// Sub-widgets (matching dashboard)
+// ════════════════════════════════════════════════════════════
+
+// Stat data holder
+class _StatItem {
+  final String value, label;
+  final IconData icon;
+  final Color accent, bg;
+  const _StatItem({
+    required this.value, required this.label,
+    required this.icon,  required this.accent, required this.bg});
+}
+
+// Stat card — horizontal scrollable
+class _StatCard2 extends StatelessWidget {
+  final _StatItem item;
+  const _StatCard2({required this.item});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 110,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(
+      color: kCardBg,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: kBorder)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Container(
+        width: 28, height: 28,
+        decoration: BoxDecoration(
+          color: item.bg, borderRadius: BorderRadius.circular(7)),
+        child: Icon(item.icon, color: item.accent, size: 14)),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(item.value,
+          style: const TextStyle(color: kSlate800, fontSize: 16,
+            fontWeight: FontWeight.w800, letterSpacing: -0.3),
+          maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 1),
+        Text(item.label,
+          style: const TextStyle(color: kSlate500, fontSize: 10)),
+      ]),
+    ]),
+  );
+}
+
+// Contract card — redesigned
+class _ContractCard extends StatelessWidget {
+  final Map<String, dynamic> contract;
+  final int? downloadingId;
+  final Function(int) onDownload;
+  final Function(int) onSend;
+  final Function(int) onApprove;
+
+  const _ContractCard({
+    required this.contract,
+    required this.downloadingId,
+    required this.onDownload,
+    required this.onSend,
+    required this.onApprove,
+  });
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'TZS 0';
+    final double v = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (v >= 1000000) return 'TZS ${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000)    return 'TZS ${(v / 1000).toStringAsFixed(1)}K';
+    return 'TZS ${v.toStringAsFixed(0)}';
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (_) {
+      return '—';
+    }
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'draft':
+        return kSlate500;
+      case 'pending_signature':
+        return kWarning;
+      case 'pending_review':
+        return kInfo;
+      case 'approved':
+        return kSuccess;
+      case 'rejected':
+        return kDanger;
+      default:
+        return kSlate500;
+    }
+  }
+
+  String _getStatusLabel(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'draft':
+        return 'Rasimu';
+      case 'pending_signature':
+        return 'Inasubiri Sahihi';
+      case 'pending_review':
+        return 'Inakaguliwa';
+      case 'approved':
+        return 'Imeidhinishwa';
+      case 'rejected':
+        return 'Imekataliwa';
+      default:
+        return status ?? 'Unknown';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final id = contract['id'] as int?;
+    final property = contract['property'] as Map<String, dynamic>? ?? {};
+    final tenant = contract['tenant'] as Map<String, dynamic>? ?? {};
+    final status = contract['status'] as String? ?? 'draft';
+    final fileName = contract['file_name'] as String?;
+    final fields = contract['fields'] as List?;
+    final isDownloading = downloadingId == id;
+    final createdAt = contract['created_at'] as String?;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: kCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with title and status
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        contract['title'] ?? 'Contract',
+                        style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w700),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (fileName != null) ...[
+                        const SizedBox(height: 3),
+                        Text('📄 $fileName', style: const TextStyle(color: kSlate400, fontSize: 11)),
+                      ],
+                      if (fields != null && fields.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text('${fields.length} sehemu', style: const TextStyle(color: kSlate500, fontSize: 10)),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(status).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    _getStatusLabel(status).toUpperCase(),
+                    style: TextStyle(color: _getStatusColor(status), fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Property Info
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: kSlate100,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 10, color: kSlate400),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          property['title'] ?? 'Mali #${contract['property_id']}',
+                          style: const TextStyle(color: kSlate800, fontSize: 12, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (property['location'] != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Text(property['location'], style: const TextStyle(color: kSlate500, fontSize: 10)),
+                    ),
+                  if (property['price'] != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text('${_formatCurrency(property['price'])}/mwezi', style: const TextStyle(color: kSlate600, fontSize: 10, fontWeight: FontWeight.w600)),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Tenant Info
+            Row(
+              children: [
+                const Icon(Icons.person, size: 10, color: kSlate400),
+                const SizedBox(width: 3),
+                Expanded(
+                  child: Text(
+                    '${tenant['user']?['first_name'] ?? ''} ${tenant['user']?['last_name'] ?? ''}'.trim().isNotEmpty
+                        ? '${tenant['user']?['first_name'] ?? ''} ${tenant['user']?['last_name'] ?? ''}'.trim()
+                        : 'Mpangaji #${contract['tenant_id']}',
+                    style: const TextStyle(color: kSlate700, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            if (tenant['user']?['email'] != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 13, top: 2),
+                child: Text(tenant['user']['email'], style: const TextStyle(color: kSlate400, fontSize: 10)),
+              ),
+            const SizedBox(height: 10),
+            // Date and Actions Row
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 10, color: kSlate400),
+                const SizedBox(width: 3),
+                Text(_formatDate(createdAt ?? ''), style: const TextStyle(color: kSlate500, fontSize: 11)),
+                const Spacer(),
+                // Actions
+                if (fileName != null)
+                  IconButton(
+                    icon: isDownloading
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: kSlate800))
+                        : const Icon(Icons.download, size: 14, color: kSlate600),
+                    onPressed: isDownloading ? null : () => onDownload(id!),
+                    tooltip: 'Pakua',
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                  ),
+                if (status == 'draft')
+                  IconButton(
+                    icon: const Icon(Icons.send, size: 14, color: kSlate600),
+                    onPressed: () => onSend(id!),
+                    tooltip: 'Tuma kwa Mpangaji',
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                  ),
+                if (status == 'pending_review')
+                  IconButton(
+                    icon: const Icon(Icons.check_circle, size: 14, color: kSuccess),
+                    onPressed: () => onApprove(id!),
+                    tooltip: 'Idhinisha',
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
     );

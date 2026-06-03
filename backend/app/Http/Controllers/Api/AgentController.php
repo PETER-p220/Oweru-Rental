@@ -231,59 +231,49 @@ class AgentController extends Controller
         $user = Auth::user();
 
         try {
-            $owners = User::whereHas('ownedProperties', function ($query) use ($user) {
-                    $query->where('agent_id', $user->id);
+            // Get all properties for this agent that have landlord contact details
+            $properties = Property::where('agent_id', $user->id)
+                ->where(function ($query) {
+                    $query->whereNotNull('landlord_name')
+                          ->where('landlord_name', '!=', '')
+                          ->orWhere(function ($q) {
+                              $q->whereNotNull('landlord_phone')
+                                ->where('landlord_phone', '!=', '');
+                          });
                 })
-                ->withCount(['ownedProperties as properties_count' => function ($query) use ($user) {
-                    $query->where('agent_id', $user->id);
-                }])
-                ->with(['ownedProperties' => function ($query) use ($user) {
-                    $query->where('agent_id', $user->id)
-                          ->select('id', 'owner_id', 'title', 'location', 'landlord_name', 'landlord_phone');
-                }])
+                ->with('owner')
                 ->get();
 
-            $owners->each(function ($owner) {
-                $propertiesWithLandlord = $owner->ownedProperties
-                    ->filter(fn($p) => !empty($p->landlord_name) || !empty($p->landlord_phone));
+            // Group by owner to match the expected data structure
+            $owners = collect();
+            $properties->groupBy('owner_id')->each(function ($props, $ownerId) use ($owners) {
+                $owner = User::find($ownerId);
+                if (!$owner) return;
 
-                $owner->properties_list = $propertiesWithLandlord
-                    ->map(fn($p) => [
+                $propertiesWithLandlord = $props->map(function ($p) {
+                    return [
                         'id'             => $p->id,
                         'title'          => $p->title,
                         'location'       => $p->location,
                         'landlord_name'  => $p->landlord_name,
                         'landlord_phone' => $p->landlord_phone,
-                    ])
-                    ->values();
+                    ];
+                });
 
-                $owner->landlord_names = $propertiesWithLandlord
-                    ->pluck('landlord_name')
-                    ->filter(fn($v) => !empty($v))
-                    ->unique()
-                    ->values()
-                    ->toArray();
-
-                $owner->landlord_phones = $propertiesWithLandlord
-                    ->pluck('landlord_phone')
-                    ->filter(fn($v) => !empty($v))
-                    ->unique()
-                    ->values()
-                    ->toArray();
-
-                $owner->has_landlord_info = $propertiesWithLandlord->isNotEmpty();
-
-                unset($owner->ownedProperties);
+                $owners->push([
+                    'id'                => $owner->id,
+                    'first_name'        => $owner->first_name,
+                    'last_name'         => $owner->last_name,
+                    'email'             => $owner->email,
+                    'properties_count'  => $props->count(),
+                    'properties_list'   => $propertiesWithLandlord,
+                    'has_landlord_info' => true,
+                ]);
             });
 
-            $owners = $owners->filter(fn($o) => $o->has_landlord_info)->values();
-
-        } catch (\Illuminate\Database\QueryException $e) {
-            if (str_contains($e->getMessage(), 'Unknown column')) {
-                $owners = collect();
-            } else {
-                throw $e;
-            }
+        } catch (\Exception $e) {
+            \Log::error('Error fetching linked owners: ' . $e->getMessage());
+            $owners = collect();
         }
 
         return response()->json(['data' => $owners]);

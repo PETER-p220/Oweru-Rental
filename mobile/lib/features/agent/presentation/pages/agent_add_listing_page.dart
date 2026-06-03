@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'dart:io';
 import '../../../../shared/services/agent_api_service.dart';
+import '../../../../shared/services/auth_service.dart';
+import '../../../../core/constants/api_config.dart';
 
 class AgentAddListingPage extends StatefulWidget {
   const AgentAddListingPage({super.key});
@@ -20,17 +23,33 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
   final _area = TextEditingController(text: '1');
   final _landlordName = TextEditingController();
   final _landlordPhone = TextEditingController();
-  
+
   String _propertyType = 'house';
   bool _available = true;
   bool _featured = false;
   bool _saving = false;
   bool _success = false;
   String _error = '';
-  
+  int? _ownerId;
+
   final List<File> _uploadedImages = [];
   final List<String> _imagePreviews = [];
   final ImagePicker _imagePicker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId();
+  }
+
+  Future<void> _loadUserId() async {
+    final user = await AuthService.getCurrentUser();
+    if (user != null && user['id'] != null) {
+      if (mounted) {
+        setState(() => _ownerId = user['id']);
+      }
+    }
+  }
 
   final List<Map<String, String>> _propertyTypes = [
     {'value': 'house', 'label': 'House'},
@@ -95,51 +114,95 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
     if (_location.text.trim().isEmpty) return 'Location is required';
     if (_bedrooms.text.trim().isEmpty || int.tryParse(_bedrooms.text.trim()) == null) return 'Bedrooms must be > 0';
     if (_bathrooms.text.trim().isEmpty || int.tryParse(_bathrooms.text.trim()) == null) return 'Bathrooms must be > 0';
+    if (_ownerId == null) return 'User ID not found. Please log in again.';
     return '';
   }
 
   Future<void> _submit() async {
+    print('🔵 Submit button pressed');
+    print('🔵 Owner ID: $_ownerId');
+    print('🔵 Token: ${AuthService.token}');   
+
     final err = _validateForm();
     if (err.isNotEmpty) {
+      print('🔴 Validation error: $err');
       setState(() => _error = err);
       return;
     }
 
+    print('🟢 Validation passed');
     setState(() {
       _saving = true;
       _error = '';
     });
 
     try {
-      final ok = await AgentApiService.createListing({
-        'title': _title.text.trim(),
-        'description': _description.text.trim(),
-        'location': _location.text.trim(),
-        'address': _location.text.trim(),
-        'price': double.tryParse(_price.text.trim()) ?? 0,
-        'property_type': 'rental',
-        'type': _propertyType,
-        'bedrooms': int.tryParse(_bedrooms.text.trim()) ?? 1,
-        'bathrooms': int.tryParse(_bathrooms.text.trim()) ?? 1,
-        'area': int.tryParse(_area.text.trim()) ?? 1,
-        'featured': _featured,
-        'available': _available,
-        'landlord_name': _landlordName.text.trim(),
-        'landlord_phone': _landlordPhone.text.trim(),
-      });
+      final url = '${ApiConfig.apiPath}/agent/listings';
+      print('🔵 API URL: $url');
+      final request = http.MultipartRequest('POST', Uri.parse(url));
+
+      // Add headers
+      request.headers['Accept'] = 'application/json';
+      request.headers['Authorization'] = 'Bearer ${AuthService.token}';
+      print('🔵 Headers: ${request.headers}');
+
+      // Add form fields
+      request.fields['title'] = _title.text.trim();
+      request.fields['description'] = _description.text.trim();
+      request.fields['location'] = _location.text.trim();
+      request.fields['address'] = _location.text.trim();
+      request.fields['price'] = _price.text.trim();
+      request.fields['type'] = _propertyType;
+      request.fields['bedrooms'] = _bedrooms.text.trim();
+      request.fields['bathrooms'] = _bathrooms.text.trim();
+      request.fields['area'] = _area.text.trim();
+      request.fields['owner_id'] = _ownerId.toString();
+      request.fields['available'] = _available.toString();
+      request.fields['featured'] = _featured.toString();
+      if (_landlordName.text.trim().isNotEmpty) {
+        request.fields['landlord_name'] = _landlordName.text.trim();
+      }
+      if (_landlordPhone.text.trim().isNotEmpty) {
+        request.fields['landlord_phone'] = _landlordPhone.text.trim();
+      }
+      print('🔵 Form fields: ${request.fields}');
+
+      // Add images
+      print('🔵 Uploading ${_uploadedImages.length} images');
+      for (var i = 0; i < _uploadedImages.length; i++) {
+        final file = _uploadedImages[i];
+        final stream = http.ByteStream(file.openRead());
+        final length = await file.length();
+        final multipartFile = http.MultipartFile(
+          'images[$i]',
+          stream,
+          length,
+          filename: file.path.split('/').last,
+        );
+        request.files.add(multipartFile);
+      }
+
+      print('🔵 Sending request...');
+      final response = await request.send();
+      print('🔵 Response status: ${response.statusCode}');
 
       if (!mounted) return;
-      
-      if (ok) {
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        print('🟢 Success');
         setState(() => _success = true);
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) Navigator.pop(context);
         });
       } else {
-        setState(() => _error = 'Failed to create listing.');
+        print('🔴 Failed with status: ${response.statusCode}');
+        final responseBody = await response.stream.bytesToString();
+        print('🔴 Response body: $responseBody');
+        setState(() => _error = 'Failed to create listing. Status: ${response.statusCode}');
       }
     } catch (e) {
-      setState(() => _error = 'Failed to create listing.');
+      print('🔴 Exception: $e');
+      setState(() => _error = 'Failed to create listing: ${e.toString()}');
     } finally {
       if (mounted) {
         setState(() => _saving = false);

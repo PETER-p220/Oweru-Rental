@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/services/tenant_api_service.dart';
 import 'tenant_theme.dart';
+import 'property_detail_page.dart';
 
 class SavedPropertiesPage extends StatefulWidget {
   const SavedPropertiesPage({super.key});
@@ -30,6 +31,34 @@ class _SavedPropertiesPageState extends State<SavedPropertiesPage> {
       if (mounted) setState(() { _properties = data; _isLoading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
+    }
+  }
+
+  Future<void> _removeProperty(int propertyId) async {
+    try {
+      final success = await TenantApiService.unsaveProperty(propertyId);
+      if (success && mounted) {
+        setState(() {
+          _properties.removeWhere((p) => p['id'] == propertyId);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Property removed from saved'),
+            backgroundColor: kSuccess,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to remove property: ${e.toString()}'),
+            backgroundColor: kDanger,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -98,93 +127,179 @@ class _SavedPropertiesPageState extends State<SavedPropertiesPage> {
   );
 
   Widget _card(Map<String, dynamic> prop) {
-    final title     = prop['title']?.toString() ?? 'Property';
-    final location  = prop['location']?.toString() ?? '';
-    final price     = prop['price'] ?? 0;
-    final bedrooms  = prop['bedrooms'] ?? 1;
+    final title = prop['title']?.toString() ?? 'Property';
+    final location = prop['location']?.toString() ?? '';
+    final price = prop['price'] ?? 0;
+    final bedrooms = prop['bedrooms'] ?? 1;
     final bathrooms = prop['bathrooms'] ?? 1;
-    final area      = prop['area'] ?? 0;
-    final type      = prop['type']?.toString() ?? 'Residential';
-    final id        = prop['id'] ?? 0;
+    final area = prop['area'] ?? 0;
+    final type = prop['type']?.toString() ?? 'Residential';
+    final id = prop['id'] ?? 0;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: kBg2, borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kBorder)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: [
-        // Image
-        Stack(children: [
-          Container(
-            height: 175,
-            decoration: BoxDecoration(
-              color: kBg3,
-              image: DecorationImage(
-                image: NetworkImage('https://picsum.photos/seed/prop$id/400/300'),
-                fit: BoxFit.cover)),
-          ),
-          // gradient overlay
-          Container(height: 175,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                colors: [Colors.transparent, kBg.withOpacity(0.6)]))),
-          // type badge
-          Positioned(top: 10, left: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-              decoration: BoxDecoration(
-                color: kGoldDim, borderRadius: BorderRadius.circular(5),
-                border: Border.all(color: kGoldBorder)),
-              child: Text(type.toUpperCase(),
-                style: const TextStyle(color: kGold, fontSize: 9, fontWeight: FontWeight.w700)))),
-          // remove button
-          Positioned(top: 8, right: 8,
-            child: Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(
-                color: kDanger.withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.favorite, color: kWhite, size: 16))),
-        ]),
-        // Details
-        Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title,
-              style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 5),
-            if (location.isNotEmpty)
-              Row(children: [
-                const Icon(Icons.location_on, size: 11, color: kGold),
-                const SizedBox(width: 4),
-                Expanded(child: Text(location,
-                  style: const TextStyle(color: kSlate, fontSize: 11),
-                  overflow: TextOverflow.ellipsis)),
-              ]),
-            const SizedBox(height: 12),
-            // Stats row
-            Row(children: [
-              _statChip(Icons.bed_rounded, '$bedrooms bed'),
-              const SizedBox(width: 8),
-              _statChip(Icons.bathroom_rounded, '$bathrooms bath'),
-              const SizedBox(width: 8),
-              _statChip(Icons.square_foot_rounded, '${area}m²'),
-            ]),
-            const SizedBox(height: 12),
-            Divider(color: kGold.withOpacity(0.1), height: 1),
-            const SizedBox(height: 12),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Price', style: TextStyle(color: kSlateDim, fontSize: 10)),
-                Text('TZS $price',
-                  style: const TextStyle(color: kGold, fontSize: 15, fontWeight: FontWeight.w700)),
-              ]),
-              TGoldButton(label: 'Apply Now', onTap: () {}, fullWidth: false),
-            ]),
-          ]),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PropertyDetailPage(property: prop)),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: kBg2,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: kBorder),
         ),
-      ]),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            // Image
+            Stack(
+              children: [
+                Container(
+                  height: 175,
+                  decoration: BoxDecoration(
+                    color: kBg3,
+                    image: DecorationImage(
+                      image: NetworkImage('https://picsum.photos/seed/prop$id/400/300'),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                // gradient overlay
+                Container(
+                  height: 175,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, kBg.withOpacity(0.6)],
+                    ),
+                  ),
+                ),
+                // type badge
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: kGoldDim,
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(color: kGoldBorder),
+                    ),
+                    child: Text(
+                      type.toUpperCase(),
+                      style: const TextStyle(
+                        color: kGold,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                // remove button
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () => _removeProperty(id),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: kDanger.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.favorite, color: kWhite, size: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Details
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(  
+                      color: kCream,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  if (location.isNotEmpty)
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 11, color: kGold), 
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            location,
+                            style: const TextStyle(color: kSlate, fontSize: 11),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 12),
+                  // Stats row
+                  Row(
+                    children: [
+                      _statChip(Icons.bed_rounded, '$bedrooms bed'),
+                      const SizedBox(width: 8),
+                      _statChip(Icons.bathroom_rounded, '$bathrooms bath'),
+                      const SizedBox(width: 8),
+                      _statChip(Icons.square_foot_rounded, '${area}m²'),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Divider(color: kGold.withOpacity(0.1), height: 1),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Price',
+                            style: TextStyle(color: kSlateDim, fontSize: 10),
+                          ),
+                          Text(
+                            'TZS $price',
+                            style: const TextStyle(
+                              color: kGold,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      TGoldButton(
+                        label: 'Apply Now',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PropertyDetailPage(property: prop),
+                            ),
+                          );
+                        },
+                        fullWidth: false,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

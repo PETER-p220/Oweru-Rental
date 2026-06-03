@@ -211,216 +211,200 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
     final filtered = _filteredAndSortedProperties;
 
     return Scaffold(
-      backgroundColor: kBg,
-      appBar: AppBar(
-        backgroundColor: kBg2,
-        elevation: 0,
-        title: Row(
-          children: [
-            const Icon(Icons.apartment, color: kGold, size: 28),
-            const SizedBox(width: 12),
-            const Flexible(
-              child: Text(
-                'My Properties',
-                style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: kGold.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text('${_stats['total']}', style: const TextStyle(color: kGold, fontSize: 12, fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: kGold),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LandlordAddPropertyPage()),
-            ),
+      backgroundColor: kPageBg,
+      extendBodyBehindAppBar: true,
+      body: CustomScrollView(
+        slivers: [
+          // ── Slate header (matching dashboard) ──────
+          SliverToBoxAdapter(child: _slateHeader()),
+          
+          // ── Stats row (horizontal scrollable) ──────
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            sliver: SliverToBoxAdapter(child: _statsRow()),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Stats Section — FIX: use IntrinsicHeight + flexible children to prevent overflow
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: kBg2,
-            child: IntrinsicHeight(
-              child: Row(
-                children: [
-                  Expanded(child: _buildStatCard('Total', '${_stats['total']}', kCream)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildStatCard('Available', '${_stats['available']}', const Color(0xFF10B981))),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildStatCard('Rented', '${_stats['rented']}', const Color(0xFF3B82F6))),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildStatCard('Revenue', _formatCurrency(_stats['monthlyRevenue']), const Color(0xFF38BDF8))),
-                ],
-              ),
+          
+          // ── Search and filters ───────────────────────
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            sliver: SliverToBoxAdapter(child: _searchAndFilters()),
+          ),
+          
+          // ── Properties list ──────────────────────────
+          if (_isLoading)
+            SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: kSlate800, strokeWidth: 2)))
+          else if (_error.isNotEmpty)
+            SliverFillRemaining(child: Center(child: Text(_error, style: const TextStyle(color: kDanger))))
+          else if (filtered.isEmpty)
+            SliverFillRemaining(child: _emptyState())
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+              sliver: SliverList(delegate: SliverChildBuilderDelegate(
+                (_, i) => Padding(padding: const EdgeInsets.only(bottom: 12), child: _PropertyCard(property: filtered[i])),
+                childCount: filtered.length,
+              )),
             ),
-          ),
-          // Search and Filter Section
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            color: kBg2,
-            child: Column(
-              children: [
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search properties...',
-                    hintStyle: const TextStyle(color: kSlate),
-                    filled: true,
-                    fillColor: kBg3,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    prefixIcon: const Icon(Icons.search, color: kSlate, size: 18),
-                  ),
-                  style: const TextStyle(color: kCream),
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                  },
-                ),
-                const SizedBox(height: 10),
-                // FIX: wrap filters in a Row with Flexible children to prevent right overflow
-                Row(
-                  children: [
-                    Flexible(
-                      child: _buildDropdown<String>(
-                        value: _statusFilter,
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('All Status')),
-                          DropdownMenuItem(value: 'available', child: Text('Available')),
-                          DropdownMenuItem(value: 'rented', child: Text('Rented')),
-                        ],
-                        onChanged: (v) => setState(() => _statusFilter = v ?? 'all'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: _buildDropdown<String>(
-                        value: _typeFilter,
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('All Types')),
-                          DropdownMenuItem(value: 'apartment', child: Text('Apartment')),
-                          DropdownMenuItem(value: 'house', child: Text('House')),
-                          DropdownMenuItem(value: 'studio', child: Text('Studio')),
-                          DropdownMenuItem(value: 'villa', child: Text('Villa')),
-                        ],
-                        onChanged: (v) => setState(() => _typeFilter = v ?? 'all'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: _buildDropdown<String>(
-                        value: _sortBy,
-                        items: const [
-                          DropdownMenuItem(value: 'listedDate', child: Text('Recent')),
-                          DropdownMenuItem(value: 'price-low', child: Text('Low → High')),
-                          DropdownMenuItem(value: 'price-high', child: Text('High → Low')),
-                        ],
-                        onChanged: (v) => setState(() => _sortBy = v ?? 'listedDate'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Properties List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: kGold))
-                : _error.isNotEmpty
-                    ? Center(child: Text(_error, style: const TextStyle(color: Color(0xFFE07070))))
-                    : filtered.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.apartment, size: 48, color: kSlate),
-                                SizedBox(height: 16),
-                                Text('No properties found', style: TextStyle(color: kCream, fontSize: 16)),
-                                SizedBox(height: 8),
-                                Text('Try adjusting your filters or add your first property', style: TextStyle(color: kSlate, fontSize: 13)),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) => _buildPropertyCard(filtered[index]),
-                          ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildDropdown<T>({
-    required T value,
-    required List<DropdownMenuItem<T>> items,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return DropdownButtonFormField<T>(
-      initialValue: value,
-      isExpanded: true,
-      dropdownColor: kBg3,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: kBg3,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      ),
-      style: const TextStyle(color: kCream, fontSize: 13),
-      iconEnabledColor: kGold,
-      items: items,
-      onChanged: onChanged,
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, Color color) {
+  // ── Slate header block ───────────────────────────────────
+  Widget _slateHeader() {
+    final userService = UserService();
+    final name = userService.userName ?? 'Landlord';
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: kBg3,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: kBorder),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            value,
-            style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w600),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
+      color: kHeaderBg,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 12,
+        left: 18, right: 18, bottom: 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Top bar
+        Row(children: [
+          const Text('My Properties',
+            style: TextStyle(color: kWhite, fontSize: 20,
+              fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+          const Spacer(),
+          // Add property button
+          GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LandlordAddPropertyPage())),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: kWhite,
+                borderRadius: BorderRadius.circular(8)),
+              child: const Row(children: [
+                Icon(Icons.add, size: 16, color: kSlate800),
+                SizedBox(width: 4),
+                Text('Add', style: TextStyle(color: kSlate800, fontSize: 12, fontWeight: FontWeight.w700)),
+              ]),
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(color: kSlate, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.05),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ]),
+        const SizedBox(height: 16),
+        // Stats summary
+        Text('${_stats['total']} properties · ${_stats['available']} available · ${_stats['rented']} rented',
+          style: const TextStyle(color: kSlate400, fontSize: 13)),
+      ]),
+    );
+  }
+
+  // ── Horizontal stats row ───────────────────────────────────
+  Widget _statsRow() {
+    final items = [
+      _StatItem(value: '${_stats['total']}',          label: 'Total',       icon: Icons.home_work_outlined,              accent: kSlate800, bg: kSlate100),
+      _StatItem(value: '${_stats['available']}',      label: 'Available',   icon: Icons.check_circle_outline,          accent: kSuccess,  bg: kSuccessBg),
+      _StatItem(value: '${_stats['rented']}',         label: 'Rented',      icon: Icons.people_outline,                accent: kInfo,     bg: kInfoBg),
+      _StatItem(value: _formatCurrency(_stats['monthlyRevenue']), label: 'Revenue', icon: Icons.account_balance_wallet_outlined, accent: kWarning,  bg: kWarningBg),
+    ];
+
+    return SizedBox(
+      height: 96,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) => _StatCard2(item: items[i]),
       ),
     );
   }
+
+  // ── Search and filters ────────────────────────────────────
+  Widget _searchAndFilters() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      TextField(
+        decoration: InputDecoration(
+          hintText: 'Search properties...',
+          hintStyle: const TextStyle(color: kSlate400),
+          filled: true,
+          fillColor: kWhite,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: kBorder),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: kBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: kSlate600),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          prefixIcon: const Icon(Icons.search, color: kSlate400, size: 18),
+        ),
+        style: const TextStyle(color: kSlate800, fontSize: 14),
+        onChanged: (value) => setState(() => _searchQuery = value),
+      ),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(child: _filterDropdown('Status', _statusFilter, [
+          const DropdownMenuItem(value: 'all', child: Text('All Status')),
+          const DropdownMenuItem(value: 'available', child: Text('Available')),
+          const DropdownMenuItem(value: 'rented', child: Text('Rented')),
+        ], (v) => setState(() => _statusFilter = v ?? 'all'))),
+        const SizedBox(width: 8),
+        Expanded(child: _filterDropdown('Type', _typeFilter, [
+          const DropdownMenuItem(value: 'all', child: Text('All Types')),
+          const DropdownMenuItem(value: 'apartment', child: Text('Apartment')),
+          const DropdownMenuItem(value: 'house', child: Text('House')),
+          const DropdownMenuItem(value: 'studio', child: Text('Studio')),
+          const DropdownMenuItem(value: 'villa', child: Text('Villa')),
+        ], (v) => setState(() => _typeFilter = v ?? 'all'))),
+        const SizedBox(width: 8),
+        Expanded(child: _filterDropdown('Sort', _sortBy, [
+          const DropdownMenuItem(value: 'listedDate', child: Text('Recent')),
+          const DropdownMenuItem(value: 'price-low', child: Text('Low → High')),
+          const DropdownMenuItem(value: 'price-high', child: Text('High → Low')),
+        ], (v) => setState(() => _sortBy = v ?? 'listedDate'))),
+      ]),
+    ],
+  );
+
+  Widget _filterDropdown<T>(String label, T value, List<DropdownMenuItem<T>> items, ValueChanged<T?> onChanged) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(color: kSlate500, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+      const SizedBox(height: 4),
+      Container(
+        decoration: BoxDecoration(
+          color: kWhite,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: kBorder),
+        ),
+        child: DropdownButtonHideUnderline(child: DropdownButton<T>(
+          value: value,
+          isExpanded: true,
+          dropdownColor: kWhite,
+          style: const TextStyle(color: kSlate800, fontSize: 13),
+          items: items,
+          onChanged: onChanged,
+          icon: const Icon(Icons.keyboard_arrow_down, color: kSlate400, size: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        )),
+      ),
+    ],
+  );
+
+  Widget _emptyState() => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 64),
+    child: Center(child: Column(children: [
+      Container(
+        width: 56, height: 56,
+        decoration: BoxDecoration(
+          color: kSlate200, borderRadius: BorderRadius.circular(14)),
+        child: const Icon(Icons.home_work_outlined, color: kSlate400, size: 26)),
+      const SizedBox(height: 12),
+      const Text('No properties found.',
+        style: TextStyle(color: kSlate500, fontSize: 13)),
+      const SizedBox(height: 4),
+      const Text('Try adjusting your filters or add your first property',
+        style: TextStyle(color: kSlate400, fontSize: 12)),
+    ])),
+  );
 
   Widget _buildPropertyCard(Map<String, dynamic> property) {
     final title = property['title'] as String? ?? 'Property';
@@ -429,15 +413,18 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
     final bedrooms = property['bedrooms'];
     final bathrooms = property['bathrooms'];
     final area = property['area'];
-    final description = property['description'] as String?;
     final available = property['available'] as bool?;
-    final createdAt = property['created_at'] as String?;
     final images = property['images'] as List?;
     final tenant = property['tenant'] as Map<String, dynamic>?;
     final propertyId = property['id'] as int?;
     final currentImageIndex = _carouselStates[propertyId ?? 0] ?? 0;
 
-    return LCard(
+    return Container(
+      decoration: BoxDecoration(
+        color: kCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -445,11 +432,11 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
           Stack(
             children: [
               Container(
-                height: 180,
+                height: 160,
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: kBg3,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                decoration: BoxDecoration(
+                  color: kSlate100,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
@@ -469,13 +456,13 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
                                     img.startsWith('http') ? img : 'https://rental.oweru.com/storage/$img',
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, _, _) => const Center(
-                                      child: Icon(Icons.apartment, color: kSlate, size: 48),
+                                      child: Icon(Icons.home_work_outlined, color: kSlate300, size: 48),
                                     ),
                                   )
-                                : const Center(child: Icon(Icons.apartment, color: kSlate, size: 48));
+                                : const Center(child: Icon(Icons.home_work_outlined, color: kSlate300, size: 48));
                           },
                         )
-                      : const Center(child: Icon(Icons.apartment, color: kSlate, size: 48)),
+                      : const Center(child: Icon(Icons.home_work_outlined, color: kSlate300, size: 48)),
                 ),
               ),
               // Carousel Controls
@@ -514,10 +501,10 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
                     children: List.generate(
                       images.length,
                       (index) => Container(
-                        width: 7, height: 7,
+                        width: 6, height: 6,
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
-                          color: currentImageIndex == index ? kGold : Colors.white.withOpacity(0.5),
+                          color: currentImageIndex == index ? kSlate800 : Colors.white.withOpacity(0.6),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -559,14 +546,14 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
                 child: Row(
                   children: [
                     _OverlayButton(
-                      color: kGold,
+                      color: kSlate800,
                       icon: Icons.edit,
-                      iconColor: kBg,
+                      iconColor: kWhite,
                       onPressed: () => _handleEditProperty(property),
                     ),
                     const SizedBox(width: 8),
                     _OverlayButton(
-                      color: const Color(0xFFEF4444),
+                      color: kDanger,
                       icon: Icons.delete,
                       iconColor: Colors.white,
                       onPressed: () => _handleDeleteProperty(propertyId ?? 0, title),
@@ -576,140 +563,314 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
               ),
             ],
           ),
-          // Content Section — same style as dashboard _PropertyCard
+          // Content Section
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Title
                 Text(
                   title,
-                  style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w700),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 // Location
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 13, color: kSlate),
+                    const Icon(Icons.location_on, size: 12, color: kSlate400),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         location,
-                        style: const TextStyle(color: kSlate, fontSize: 13),
+                        style: const TextStyle(color: kSlate500, fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 // Features row
                 Row(
                   children: [
                     if (bedrooms != null) ...[
-                      const Icon(Icons.bed, size: 13, color: kSlate),
-                      const SizedBox(width: 4),
-                      Text('$bedrooms bd', style: const TextStyle(color: kSlate, fontSize: 12)),
-                      const SizedBox(width: 10),
+                      const Icon(Icons.bed_outlined, size: 12, color: kSlate400),
+                      const SizedBox(width: 3),
+                      Text('$bedrooms bd', style: const TextStyle(color: kSlate500, fontSize: 11)),
+                      const SizedBox(width: 8),
                     ],
                     if (bathrooms != null) ...[
-                      const Icon(Icons.bathtub, size: 13, color: kSlate),
-                      const SizedBox(width: 4),
-                      Text('$bathrooms ba', style: const TextStyle(color: kSlate, fontSize: 12)),
-                      const SizedBox(width: 10),
+                      const Icon(Icons.bathtub_outlined, size: 12, color: kSlate400),
+                      const SizedBox(width: 3),
+                      Text('$bathrooms ba', style: const TextStyle(color: kSlate500, fontSize: 11)),
+                      const SizedBox(width: 8),
                     ],
                     if (area != null) ...[
-                      const Icon(Icons.square_foot, size: 13, color: kSlate),
-                      const SizedBox(width: 4),
-                      Text('${area}m²', style: const TextStyle(color: kSlate, fontSize: 12)),
+                      const Icon(Icons.square_foot, size: 12, color: kSlate400),
+                      const SizedBox(width: 3),
+                      Text('${area}m²', style: const TextStyle(color: kSlate500, fontSize: 11)),
                     ],
                   ],
                 ),
-                if (description != null && description.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    description,
-                    style: const TextStyle(color: kSlate, fontSize: 12, height: 1.4),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
                 // Tenant Info
                 if (tenant != null) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6).withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.2)),
+                      color: kInfoBg,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: kInfo.withOpacity(0.2)),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.people, size: 13, color: Color(0xFF3B82F6)),
-                            SizedBox(width: 6),
-                            Text('Current Tenant', style: TextStyle(color: Color(0xFF3B82F6), fontSize: 12, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${tenant['firstName'] ?? ''} ${tenant['lastName'] ?? ''}'.trim(),
-                          style: const TextStyle(color: kCream, fontSize: 13),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (tenant['contractStart'] != null || tenant['contractEnd'] != null)
-                          Text(
-                            '${_formatDate(tenant['contractStart'] ?? '')} – ${_formatDate(tenant['contractEnd'] ?? '')}',
-                            style: const TextStyle(color: kSlate, fontSize: 11),
+                        const Icon(Icons.person_outline, size: 12, color: kInfo),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${tenant['firstName'] ?? ''} ${tenant['lastName'] ?? ''}'.trim(),
+                            style: const TextStyle(color: kSlate700, fontSize: 11),
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
                       ],
                     ),
                   ),
                 ],
-                const SizedBox(height: 12),
-                // Price row — FIX: use Row with Expanded to prevent right overflow
+                const SizedBox(height: 10),
+                // Price row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _formatCurrency(price),
-                          style: const TextStyle(color: kGold, fontSize: 18, fontWeight: FontWeight.w700),
-                        ),
-                        const Text('/ month', style: TextStyle(color: kSlate, fontSize: 11)),
-                      ],
+                    Text(
+                      _formatCurrency(price),
+                      style: const TextStyle(color: kSlate800, fontSize: 16, fontWeight: FontWeight.w800),
                     ),
-                    // Views + Inquiries
-                    Row(
-                      children: [
-                        const Icon(Icons.visibility, size: 12, color: kSlate),
-                        const SizedBox(width: 4),
-                        Text('${property['views'] ?? 0}', style: const TextStyle(color: kSlate, fontSize: 11)),
-                        const SizedBox(width: 12),
-                        const Icon(Icons.info_outline, size: 12, color: kSlate),
-                        const SizedBox(width: 4),
-                        Text('${property['inquiries'] ?? 0}', style: const TextStyle(color: kSlate, fontSize: 11)),
-                      ],
+                    Text('/ month', style: const TextStyle(color: kSlate400, fontSize: 11)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// Sub-widgets (matching dashboard)
+// ════════════════════════════════════════════════════════════
+
+// Stat data holder
+class _StatItem {
+  final String value, label;
+  final IconData icon;
+  final Color accent, bg;
+  const _StatItem({
+    required this.value, required this.label,
+    required this.icon,  required this.accent, required this.bg});
+}
+
+// Stat card — horizontal scrollable
+class _StatCard2 extends StatelessWidget {
+  final _StatItem item;
+  const _StatCard2({required this.item});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 110,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(
+      color: kCardBg,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: kBorder)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Container(
+        width: 28, height: 28,
+        decoration: BoxDecoration(
+          color: item.bg, borderRadius: BorderRadius.circular(7)),
+        child: Icon(item.icon, color: item.accent, size: 14)),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(item.value,
+          style: const TextStyle(color: kSlate800, fontSize: 16,
+            fontWeight: FontWeight.w800, letterSpacing: -0.3),
+          maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 1),
+        Text(item.label,
+          style: const TextStyle(color: kSlate500, fontSize: 10)),
+      ]),
+    ]),
+  );
+}
+
+// Property card — redesigned as a horizontal list item
+class _PropertyCard extends StatelessWidget {
+  final Map<String, dynamic> property;
+  const _PropertyCard({required this.property});
+
+  String _formatPrice(dynamic price) {
+    if (price == null) return 'TZS 0';
+    final double v = price is double ? price : (double.tryParse(price.toString()) ?? 0);
+    if (v >= 1000000) return 'TZS ${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000)    return 'TZS ${(v / 1000).toStringAsFixed(1)}K';
+    return 'TZS ${v.toStringAsFixed(0)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = property['title'] as String? ?? 'Property';
+    final location = property['location'] as String? ?? '';
+    final price = property['price'];
+    final bedrooms = property['bedrooms'];
+    final bathrooms = property['bathrooms'];
+    final area = property['area'];
+    final available = property['available'] as bool?;
+    final images = property['images'] as List?;
+    final tenant = property['tenant'] as Map<String, dynamic>?;
+    final propertyId = property['id'] as int?;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: kCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image Section
+          Stack(
+            children: [
+              Container(
+                height: 140,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: kSlate100,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: images != null && images.isNotEmpty
+                      ? Image.network(
+                          (images[0] as String).startsWith('http') ? images[0] as String : 'https://rental.oweru.com/storage/${images[0]}',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const Center(
+                            child: Icon(Icons.home_work_outlined, color: kSlate300, size: 40),
+                          ),
+                        )
+                      : const Center(child: Icon(Icons.home_work_outlined, color: kSlate300, size: 40)),
+                ),
+              ),
+              // Status Badge
+              Positioned(
+                top: 8, right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: (available == true ? kSuccess : kInfo).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: (available == true ? kSuccess : kInfo).withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    available == true ? 'AVAILABLE' : 'RENTED',
+                    style: TextStyle(
+                      color: available == true ? kSuccess : kInfo,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Content Section
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(color: kSlate800, fontSize: 13, fontWeight: FontWeight.w700),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 11, color: kSlate400),
+                    const SizedBox(width: 3),
+                    Expanded(
+                      child: Text(
+                        location,
+                        style: const TextStyle(color: kSlate500, fontSize: 11),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today, size: 11, color: kSlate),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Listed ${_formatDate(createdAt ?? '')}',
-                      style: const TextStyle(color: kSlate, fontSize: 11),
+                    if (bedrooms != null) ...[
+                      const Icon(Icons.bed_outlined, size: 11, color: kSlate400),
+                      const SizedBox(width: 3),
+                      Text('$bedrooms bd', style: const TextStyle(color: kSlate500, fontSize: 10)),
+                      const SizedBox(width: 8),
+                    ],
+                    if (bathrooms != null) ...[
+                      const Icon(Icons.bathtub_outlined, size: 11, color: kSlate400),
+                      const SizedBox(width: 3),
+                      Text('$bathrooms ba', style: const TextStyle(color: kSlate500, fontSize: 10)),
+                      const SizedBox(width: 8),
+                    ],
+                    if (area != null) ...[
+                      const Icon(Icons.square_foot, size: 11, color: kSlate400),
+                      const SizedBox(width: 3),
+                      Text('${area}m²', style: const TextStyle(color: kSlate500, fontSize: 10)),
+                    ],
+                  ],
+                ),
+                if (tenant != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: kInfoBg,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: kInfo.withOpacity(0.2)),
                     ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.person_outline, size: 11, color: kInfo),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${tenant['firstName'] ?? ''} ${tenant['lastName'] ?? ''}'.trim(),
+                            style: const TextStyle(color: kSlate700, fontSize: 10),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _formatPrice(price),
+                      style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w800),
+                    ),
+                    Text('/ month', style: const TextStyle(color: kSlate400, fontSize: 10)),
                   ],
                 ),
               ],

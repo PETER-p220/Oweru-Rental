@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../shared/services/agent_api_service.dart';
 
+// Oweru Brand Colors
+const Color kNavy900 = Color(0xFF0F172A);
+const Color kNavy800 = Color(0xFF141F35);
+const Color kGold = Color(0xFFC89128);
+const Color kOffWhite = Color(0xFFF8F8F9);
+const Color kSlateBlue = Color(0xFF6888BC);
+const Color kMutedBlue = Color(0xFF9AAABF);
+const Color kTableBorder = Color(0xFFC9D1DF);
+
 class AgentLinkedOwnersPage extends StatefulWidget {
   const AgentLinkedOwnersPage({super.key});
 
@@ -83,85 +92,152 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
     final showing = _filteredRows.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1218),
+      backgroundColor: kNavy900,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1D26),
+        backgroundColor: kNavy900,
         elevation: 0,
-        title: const Text('Linked Owners', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 18, fontWeight: FontWeight.w700)),
+        title: const Text('Linked Owners', style: TextStyle(color: kOffWhite, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
-      body: Column(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Panel
+            _buildHeaderPanel(totalWithInfo, totalProps, showing),
+            const SizedBox(height: 24),
+            // Table Panel
+            _buildTablePanel(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderPanel(int totalWithInfo, int totalProps, int showing) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: kNavy800,
+        border: Border.all(color: kGold.withOpacity(0.15)),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.30),
+            blurRadius: 60,
+            offset: const Offset(0, 24),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Section
-          Container(
-            padding: const EdgeInsets.all(20),
-            color: const Color(0xFF1A1D26),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Agent Workspace', style: TextStyle(color: Color(0xFF8B8680), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
-                const SizedBox(height: 16),
-                const Text('Linked Owners', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 28, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
-                const Text(
-                  'Properties where landlord contact details have been recorded.',
-                  style: TextStyle(color: Color(0xFF8B8680), fontSize: 13),
-                ),
-                const SizedBox(height: 22),
-                // Stats Grid
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard('Owners', '$totalWithInfo', const Color(0xFF38BDF8)),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard('Properties with Info', '$totalProps', const Color(0xFF22C55E)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard('Showing', '$showing', const Color(0xFFA78BFA)),
-                    ),
-                  ],
-                ),
-              ],
+          // Section Title
+          Text(
+            'AGENT WORKSPACE',
+            style: TextStyle(
+              color: kGold,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.18,
+              textBaseline: TextBaseline.alphabetic,
             ),
           ),
-          // Search Section
+          const SizedBox(height: 10),
+          // Heading
+          const Text(
+            'Linked Owners',
+            style: TextStyle(
+              color: kOffWhite,
+              fontSize: 34,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.02,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Description
+          Text(
+            'Properties where landlord contact details have been recorded.',
+            style: TextStyle(
+              color: kMutedBlue,
+              fontSize: 15,
+              height: 1.7,
+            ),
+          ),
+          const SizedBox(height: 22),
+          // Stats Grid
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard('Owners', '$totalWithInfo', const Color(0xFF38BDF8)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _buildStatCard('Properties with Info', '$totalProps', const Color(0xFF22C55E)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _buildStatCard('Showing', '$showing', const Color(0xFFA78BFA)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTablePanel() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: kNavy800,
+        border: Border.all(color: kGold.withOpacity(0.15)),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.30),
+            blurRadius: 60,
+            offset: const Offset(0, 24),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Search Input
           Container(
-            padding: const EdgeInsets.all(20),
-            color: const Color(0xFF1A1D26),
+            constraints: const BoxConstraints(maxWidth: 340),
+            margin: const EdgeInsets.only(bottom: 16),
             child: TextField(
               onChanged: (value) => setState(() => _searchQuery = value),
+              style: const TextStyle(color: kOffWhite, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Search property, location, landlord name or phone...',
-                hintStyle: const TextStyle(color: Color(0xFF8B8680)),
+                hintStyle: TextStyle(color: kMutedBlue.withOpacity(0.7)),
                 filled: true,
-                fillColor: const Color(0xFF2A2418),
+                fillColor: kOffWhite.withOpacity(0.04),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF2A2418)),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: kGold.withOpacity(0.20), width: 1.5),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF2A2418)),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: kGold.withOpacity(0.20), width: 1.5),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFC9A84C)),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: kGold, width: 1.5),
                 ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               ),
-              style: const TextStyle(color: Color(0xFFE8E1D5)),
             ),
           ),
           // Error Alert
           if (_error.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: const Color(0xFFEF4444).withOpacity(0.06),
                 borderRadius: BorderRadius.circular(10),
@@ -175,74 +251,139 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
                 ],
               ),
             ),
-          // Table Section
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              color: const Color(0xFF1A1D26),
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFC9A84C)))
-                  : _filteredRows.isEmpty
-                      ? const Center(
-                          child: Text('No properties with landlord info found.', style: TextStyle(color: Color(0xFF8B8680), fontSize: 13)),
-                        )
-                      : SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            headingRowColor: WidgetStateProperty.all(const Color(0xFF2A2418)),
-                            columns: const [
-                              DataColumn(label: Text('Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Location', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Landlord Name', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Landlord Phone', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Actions', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                            ],
-                            rows: _filteredRows.map((row) {
-                              final prop = row['prop'] as Map<String, dynamic>;
-                              final landlordName = prop['landlord_name'] as String?;
-                              final landlordPhone = prop['landlord_phone'] as String?;
-                              return DataRow(
-                                cells: [
-                                  DataCell(Text(prop['title'] ?? 'Unknown', style: const TextStyle(color: Color(0xFFE8E1D5), fontWeight: FontWeight.w500))),
-                                  DataCell(Row(
-                                    children: [
-                                      const Icon(Icons.location_on, size: 11, color: Color(0xFF8EA0B5)),
-                                      const SizedBox(width: 4),
-                                      Expanded(child: Text(prop['location'] ?? '—', style: const TextStyle(color: Color(0xFF8EA0B5), fontSize: 12))),
-                                    ],
-                                  )),
-                                  DataCell(landlordName != null
-                                      ? Text(landlordName, style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 13))
-                                      : _buildNoBadge()),
-                                  DataCell(landlordPhone != null
-                                      ? GestureDetector(
-                                          onTap: () => _makePhoneCall(landlordPhone),
-                                          child: Row(
-                                            children: [
-                                              const Icon(Icons.phone, size: 13, color: Color(0xFF38BDF8)),
-                                              const SizedBox(width: 5),
-                                              Text(landlordPhone, style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 13)),
-                                            ],
-                                          ),
-                                        )
-                                      : _buildNoBadge()),
-                                  DataCell(landlordPhone != null
-                                      ? Row(
-                                          children: [
-                                            _buildActionButton(Icons.phone, 'Call', const Color(0xFF22C55E), () => _makePhoneCall(landlordPhone)),
-                                            const SizedBox(width: 8),
-                                            _buildActionButton(Icons.message, 'WhatsApp', const Color(0xFF25D366), () => _openWhatsApp(landlordPhone)),
-                                          ],
-                                        )
-                                      : _buildNoBadge()),
-                                ],
-                              );
-                            }).toList(),
-                          ),
-                        ),
-            ),
-          ),
+          // Table
+          _isLoading
+              ? const Center(child: CircularProgressIndicator(color: kGold))
+              : _filteredRows.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Text('No properties with landlord info found.', style: TextStyle(color: kMutedBlue, fontSize: 13)),
+                      ),
+                    )
+                  : _buildDataTable(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDataTable() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: kGold.withOpacity(0.12)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowColor: WidgetStateProperty.all(kNavy900.withOpacity(0.60)),
+          headingTextStyle: const TextStyle(
+            color: kSlateBlue,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.12,
+          ),
+          dataTextStyle: const TextStyle(
+            color: kTableBorder,
+            fontSize: 13,
+          ),
+          horizontalMargin: 0,
+          columnSpacing: 16,
+          headingRowHeight: 48,
+          dataRowMinHeight: 56,
+          dataRowMaxHeight: 80,
+          border: TableBorder(
+            horizontalInside: BorderSide(color: kOffWhite.withOpacity(0.04)),
+            bottom: BorderSide(color: kGold.withOpacity(0.10)),
+          ),
+          columns: const [
+            DataColumn(
+              label: Text('PROPERTY'),
+            ),
+            DataColumn(
+              label: Text('LOCATION'),
+            ),
+            DataColumn(
+              label: Text('LANDLORD NAME'),
+            ),
+            DataColumn(
+              label: Text('LANDLORD PHONE'),
+            ),
+            DataColumn(
+              label: Text('ACTIONS'),
+            ),
+          ],
+          rows: _filteredRows.map((row) {
+            final prop = row['prop'] as Map<String, dynamic>;
+            final landlordName = prop['landlord_name'] as String?;
+            final landlordPhone = prop['landlord_phone'] as String?;
+            return DataRow(
+              cells: [
+                DataCell(
+                  Text(
+                    prop['title'] ?? 'Unknown',
+                    style: const TextStyle(
+                      color: kOffWhite,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 11, color: kMutedBlue),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          prop['location'] ?? '—',
+                          style: const TextStyle(color: kMutedBlue, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                DataCell(
+                  landlordName != null
+                      ? Text(
+                          landlordName,
+                          style: const TextStyle(color: kOffWhite, fontSize: 13),
+                        )
+                      : _buildNoBadge(),
+                ),
+                DataCell(
+                  landlordPhone != null
+                      ? GestureDetector(
+                          onTap: () => _makePhoneCall(landlordPhone),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.phone, size: 13, color: Color(0xFF38BDF8)),
+                              const SizedBox(width: 5),
+                              Text(
+                                landlordPhone,
+                                style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _buildNoBadge(),
+                ),
+                DataCell(
+                  landlordPhone != null
+                      ? Row(
+                          children: [
+                            _buildActionButton(Icons.phone, 'Call', const Color(0xFF22C55E), () => _makePhoneCall(landlordPhone)),
+                            const SizedBox(width: 8),
+                            _buildActionButton(Icons.message, 'WhatsApp', const Color(0xFF25D366), () => _openWhatsApp(landlordPhone)),
+                          ],
+                        )
+                      : _buildNoBadge(),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
       ),
     );
   }

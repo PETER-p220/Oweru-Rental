@@ -131,343 +131,291 @@ class _LandlordTenantsPageState extends State<LandlordTenantsPage> {
     final filtered = _filteredTenants;
 
     return Scaffold(
-      backgroundColor: kBg,
-      appBar: AppBar(
-        backgroundColor: kBg2,
-        elevation: 0,
-        title: const Text('My Tenants', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: _refreshing ? kSlate : kGold),
-            onPressed: _refreshing ? null : () => _loadTenants(silent: true),
+      backgroundColor: kPageBg,
+      extendBodyBehindAppBar: true,
+      body: CustomScrollView(
+        slivers: [
+          // ── Slate header (matching dashboard) ──────
+          SliverToBoxAdapter(child: _slateHeader()),
+          
+          // ── Stats row (horizontal scrollable) ──────
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            sliver: SliverToBoxAdapter(child: _statsRow()),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Header Section
-          Container(
-            padding: const EdgeInsets.all(20),
-            color: kBg2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Landlord Workspace', style: TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
-                   
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text('My Tenants', style: TextStyle(color: kCream, fontSize: 28, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
-                const Text(
-                  'Active tenant records connected to your approved applications, with contract dates and rent amounts from your live system.',
-                  style: TextStyle(color: kSlate, fontSize: 13),
-                ),
-                const SizedBox(height: 22),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildMetricCard('Active tenants', '${_tenants.length}'),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: kBg3,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: kBorder),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Search', style: TextStyle(color: kGold, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
-                            const SizedBox(height: 8),
-                            TextField(
-                              decoration: InputDecoration(
-                                hintText: 'Search tenants or properties',
-                                hintStyle: const TextStyle(color: kSlate),
-                                filled: true,
-                                fillColor: kBg2,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
-                              style: const TextStyle(color: kCream, fontSize: 13),
-                              onChanged: (value) {
-                                setState(() => _searchQuery = value);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          
+          // ── Search ───────────────────────────────────
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            sliver: SliverToBoxAdapter(child: _searchSection()),
           ),
-          // Error/Success Alerts
+          
+          // ── Error/Success Alerts ─────────────────────
           if (_error.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.06),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error, size: 16, color: Color(0xFFEF4444)),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(_error, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 14))),
-                ],
-              ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              sliver: SliverToBoxAdapter(child: _alertBanner(_error, kDanger, Icons.error)),
             ),
           if (_success.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.22)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle, size: 16, color: Color(0xFF10B981)),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(_success, style: const TextStyle(color: Color(0xFF10B981), fontSize: 14))),
-                ],
-              ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              sliver: SliverToBoxAdapter(child: _alertBanner(_success, kSuccess, Icons.check_circle)),
             ),
-          // Tenants List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: kGold))
-                : _tenants.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.people, size: 48, color: kSlate),
-                            const SizedBox(height: 16),
-                            const Text('No tenants found', style: TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'If you have approved applications, click Sync from Approved Apps above to generate tenant records automatically.',
-                              style: TextStyle(color: kSlate, fontSize: 13),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 24),
-                            ElevatedButton.icon(
-                              onPressed: _creatingTenants ? null : _handleCreateFromApproved,
-                              icon: const Icon(Icons.person_add, size: 16),
-                              label: Text(_creatingTenants ? 'Creating...' : 'Sync from Approved Apps'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kGold,
-                                foregroundColor: kBg,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : filtered.isEmpty
-                        ? const Center(
-                            child: Text('No tenants matched your search.', style: TextStyle(color: kSlate, fontSize: 13)),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) => _buildTenantCard(filtered[index]),
-                          ),
-          ),
+          
+          // ── Tenants list ────────────────────────────
+          if (_isLoading)
+            SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: kSlate800, strokeWidth: 2)))
+          else if (_tenants.isEmpty)
+            SliverFillRemaining(child: _emptyState())
+          else if (filtered.isEmpty)
+            SliverFillRemaining(child: Center(child: const Text('No tenants matched your search.', style: TextStyle(color: kSlate500, fontSize: 13))))
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+              sliver: SliverList(delegate: SliverChildBuilderDelegate(
+                (_, i) => Padding(padding: const EdgeInsets.only(bottom: 12), child: _TenantCard(tenant: filtered[i])),
+                childCount: filtered.length,
+              )),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildMetricCard(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: kBg3,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(color: kGold, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.14),
+  // ── Slate header block ───────────────────────────────────
+  Widget _slateHeader() => Container(
+    color: kHeaderBg,
+    padding: EdgeInsets.only(
+      top: MediaQuery.of(context).padding.top + 12,
+      left: 18, right: 18, bottom: 20),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // Top bar
+      Row(children: [
+        const Text('My Tenants',
+          style: TextStyle(color: kWhite, fontSize: 20,
+            fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+        const Spacer(),
+        // Refresh button
+        GestureDetector(
+          onTap: _refreshing ? null : () => _loadTenants(silent: true),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            child: Icon(Icons.refresh, 
+              color: _refreshing ? kSlate400 : kWhite, 
+              size: 20),
           ),
-          const SizedBox(height: 8),
-          Text(value, style: const TextStyle(color: kCream, fontSize: 30, fontWeight: FontWeight.w700)),
-        ],
+        ),
+      ]),
+      const SizedBox(height: 16),
+      // Stats summary
+      Text('${_tenants.length} active tenant${_tenants.length != 1 ? 's' : ''}',
+        style: const TextStyle(color: kSlate400, fontSize: 13)),
+    ]),
+  );
+
+  // ── Horizontal stats row ───────────────────────────────────
+  Widget _statsRow() {
+    final items = [
+      _StatItem(value: '${_tenants.length}',          label: 'Tenants',      icon: Icons.people_outline,                accent: kSlate800, bg: kSlate100),
+      _StatItem(value: '${_tenants.length}',          label: 'Properties',   icon: Icons.home_work_outlined,              accent: kInfo,     bg: kInfoBg),
+      _StatItem(value: 'Active',                      label: 'Status',       icon: Icons.check_circle_outline,          accent: kSuccess,  bg: kSuccessBg),
+    ];
+
+    return SizedBox(
+      height: 96,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) => _StatCard2(item: items[i]),
       ),
     );
   }
+
+  // ── Search section ────────────────────────────────────────
+  Widget _searchSection() => TextField(
+    decoration: InputDecoration(
+      hintText: 'Search tenants or properties...',
+      hintStyle: const TextStyle(color: kSlate400),
+      filled: true,
+      fillColor: kWhite,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: kBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: kBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: kSlate600),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      prefixIcon: const Icon(Icons.search, color: kSlate400, size: 18),
+    ),
+    style: const TextStyle(color: kSlate800, fontSize: 14),
+    onChanged: (value) => setState(() => _searchQuery = value),
+  );
+
+  // ── Alert banner ───────────────────────────────────────────
+  Widget _alertBanner(String message, Color color, IconData icon) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: color.withOpacity(0.2)),
+    ),
+    child: Row(children: [
+      Icon(icon, size: 16, color: color),
+      const SizedBox(width: 10),
+      Expanded(child: Text(message, style: TextStyle(color: color, fontSize: 13))),
+    ]),
+  );
+
+  // ── Empty state ────────────────────────────────────────────
+  Widget _emptyState() => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 64),
+    child: Center(child: Column(children: [
+      Container(
+        width: 56, height: 56,
+        decoration: BoxDecoration(
+          color: kSlate200, borderRadius: BorderRadius.circular(14)),
+        child: const Icon(Icons.people_outline, color: kSlate400, size: 26)),
+      const SizedBox(height: 12),
+      const Text('No tenants found.',
+        style: TextStyle(color: kSlate500, fontSize: 13)),
+      const SizedBox(height: 4),
+      const Text('Sync from approved applications to create tenant records.',
+        style: TextStyle(color: kSlate400, fontSize: 12)),
+      const SizedBox(height: 16),
+      ElevatedButton(
+        onPressed: _creatingTenants ? null : _handleCreateFromApproved,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: kSlate800,
+          foregroundColor: kWhite,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(_creatingTenants ? 'Creating...' : 'Sync from Approved Apps'),
+      ),
+    ])),
+  );
 
   Widget _buildTenantCard(Map<String, dynamic> tenant) {
     final user = tenant['user'] as Map<String, dynamic>? ?? {};
     final property = tenant['property'] as Map<String, dynamic>? ?? {};
     final contract = tenant['contract'] as Map<String, dynamic>? ?? {};
     final digitalContracts = tenant['digital_contracts'] as List?;
-    final applicationId = tenant['application_id'];
-    final application = tenant['application'] as Map<String, dynamic>? ?? {};
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: kBg2,
+        color: kCardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: kBorder),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tenant Info
-          Row(
-            children: [
-              const CircleAvatar(
-                backgroundColor: kGold,
-                child: Icon(Icons.person, color: kBg, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}',
-                      style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(user['email'] ?? 'No email', style: const TextStyle(color: kSlate, fontSize: 13)),
-                    const SizedBox(height: 2),
-                    Text(user['phone'] ?? 'No phone', style: const TextStyle(color: kSlate, fontSize: 13)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Property Info
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: kBg3,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tenant Info
+            Row(
               children: [
-                Text(property['title'] ?? 'Untitled property', style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
-                Text(property['location'] ?? 'No location', style: const TextStyle(color: kSlate, fontSize: 13)),
-                const SizedBox(height: 4),
-                Text(_formatCurrency(property['price'] ?? contract['rent_amount']), style: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w600)),
-                if (property['bedrooms'] != null || property['bathrooms'] != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      '${property['bedrooms'] ?? 0} bed · ${property['bathrooms'] ?? 0} bath',
-                      style: const TextStyle(color: kSlate, fontSize: 12),
-                    ),
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: kSlate200,
+                    shape: BoxShape.circle,
                   ),
+                  child: Center(child: Icon(Icons.person_outline, color: kSlate500, size: 20)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}',
+                        style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(user['email'] ?? 'No email', style: const TextStyle(color: kSlate400, fontSize: 12)),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          // Contract Info
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Contract Dates', style: TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 4),
-                    if (contract['start_date'] != null && contract['end_date'] != null)
-                      Text('${_formatDate(contract['start_date'])} → ${_formatDate(contract['end_date'])}', style: const TextStyle(color: kCream, fontSize: 13))
-                    else if (digitalContracts != null && digitalContracts.isNotEmpty)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Digital Contract', style: TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w600)),
-                          Text('${digitalContracts[0]['status']}'.replaceAll('_', ' '), style: const TextStyle(color: kSlate, fontSize: 12)),
-                          Text('Created: ${_formatDate(digitalContracts[0]['created_at'])}', style: const TextStyle(color: kSlate, fontSize: 11)),
-                        ],
-                      )
-                    else
-                      const Text('No active contract', style: TextStyle(color: kSlate, fontSize: 13)),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Rent', style: TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 4),
-                    Text(_formatCurrency(property['price'] ?? contract['rent_amount'] ?? 0), style: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Status', style: TextStyle(color: kSlate, fontSize: 11, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 4),
-                    if (digitalContracts != null && digitalContracts.isNotEmpty)
-                      _buildStatusBadge('${digitalContracts[0]['status']}'.replaceAll('_', ' '))
-                    else if (contract['status'] != null)
-                      _buildStatusBadge(contract['status'])
-                    else
-                      const Text('No contract', style: TextStyle(color: kSlate, fontSize: 12)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (applicationId != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            // Property Info
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: kGold.withOpacity(0.1),
+                color: kSlate100,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: kGold.withOpacity(0.3)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.description, size: 14, color: kGold),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('View Application', style: TextStyle(color: kGold, fontSize: 12, fontWeight: FontWeight.w600)),
-                        Text('ID: $applicationId ${application['status'] != null ? '· ${application['status']}' : ''}', style: const TextStyle(color: kSlate, fontSize: 10)),
-                      ],
-                    ),
+                  Text(property['title'] ?? 'Untitled property', style: const TextStyle(color: kSlate800, fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 11, color: kSlate400),
+                      const SizedBox(width: 4),
+                      Expanded(child: Text(property['location'] ?? 'No location', style: const TextStyle(color: kSlate500, fontSize: 11))),
+                    ],
                   ),
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            // Contract Info Row
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Rent', style: TextStyle(color: kSlate500, fontSize: 10, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(_formatCurrency(property['price'] ?? contract['rent_amount'] ?? 0), style: const TextStyle(color: kSlate800, fontSize: 13, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Contract', style: TextStyle(color: kSlate500, fontSize: 10, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      if (contract['start_date'] != null && contract['end_date'] != null)
+                        Text('${_formatDate(contract['start_date'])} - ${_formatDate(contract['end_date'])}', style: const TextStyle(color: kSlate600, fontSize: 11))
+                      else
+                        const Text('No dates', style: TextStyle(color: kSlate400, fontSize: 11)),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Status', style: TextStyle(color: kSlate500, fontSize: 10, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      if (digitalContracts != null && digitalContracts.isNotEmpty)
+                        _buildStatusBadge('${digitalContracts[0]['status']}'.replaceAll('_', ' '))
+                      else if (contract['status'] != null)
+                        _buildStatusBadge(contract['status'])
+                      else
+                        const Text('No contract', style: TextStyle(color: kSlate400, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -483,6 +431,231 @@ class _LandlordTenantsPageState extends State<LandlordTenantsPage> {
       child: Text(
         status.toUpperCase(),
         style: TextStyle(color: _getStatusColor(status), fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// Sub-widgets (matching dashboard)
+// ════════════════════════════════════════════════════════════
+
+// Stat data holder
+class _StatItem {
+  final String value, label;
+  final IconData icon;
+  final Color accent, bg;
+  const _StatItem({
+    required this.value, required this.label,
+    required this.icon,  required this.accent, required this.bg});
+}
+
+// Stat card — horizontal scrollable
+class _StatCard2 extends StatelessWidget {
+  final _StatItem item;
+  const _StatCard2({required this.item});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 110,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(
+      color: kCardBg,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: kBorder)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Container(
+        width: 28, height: 28,
+        decoration: BoxDecoration(
+          color: item.bg, borderRadius: BorderRadius.circular(7)),
+        child: Icon(item.icon, color: item.accent, size: 14)),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(item.value,
+          style: const TextStyle(color: kSlate800, fontSize: 16,
+            fontWeight: FontWeight.w800, letterSpacing: -0.3),
+          maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 1),
+        Text(item.label,
+          style: const TextStyle(color: kSlate500, fontSize: 10)),
+      ]),
+    ]),
+  );
+}
+
+// Tenant card — redesigned
+class _TenantCard extends StatelessWidget {
+  final Map<String, dynamic> tenant;
+  const _TenantCard({required this.tenant});
+
+  String _formatCurrency(dynamic value) {
+    if (value == null) return 'TZS 0';
+    final double v = value is double ? value : (double.tryParse(value.toString()) ?? 0);
+    if (v >= 1000000) return 'TZS ${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000)    return 'TZS ${(v / 1000).toStringAsFixed(1)}K';
+    return 'TZS ${v.toStringAsFixed(0)}';
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (_) {
+      return '—';
+    }
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'active':
+      case 'signed':
+        return kSuccess;
+      case 'pending':
+        return kWarning;
+      case 'expired':
+      case 'rejected':
+        return kDanger;
+      default:
+        return kSlate500;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = tenant['user'] as Map<String, dynamic>? ?? {};
+    final property = tenant['property'] as Map<String, dynamic>? ?? {};
+    final contract = tenant['contract'] as Map<String, dynamic>? ?? {};
+    final digitalContracts = tenant['digital_contracts'] as List?;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: kCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: kBorder),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tenant Info
+            Row(
+              children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: kSlate200,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(child: Icon(Icons.person_outline, color: kSlate500, size: 18)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${user['first_name'] ?? ''} ${user['last_name'] ?? ''}',
+                        style: const TextStyle(color: kSlate800, fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(user['email'] ?? 'No email', style: const TextStyle(color: kSlate400, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Property Info
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: kSlate100,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(property['title'] ?? 'Untitled property', style: const TextStyle(color: kSlate800, fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 10, color: kSlate400),
+                      const SizedBox(width: 3),
+                      Expanded(child: Text(property['location'] ?? 'No location', style: const TextStyle(color: kSlate500, fontSize: 10))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Contract Info Row
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Rent', style: TextStyle(color: kSlate500, fontSize: 9, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 3),
+                      Text(_formatCurrency(property['price'] ?? contract['rent_amount'] ?? 0), style: const TextStyle(color: kSlate800, fontSize: 12, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Contract', style: TextStyle(color: kSlate500, fontSize: 9, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 3),
+                      if (contract['start_date'] != null && contract['end_date'] != null)
+                        Text('${_formatDate(contract['start_date'])} - ${_formatDate(contract['end_date'])}', style: const TextStyle(color: kSlate600, fontSize: 10))
+                      else
+                        const Text('No dates', style: TextStyle(color: kSlate400, fontSize: 10)),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Status', style: TextStyle(color: kSlate500, fontSize: 9, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 3),
+                      if (digitalContracts != null && digitalContracts.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor('${digitalContracts[0]['status']}').withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: _getStatusColor('${digitalContracts[0]['status']}').withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            '${digitalContracts[0]['status']}'.replaceAll('_', ' ').toUpperCase(),
+                            style: TextStyle(color: _getStatusColor('${digitalContracts[0]['status']}'), fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                          ),
+                        )
+                      else if (contract['status'] != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(contract['status']).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: _getStatusColor(contract['status']).withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            contract['status'].toString().toUpperCase(),
+                            style: TextStyle(color: _getStatusColor(contract['status']), fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                          ),
+                        )
+                      else
+                        const Text('No contract', style: TextStyle(color: kSlate400, fontSize: 10)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -192,22 +192,22 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: kPageBg,
       appBar: AppBar(
-        backgroundColor: kBg2,
+        backgroundColor: kHeaderBg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kCream),
+          icon: const Icon(Icons.arrow_back, color: kWhite),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Add New Property', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
+        title: const Text('Add New Property', style: TextStyle(color: kWhite, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
       body: Column(
         children: [
           // Steps Indicator
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-            color: kBg2,
+            color: kHeaderBg,
             child: Row(
               children: [
                 _buildStepIndicator(1, 'Basic Info'),
@@ -221,12 +221,12 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           // Error Display
           if (_errors.isNotEmpty)
             Container(
-              padding: const EdgeInsets.all(14),
-              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.06),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
+                color: kDanger.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: kDanger.withOpacity(0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,9 +234,9 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Row(
                     children: [
-                      const Icon(Icons.error, size: 16, color: Color(0xFFEF4444)),
+                      const Icon(Icons.error, size: 16, color: kDanger),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(error, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 14))),
+                      Expanded(child: Text(error, style: const TextStyle(color: kDanger, fontSize: 13))),
                     ],
                   ),
                 )).toList(),
@@ -265,16 +265,16 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: kGold, width: 2),
-            color: isActive ? kGold : isCompleted ? kGold.withOpacity(0.3) : kBg3,
+            border: Border.all(color: kSlate800, width: 2),
+            color: isActive ? kSlate800 : isCompleted ? kSlate800.withOpacity(0.3) : kSlate100,
           ),
           child: Center(
             child: isCompleted
-                ? const Icon(Icons.check, color: kBg, size: 16)
+                ? const Icon(Icons.check, color: kWhite, size: 16)
                 : Text(
                     '$step',
                     style: TextStyle(
-                      color: isActive ? kBg : kSlate,
+                      color: isActive ? kWhite : kSlate600,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -284,7 +284,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
         Text(
           label,
           style: TextStyle(
-            color: isActive ? kGold : kSlate,
+            color: isActive ? kSlate800 : kSlate500,
             fontSize: 11,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
           ),
@@ -300,7 +300,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
         height: 2,
         margin: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: isCompleted ? kGold : kBorder,
+          color: isCompleted ? kSlate800 : kBorder,
         ),
       ),
     );
@@ -323,20 +323,20 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: kBg2,
+        color: kCardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: kBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Basic Information', style: TextStyle(color: kCream, fontSize: 20, fontWeight: FontWeight.w700)),
+          const Text('Basic Information', style: TextStyle(color: kSlate800, fontSize: 20, fontWeight: FontWeight.w700)),
           const SizedBox(height: 20),
           _buildTextField('Property Title *', _titleController, 'e.g., Modern 2BR Apartment in Masaki'),
           const SizedBox(height: 16),
           _buildTextArea('Description *', _descriptionController, 'Describe your property, highlighting key features and amenities...'),
           const SizedBox(height: 16),
-          const Text('Property Type *', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          const Text('Property Type *', style: TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           _buildPropertyTypeSelector(),
           const SizedBox(height: 16),
@@ -354,14 +354,14 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: kBg2,
+        color: kCardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: kBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Property Details', style: TextStyle(color: kCream, fontSize: 20, fontWeight: FontWeight.w700)),
+          const Text('Property Details', style: TextStyle(color: kSlate800, fontSize: 20, fontWeight: FontWeight.w700)),
           const SizedBox(height: 20),
           _buildTextField('Monthly Price (TZS) *', _priceController, 'e.g., 800000', keyboardType: TextInputType.number),
           const SizedBox(height: 16),
@@ -371,7 +371,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Bedrooms', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+                    const Text('Bedrooms', style: TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     _buildNumberField(_bedroomsController),
                   ],
@@ -382,7 +382,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Bathrooms', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+                    const Text('Bathrooms', style: TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     _buildNumberField(_bathroomsController),
                   ],
@@ -391,7 +391,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text('Location Coordinates (Optional)', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          const Text('Location Coordinates (Optional)', style: TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -415,20 +415,20 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: kBg2,
+        color: kCardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: kBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Property Features', style: TextStyle(color: kCream, fontSize: 20, fontWeight: FontWeight.w700)),
+          const Text('Property Features', style: TextStyle(color: kSlate800, fontSize: 20, fontWeight: FontWeight.w700)),
           const SizedBox(height: 20),
-          const Text('Amenities', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          const Text('Amenities', style: TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           _buildAmenitiesGrid(),
           const SizedBox(height: 16),
-          const Text('Property Images *', style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          const Text('Property Images *', style: TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           _buildImageUploadSection(),
           const SizedBox(height: 16),
@@ -444,16 +444,16 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(label, style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: const TextStyle(color: kSlate),
+            hintStyle: const TextStyle(color: kSlate400),
             filled: true,
-            fillColor: kBg3,
+            fillColor: kSlate100,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: kBorder),
@@ -464,10 +464,10 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kGold),
+              borderSide: const BorderSide(color: kSlate800),
             ),
           ),
-          style: const TextStyle(color: kCream),
+          style: const TextStyle(color: kSlate800),
         ),
       ],
     );
@@ -477,16 +477,16 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(label, style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           maxLines: 4,
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: const TextStyle(color: kSlate),
+            hintStyle: const TextStyle(color: kSlate400),
             filled: true,
-            fillColor: kBg3,
+            fillColor: kSlate100,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: kBorder),
@@ -497,10 +497,10 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kGold),
+              borderSide: const BorderSide(color: kSlate800),
             ),
           ),
-          style: const TextStyle(color: kCream),
+          style: const TextStyle(color: kSlate800),
         ),
       ],
     );
@@ -512,7 +512,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
         filled: true,
-        fillColor: kBg3,
+        fillColor: kSlate100,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: kBorder),
@@ -523,10 +523,10 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: kGold),
+          borderSide: const BorderSide(color: kSlate800),
         ),
       ),
-      style: const TextStyle(color: kCream),
+      style: const TextStyle(color: kSlate800),
     );
   }
 
@@ -547,9 +547,9 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           onTap: () => setState(() => _propertyType = type),
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected ? kGold.withOpacity(0.1) : kBg3,
+              color: isSelected ? kSlate800.withOpacity(0.1) : kSlate100,
               border: Border.all(
-                color: isSelected ? kGold : kBorder,
+                color: isSelected ? kSlate800 : kBorder,
                 width: isSelected ? 2 : 1,
               ),
               borderRadius: BorderRadius.circular(8),
@@ -558,7 +558,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
               child: Text(
                 type,
                 style: TextStyle(
-                  color: isSelected ? kGold : kCream,
+                  color: isSelected ? kSlate800 : kSlate600,
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
@@ -589,9 +589,9 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? kGold.withOpacity(0.1) : kBg3,
+              color: isSelected ? kSlate800.withOpacity(0.1) : kSlate100,
               border: Border.all(
-                color: isSelected ? kGold : kBorder,
+                color: isSelected ? kSlate800 : kBorder,
                 width: isSelected ? 2 : 1,
               ),
               borderRadius: BorderRadius.circular(8),
@@ -602,12 +602,12 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
                   width: 20,
                   height: 20,
                   decoration: BoxDecoration(
-                    border: Border.all(color: kGold, width: 2),
+                    border: Border.all(color: kSlate800, width: 2),
                     borderRadius: BorderRadius.circular(4),
-                    color: isSelected ? kGold : Colors.transparent,
+                    color: isSelected ? kSlate800 : Colors.transparent,
                   ),
                   child: isSelected
-                      ? const Icon(Icons.check, color: kBg, size: 14)
+                      ? const Icon(Icons.check, color: kWhite, size: 14)
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -615,7 +615,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
                   child: Text(
                     amenity,
                     style: TextStyle(
-                      color: isSelected ? kGold : kCream,
+                      color: isSelected ? kSlate800 : kSlate600,
                       fontSize: 12,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     ),
@@ -678,18 +678,18 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           child: Container(
             height: 150,
             decoration: BoxDecoration(
-              color: kBg3,
+              color: kSlate100,
               border: Border.all(color: kBorder, width: 2, style: BorderStyle.solid),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.cloud_upload, color: kSlate, size: 32),
+                const Icon(Icons.cloud_upload, color: kSlate400, size: 32),
                 const SizedBox(height: 8),
                 Text(
                   'Upload Images',
-                  style: TextStyle(color: kSlate, fontSize: 14),
+                  style: TextStyle(color: kSlate600, fontSize: 14),
                 ),
               ],
             ),
@@ -705,10 +705,10 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
         Checkbox(
           value: _featured,
           onChanged: (value) => setState(() => _featured = value ?? false),
-          activeColor: kGold,
+          activeColor: kSlate800,
         ),
         const SizedBox(width: 8),
-        const Text('Feature this property', style: TextStyle(color: kCream, fontSize: 14)),
+        const Text('Feature this property', style: TextStyle(color: kSlate800, fontSize: 14)),
       ],
     );
   }
@@ -723,7 +723,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
               icon: const Icon(Icons.arrow_back, size: 16),
               label: const Text('Back'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: kCream,
+                foregroundColor: kSlate800,
                 side: const BorderSide(color: kBorder),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -740,8 +740,8 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
                 ? (_isLoading ? 'Creating...' : 'Create Property')
                 : 'Next'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: kGold,
-              foregroundColor: kBg,
+              backgroundColor: kSlate800,
+              foregroundColor: kWhite,
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
           ),

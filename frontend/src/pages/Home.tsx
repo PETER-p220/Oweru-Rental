@@ -524,7 +524,7 @@ const Home = () => {
           {/* Left */}
           <div>
             <div className="hero-eyebrow"><span className="hero-dot" /> Africa's Premier Rental Platform</div>
-            <h1 className="hero-title">Find Your<br /><strong>Perfect Rental</strong><br />Property</h1>
+            <h1 className="hero-title">Find Your<br/><strong>Perfect Rental</strong><br/>Property</h1>
             <p className="hero-sub">Connect with trusted landlords and professional agents across Africa. Residential, commercial, and short-stay all in one place.</p>
             <div className="hero-btns">
               <Link to="/properties" className="btn-primary">Browse All <ArrowRight size={15} /></Link>
