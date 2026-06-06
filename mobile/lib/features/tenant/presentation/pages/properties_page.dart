@@ -97,7 +97,7 @@ Color _sourceBadgeColor(SourceFilter s) {
   switch (s) {
     case SourceFilter.agent: return kGold;
     case SourceFilter.admin: return const Color(0xFF10B981);
-    case SourceFilter.landlord: return kBg.withOpacity(0.85);
+    case SourceFilter.landlord: return kBg.withValues(alpha: 0.85);
     case SourceFilter.all: return kBg;
   }
 }
@@ -115,7 +115,9 @@ List<int?> _getPageNumbers(int current, int total) {
   if (current > 3) pages.add(null);
   final start = (current - 1).clamp(2, total - 1);
   final end = (current + 1).clamp(2, total - 1);
-  for (int i = start; i <= end; i++) pages.add(i);
+  for (int i = start; i <= end; i++) {
+    pages.add(i);
+  }
   if (current < total - 2) pages.add(null);
   pages.add(total);
   return pages;
@@ -230,12 +232,14 @@ class _PropertiesPageState extends State<PropertiesPage> {
         final data = jsonDecode(res.body);
         final items = _extractList(data);
         final pag = _extractPagination(data);
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           _properties = items;
           _pagination = pag;
           _currentPage = pg;
           _loading = false;
         });
+        }
       } else {
         if (mounted) setState(() { _error = 'Failed to load properties.'; _loading = false; });
       }
@@ -469,7 +473,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
         backgroundColor: kBg,
         body: NestedScrollView(
           controller: _scrollCtrl,
-          headerSliverBuilder: (_, __) => [
+          headerSliverBuilder: (_, _) => [
             _buildHeader(),
             SliverToBoxAdapter(child: _buildSearchBar()),
             SliverToBoxAdapter(child: _buildSourceTabs()),
@@ -584,10 +588,10 @@ class _PropertiesPageState extends State<PropertiesPage> {
                     _buildHeaderPill('Agent listings', kGoldDim, kGold, kGoldBorder),
                     const SizedBox(width: 5),
                     _buildHeaderPill('Landlord listings',
-                      Colors.white.withOpacity(0.08), Colors.white.withOpacity(0.65), Colors.white.withOpacity(0.12)),
+                      Colors.white.withValues(alpha: 0.08), Colors.white.withValues(alpha: 0.65), Colors.white.withValues(alpha: 0.12)),
                     const SizedBox(width: 5),
                     _buildHeaderPill('Oweru Rentals',
-                      const Color(0xFF10B981).withOpacity(0.12), const Color(0xFF34D399), const Color(0xFF10B981).withOpacity(0.25)),
+                      const Color(0xFF10B981).withValues(alpha: 0.12), const Color(0xFF34D399), const Color(0xFF10B981).withValues(alpha: 0.25)),
                   ],
                 ),
               ),
@@ -942,7 +946,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
   Widget _buildSkeleton() => ListView.builder(
     padding: const EdgeInsets.fromLTRB(12, 14, 12, 28),
     itemCount: 6,
-    itemBuilder: (_, __) => const Padding(
+    itemBuilder: (_, _) => const Padding(
       padding: EdgeInsets.only(bottom: 14),
       child: _SkeletonCard(),
     ),
@@ -953,8 +957,8 @@ class _PropertiesPageState extends State<PropertiesPage> {
     margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     decoration: BoxDecoration(
-      color: const Color(0xFFEF4444).withOpacity(0.08),
-      border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.25)),
+      color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+      border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.25)),
       borderRadius: BorderRadius.circular(8),
     ),
     child: Row(children: [
@@ -1028,10 +1032,12 @@ class _PropertiesPageState extends State<PropertiesPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: _getPageNumbers(_currentPage, _totalPages).map((p) {
-                if (p == null) return const Padding(
+                if (p == null) {
+                  return const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 2),
                   child: _PagBtn(label: '…', disabled: true, isDots: true),
                 );
+                }
                 return Padding(
                   padding: const EdgeInsets.only(right: 4),
                   child: _PagBtn(
@@ -1237,7 +1243,7 @@ class _PropertyCard extends StatelessWidget {
         color: kBg2,
         border: Border.all(color: kBorder),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
@@ -1259,7 +1265,7 @@ class _PropertyCard extends StatelessWidget {
         color: kBg2,
         border: Border.all(color: kBorder),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
@@ -1280,10 +1286,10 @@ class _PropertyCard extends StatelessWidget {
           ? Image.network(
               _imageUrl,
               fit: BoxFit.cover,
-              frameBuilder: (_, child, frame, __) => frame == null
+              frameBuilder: (_, child, frame, _) => frame == null
                   ? Container(color: kBg3, child: const Center(child: Icon(Icons.image_rounded, color: kSlateDim, size: 40)))
                   : child,
-              errorBuilder: (_, __, ___) =>
+              errorBuilder: (_, _, _) =>
                   Container(color: kBg3, child: const Center(child: Icon(Icons.image_rounded, color: kSlateDim, size: 40))),
             )
           : Container(color: kBg3, child: const Center(child: Icon(Icons.image_rounded, color: kSlateDim, size: 40))),
@@ -1307,7 +1313,7 @@ class _PropertyCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: _sourceBadgeColor(_source).withOpacity(0.9), borderRadius: BorderRadius.circular(5)),
+            color: _sourceBadgeColor(_source).withValues(alpha: 0.9), borderRadius: BorderRadius.circular(5)),
           child: Text(
             _source == SourceFilter.agent ? 'AGENT' :
             _source == SourceFilter.admin ? 'OWERU' : 'LANDLORD',
@@ -1321,7 +1327,7 @@ class _PropertyCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(5)),
+              color: Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(5)),
             child: Text(
               _type[0].toUpperCase() + _type.substring(1),
               style: const TextStyle(color: kCream, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
@@ -1452,7 +1458,7 @@ class _PropertyCard extends StatelessWidget {
         ],
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Divider(color: kGold.withOpacity(0.12), height: 1)),
+          child: Divider(color: kGold.withValues(alpha: 0.12), height: 1)),
         Wrap(
           spacing: 12,
           runSpacing: 4,
@@ -1558,7 +1564,7 @@ class _ToastItem extends StatelessWidget {
       color: kBg2,
       border: Border.all(color: kBorder),
       borderRadius: BorderRadius.circular(12),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 20)],
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 20)],
     ),
     child: Stack(children: [
       Positioned(left: 0, top: 0, bottom: 0, child: Container(
@@ -1569,7 +1575,7 @@ class _ToastItem extends StatelessWidget {
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
             width: 32, height: 32,
-            decoration: BoxDecoration(color: _color.withOpacity(0.12), borderRadius: BorderRadius.circular(9)),
+            decoration: BoxDecoration(color: _color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
             child: Icon(_icon, color: _color, size: 15),
           ),
           const SizedBox(width: 10),
@@ -1603,7 +1609,7 @@ class _ModalShell extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
     onTap: onClose,
     child: Container(
-      color: Colors.black.withOpacity(0.82),
+      color: Colors.black.withValues(alpha: 0.82),
       child: Center(
         child: GestureDetector(
           onTap: () {},
@@ -1614,7 +1620,7 @@ class _ModalShell extends StatelessWidget {
               color: kBg2,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: kBorder),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 60)],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 60)],
             ),
             clipBehavior: Clip.hardEdge,
             child: child,
@@ -1657,7 +1663,7 @@ class _ModalHeader extends StatelessWidget {
           child: Container(
             width: 30, height: 30,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
             child: const Icon(Icons.close, color: kSlate, size: 14),
           ),
@@ -1691,7 +1697,7 @@ class _AuthModal extends StatelessWidget {
             Column(children: [
               GestureDetector(onTap: onClose, child: Align(alignment: Alignment.centerRight,
                 child: Container(width: 30, height: 30,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
                   child: const Icon(Icons.close, color: kSlate, size: 14)))),
               const SizedBox(height: 10),
               Container(
@@ -1709,7 +1715,7 @@ class _AuthModal extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.06),
+                  color: Colors.white.withValues(alpha: 0.06),
                   border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(8)),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   const Icon(Icons.location_on_rounded, color: kGold, size: 11),
@@ -1744,7 +1750,7 @@ class _AuthModal extends StatelessWidget {
               ])),
             _AuthOption(
               icon: Icons.person_add_rounded,
-              iconBg: const Color(0xFF10B981).withOpacity(0.1),
+              iconBg: const Color(0xFF10B981).withValues(alpha: 0.1),
               iconColor: const Color(0xFF10B981),
               title: 'Create a free account',
               subtitle: 'Sign up takes under a minute',
@@ -1909,7 +1915,7 @@ class _PaymentModal extends StatelessWidget {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       decoration: BoxDecoration(
-                        color: sel ? col.withOpacity(0.1) : kBg3,
+                        color: sel ? col.withValues(alpha: 0.1) : kBg3,
                         border: Border.all(color: sel ? col : kBorder, width: sel ? 1.5 : 1),
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -1951,8 +1957,8 @@ class _PaymentModal extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.08),
-                  border: Border.all(color: const Color(0xFF10B981).withOpacity(0.2)),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.2)),
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: const Row(children: [
@@ -2005,8 +2011,8 @@ class _SuccessModal extends StatelessWidget {
             Container(
               width: 60, height: 60,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.14),
-                border: Border.all(color: Colors.white.withOpacity(0.22)),
+                color: Colors.white.withValues(alpha: 0.14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
                 shape: BoxShape.circle),
               child: const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 26)),
             const SizedBox(height: 14),
@@ -2054,7 +2060,7 @@ class _SuccessStep extends StatelessWidget {
       Container(
         width: 28, height: 28,
         decoration: BoxDecoration(
-          color: const Color(0xFF10B981).withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+          color: const Color(0xFF10B981).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
         child: Icon(icon, color: const Color(0xFF10B981), size: 13)),
       const SizedBox(width: 10),
       Expanded(child: Text(label, style: const TextStyle(color: kCream, fontSize: 12))),

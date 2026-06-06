@@ -165,7 +165,7 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: kGold.withOpacity(0.4),
+                    color: kGold.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -271,7 +271,7 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
                   Expanded(
                     child: Text(
                       '256-bit SSL Secured · Trusted by Selcom',
-                      style: TextStyle(color: kSuccess.withOpacity(0.9), fontSize: 12),
+                      style: TextStyle(color: kSuccess.withValues(alpha: 0.9), fontSize: 12),
                     ),
                   ),
                 ],
@@ -281,10 +281,10 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: (_result == 'success' ? kSuccess : kDanger).withOpacity(0.1),
+                    color: (_result == 'success' ? kSuccess : kDanger).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: (_result == 'success' ? kSuccess : kDanger).withOpacity(0.35),
+                      color: (_result == 'success' ? kSuccess : kDanger).withValues(alpha: 0.35),
                     ),
                   ),
                   child: Row(

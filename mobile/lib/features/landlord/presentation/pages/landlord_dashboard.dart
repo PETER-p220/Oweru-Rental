@@ -507,7 +507,7 @@ class _LandlordDashboardState extends State<LandlordDashboard>
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (_, i) => _StatCard2(item: items[i]),
       ),
     );

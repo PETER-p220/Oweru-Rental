@@ -224,9 +224,9 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               decoration: BoxDecoration(
-                color: kDanger.withOpacity(0.08),
+                color: kDanger.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: kDanger.withOpacity(0.2)),
+                border: Border.all(color: kDanger.withValues(alpha: 0.2)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,7 +266,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: kSlate800, width: 2),
-            color: isActive ? kSlate800 : isCompleted ? kSlate800.withOpacity(0.3) : kSlate100,
+            color: isActive ? kSlate800 : isCompleted ? kSlate800.withValues(alpha: 0.3) : kSlate100,
           ),
           child: Center(
             child: isCompleted
@@ -547,7 +547,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           onTap: () => setState(() => _propertyType = type),
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected ? kSlate800.withOpacity(0.1) : kSlate100,
+              color: isSelected ? kSlate800.withValues(alpha: 0.1) : kSlate100,
               border: Border.all(
                 color: isSelected ? kSlate800 : kBorder,
                 width: isSelected ? 2 : 1,
@@ -589,7 +589,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? kSlate800.withOpacity(0.1) : kSlate100,
+              color: isSelected ? kSlate800.withValues(alpha: 0.1) : kSlate100,
               border: Border.all(
                 color: isSelected ? kSlate800 : kBorder,
                 width: isSelected ? 2 : 1,
@@ -661,7 +661,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.close, color: Colors.white, size: 16),

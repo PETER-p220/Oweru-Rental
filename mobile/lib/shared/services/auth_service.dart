@@ -244,7 +244,7 @@ class AuthService {
         body: jsonEncode({
           'token': idToken,
           'user_type': userType,
-          if (phone != null) 'phone': phone,
+          'phone': ?phone,
         }),
       );
 

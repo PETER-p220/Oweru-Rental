@@ -329,10 +329,10 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? kGold.withOpacity(0.15) : kBg3,
+          color: isSelected ? kGold.withValues(alpha: 0.15) : kBg3,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? kGold.withOpacity(0.6) : kCardBorder,
+            color: isSelected ? kGold.withValues(alpha: 0.6) : kCardBorder,
           ),
         ),
         child: Row(
@@ -375,7 +375,7 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
         border: Border.all(color: kCardBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.18),
+            color: Colors.black.withValues(alpha: 0.18),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -395,9 +395,9 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: kGold.withOpacity(0.12),
+                    color: kGold.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
-                    border: Border.all(color: kGold.withOpacity(0.25)),
+                    border: Border.all(color: kGold.withValues(alpha: 0.25)),
                   ),
                   child: Center(
                     child: Text(
@@ -437,10 +437,10 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: _ratingColor(rating).withOpacity(0.1),
+                    color: _ratingColor(rating).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: _ratingColor(rating).withOpacity(0.3)),
+                        color: _ratingColor(rating).withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -493,9 +493,9 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: kGreen.withOpacity(0.06),
+                  color: kGreen.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: kGreen.withOpacity(0.2)),
+                  border: Border.all(color: kGreen.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,7 +517,7 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      response!,
+                      response,
                       style: const TextStyle(
                           color: kCream, fontSize: 13, height: 1.5),
                     ),
@@ -557,13 +557,13 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: hasResponse
-              ? kGreen.withOpacity(0.08)
-              : kGold.withOpacity(0.1),
+              ? kGreen.withValues(alpha: 0.08)
+              : kGold.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(7),
           border: Border.all(
             color: hasResponse
-                ? kGreen.withOpacity(0.25)
-                : kGold.withOpacity(0.3),
+                ? kGreen.withValues(alpha: 0.25)
+                : kGold.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
@@ -634,7 +634,7 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: kGold.withOpacity(0.12),
+                      color: kGold.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.reply_rounded,
@@ -693,7 +693,7 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide:
-                        BorderSide(color: kGold.withOpacity(0.5)),
+                        BorderSide(color: kGold.withValues(alpha: 0.5)),
                   ),
                   contentPadding: const EdgeInsets.all(14),
                 ),
@@ -761,7 +761,7 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       itemCount: 4,
-      itemBuilder: (_, __) => _buildSkeletonCard(),
+      itemBuilder: (_, _) => _buildSkeletonCard(),
     );
   }
 
@@ -853,9 +853,9 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: kGold.withOpacity(0.08),
+                color: kGold.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
-                border: Border.all(color: kGold.withOpacity(0.2)),
+                border: Border.all(color: kGold.withValues(alpha: 0.2)),
               ),
               child: const Icon(Icons.rate_review_rounded,
                   size: 28, color: kGold),
@@ -892,9 +892,9 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
-                    color: kGold.withOpacity(0.1),
+                    color: kGold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: kGold.withOpacity(0.3)),
+                    border: Border.all(color: kGold.withValues(alpha: 0.3)),
                   ),
                   child: const Text(
                     'Clear filters',
@@ -918,9 +918,9 @@ class _BnbReviewsPageState extends State<BnbReviewsPage> {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: kRed.withOpacity(0.06),
+        color: kRed.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: kRed.withOpacity(0.2)),
+        border: Border.all(color: kRed.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [

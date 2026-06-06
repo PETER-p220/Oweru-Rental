@@ -264,9 +264,9 @@ class MessagesService {
       'receiver_id': receiverId,
       'content': content,
       'type': type,
-      if (propertyId != null) 'property_id': propertyId,
-      if (replyToId != null) 'reply_to_id': replyToId,
-      if (attachments != null) 'attachments': attachments,
+      'property_id': ?propertyId,
+      'reply_to_id': ?replyToId,
+      'attachments': ?attachments,
     });
     return Message.fromJson(response['data']);
   }
@@ -303,8 +303,8 @@ class MessagesService {
   // Mark messages as read
   static Future<void> markAsRead({List<int>? messageIds, int? senderId}) async {
     await _request('messages/mark-read', method: 'POST', body: {
-      if (messageIds != null) 'message_ids': messageIds,
-      if (senderId != null) 'sender_id': senderId,
+      'message_ids': ?messageIds,
+      'sender_id': ?senderId,
     });
   }
 

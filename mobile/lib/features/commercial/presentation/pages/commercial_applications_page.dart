@@ -232,7 +232,7 @@ class _CommercialApplicationsPageState extends State<CommercialApplicationsPage>
         color: kSurface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: kBorder),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 1))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 1))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
@@ -288,7 +288,7 @@ class _CommercialApplicationsPageState extends State<CommercialApplicationsPage>
                 maxLines: 1, overflow: TextOverflow.ellipsis),
             ])),
             // Date
-            Text('${_formatDate(createdAt ?? '')}',
+            Text(_formatDate(createdAt ?? ''),
               style: const TextStyle(color: kSlate300, fontSize: 10)),
             const SizedBox(width: 8),
             // Action buttons
@@ -327,9 +327,9 @@ class _CommercialApplicationsPageState extends State<CommercialApplicationsPage>
       child: Container(
         width: 30, height: 30,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Icon(icon, color: color, size: 14),
       ),
@@ -342,9 +342,9 @@ class _CommercialApplicationsPageState extends State<CommercialApplicationsPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(_statusIcon(status), size: 10, color: color),

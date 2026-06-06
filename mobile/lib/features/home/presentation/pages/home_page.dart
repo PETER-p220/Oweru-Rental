@@ -319,7 +319,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         color: kWhite,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 24, offset: const Offset(0, -4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, -4)),
         ],
       ),
       child: Column(
@@ -672,7 +672,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void _showBooking(Map<String, dynamic> property) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withValues(alpha: 0.5),
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
@@ -888,8 +888,8 @@ class _CommCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: kWhite.withOpacity(0.08),
-          border: Border.all(color: kWhite.withOpacity(0.12)),
+          color: kWhite.withValues(alpha: 0.08),
+          border: Border.all(color: kWhite.withValues(alpha: 0.12)),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -908,7 +908,7 @@ class _CommCard extends StatelessWidget {
               Positioned(top: 10, right: 10,
                   child: _Chip(
                     label: commercialTypeLabel(p['type']).toUpperCase(),
-                    bg: kWhite.withOpacity(0.12),
+                    bg: kWhite.withValues(alpha: 0.12),
                     fg: kWhite,
                     bordered: true,
                   )),
@@ -998,7 +998,7 @@ class _Chip extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
     decoration: BoxDecoration(
       color: bg,
-      border: bordered ? Border.all(color: fg.withOpacity(0.3)) : null,
+      border: bordered ? Border.all(color: fg.withValues(alpha: 0.3)) : null,
       borderRadius: BorderRadius.circular(6),
     ),
     child: Text(label,
@@ -1014,7 +1014,7 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
     decoration: BoxDecoration(
-      color: kWhite.withOpacity(0.08),
+      color: kWhite.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(4),
     ),
     child: Text(label,
@@ -1033,7 +1033,7 @@ class _StatusDot extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1076,8 +1076,8 @@ class _TrustChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
     decoration: BoxDecoration(
-      color: kWhite.withOpacity(0.06),
-      border: Border.all(color: kWhite.withOpacity(0.1)),
+      color: kWhite.withValues(alpha: 0.06),
+      border: Border.all(color: kWhite.withValues(alpha: 0.1)),
       borderRadius: BorderRadius.circular(20),
     ),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1120,12 +1120,12 @@ class _OutlineButtonLight extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
       decoration: BoxDecoration(
-        border: Border.all(color: kWhite.withOpacity(0.2)),
+        border: Border.all(color: kWhite.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(label,
           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
-              color: kWhite.withOpacity(0.8))),
+              color: kWhite.withValues(alpha: 0.8))),
     ),
   );
 }
@@ -1216,8 +1216,8 @@ class _SkeletonGridState extends State<_SkeletonGrid> with SingleTickerProviderS
         children: List.generate(widget.count, (i) => Container(
           width: itemW, height: 280,
           decoration: BoxDecoration(
-            color: widget.dark ? kWhite.withOpacity(0.06) : kSlate100,
-            border: Border.all(color: widget.dark ? kWhite.withOpacity(0.08) : kSlate200),
+            color: widget.dark ? kWhite.withValues(alpha: 0.06) : kSlate100,
+            border: Border.all(color: widget.dark ? kWhite.withValues(alpha: 0.08) : kSlate200),
             borderRadius: BorderRadius.circular(14),
           ),
         )),
@@ -1243,7 +1243,7 @@ class _EmptyState extends StatelessWidget {
         Container(
           width: 64, height: 64,
           decoration: BoxDecoration(
-            color: dark ? kWhite.withOpacity(0.06) : kSlate100,
+            color: dark ? kWhite.withValues(alpha: 0.06) : kSlate100,
             shape: BoxShape.circle,
           ),
           child: Icon(icon, size: 28, color: kSlate400),

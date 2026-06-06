@@ -301,8 +301,8 @@ class _LoginPageState extends State<LoginPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFe07070).withOpacity(0.1),
-                    border: Border.all(color: const Color(0xFFe07070).withOpacity(0.3)),
+                    color: const Color(0xFFe07070).withValues(alpha: 0.1),
+                    border: Border.all(color: const Color(0xFFe07070).withValues(alpha: 0.3)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -331,7 +331,7 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kGold,
-                    disabledBackgroundColor: kGold.withOpacity(0.5),
+                    disabledBackgroundColor: kGold.withValues(alpha: 0.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

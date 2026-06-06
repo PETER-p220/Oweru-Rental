@@ -140,9 +140,9 @@ class _AgentCommissionsPageState extends State<AgentCommissionsPage> {
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.06),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
+                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.18)),
               ),
               child: Row(
                 children: [
@@ -219,9 +219,9 @@ class _AgentCommissionsPageState extends State<AgentCommissionsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,9 +241,9 @@ class _AgentCommissionsPageState extends State<AgentCommissionsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.12),
+        color: _getStatusColor(status).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+        border: Border.all(color: _getStatusColor(status).withValues(alpha: 0.3)),
       ),
       child: Text(
         (status ?? 'unknown').toUpperCase(),

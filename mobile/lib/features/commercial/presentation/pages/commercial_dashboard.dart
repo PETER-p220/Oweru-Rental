@@ -499,7 +499,7 @@ class _CommercialDashboardState extends State<CommercialDashboard>
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (_, i) => _StatCard(item: items[i]),
       ),
     );
@@ -818,7 +818,7 @@ class _CommercialPropertyCard extends StatelessWidget {
                             ? imageUrl
                             : 'https://rental.oweru.com/storage/$imageUrl',
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
+                        errorBuilder: (_, _, _) =>
                             const Icon(Icons.domain_outlined, color: kSlate300, size: 28))
                     : const Icon(Icons.domain_outlined, color: kSlate300, size: 28),
               ),

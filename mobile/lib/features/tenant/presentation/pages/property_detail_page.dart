@@ -303,7 +303,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
           bottom: 0, left: 0, right: 0,
           child: Container(
             height: 52,
-            color: kBg.withOpacity(.85),
+            color: kBg.withValues(alpha: .85),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -321,7 +321,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
                       border: Border.all(
                         color: active ? kGold : Colors.transparent, width: 1.8),
                       boxShadow: active
-                          ? [BoxShadow(color: kGold.withOpacity(.3), blurRadius: 5)]
+                          ? [BoxShadow(color: kGold.withValues(alpha: .3), blurRadius: 5)]
                           : null,
                     ),
                     clipBehavior: Clip.hardEdge,
@@ -421,7 +421,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
   Widget _pill(String label, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
     decoration: BoxDecoration(
-      color: color.withOpacity(.12), border: Border.all(color: color.withOpacity(.3)),
+      color: color.withValues(alpha: .12), border: Border.all(color: color.withValues(alpha: .3)),
       borderRadius: BorderRadius.circular(20)),
     child: Text(label,
       style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
@@ -530,7 +530,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
     Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: kGold.withOpacity(.08)))),
+        border: Border(bottom: BorderSide(color: kGold.withValues(alpha: .08)))),
       child: Row(children: [
         Expanded(child: Text(label,
           style: const TextStyle(color: kSlate, fontSize: 12))),
@@ -696,8 +696,8 @@ class _ThemedDialog extends StatelessWidget {
           Container(
             width: 52, height: 52,
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(.12), shape: BoxShape.circle,
-              border: Border.all(color: accentColor.withOpacity(.3))),
+              color: accentColor.withValues(alpha: .12), shape: BoxShape.circle,
+              border: Border.all(color: accentColor.withValues(alpha: .3))),
             child: Icon(icon, color: accentColor, size: 22)),
           const SizedBox(height: 14),
           Text(title,

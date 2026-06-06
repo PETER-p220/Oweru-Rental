@@ -300,7 +300,7 @@ class _LeadsPageState extends State<LeadsPage> {
                     child: ElevatedButton(
                       onPressed: null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: kGold.withOpacity(0.15),
+                        backgroundColor: kGold.withValues(alpha: 0.15),
                         foregroundColor: kGold,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -315,7 +315,7 @@ class _LeadsPageState extends State<LeadsPage> {
                     child: ElevatedButton(
                       onPressed: null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: kGold.withOpacity(0.15),
+                        backgroundColor: kGold.withValues(alpha: 0.15),
                         foregroundColor: kGold,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

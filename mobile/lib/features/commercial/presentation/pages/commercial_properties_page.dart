@@ -354,7 +354,7 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
+                    color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: kBorder),
                   ),
@@ -432,7 +432,7 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
                         icon: const Icon(Icons.edit, size: 12),
                         label: const Text('Edit', style: TextStyle(fontSize: 12)),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: kGold.withOpacity(0.08),
+                          backgroundColor: kGold.withValues(alpha: 0.08),
                           foregroundColor: kGold,
                           padding: const EdgeInsets.symmetric(vertical: 9),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -459,11 +459,11 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
                     ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFEF4444).withOpacity(0.06),
+                        backgroundColor: const Color(0xFFEF4444).withValues(alpha: 0.06),
                         foregroundColor: const Color(0xFFEF4444),
                         padding: const EdgeInsets.all(9),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        side: BorderSide(color: const Color(0xFFEF4444).withOpacity(0.12)),
+                        side: BorderSide(color: const Color(0xFFEF4444).withValues(alpha: 0.12)),
                       ),
                       child: const Icon(Icons.delete, size: 12),
                     ),
@@ -481,9 +481,9 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.08),
+        color: _getStatusColor(status).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+        border: Border.all(color: _getStatusColor(status).withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -510,7 +510,7 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: _getTypeColor(type).withOpacity(0.15),
+        color: _getTypeColor(type).withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

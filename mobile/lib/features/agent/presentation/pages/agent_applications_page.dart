@@ -186,7 +186,7 @@ class _AgentApplicationsPageState extends State<AgentApplicationsPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFE07070).withOpacity(0.1),
+                color: const Color(0xFFE07070).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(_error, style: const TextStyle(color: Color(0xFFE07070))),
@@ -236,7 +236,7 @@ class _AgentApplicationsPageState extends State<AgentApplicationsPage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: kGold.withOpacity(0.1),
+                  color: kGold.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
@@ -352,9 +352,9 @@ class _AgentApplicationsPageState extends State<AgentApplicationsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.15),
+        color: _getStatusColor(status).withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+        border: Border.all(color: _getStatusColor(status).withValues(alpha: 0.3)),
       ),
       child: Text(
         displayLabel.toUpperCase(),

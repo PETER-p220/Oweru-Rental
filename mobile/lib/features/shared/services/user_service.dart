@@ -59,22 +59,22 @@ class UserService {
     // Save to SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     if (userType != null) {
-      await prefs.setString(_keyUserType, userType!);
+      await prefs.setString(_keyUserType, userType);
     } else {
       await prefs.remove(_keyUserType);
     }
     if (token != null) {
-      await prefs.setString(_keyToken, token!);
+      await prefs.setString(_keyToken, token);
     } else {
       await prefs.remove(_keyToken);
     }
     if (userName != null) {
-      await prefs.setString(_keyUserName, userName!);
+      await prefs.setString(_keyUserName, userName);
     } else {
       await prefs.remove(_keyUserName);
     }
     if (userEmail != null) {
-      await prefs.setString(_keyUserEmail, userEmail!);
+      await prefs.setString(_keyUserEmail, userEmail);
     } else {
       await prefs.remove(_keyUserEmail);
     }

@@ -179,7 +179,7 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
             Text(createdAt, style: const TextStyle(color: kSlateDim, fontSize: 10)),
           ]),
         ),
-        Divider(color: kGold.withOpacity(0.1), height: 1),
+        Divider(color: kGold.withValues(alpha: 0.1), height: 1),
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -202,9 +202,9 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: kSuccess.withOpacity(0.1),
+                  color: kSuccess.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: kSuccess.withOpacity(0.3)),
+                  border: Border.all(color: kSuccess.withValues(alpha: 0.3)),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,

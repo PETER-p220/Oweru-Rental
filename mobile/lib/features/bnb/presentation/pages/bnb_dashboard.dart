@@ -144,7 +144,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(color: kGold.withOpacity(0.15), borderRadius: BorderRadius.circular(4), border: Border.all(color: kGold.withOpacity(0.3))),
+          decoration: BoxDecoration(color: kGold.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(4), border: Border.all(color: kGold.withValues(alpha: 0.3))),
           child: const Text('BNB', style: TextStyle(color: kGold, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
         ),
       ]),
@@ -188,14 +188,14 @@ class _BnbDashboardState extends State<BnbDashboard> {
               ])),
             ]),
           ),
-          Divider(color: kGold.withOpacity(0.2)),
+          Divider(color: kGold.withValues(alpha: 0.2)),
           ListTile(
             leading: const Icon(Icons.settings, color: kSlate, size: 20),
             title: const Text('Settings', style: TextStyle(color: kCream, fontSize: 14)),
             onTap: () { Navigator.pop(context); setState(() => _selectedIndex = 7); },
           ),
           const Spacer(),
-          Divider(color: kGold.withOpacity(0.2)),
+          Divider(color: kGold.withValues(alpha: 0.2)),
           Padding(padding: const EdgeInsets.all(16), child: LogoutButton()),
         ]),
       ),
@@ -211,7 +211,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
             child: const Text('More', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
           ),
-          Divider(color: kGold.withOpacity(0.2)),
+          Divider(color: kGold.withValues(alpha: 0.2)),
           ..._drawerItems.map((item) => ListTile(
             leading: Icon(item['icon'], color: _selectedIndex == item['index'] ? kGold : kSlate, size: 20),
             title: Text(item['label'], style: TextStyle(
@@ -219,7 +219,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
               fontWeight: _selectedIndex == item['index'] ? FontWeight.bold : FontWeight.normal,
               fontSize: 14,
             )),
-            tileColor: _selectedIndex == item['index'] ? kGold.withOpacity(0.08) : null,
+            tileColor: _selectedIndex == item['index'] ? kGold.withValues(alpha: 0.08) : null,
             onTap: () { Navigator.pop(context); setState(() => _selectedIndex = item['index']); },
           )),
         ]),
@@ -229,7 +229,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
 
   Widget _buildBottomNav() {
     return Container(
-      decoration: BoxDecoration(color: kBg2, border: Border(top: BorderSide(color: kGold.withOpacity(0.2), width: 1))),
+      decoration: BoxDecoration(color: kBg2, border: Border(top: BorderSide(color: kGold.withValues(alpha: 0.2), width: 1))),
       child: SafeArea(
         child: SizedBox(
           height: 60,
@@ -365,7 +365,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(children: [
-        Container(width: 36, height: 36, decoration: BoxDecoration(color: kGold.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.bed_rounded, color: kGold, size: 18)),
+        Container(width: 36, height: 36, decoration: BoxDecoration(color: kGold.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.bed_rounded, color: kGold, size: 18)),
         const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(propertyTitle, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
@@ -487,9 +487,9 @@ class _BnbDashboardState extends State<BnbDashboard> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [kGold.withOpacity(0.15), kGold.withOpacity(0.05)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: LinearGradient(colors: [kGold.withValues(alpha: 0.15), kGold.withValues(alpha: 0.05)], begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kGold.withOpacity(0.3)),
+        border: Border.all(color: kGold.withValues(alpha: 0.3)),
       ),
       child: Row(children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -533,7 +533,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(children: [
-        Container(width: 32, height: 32, decoration: BoxDecoration(color: kGold.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: kGold, size: 16)),
+        Container(width: 32, height: 32, decoration: BoxDecoration(color: kGold.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: Icon(icon, color: kGold, size: 16)),
         const SizedBox(width: 10),
         Expanded(child: Text(title, style: const TextStyle(color: kCream, fontSize: 13))),
         Text(value, style: const TextStyle(color: kSlate, fontSize: 12)),
@@ -554,7 +554,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
           padding: const EdgeInsets.symmetric(vertical: 52),
           decoration: BoxDecoration(color: kBg2, borderRadius: BorderRadius.circular(12), border: Border.all(color: kBorder)),
           child: Column(children: [
-            Container(width: 52, height: 52, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(12), border: Border.all(color: kGold.withOpacity(0.2))), child: Icon(icon, color: kGold.withOpacity(0.5), size: 24)),
+            Container(width: 52, height: 52, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(12), border: Border.all(color: kGold.withValues(alpha: 0.2))), child: Icon(icon, color: kGold.withValues(alpha: 0.5), size: 24)),
             const SizedBox(height: 12),
             Text(emptyTitle, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
@@ -573,7 +573,7 @@ class _BnbDashboardState extends State<BnbDashboard> {
       decoration: BoxDecoration(color: kBg2, borderRadius: BorderRadius.circular(12), border: Border.all(color: kBorder)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
-        Divider(color: kGold.withOpacity(0.15), height: 14),
+        Divider(color: kGold.withValues(alpha: 0.15), height: 14),
         child,
       ]),
     );

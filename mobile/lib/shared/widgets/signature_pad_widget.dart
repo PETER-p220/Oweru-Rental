@@ -35,7 +35,7 @@ class _SignaturePadWidgetState extends State<SignaturePadWidget> {
           decoration: BoxDecoration(
             color: const Color(0xFF162035),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: widget.strokeColor.withOpacity(0.35)),
+            border: Border.all(color: widget.strokeColor.withValues(alpha: 0.35)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -62,8 +62,8 @@ class _SignaturePadWidgetState extends State<SignaturePadWidget> {
                 height: 160,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: widget.strokeColor.withOpacity(0.4)),
-                  color: Colors.white.withOpacity(0.03),
+                  border: Border.all(color: widget.strokeColor.withValues(alpha: 0.4)),
+                  color: Colors.white.withValues(alpha: 0.03),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),

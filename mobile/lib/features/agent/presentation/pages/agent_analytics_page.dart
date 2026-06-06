@@ -113,9 +113,9 @@ class _AgentAnalyticsPageState extends State<AgentAnalyticsPage> {
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.06),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
+                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.18)),
               ),
               child: Row(
                 children: [
@@ -176,9 +176,9 @@ class _AgentAnalyticsPageState extends State<AgentAnalyticsPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

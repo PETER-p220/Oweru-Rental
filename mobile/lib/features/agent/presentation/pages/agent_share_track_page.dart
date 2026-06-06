@@ -207,9 +207,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: _gold.withOpacity(0.12),
+              color: _gold.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: _gold.withOpacity(0.25)),
+              border: Border.all(color: _gold.withValues(alpha: 0.25)),
             ),
             child: const Text(
               'AGENT WORKSPACE',
@@ -277,9 +277,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.06),
+          color: color.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +299,7 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
             Text(
               label,
               style: TextStyle(
-                color: color.withOpacity(0.7),
+                color: color.withValues(alpha: 0.7),
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
@@ -344,9 +344,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
               height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: _gold.withOpacity(0.1),
+                color: _gold.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: _gold.withOpacity(0.3)),
+                border: Border.all(color: _gold.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -356,7 +356,7 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
                     child: _refreshing
                         ? CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: _gold.withOpacity(0.7),
+                            color: _gold.withValues(alpha: 0.7),
                           )
                         : const Icon(Icons.refresh_rounded, size: 14, color: _gold),
                   ),
@@ -390,13 +390,13 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
               width: 7,
               height: 7,
               decoration: BoxDecoration(
-                color: _green.withOpacity(
-                  0.5 + 0.5 * _pulseController.value,
+                color: _green.withValues(
+                  alpha: 0.5 + 0.5 * _pulseController.value,
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: _green.withOpacity(0.3 * _pulseController.value),
+                    color: _green.withValues(alpha: 0.3 * _pulseController.value),
                     blurRadius: 6,
                     spreadRadius: 2,
                   ),
@@ -427,9 +427,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: _red.withOpacity(0.06),
+        color: _red.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _red.withOpacity(0.2)),
+        border: Border.all(color: _red.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -487,7 +487,7 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
         border: Border.all(color: _cardBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -507,9 +507,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: _gold.withOpacity(0.1),
+                    color: _gold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _gold.withOpacity(0.25)),
+                    border: Border.all(color: _gold.withValues(alpha: 0.25)),
                   ),
                   child: Center(
                     child: Text(
@@ -572,9 +572,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _gold.withOpacity(0.05),
+                  color: _gold.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _gold.withOpacity(0.15)),
+                  border: Border.all(color: _gold.withValues(alpha: 0.15)),
                 ),
                 child: Row(
                   children: [
@@ -654,9 +654,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
+        color: color.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.18)),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -687,9 +687,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(7),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -800,9 +800,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: _gold.withOpacity(0.08),
+                color: _gold.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
-                border: Border.all(color: _gold.withOpacity(0.2)),
+                border: Border.all(color: _gold.withValues(alpha: 0.2)),
               ),
               child: const Icon(
                 Icons.link_off_rounded,
@@ -838,9 +838,9 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
-                    color: _gold.withOpacity(0.1),
+                    color: _gold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _gold.withOpacity(0.3)),
+                    border: Border.all(color: _gold.withValues(alpha: 0.3)),
                   ),
                   child: const Text(
                     'Clear search',

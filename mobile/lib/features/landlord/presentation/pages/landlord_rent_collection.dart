@@ -156,7 +156,7 @@ class _LandlordRentCollectionPageState extends State<LandlordRentCollectionPage>
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (_, i) => _StatCard2(item: items[i]),
       ),
     );
@@ -166,9 +166,9 @@ class _LandlordRentCollectionPageState extends State<LandlordRentCollectionPage>
   Widget _alertBanner(String message, Color color, IconData icon) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.08),
+      color: color.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: color.withOpacity(0.2)),
+      border: Border.all(color: color.withValues(alpha: 0.2)),
     ),
     child: Row(children: [
       Icon(icon, size: 16, color: color),
@@ -312,9 +312,9 @@ class _LandlordRentCollectionPageState extends State<LandlordRentCollectionPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.12),
+        color: _getStatusColor(status).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+        border: Border.all(color: _getStatusColor(status).withValues(alpha: 0.3)),
       ),
       child: Text(
         status.toUpperCase(),
@@ -455,9 +455,9 @@ class _PaymentCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(status).withOpacity(0.12),
+                    color: _getStatusColor(status).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+                    border: Border.all(color: _getStatusColor(status).withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     (status ?? 'unknown').toUpperCase(),

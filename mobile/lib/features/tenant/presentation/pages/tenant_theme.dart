@@ -120,9 +120,9 @@ class TStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.12),
+      color: color.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: color.withOpacity(0.3)),
+      border: Border.all(color: color.withValues(alpha: 0.3)),
     ),
     child: Text(label.toUpperCase(),
       style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
@@ -189,7 +189,7 @@ class TEmptyState extends StatelessWidget {
         width: 56, height: 56,
         decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(14),
           border: Border.all(color: kGoldBorder)),
-        child: Icon(icon, color: kGold.withOpacity(0.5), size: 26),
+        child: Icon(icon, color: kGold.withValues(alpha: 0.5), size: 26),
       ),
       const SizedBox(height: 14),
       Text(title, style: const TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
@@ -210,12 +210,12 @@ class TErrorState extends StatelessWidget {
     padding: const EdgeInsets.all(32),
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       Container(width: 52, height: 52,
-        decoration: BoxDecoration(color: kDanger.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+        decoration: BoxDecoration(color: kDanger.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
         child: const Icon(Icons.error_outline_rounded, color: kDanger, size: 26)),
       const SizedBox(height: 14),
       Text(message, style: const TextStyle(color: kSlate, fontSize: 12), textAlign: TextAlign.center),
       const SizedBox(height: 18),
-      TGhostButton(label: 'Try Again', onTap: onRetry, borderColor: kDanger.withOpacity(0.4)),
+      TGhostButton(label: 'Try Again', onTap: onRetry, borderColor: kDanger.withValues(alpha: 0.4)),
     ]),
   ));
 }

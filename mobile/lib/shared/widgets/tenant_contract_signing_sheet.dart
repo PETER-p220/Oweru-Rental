@@ -82,7 +82,7 @@ class _TenantContractSigningSheetState extends State<TenantContractSigningSheet>
               height: 4,
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               decoration: BoxDecoration(
-                color: kGold.withOpacity(0.4),
+                color: kGold.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -165,9 +165,9 @@ class _TenantContractSigningSheetState extends State<TenantContractSigningSheet>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: sm.color.withOpacity(0.12),
+        color: sm.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: sm.color.withOpacity(0.35)),
+        border: Border.all(color: sm.color.withValues(alpha: 0.35)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

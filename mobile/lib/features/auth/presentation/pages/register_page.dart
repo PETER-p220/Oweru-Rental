@@ -278,7 +278,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               ),
                               borderRadius: BorderRadius.circular(8),
                               color: _userType == type['value']
-                                  ? kGold.withOpacity(0.1)
+                                  ? kGold.withValues(alpha: 0.1)
                                   : Colors.transparent,
                             ),
                             child: Row(
@@ -380,9 +380,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFe07070).withOpacity(0.1),
+                        color: const Color(0xFFe07070).withValues(alpha: 0.1),
                         border: Border.all(
-                            color: const Color(0xFFe07070).withOpacity(0.3)),
+                            color: const Color(0xFFe07070).withValues(alpha: 0.3)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -626,9 +626,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFe07070).withOpacity(0.1),
+                        color: const Color(0xFFe07070).withValues(alpha: 0.1),
                         border: Border.all(
-                            color: const Color(0xFFe07070).withOpacity(0.3)),
+                            color: const Color(0xFFe07070).withValues(alpha: 0.3)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -667,7 +667,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     onPressed: _isLoading ? null : _handleRegister,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kGold,
-                      disabledBackgroundColor: kGold.withOpacity(0.5),
+                      disabledBackgroundColor: kGold.withValues(alpha: 0.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),

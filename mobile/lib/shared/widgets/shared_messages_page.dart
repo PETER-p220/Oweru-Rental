@@ -321,8 +321,8 @@ class _SharedMessagesPageState extends State<SharedMessagesPage> {
             onPressed: _showNewChatSheet,
             icon: Icon(Icons.add_rounded, color: _cfg.accent),
             style: IconButton.styleFrom(
-              backgroundColor: _cfg.accent.withOpacity(0.12),
-              side: BorderSide(color: _cfg.accent.withOpacity(0.25)),
+              backgroundColor: _cfg.accent.withValues(alpha: 0.12),
+              side: BorderSide(color: _cfg.accent.withValues(alpha: 0.25)),
             ),
           ),
         ],
@@ -533,11 +533,11 @@ class _SharedMessagesPageState extends State<SharedMessagesPage> {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
-          colors: [_cfg.accent.withOpacity(0.2), _cfg.accent.withOpacity(0.45)],
+          colors: [_cfg.accent.withValues(alpha: 0.2), _cfg.accent.withValues(alpha: 0.45)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: _cfg.accent.withOpacity(0.35)),
+        border: Border.all(color: _cfg.accent.withValues(alpha: 0.35)),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -757,7 +757,7 @@ class _NewConversationSheetState extends State<_NewConversationSheet> {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: _displayUsers.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFF334155)),
+                    separatorBuilder: (_, _) => const Divider(height: 1, color: Color(0xFF334155)),
                     itemBuilder: (_, i) {
                       final u = _displayUsers[i];
                       return InkWell(

@@ -106,11 +106,11 @@ class _PaymentsPageState extends State<PaymentsPage> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: kBg2, borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kWarning.withOpacity(0.35))),
+        border: Border.all(color: kWarning.withValues(alpha: 0.35))),
       child: Column(children: [
         Row(children: [
           Container(width: 42, height: 42,
-            decoration: BoxDecoration(color: kWarning.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: kWarning.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
             child: const Icon(Icons.warning_amber_rounded, color: kWarning, size: 20)),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -299,7 +299,7 @@ class _PaymentModalState extends State<_PaymentModal> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
-                  color: sel ? kGold.withOpacity(0.08) : kBg3,
+                  color: sel ? kGold.withValues(alpha: 0.08) : kBg3,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: sel ? kGold : kBorder)),
                 child: Row(children: [

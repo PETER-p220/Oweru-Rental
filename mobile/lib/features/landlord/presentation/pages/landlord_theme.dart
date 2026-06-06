@@ -78,7 +78,7 @@ class LSectionHeader extends StatelessWidget {
     child: Row(children: [
       Expanded(child: Text(title,
         style: const TextStyle(color: kSlate800, fontSize: 15, fontWeight: FontWeight.w700))),
-      if (trailing != null) trailing!,
+      ?trailing,
     ]),
   );
 }
@@ -107,9 +107,9 @@ class LStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.12),
+      color: color.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: color.withOpacity(0.3)),
+      border: Border.all(color: color.withValues(alpha: 0.3)),
     ),
     child: Text(label.toUpperCase(),
       style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
@@ -200,7 +200,7 @@ class LErrorState extends StatelessWidget {
       const SizedBox(height: 14),
       Text(message, style: const TextStyle(color: kSlate500, fontSize: 12), textAlign: TextAlign.center),
       const SizedBox(height: 18),
-      LGhostButton(label: 'Try Again', onTap: onRetry, borderColor: kDanger.withOpacity(0.4)),
+      LGhostButton(label: 'Try Again', onTap: onRetry, borderColor: kDanger.withValues(alpha: 0.4)),
     ])),
   );
 }

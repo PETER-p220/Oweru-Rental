@@ -119,11 +119,11 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: kNavy800,
-        border: Border.all(color: kGold.withOpacity(0.15)),
+        border: Border.all(color: kGold.withValues(alpha: 0.15)),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.30),
+            color: Colors.black.withValues(alpha: 0.30),
             blurRadius: 60,
             offset: const Offset(0, 24),
           ),
@@ -192,11 +192,11 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: kNavy800,
-        border: Border.all(color: kGold.withOpacity(0.15)),
+        border: Border.all(color: kGold.withValues(alpha: 0.15)),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.30),
+            color: Colors.black.withValues(alpha: 0.30),
             blurRadius: 60,
             offset: const Offset(0, 24),
           ),
@@ -214,16 +214,16 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
               style: const TextStyle(color: kOffWhite, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Search property, location, landlord name or phone...',
-                hintStyle: TextStyle(color: kMutedBlue.withOpacity(0.7)),
+                hintStyle: TextStyle(color: kMutedBlue.withValues(alpha: 0.7)),
                 filled: true,
-                fillColor: kOffWhite.withOpacity(0.04),
+                fillColor: kOffWhite.withValues(alpha: 0.04),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: kGold.withOpacity(0.20), width: 1.5),
+                  borderSide: BorderSide(color: kGold.withValues(alpha: 0.20), width: 1.5),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: kGold.withOpacity(0.20), width: 1.5),
+                  borderSide: BorderSide(color: kGold.withValues(alpha: 0.20), width: 1.5),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -239,9 +239,9 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.06),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
+                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.18)),
               ),
               child: Row(
                 children: [
@@ -271,12 +271,12 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kGold.withOpacity(0.12)),
+        border: Border.all(color: kGold.withValues(alpha: 0.12)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
-          headingRowColor: WidgetStateProperty.all(kNavy900.withOpacity(0.60)),
+          headingRowColor: WidgetStateProperty.all(kNavy900.withValues(alpha: 0.60)),
           headingTextStyle: const TextStyle(
             color: kSlateBlue,
             fontSize: 11,
@@ -293,8 +293,8 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
           dataRowMinHeight: 56,
           dataRowMaxHeight: 80,
           border: TableBorder(
-            horizontalInside: BorderSide(color: kOffWhite.withOpacity(0.04)),
-            bottom: BorderSide(color: kGold.withOpacity(0.10)),
+            horizontalInside: BorderSide(color: kOffWhite.withValues(alpha: 0.04)),
+            bottom: BorderSide(color: kGold.withValues(alpha: 0.10)),
           ),
           columns: const [
             DataColumn(
@@ -392,9 +392,9 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,9 +414,9 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF8A8070).withOpacity(0.08),
+        color: const Color(0xFF8A8070).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFF8A8070).withOpacity(0.18)),
+        border: Border.all(color: const Color(0xFF8A8070).withValues(alpha: 0.18)),
       ),
       child: const Text(
         'Not set',
@@ -431,9 +431,9 @@ class _AgentLinkedOwnersPageState extends State<AgentLinkedOwnersPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

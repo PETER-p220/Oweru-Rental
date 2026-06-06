@@ -120,9 +120,9 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
               padding: const EdgeInsets.all(14),
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withOpacity(0.06),
+                color: const Color(0xFFEF4444).withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
+                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.18)),
               ),
               child: Row(
                 children: [
@@ -259,9 +259,9 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,9 +282,9 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -373,7 +373,7 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFFC9A84C).withOpacity(0.12),
+              color: const Color(0xFFC9A84C).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFF2A2418)),
             ),

@@ -82,7 +82,6 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
     }
     
     final List<XFile> images = await _imagePicker.pickMultiImage();
-    if (images == null) return;
 
     for (var image in images) {
       if (_uploadedImages.length >= 6) break;
@@ -223,8 +222,8 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withOpacity(0.12),
-                  border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3), width: 2),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3), width: 2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check_circle, size: 36, color: Color(0xFF10B981)),
@@ -271,7 +270,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFC9A84C).withOpacity(0.12),
+                      color: const Color(0xFFC9A84C).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: const Color(0xFF2A2418)),
                     ),
@@ -300,9 +299,9 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                 margin: const EdgeInsets.only(bottom: 20),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withOpacity(0.06),
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.18)),
+                  border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.18)),
                 ),
                 child: Row(
                   children: [
@@ -529,7 +528,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC9A84C).withOpacity(0.12),
+                    color: const Color(0xFFC9A84C).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFF2A2418)),
                   ),
@@ -561,7 +560,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: TextStyle(color: const Color(0xFF8B8680).withOpacity(0.4)),
+            hintStyle: TextStyle(color: const Color(0xFF8B8680).withValues(alpha: 0.4)),
             filled: true,
             fillColor: const Color(0xFF1E2D4A),
             border: OutlineInputBorder(
@@ -595,7 +594,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
           minLines: 4,
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: TextStyle(color: const Color(0xFF8B8680).withOpacity(0.4)),
+            hintStyle: TextStyle(color: const Color(0xFF8B8680).withValues(alpha: 0.4)),
             filled: true,
             fillColor: const Color(0xFF1E2D4A),
             border: OutlineInputBorder(

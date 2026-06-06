@@ -276,7 +276,7 @@ class _BnbPropertiesPageState extends State<BnbPropertiesPage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(status).withOpacity(0.9),
+                    color: _getStatusColor(status).withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -293,7 +293,7 @@ class _BnbPropertiesPageState extends State<BnbPropertiesPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -372,11 +372,11 @@ class _BnbPropertiesPageState extends State<BnbPropertiesPage> {
                         ElevatedButton(
                           onPressed: () => _showPropertyDetails(property),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF38BDF8).withOpacity(0.15),
+                            backgroundColor: const Color(0xFF38BDF8).withValues(alpha: 0.15),
                             foregroundColor: const Color(0xFF38BDF8),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            side: BorderSide(color: const Color(0xFF38BDF8).withOpacity(0.3)),
+                            side: BorderSide(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
                           ),
                           child: const Text('View', style: TextStyle(fontWeight: FontWeight.w600)),
                         ),
@@ -384,7 +384,7 @@ class _BnbPropertiesPageState extends State<BnbPropertiesPage> {
                         ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: kGold.withOpacity(0.15),
+                            backgroundColor: kGold.withValues(alpha: 0.15),
                             foregroundColor: kGold,
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -418,7 +418,7 @@ class _BnbPropertiesPageState extends State<BnbPropertiesPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: kGold.withOpacity(0.15),
+        color: kGold.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: kBorder),
       ),
@@ -611,7 +611,7 @@ class _PropertyDetailDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: kGold.withOpacity(0.15),
+        color: kGold.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: kBorder),
       ),

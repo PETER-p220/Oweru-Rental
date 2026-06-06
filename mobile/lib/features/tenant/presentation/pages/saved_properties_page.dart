@@ -173,7 +173,7 @@ class _SavedPropertiesPageState extends State<SavedPropertiesPage> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, kBg.withOpacity(0.6)],
+                      colors: [Colors.transparent, kBg.withValues(alpha: 0.6)],
                     ),
                   ),
                 ),
@@ -208,7 +208,7 @@ class _SavedPropertiesPageState extends State<SavedPropertiesPage> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: kDanger.withOpacity(0.9),
+                        color: kDanger.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(Icons.favorite, color: kWhite, size: 16),
@@ -258,7 +258,7 @@ class _SavedPropertiesPageState extends State<SavedPropertiesPage> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Divider(color: kGold.withOpacity(0.1), height: 1),
+                  Divider(color: kGold.withValues(alpha: 0.1), height: 1),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -28,7 +28,7 @@ class AppNavBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: kBg2,
       elevation: 1,
-      shadowColor: Colors.black.withOpacity(0.3),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       title: Row(
         children: [
           // Logo/Branding

@@ -24,10 +24,8 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const { pathname } = useLocation();
   const { user } = useAuth();
 
-  const userType: UserRole = (user?.userType ||
-                           user?.user_type ||
+  const userType: UserRole = (user?.user_type ||
                            user?.role ||
-                           user?.userRole ||
                            'tenant') as UserRole;
 
   const navigation: Record<UserRole, { name: string; icon: any; href: string; color: string; badge?: string }[]> = {

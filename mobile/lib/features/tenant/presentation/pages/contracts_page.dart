@@ -170,9 +170,9 @@ class _ContractsPageState extends State<ContractsPage> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: sm.color.withOpacity(0.12),
+                    color: sm.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: sm.color.withOpacity(0.25)),
+                    border: Border.all(color: sm.color.withValues(alpha: 0.25)),
                   ),
                   child: Icon(Icons.description_rounded, color: sm.color, size: 22),
                 ),
@@ -191,7 +191,7 @@ class _ContractsPageState extends State<ContractsPage> {
               ],
             ),
             const SizedBox(height: 12),
-            Divider(color: kGold.withOpacity(0.1), height: 1),
+            Divider(color: kGold.withValues(alpha: 0.1), height: 1),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

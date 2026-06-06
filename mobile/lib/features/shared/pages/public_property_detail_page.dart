@@ -308,8 +308,8 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withOpacity(0.1),
-                            border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                            color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
@@ -326,8 +326,8 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: kSlate800.withOpacity(0.1),
-                            border: Border.all(color: kSlate800.withOpacity(0.3)),
+                            color: kSlate800.withValues(alpha: 0.1),
+                            border: Border.all(color: kSlate800.withValues(alpha: 0.3)),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
@@ -591,7 +591,7 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
                                 ],
                               ),
                             ))
-                            .toList(),
+                            ,
                       ],
                     ),
                   ),
@@ -657,7 +657,7 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: kSlate800.withOpacity(0.8),
+                color: kSlate800.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -693,7 +693,7 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: kSlate800.withOpacity(0.7),
+                  color: kSlate800.withValues(alpha: 0.7),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.chevron_left, color: kSlate100, size: 20),
@@ -714,7 +714,7 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: kSlate800.withOpacity(0.7),
+                  color: kSlate800.withValues(alpha: 0.7),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.chevron_right, color: kSlate100, size: 20),
@@ -730,7 +730,7 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
             right: 0,
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              color: kSlate800.withOpacity(0.9),
+              color: kSlate800.withValues(alpha: 0.9),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -1147,7 +1147,7 @@ class _BookingFormWidgetState extends State<_BookingFormWidget> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       decoration: BoxDecoration(
-                        color: _loading ? kSlate800.withOpacity(0.6) : kSlate800,
+                        color: _loading ? kSlate800.withValues(alpha: 0.6) : kSlate800,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(

@@ -305,7 +305,7 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (_, i) => _StatCard2(item: items[i]),
       ),
     );
@@ -504,7 +504,7 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
                         width: 6, height: 6,
                         margin: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
-                          color: currentImageIndex == index ? kSlate800 : Colors.white.withOpacity(0.6),
+                          color: currentImageIndex == index ? kSlate800 : Colors.white.withValues(alpha: 0.6),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -518,9 +518,9 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(available).withOpacity(0.15),
+                    color: _getStatusColor(available).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _getStatusColor(available).withOpacity(0.3)),
+                    border: Border.all(color: _getStatusColor(available).withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -623,7 +623,7 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
                     decoration: BoxDecoration(
                       color: kInfoBg,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: kInfo.withOpacity(0.2)),
+                      border: Border.all(color: kInfo.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
@@ -772,9 +772,9 @@ class _PropertyCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: (available == true ? kSuccess : kInfo).withOpacity(0.15),
+                    color: (available == true ? kSuccess : kInfo).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: (available == true ? kSuccess : kInfo).withOpacity(0.3)),
+                    border: Border.all(color: (available == true ? kSuccess : kInfo).withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     available == true ? 'AVAILABLE' : 'RENTED',
@@ -845,7 +845,7 @@ class _PropertyCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: kInfoBg,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: kInfo.withOpacity(0.2)),
+                      border: Border.all(color: kInfo.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       children: [
@@ -897,7 +897,7 @@ class _CarouselButton extends StatelessWidget {
       width: 30,
       height: 30,
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withValues(alpha: 0.5),
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: Colors.white, size: 18),

@@ -177,7 +177,7 @@ class _TenantDashboardState extends State<TenantDashboard>
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [kBg2.withOpacity(0.98), kBg2.withOpacity(0)],
+          colors: [kBg2.withValues(alpha: 0.98), kBg2.withValues(alpha: 0)],
         ),
       ),
     ),
@@ -206,13 +206,13 @@ class _TenantDashboardState extends State<TenantDashboard>
           top: 10, right: 10,
           child: AnimatedBuilder(
             animation: _pulseAnim,
-            builder: (_, __) => Container(
+            builder: (_, _) => Container(
               width: 7, height: 7,
               decoration: BoxDecoration(
                 color: kDanger,
                 shape: BoxShape.circle,
                 border: Border.all(color: kBg2, width: 1.5),
-                boxShadow: [BoxShadow(color: kDanger.withOpacity(0.5 * _pulseAnim.value), blurRadius: 6)],
+                boxShadow: [BoxShadow(color: kDanger.withValues(alpha: 0.5 * _pulseAnim.value), blurRadius: 6)],
               ),
             ),
           ),
@@ -303,7 +303,7 @@ class _TenantDashboardState extends State<TenantDashboard>
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           decoration: BoxDecoration(
-            color: active ? Colors.white.withOpacity(0.08) : Colors.transparent,
+            color: active ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: ListTile(
@@ -326,7 +326,7 @@ class _TenantDashboardState extends State<TenantDashboard>
     decoration: BoxDecoration(
       color: kBg2,
       border: Border(top: BorderSide(color: Colors.white10, width: 0.5)),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, -4))],
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, -4))],
     ),
     child: SafeArea(child: SizedBox(
       height: 64,
@@ -343,7 +343,7 @@ class _TenantDashboardState extends State<TenantDashboard>
             duration: const Duration(milliseconds: 220),
             margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             decoration: BoxDecoration(
-              color: sel ? Colors.white.withOpacity(0.08) : Colors.transparent,
+              color: sel ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -542,7 +542,7 @@ class _TenantDashboardState extends State<TenantDashboard>
         Container(
           width: 56, height: 56,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.07),
+            color: Colors.white.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white12),
           ),
@@ -551,12 +551,12 @@ class _TenantDashboardState extends State<TenantDashboard>
         const SizedBox(height: 8),
         AnimatedBuilder(
           animation: _pulseAnim,
-          builder: (_, __) => Container(
+          builder: (_, _) => Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             decoration: BoxDecoration(
-              color: kSuccess.withOpacity(0.15 + 0.08 * _pulseAnim.value),
+              color: kSuccess.withValues(alpha: 0.15 + 0.08 * _pulseAnim.value),
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: kSuccess.withOpacity(0.4)),
+              border: Border.all(color: kSuccess.withValues(alpha: 0.4)),
             ),
             child: const Text('LIVE', style: TextStyle(color: kSuccess, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 1)),
           ),
@@ -571,7 +571,7 @@ class _TenantDashboardState extends State<TenantDashboard>
     decoration: BoxDecoration(
       color: const Color(0xFF1A0A00),
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: kDanger.withOpacity(0.4)),
+      border: Border.all(color: kDanger.withValues(alpha: 0.4)),
     ),
    
   );
@@ -723,14 +723,14 @@ class _PropertyCard extends StatelessWidget {
                   ? Image.network(
                       imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.home, color: Colors.white38, size: 24))
+                      errorBuilder: (_, _, _) => const Icon(Icons.home, color: Colors.white38, size: 24))
                   : const Icon(Icons.home, color: Colors.white38, size: 24),
             ),
           ),
           Positioned(top: 6, left: 6,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(color: kSuccess.withOpacity(0.9), borderRadius: BorderRadius.circular(4)),
+              decoration: BoxDecoration(color: kSuccess.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(4)),
               child: const Text('Available', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w700)),
             ),
           ),
@@ -826,13 +826,13 @@ class _ContractCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8)),
             child: Text(_fmtStatus(status),
                 style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
           ),
           const SizedBox(height: 4),
-          Text(_fmtCurrency(rentAmount) + '/mo',
+          Text('${_fmtCurrency(rentAmount)}/mo',
               style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
         ]),
       ]),
@@ -879,13 +879,13 @@ class _StatCard extends StatelessWidget {
         color: kBg2,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: kBorder),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Container(
             width: 30, height: 30,
-            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, color: color, size: 15),
           ),
           const Icon(Icons.arrow_forward_ios_rounded, color: kSlateDim, size: 10),
@@ -893,7 +893,7 @@ class _StatCard extends StatelessWidget {
         const SizedBox(height: 8),
         AnimatedBuilder(
           animation: ctrlAnim,
-          builder: (_, __) => Text(
+          builder: (_, _) => Text(
             '${(value * ctrlAnim.value).round()}',
             style: const TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -0.5),
           ),
@@ -933,7 +933,7 @@ class _ActionRow extends StatelessWidget {
         child: Row(children: [
           Container(
             width: 40, height: 40,
-            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: color, size: 18)),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -978,7 +978,7 @@ class _SettingsRow extends StatelessWidget {
       child: Row(children: [
         Container(
           width: 34, height: 34,
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.07), borderRadius: BorderRadius.circular(9)),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(9)),
           child: Icon(icon, color: Colors.white60, size: 16),
         ),
         const SizedBox(width: 10),

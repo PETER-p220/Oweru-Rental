@@ -295,10 +295,10 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             margin: const EdgeInsets.only(bottom: 16),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: kDanger.withOpacity(0.08),
+                              color: kDanger.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: kDanger.withOpacity(0.25),
+                                color: kDanger.withValues(alpha: 0.25),
                               ),
                             ),
                             child: Row(
@@ -414,7 +414,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             ),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
-                              value: _propertyId.isEmpty
+                              initialValue: _propertyId.isEmpty
                                   ? null
                                   : _propertyId,
                               isExpanded: true,
@@ -464,7 +464,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
                             ),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
-                              value:
+                              initialValue:
                                   _tenantId.isEmpty ? null : _tenantId,
                               isExpanded: true,
                               dropdownColor: kCardBg,
@@ -619,8 +619,8 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? kSlate800.withOpacity(0.12)
-              : kSlate100.withOpacity(0.3),
+              ? kSlate800.withValues(alpha: 0.12)
+              : kSlate100.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isSelected ? kSlate800 : kBorder,
@@ -644,7 +644,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
             Text(
               sublabel,
               style: TextStyle(
-                color: isSelected ? kSlate800.withOpacity(0.7) : kSlate400,
+                color: isSelected ? kSlate800.withValues(alpha: 0.7) : kSlate400,
                 fontSize: 10,
               ),
               textAlign: TextAlign.center,
@@ -803,7 +803,7 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (_, i) => _StatCard2(item: items[i]),
       ),
     );
@@ -813,9 +813,9 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
   Widget _alertBanner(String message, Color color, IconData icon) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.08),
+      color: color.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: color.withOpacity(0.2)),
+      border: Border.all(color: color.withValues(alpha: 0.2)),
     ),
     child: Row(children: [
       Icon(icon, size: 16, color: color),
@@ -1008,9 +1008,9 @@ class _LandlordDigitalContractPageState extends State<LandlordDigitalContractPag
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.12),
+        color: _getStatusColor(status).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+        border: Border.all(color: _getStatusColor(status).withValues(alpha: 0.3)),
       ),
       child: Text(
         _getStatusLabel(status).toUpperCase(),
@@ -1184,9 +1184,9 @@ class _ContractCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(status).withOpacity(0.12),
+                    color: _getStatusColor(status).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: _getStatusColor(status).withOpacity(0.3)),
+                    border: Border.all(color: _getStatusColor(status).withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     _getStatusLabel(status).toUpperCase(),
