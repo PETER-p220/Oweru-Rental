@@ -15,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -162,16 +161,12 @@ class AdminController extends Controller
         $user = User::findOrFail($userId);
 
         if ($user->user_type === 'admin' && User::where('user_type', 'admin')->count() <= 1) {
-            return response()->json([
-                'message' => 'Cannot delete the last admin user',
-            ], 422);
+            return response()->json(['message' => 'Cannot delete the last admin user'], 422);
         }
 
         $user->delete();
 
-        return response()->json([
-            'message' => 'User deleted successfully',
-        ]);
+        return response()->json(['message' => 'User deleted successfully']);
     }
 
     public function updateUserStatus(Request $request, $userId): JsonResponse
@@ -189,9 +184,7 @@ class AdminController extends Controller
             ], 422);
         }
 
-        $user->update([
-            'is_active' => $request->status === 'active',
-        ]);
+        $user->update(['is_active' => $request->status === 'active']);
 
         return response()->json([
             'message' => 'User status updated successfully',
@@ -245,39 +238,29 @@ class AdminController extends Controller
 
     public function uploadImages(Request $request): JsonResponse
     {
-        try {
-            $validator = Validator::make($request->all(), [
-                'images.*' => 'required|file|image|mimes:jpeg,jpg,png,gif|max:5120',
-            ]);
+        $validator = Validator::make($request->all(), [
+            'images.*' => 'required|file|image|mimes:jpeg,jpg,png,gif|max:5120',
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $uploadedImages = [];
-
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $image) {
-                    $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $image->move(public_path('storage/properties'), $imageName);
-                    $uploadedImages[] = 'storage/properties/' . $imageName;
-                }
-            }
-
+        if ($validator->fails()) {
             return response()->json([
-                'message' => 'Images uploaded successfully',
-                'images' => $uploadedImages
-            ], 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to upload images',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
+
+        $uploadedImages = [];
+
+        foreach ($request->file('images') ?? [] as $image) {
+            $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('storage/properties'), $imageName);
+            $uploadedImages[] = 'storage/properties/' . $imageName;
+        }
+
+        return response()->json([
+            'message' => 'Images uploaded successfully',
+            'images' => $uploadedImages
+        ]);
     }
 
     public function createProperty(Request $request): JsonResponse
@@ -288,7 +271,7 @@ class AdminController extends Controller
             'location' => 'required|string|max:255',
             'address' => 'nullable|string|max:255',
             'price' => 'required|numeric|min:0',
-            'type'        => 'sometimes|in:Master-bedroom,house,Single-room,oweru_rental',
+            'type' => 'sometimes|in:Master-bedroom,house,Single-room,oweru_rental',
             'bedrooms' => 'nullable|integer|min:0',
             'bathrooms' => 'nullable|integer|min:0',
             'area' => 'nullable|numeric|min:0',
@@ -309,38 +292,30 @@ class AdminController extends Controller
             ], 422);
         }
 
-        try {
-            $property = Property::create([
-                'title' => $request->title,
-                'description' => $request->description,
-                'location' => $request->location,
-                'address' => $request->address,
-                'price' => $request->price,
-                'type' => $request->type,
-                'bedrooms' => $request->bedrooms,
-                'bathrooms' => $request->bathrooms,
-                'area' => $request->area ?: null,
-                'featured' => $request->boolean('featured', true),
-                'available' => $request->boolean('available', true),
-                'images' => $request->images ?? [],
-                'amenities' => $request->amenities,
-                'owner_id' => $request->owner_id, // Use owner_id from request
-                'agent_id' => null, // Admin properties don't have an agent
-                'landlord_name' => $request->landlord_name ?? 'Oweru Rental', // Use from request or default
-                'landlord_phone' => $request->landlord_phone, // Use from request
-            ]);
+        $property = Property::create([
+            'title' => $request->title,
+            'description' => $request->description,
+            'location' => $request->location,
+            'address' => $request->address,
+            'price' => $request->price,
+            'type' => $request->type,
+            'bedrooms' => $request->bedrooms,
+            'bathrooms' => $request->bathrooms,
+            'area' => $request->area ?: null,
+            'featured' => $request->boolean('featured', true),
+            'available' => $request->boolean('available', true),
+            'images' => $request->images ?? [],
+            'amenities' => $request->amenities,
+            'owner_id' => $request->owner_id,
+            'agent_id' => null,
+            'landlord_name' => $request->landlord_name ?? 'Oweru Rental',
+            'landlord_phone' => $request->landlord_phone,
+        ]);
 
-            return response()->json([
-                'message' => 'Property created successfully',
-                'data' => $property
-            ], 201);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to create property',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Property created successfully',
+            'data' => $property
+        ], 201);
     }
 
     public function updateProperty(Request $request, Property $property): JsonResponse
@@ -351,7 +326,7 @@ class AdminController extends Controller
             'location' => 'sometimes|string|max:255',
             'address' => 'sometimes|string|max:255',
             'price' => 'sometimes|numeric|min:0',
-            'type'        => 'sometimes|in:Master-bedroom,house,Single-room,oweru_rental',
+            'type' => 'sometimes|in:Master-bedroom,house,Single-room,oweru_rental',
             'bedrooms' => 'sometimes|integer|min:0',
             'bathrooms' => 'sometimes|integer|min:0',
             'area' => 'sometimes|numeric|min:0',
@@ -369,37 +344,18 @@ class AdminController extends Controller
             ], 422);
         }
 
-        try {
-            $property->update($request->all());
+        $property->update($request->all());
 
-            return response()->json([
-                'message' => 'Property updated successfully',
-                'data' => $property
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to update property',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Property updated successfully',
+            'data' => $property
+        ]);
     }
 
     public function deleteProperty(Property $property): JsonResponse
     {
-        try {
-            $property->delete();
-
-            return response()->json([
-                'message' => 'Property deleted successfully'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to delete property',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        $property->delete();
+        return response()->json(['message' => 'Property deleted successfully']);
     }
 
     public function getPropertyStats(): JsonResponse
@@ -440,8 +396,7 @@ class AdminController extends Controller
                 ->map(fn (Commission $commission) => $this->transformCommissionTransaction($commission))
             : collect();
 
-        $transactions = $payments
-            ->concat($commissions)
+        $transactions = $payments->concat($commissions)
             ->sortByDesc('createdAt')
             ->values();
 
@@ -461,13 +416,8 @@ class AdminController extends Controller
                 }
             }
 
-            if ($request->type && $request->type !== $transaction['type']) {
-                return false;
-            }
-
-            if ($request->status && $request->status !== $transaction['status']) {
-                return false;
-            }
+            if ($request->type && $request->type !== $transaction['type']) return false;
+            if ($request->status && $request->status !== $transaction['status']) return false;
 
             return true;
         })->values();
@@ -479,29 +429,21 @@ class AdminController extends Controller
     {
         if (! $this->hasTables(['payments'])) {
             return response()->json(['data' => [
-                'total_transactions' => 0,
-                'total_revenue' => 0,
-                'total_fees' => 0,
-                'net_revenue' => 0,
-                'pending_transactions' => 0,
-                'completed_transactions' => 0,
-                'failed_transactions' => 0,
-                'refunded_transactions' => 0,
-                'avg_transaction_amount' => 0,
-                'revenue_this_month' => 0,
-                'revenue_growth' => 0,
-                'transaction_growth' => 0,
+                'total_transactions' => 0, 'total_revenue' => 0, 'total_fees' => 0,
+                'net_revenue' => 0, 'pending_transactions' => 0, 'completed_transactions' => 0,
+                'failed_transactions' => 0, 'refunded_transactions' => 0,
+                'avg_transaction_amount' => 0, 'revenue_this_month' => 0,
+                'revenue_growth' => 0, 'transaction_growth' => 0,
             ]]);
         }
 
         $completedAmount = (float) Payment::where('status', 'completed')->sum('amount');
         $fees = (float) Payment::sum(DB::raw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.fees')), 0)"));
         $thisMonthRevenue = (float) Payment::where('status', 'completed')
-            ->where('created_at', '>=', now()->startOfMonth())
-            ->sum('amount');
+            ->where('created_at', '>=', now()->startOfMonth())->sum('amount');
         $lastMonthRevenue = (float) Payment::where('status', 'completed')
-            ->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])
-            ->sum('amount');
+            ->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])->sum('amount');
+
         $thisMonthTransactions = Payment::where('created_at', '>=', now()->startOfMonth())->count();
         $lastMonthTransactions = Payment::whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])->count();
 
@@ -539,9 +481,10 @@ class AdminController extends Controller
             $commission = Commission::findOrFail($commissionId);
             $status = $this->normalizeCommissionStatus($request->status);
 
-            $commission->status = $status;
-            $commission->paid_at = $status === 'paid' ? now() : null;
-            $commission->save();
+            $commission->update([
+                'status' => $status,
+                'paid_at' => $status === 'paid' ? now() : null,
+            ]);
 
             return response()->json([
                 'message' => 'Commission transaction updated successfully',
@@ -550,9 +493,12 @@ class AdminController extends Controller
         }
 
         $payment = Payment::findOrFail($transactionId);
-        $payment->status = $this->normalizePaymentStatus($request->status);
-        $payment->paid_at = $payment->status === 'completed' ? now() : null;
-        $payment->save();
+        $status = $this->normalizePaymentStatus($request->status);
+
+        $payment->update([
+            'status' => $status,
+            'paid_at' => $status === 'completed' ? now() : null,
+        ]);
 
         return response()->json([
             'message' => 'Transaction updated successfully',
@@ -565,12 +511,10 @@ class AdminController extends Controller
         if ((int) $transactionId >= 100000) {
             $commissionId = (int) $transactionId - 100000;
             Commission::findOrFail($commissionId)->delete();
-
             return response()->json(['message' => 'Commission transaction deleted successfully']);
         }
 
         Payment::findOrFail($transactionId)->delete();
-
         return response()->json(['message' => 'Transaction deleted successfully']);
     }
 
@@ -639,12 +583,8 @@ class AdminController extends Controller
     {
         if (! $this->hasTables(['commissions'])) {
             return response()->json(['data' => [
-                'totalCommissions' => 0,
-                'pendingCommissions' => 0,
-                'approvedCommissions' => 0,
-                'paidCommissions' => 0,
-                'totalAmount' => 0,
-                'avgCommissionRate' => 0,
+                'totalCommissions' => 0, 'pendingCommissions' => 0, 'approvedCommissions' => 0,
+                'paidCommissions' => 0, 'totalAmount' => 0, 'avgCommissionRate' => 0,
                 'topEarner' => ['name' => 'N/A', 'totalEarned' => 0, 'transactions' => 0],
                 'thisMonth' => ['total' => 0, 'paid' => 0, 'pending' => 0],
             ]]);
@@ -690,9 +630,10 @@ class AdminController extends Controller
         }
 
         $commission = Commission::findOrFail($commissionId);
-        $commission->status = $request->status;
-        $commission->paid_at = $request->status === 'paid' ? now() : null;
-        $commission->save();
+        $commission->update([
+            'status' => $request->status,
+            'paid_at' => $request->status === 'paid' ? now() : null,
+        ]);
 
         return response()->json([
             'message' => 'Commission payment updated successfully',
@@ -812,16 +753,10 @@ class AdminController extends Controller
     {
         if (! $this->hasTables(['contracts'])) {
             return response()->json(['data' => [
-                'totalContracts' => 0,
-                'activeContracts' => 0,
-                'expiredContracts' => 0,
-                'pendingContracts' => 0,
-                'totalValue' => 0,
-                'avgContractValue' => 0,
-                'contractsThisMonth' => 0,
-                'expiringThisMonth' => 0,
-                'renewalRate' => 0,
-                'terminationRate' => 0,
+                'totalContracts' => 0, 'activeContracts' => 0, 'expiredContracts' => 0,
+                'pendingContracts' => 0, 'totalValue' => 0, 'avgContractValue' => 0,
+                'contractsThisMonth' => 0, 'expiringThisMonth' => 0,
+                'renewalRate' => 0, 'terminationRate' => 0,
             ]]);
         }
 
@@ -918,7 +853,6 @@ class AdminController extends Controller
             ->get()
             ->map(function (User $user) {
                 $status = $user->email_verified_at ? 'approved' : 'pending';
-
                 return [
                     'id' => $user->id,
                     'user' => [
@@ -943,14 +877,8 @@ class AdminController extends Controller
                 ];
             })
             ->filter(function (array $item) use ($request) {
-                if ($request->status && $request->status !== 'all' && $item['status'] !== $request->status) {
-                    return false;
-                }
-
-                if ($request->type && $request->type !== 'all' && $item['type'] !== $request->type) {
-                    return false;
-                }
-
+                if ($request->status && $request->status !== 'all' && $item['status'] !== $request->status) return false;
+                if ($request->type && $request->type !== 'all' && $item['type'] !== $request->type) return false;
                 return true;
             })
             ->values();
@@ -988,81 +916,45 @@ class AdminController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors'  => $validator->errors()
+                'errors' => $validator->errors()
             ], 422);
         }
 
         $user = User::find($userId);
-        
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        try {
-            if ($request->status === 'approved') {
-                $user->email_verified_at = now();
-                $user->save();
-                
-                Log::info('User verification approved', [
-                    'user_id' => $user->id,
-                    'email' => $user->email,
-                    'approved_by' => Auth::id(),
-                ]);
-            } elseif ($request->status === 'rejected') {
-                // For rejection, you might want to set a flag or send notification
-                // For now, we'll just log it
-                Log::info('User verification rejected', [
-                    'user_id' => $user->id,
-                    'email' => $user->email,
-                    'rejected_by' => Auth::id(),
-                    'reason' => $request->reason,
-                ]);
-                
-                // Optionally, you could delete the user or mark as rejected
-                // $user->delete();
-            }
-
-            return response()->json([
-                'message' => "Verification request {$request->status} successfully",
-                'data' => [
-                    'user_id' => $user->id,
-                    'status' => $request->status,
-                    'email_verified_at' => $user->email_verified_at,
-                ]
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to update verification status: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to update verification status'], 500);
+        if ($request->status === 'approved') {
+            $user->email_verified_at = now();
+            $user->save();
         }
+
+        return response()->json([
+            'message' => "Verification request {$request->status} successfully",
+            'data' => [
+                'user_id' => $user->id,
+                'status' => $request->status,
+                'email_verified_at' => $user->email_verified_at,
+            ]
+        ]);
     }
 
     public function getAlerts(Request $request): JsonResponse
     {
-        $alerts = $this->buildAlerts()
-            ->filter(function (array $alert) use ($request) {
-                if ($request->search) {
-                    $search = mb_strtolower($request->search);
-                    $haystack = mb_strtolower(($alert['title'] ?? '') . ' ' . ($alert['description'] ?? '') . ' ' . ($alert['category'] ?? ''));
-                    if (! str_contains($haystack, $search)) {
-                        return false;
-                    }
-                }
+        $alerts = $this->buildAlerts()->filter(function (array $alert) use ($request) {
+            if ($request->search) {
+                $search = mb_strtolower($request->search);
+                $haystack = mb_strtolower(($alert['title'] ?? '') . ' ' . ($alert['description'] ?? '') . ' ' . ($alert['category'] ?? ''));
+                if (! str_contains($haystack, $search)) return false;
+            }
 
-                if ($request->type && $request->type !== 'all' && $alert['type'] !== $request->type) {
-                    return false;
-                }
+            if ($request->type && $request->type !== 'all' && $alert['type'] !== $request->type) return false;
+            if ($request->severity && $request->severity !== 'all' && $alert['severity'] !== $request->severity) return false;
+            if ($request->status && $request->status !== 'all' && $alert['status'] !== $request->status) return false;
 
-                if ($request->severity && $request->severity !== 'all' && $alert['severity'] !== $request->severity) {
-                    return false;
-                }
-
-                if ($request->status && $request->status !== 'all' && $alert['status'] !== $request->status) {
-                    return false;
-                }
-
-                return true;
-            })
-            ->values();
+            return true;
+        })->values();
 
         return response()->json(['data' => $alerts]);
     }
@@ -1086,6 +978,163 @@ class AdminController extends Controller
         ]]);
     }
 
+    // ==================== BNB MANAGEMENT ====================
+
+    public function getAdminBnbProperties(Request $request): JsonResponse
+    {
+        $query = BnbProperty::with(['owner']);
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%")
+                  ->orWhere('location', 'like', "%{$request->search}%");
+            });
+        }
+
+        if ($request->status && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->location) $query->where('location', 'like', "%{$request->location}%");
+        if ($request->min_price) $query->where('price', '>=', $request->min_price);
+        if ($request->max_price) $query->where('price', '<=', $request->max_price);
+        if ($request->owner_id) $query->where('owner_id', $request->owner_id);
+
+        $properties = $query->orderByDesc('created_at')->paginate(20);
+
+        return response()->json([
+            'data' => $properties->items(),
+            'pagination' => [
+                'current_page' => $properties->currentPage(),
+                'last_page' => $properties->lastPage(),
+                'per_page' => $properties->perPage(),
+                'total' => $properties->total(),
+            ],
+        ]);
+    }
+
+    public function updateAdminBnbPropertyStatus(Request $request, BnbProperty $property): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => ['required', Rule::in(['active', 'inactive', 'suspended', 'pending'])],
+            'admin_notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $property->update([
+            'status' => $request->status,
+            'admin_notes' => $request->admin_notes,
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'BNB property status updated successfully',
+            'data' => $property->load('owner'),
+        ]);
+    }
+
+    public function getAdminBnbBookings(Request $request): JsonResponse
+    {
+        $query = BnbBooking::with(['property', 'property.owner', 'guest']);
+
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->whereHas('property', fn($sub) => $sub->where('title', 'like', "%{$request->search}%"))
+                  ->orWhereHas('guest', fn($sub) => $sub->where('first_name', 'like', "%{$request->search}%")
+                      ->orWhere('last_name', 'like', "%{$request->search}%")
+                      ->orWhere('email', 'like', "%{$request->search}%"));
+            });
+        }
+
+        if ($request->status && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->property_id) $query->where('property_id', $request->property_id);
+        if ($request->date_from) $query->where('check_in', '>=', $request->date_from);
+        if ($request->date_to) $query->where('check_out', '<=', $request->date_to);
+
+        $bookings = $query->orderByDesc('created_at')->paginate(20);
+
+        return response()->json([
+            'data' => $bookings->items(),
+            'pagination' => [
+                'current_page' => $bookings->currentPage(),
+                'last_page' => $bookings->lastPage(),
+                'per_page' => $bookings->perPage(),
+                'total' => $bookings->total(),
+            ],
+        ]);
+    }
+
+    public function getAdminBnbAnalytics(Request $request): JsonResponse
+    {
+        $dateRange = $request->get('date_range', '30d');
+        $startDate = match($dateRange) {
+            '7d' => now()->subDays(7),
+            '30d' => now()->subDays(30),
+            '90d' => now()->subDays(90),
+            '1y' => now()->subYear(),
+            default => now()->subDays(30),
+        };
+
+        $totalProperties = BnbProperty::count();
+        $activeProperties = BnbProperty::where('status', 'active')->count();
+        $totalBookings = BnbBooking::where('created_at', '>=', $startDate)->count();
+        $completedBookings = BnbBooking::where('status', 'completed')
+                                     ->where('created_at', '>=', $startDate)->count();
+        $totalRevenue = BnbBooking::where('status', 'completed')
+                                  ->where('created_at', '>=', $startDate)->sum('total_amount');
+
+        $monthlyRevenue = BnbBooking::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(total_amount) as revenue')
+            ->where('status', 'completed')
+            ->where('created_at', '>=', now()->subYear())
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('revenue', 'month')
+            ->toArray();
+
+        $monthlyRevenueComplete = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $month = now()->subMonths($i)->format('Y-m');
+            $monthlyRevenueComplete[] = $monthlyRevenue[$month] ?? 0;
+        }
+
+        $topProperties = BnbProperty::withCount(['bookings' => fn($q) => $q->where('created_at', '>=', $startDate)])
+            ->withSum(['bookings as revenue' => fn($q) => $q->where('status', 'completed')->where('created_at', '>=', $startDate)])
+            ->orderByDesc('bookings_count')
+            ->limit(10)
+            ->get()
+            ->map(fn($property) => [
+                'id' => $property->id,
+                'title' => $property->title,
+                'bookings' => $property->bookings_count ?? 0,
+                'revenue' => $property->revenue ?? 0,
+                'rating' => 4.5,
+            ]);
+
+        return response()->json([
+            'totalRevenue' => $totalRevenue,
+            'totalBookings' => $totalBookings,
+            'completedBookings' => $completedBookings,
+            'totalProperties' => $totalProperties,
+            'activeProperties' => $activeProperties,
+            'occupancyRate' => $totalBookings > 0 ? round(($completedBookings / $totalBookings) * 100, 1) : 0,
+            'monthlyRevenue' => $monthlyRevenueComplete,
+            'topProperties' => $topProperties,
+            'dateRange' => $dateRange,
+        ]);
+    }
+
+    // ==================== HELPER METHODS ====================
+
     private function hasTables(array $tables): bool
     {
         foreach ($tables as $table) {
@@ -1093,7 +1142,6 @@ class AdminController extends Controller
                 return false;
             }
         }
-
         return true;
     }
 
@@ -1102,7 +1150,6 @@ class AdminController extends Controller
         if ((float) $previous === 0.0) {
             return (float) $current > 0 ? 100.0 : 0.0;
         }
-
         return round((((float) $current - (float) $previous) / (float) $previous) * 100, 1);
     }
 
@@ -1218,100 +1265,30 @@ class AdminController extends Controller
         $pendingVerifications = User::whereNull('email_verified_at')->count();
 
         if ($pendingVerifications > 0) {
-            $alerts->push($this->makeAlert(
-                1,
-                'Pending account verifications',
-                "{$pendingVerifications} user accounts are still awaiting verification.",
-                'security',
-                $pendingVerifications > 5 ? 'high' : 'medium',
-                'active',
-                'Account Verification',
-                'User Verification',
-                now(),
-                true,
-                $pendingVerifications,
-                max(5, $pendingVerifications),
-                'accounts'
-            ));
+            $alerts->push($this->makeAlert(1, 'Pending account verifications', "{$pendingVerifications} user accounts are still awaiting verification.", 'security', $pendingVerifications > 5 ? 'high' : 'medium', 'active', 'Account Verification', 'User Verification', now(), true, $pendingVerifications, max(5, $pendingVerifications), 'accounts'));
         }
 
         if ($this->hasTables(['payments'])) {
             $overduePayments = Payment::where('status', 'pending')->whereDate('due_date', '<', today())->count();
             if ($overduePayments > 0) {
-                $alerts->push($this->makeAlert(
-                    2,
-                    'Overdue rent payments',
-                    "{$overduePayments} scheduled payments are past their due date.",
-                    'financial',
-                    $overduePayments > 3 ? 'critical' : 'high',
-                    'active',
-                    'Payments Monitor',
-                    'Payments',
-                    now()->subMinutes(20),
-                    true,
-                    $overduePayments,
-                    max(1, $overduePayments),
-                    'payments'
-                ));
+                $alerts->push($this->makeAlert(2, 'Overdue rent payments', "{$overduePayments} scheduled payments are past their due date.", 'financial', $overduePayments > 3 ? 'critical' : 'high', 'active', 'Payments Monitor', 'Payments', now()->subMinutes(20), true, $overduePayments, max(1, $overduePayments), 'payments'));
             }
         }
 
         if ($this->hasTables(['contracts'])) {
             $expiringContracts = Contract::whereBetween('end_date', [today(), today()->addDays(30)])->count();
             if ($expiringContracts > 0) {
-                $alerts->push($this->makeAlert(
-                    3,
-                    'Contracts nearing expiry',
-                    "{$expiringContracts} contracts will expire within the next 30 days.",
-                    'maintenance',
-                    'medium',
-                    'active',
-                    'Contracts Monitor',
-                    'Contracts',
-                    now()->subHour(),
-                    false,
-                    $expiringContracts,
-                    max(5, $expiringContracts),
-                    'contracts'
-                ));
+                $alerts->push($this->makeAlert(3, 'Contracts nearing expiry', "{$expiringContracts} contracts will expire within the next 30 days.", 'maintenance', 'medium', 'active', 'Contracts Monitor', 'Contracts', now()->subHour(), false, $expiringContracts, max(5, $expiringContracts), 'contracts'));
             }
         }
 
         $inactiveUsers = User::where('is_active', false)->count();
         if ($inactiveUsers > 0) {
-            $alerts->push($this->makeAlert(
-                4,
-                'Inactive user accounts detected',
-                "{$inactiveUsers} accounts are currently inactive and may need review.",
-                'user_activity',
-                'low',
-                'active',
-                'User Lifecycle',
-                'Users',
-                now()->subHours(2),
-                false,
-                $inactiveUsers,
-                max(10, $inactiveUsers),
-                'accounts'
-            ));
+            $alerts->push($this->makeAlert(4, 'Inactive user accounts detected', "{$inactiveUsers} accounts are currently inactive and may need review.", 'user_activity', 'low', 'active', 'User Lifecycle', 'Users', now()->subHours(2), false, $inactiveUsers, max(10, $inactiveUsers), 'accounts'));
         }
 
         if ($alerts->isEmpty()) {
-            $alerts->push($this->makeAlert(
-                99,
-                'System operating normally',
-                'No urgent issues detected across users, payments, or contracts.',
-                'system',
-                'low',
-                'resolved',
-                'Platform Health',
-                'System',
-                now(),
-                false,
-                0,
-                1,
-                'checks'
-            ));
+            $alerts->push($this->makeAlert(99, 'System operating normally', 'No urgent issues detected across users, payments, or contracts.', 'system', 'low', 'resolved', 'Platform Health', 'System', now(), false, 0, 1, 'checks'));
         }
 
         return $alerts->sortByDesc('created_at')->values();
@@ -1328,8 +1305,8 @@ class AdminController extends Controller
         string $category,
         Carbon $createdAt,
         bool $actionRequired,
-        int|float $metricValue,
-        int|float $metricThreshold,
+        $metricValue,
+        $metricThreshold,
         string $unit
     ): array {
         return [
@@ -1346,7 +1323,7 @@ class AdminController extends Controller
                 'details' => $description,
                 'actionRequired' => $actionRequired,
                 'autoResolve' => false,
-                'escalationLevel' => in_array($severity, ['critical', 'urgent'], true) ? 2 : 1,
+                'escalationLevel' => in_array($severity, ['critical', 'urgent']) ? 2 : 1,
                 'metrics' => [
                     'value' => $metricValue,
                     'threshold' => $metricThreshold,
@@ -1358,199 +1335,5 @@ class AdminController extends Controller
             'created_at' => $createdAt->toIso8601String(),
             'updated_at' => $createdAt->toIso8601String(),
         ];
-    }
-
-    // ── Admin BNB Management Methods ─────────────────────────────────────────────────────
-
-    public function getAdminBnbProperties(Request $request): JsonResponse
-    {
-        $query = BnbProperty::with(['owner']);
-
-        // Apply filters
-        if ($request->search) {
-            $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', "%{$request->search}%")
-                  ->orWhere('description', 'like', "%{$request->search}%")
-                  ->orWhere('location', 'like', "%{$request->search}%");
-            });
-        }
-
-        if ($request->status && $request->status !== 'all') {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->location) {
-            $query->where('location', 'like', "%{$request->location}%");
-        }
-
-        if ($request->min_price) {
-            $query->where('price', '>=', $request->min_price);
-        }
-
-        if ($request->max_price) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        if ($request->owner_id) {
-            $query->where('owner_id', $request->owner_id);
-        }
-
-        $properties = $query->orderByDesc('created_at')->paginate(20);
-
-        return response()->json([
-            'data' => $properties->items(),
-            'pagination' => [
-                'current_page' => $properties->currentPage(),
-                'last_page' => $properties->lastPage(),
-                'per_page' => $properties->perPage(),
-                'total' => $properties->total(),
-            ],
-        ]);
-    }
-
-    public function updateAdminBnbPropertyStatus(Request $request, BnbProperty $property): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'status' => ['required', Rule::in(['active', 'inactive', 'suspended', 'pending'])],
-            'admin_notes' => 'nullable|string|max:1000',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $property->update([
-            'status' => $request->status,
-            'admin_notes' => $request->admin_notes,
-            'updated_at' => now(),
-        ]);
-
-        return response()->json([
-            'message' => 'BNB property status updated successfully',
-            'data' => $property->load('owner'),
-        ]);
-    }
-
-    public function getAdminBnbBookings(Request $request): JsonResponse
-    {
-        $query = BnbBooking::with(['property', 'property.owner', 'guest']);
-
-        // Apply filters
-        if ($request->search) {
-            $query->where(function ($q) use ($request) {
-                $q->whereHas('property', function ($subQuery) use ($request) {
-                        $subQuery->where('title', 'like', "%{$request->search}%");
-                    })
-                    ->orWhereHas('guest', function ($subQuery) use ($request) {
-                        $subQuery->where('first_name', 'like', "%{$request->search}%")
-                               ->orWhere('last_name', 'like', "%{$request->search}%")
-                               ->orWhere('email', 'like', "%{$request->search}%");
-                    });
-            });
-        }
-
-        if ($request->status && $request->status !== 'all') {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->property_id) {
-            $query->where('property_id', $request->property_id);
-        }
-
-        if ($request->date_from) {
-            $query->where('check_in', '>=', $request->date_from);
-        }
-
-        if ($request->date_to) {
-            $query->where('check_out', '<=', $request->date_to);
-        }
-
-        $bookings = $query->orderByDesc('created_at')->paginate(20);
-
-        return response()->json([
-            'data' => $bookings->items(),
-            'pagination' => [
-                'current_page' => $bookings->currentPage(),
-                'last_page' => $bookings->lastPage(),
-                'per_page' => $bookings->perPage(),
-                'total' => $bookings->total(),
-            ],
-        ]);
-    }
-
-    public function getAdminBnbAnalytics(Request $request): JsonResponse
-    {
-        $dateRange = $request->get('date_range', '30d');
-        
-        // Calculate date range
-        $startDate = match($dateRange) {
-            '7d' => now()->subDays(7),
-            '30d' => now()->subDays(30),
-            '90d' => now()->subDays(90),
-            '1y' => now()->subYear(),
-            default => now()->subDays(30),
-        };
-
-        // Basic metrics
-        $totalProperties = BnbProperty::count();
-        $activeProperties = BnbProperty::where('status', 'active')->count();
-        $totalBookings = BnbBooking::where('created_at', '>=', $startDate)->count();
-        $completedBookings = BnbBooking::where('status', 'completed')
-                                     ->where('created_at', '>=', $startDate)
-                                     ->count();
-        $totalRevenue = BnbBooking::where('status', 'completed')
-                                  ->where('created_at', '>=', $startDate)
-                                  ->sum('total_amount');
-
-        // Monthly revenue trend
-        $monthlyRevenue = BnbBooking::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(total_amount) as revenue')
-            ->where('status', 'completed')
-            ->where('created_at', '>=', now()->subYear())
-            ->groupBy('month')
-            ->orderBy('month')
-            ->pluck('revenue', 'month')
-            ->toArray();
-
-        // Fill missing months with 0
-        $monthlyRevenueComplete = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $month = now()->subMonths($i)->format('Y-m');
-            $monthlyRevenueComplete[] = $monthlyRevenue[$month] ?? 0;
-        }
-
-        // Top properties
-        $topProperties = BnbProperty::withCount(['bookings' => function ($query) use ($startDate) {
-                $query->where('created_at', '>=', $startDate);
-            }])
-            ->withSum(['bookings as revenue' => function ($query) use ($startDate) {
-                $query->where('status', 'completed')->where('created_at', '>=', $startDate);
-            }])
-            ->orderByDesc('bookings_count')
-            ->limit(10)
-            ->get()
-            ->map(function ($property) {
-                return [
-                    'id' => $property->id,
-                    'title' => $property->title,
-                    'bookings' => $property->bookings_count ?? 0,
-                    'revenue' => $property->revenue ?? 0,
-                    'rating' => 4.5, // Placeholder - would calculate from reviews
-                ];
-            });
-
-        return response()->json([
-            'totalRevenue' => $totalRevenue,
-            'totalBookings' => $totalBookings,
-            'completedBookings' => $completedBookings,
-            'totalProperties' => $totalProperties,
-            'activeProperties' => $activeProperties,
-            'occupancyRate' => $totalBookings > 0 ? round(($completedBookings / $totalBookings) * 100, 1) : 0,
-            'monthlyRevenue' => $monthlyRevenueComplete,
-            'topProperties' => $topProperties,
-            'dateRange' => $dateRange,
-        ]);
     }
 }

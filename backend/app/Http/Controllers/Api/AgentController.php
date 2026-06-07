@@ -21,7 +21,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class AgentController extends Controller
@@ -30,24 +29,14 @@ class AgentController extends Controller
     {
         $user = Auth::user();
 
-        try {
-            return response()->json(['data' => [
-                'total_listings'     => Property::where('agent_id', $user->id)->count(),
-                'active_listings'    => Property::where('agent_id', $user->id)->where('available', true)->count(),
-                'total_leads'        => Lead::where('agent_id', $user->id)->count(),
-                'total_commissions'  => $this->commissionTablesAvailable()
-                    ? Commission::where('agent_id', $user->id)->sum('amount')
-                    : 0,
-            ]]);
-        } catch (\Exception $e) {
-            Log::error('Failed to get dashboard data: ' . $e->getMessage());
-            return response()->json(['data' => [
-                'total_listings'     => 0,
-                'active_listings'    => 0,
-                'total_leads'        => 0,
-                'total_commissions'  => 0,
-            ]]);
-        }
+        return response()->json(['data' => [
+            'total_listings'    => Property::where('agent_id', $user->id)->count(),
+            'active_listings'   => Property::where('agent_id', $user->id)->where('available', true)->count(),
+            'total_leads'       => Lead::where('agent_id', $user->id)->count(),
+            'total_commissions' => $this->commissionTablesAvailable()
+                ? Commission::where('agent_id', $user->id)->sum('amount')
+                : 0,
+        ]]);
     }
 
     public function getMyListings(): JsonResponse
@@ -96,7 +85,6 @@ class AgentController extends Controller
             ], 422);
         }
 
-        // ── Handle image uploads ──────────────────────────────────────────────
         $imagePaths = [];
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
@@ -105,7 +93,6 @@ class AgentController extends Controller
             }
         }
 
-        // ── Handle amenities (may come as JSON string or array) ───────────────
         $amenities = [];
         if ($request->has('amenities')) {
             $raw = $request->input('amenities');
@@ -116,7 +103,7 @@ class AgentController extends Controller
             }
         }
 
-        $user         = Auth::user();
+        $user = Auth::user();
         $trackingCode = $this->generateUniqueTrackingCode();
 
         $property = Property::create([
@@ -136,8 +123,8 @@ class AgentController extends Controller
             'dalali'         => $trackingCode,
             'landlord_name'  => $request->landlord_name,
             'landlord_phone' => $request->landlord_phone,
-            'images'         => $imagePaths,   // ← FIXED: was missing before
-            'amenities'      => $amenities,    // ← FIXED: was missing before
+            'images'         => $imagePaths,
+            'amenities'      => $amenities,
         ]);
 
         return response()->json([
@@ -146,9 +133,6 @@ class AgentController extends Controller
         ], 201);
     }
 
-    /**
-     * Generate a unique tracking code (dalali).
-     */
     private function generateUniqueTrackingCode(): string
     {
         do {
@@ -230,51 +214,44 @@ class AgentController extends Controller
     {
         $user = Auth::user();
 
-        try {
-            // Get all properties for this agent that have landlord contact details
-            $properties = Property::where('agent_id', $user->id)
-                ->where(function ($query) {
-                    $query->whereNotNull('landlord_name')
-                          ->where('landlord_name', '!=', '')
-                          ->orWhere(function ($q) {
-                              $q->whereNotNull('landlord_phone')
-                                ->where('landlord_phone', '!=', '');
-                          });
-                })
-                ->with('owner')
-                ->get();
+        $properties = Property::where('agent_id', $user->id)
+            ->where(function ($query) {
+                $query->whereNotNull('landlord_name')
+                      ->where('landlord_name', '!=', '')
+                      ->orWhere(function ($q) {
+                          $q->whereNotNull('landlord_phone')
+                            ->where('landlord_phone', '!=', '');
+                      });
+            })
+            ->with('owner')
+            ->get();
 
-            // Group by owner to match the expected data structure
-            $owners = collect();
-            $properties->groupBy('owner_id')->each(function ($props, $ownerId) use ($owners) {
-                $owner = User::find($ownerId);
-                if (!$owner) return;
+        $owners = collect();
 
-                $propertiesWithLandlord = $props->map(function ($p) {
-                    return [
-                        'id'             => $p->id,
-                        'title'          => $p->title,
-                        'location'       => $p->location,
-                        'landlord_name'  => $p->landlord_name,
-                        'landlord_phone' => $p->landlord_phone,
-                    ];
-                });
+        $properties->groupBy('owner_id')->each(function ($props, $ownerId) use ($owners) {
+            $owner = User::find($ownerId);
+            if (!$owner) return;
 
-                $owners->push([
-                    'id'                => $owner->id,
-                    'first_name'        => $owner->first_name,
-                    'last_name'         => $owner->last_name,
-                    'email'             => $owner->email,
-                    'properties_count'  => $props->count(),
-                    'properties_list'   => $propertiesWithLandlord,
-                    'has_landlord_info' => true,
-                ]);
+            $propertiesWithLandlord = $props->map(function ($p) {
+                return [
+                    'id'             => $p->id,
+                    'title'          => $p->title,
+                    'location'       => $p->location,
+                    'landlord_name'  => $p->landlord_name,
+                    'landlord_phone' => $p->landlord_phone,
+                ];
             });
 
-        } catch (\Exception $e) {
-            \Log::error('Error fetching linked owners: ' . $e->getMessage());
-            $owners = collect();
-        }
+            $owners->push([
+                'id'                => $owner->id,
+                'first_name'        => $owner->first_name,
+                'last_name'         => $owner->last_name,
+                'email'             => $owner->email,
+                'properties_count'  => $props->count(),
+                'properties_list'   => $propertiesWithLandlord,
+                'has_landlord_info' => true,
+            ]);
+        });
 
         return response()->json(['data' => $owners]);
     }
@@ -317,27 +294,19 @@ class AgentController extends Controller
 
     public function getTrackingLinks(): JsonResponse
     {
-        $user       = Auth::user();
+        $user = Auth::user();
         $properties = Property::where('agent_id', $user->id)->get();
 
         $links = $properties->map(function ($property) use ($user) {
             $trackingUrl = url("/property/{$property->id}?agent={$user->id}");
-
-            try {
-                $clicks = $property->clicks ?? 0;
-                $shares = $property->shares ?? 0;
-            } catch (\Exception $e) {
-                $clicks = 0;
-                $shares = 0;
-            }
 
             return [
                 'id'           => $property->id,
                 'title'        => $property->title,
                 'tracking_url' => $trackingUrl,
                 'qr_code_url'  => url("/api/agent/qr-codes/{$property->id}"),
-                'shares'       => $shares,
-                'clicks'       => $clicks,
+                'shares'       => $property->shares ?? 0,
+                'clicks'       => $property->clicks ?? 0,
                 'created_at'   => $property->created_at,
                 'property'     => $property,
             ];
@@ -348,34 +317,16 @@ class AgentController extends Controller
 
     public function trackShare(Request $request): JsonResponse
     {
-        $request->validate([
-            'property_id' => 'required|exists:properties,id'
-        ]);
+        $request->validate(['property_id' => 'required|exists:properties,id']);
 
         $property = Property::find($request->input('property_id'));
-        $user     = Auth::user();
+        $user = Auth::user();
 
         if ($property->agent_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        try {
-            $property->increment('shares');
-        } catch (\Exception $e) {
-            \Log::info('Property shared (no increment)', [
-                'property_id' => $property->id,
-                'agent_id'    => $user->id,
-                'ip'          => $request->ip(),
-                'user_agent'  => $request->userAgent()
-            ]);
-        }
-
-        \Log::info('Property shared', [
-            'property_id' => $property->id,
-            'agent_id'    => $user->id,
-            'ip'          => $request->ip(),
-            'user_agent'  => $request->userAgent()
-        ]);
+        $property->increment('shares');
 
         return response()->json(['message' => 'Share tracked successfully']);
     }
@@ -398,7 +349,7 @@ class AgentController extends Controller
 
     public function debugProperty($id): JsonResponse
     {
-        $user     = Auth::user();
+        $user = Auth::user();
         $property = Property::find($id);
 
         if (!$property) {
@@ -409,9 +360,7 @@ class AgentController extends Controller
             return response()->json(['message' => 'Property does not belong to this agent'], 403);
         }
 
-        $schema          = \Schema::getColumnListing('properties');
-        $hasClicksColumn = in_array('clicks', $schema);
-        $hasSharesColumn = in_array('shares', $schema);
+        $schema = \Schema::getColumnListing('properties');
 
         return response()->json([
             'property_exists'    => true,
@@ -423,8 +372,8 @@ class AgentController extends Controller
             'clicks'             => $property->clicks ?? 0,
             'shares'             => $property->shares ?? 0,
             'database_columns'   => $schema,
-            'has_clicks_column'  => $hasClicksColumn,
-            'has_shares_column'  => $hasSharesColumn,
+            'has_clicks_column'  => in_array('clicks', $schema),
+            'has_shares_column'  => in_array('shares', $schema),
         ]);
     }
 
@@ -450,80 +399,18 @@ class AgentController extends Controller
     {
         $user = Auth::user();
 
-        try {
-            $leads = Lead::with('property', 'user')
-                ->where('agent_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->paginate(20);
-
-            return response()->json([
-                'data' => $leads->items(),
-                'pagination' => [
-                    'current_page' => $leads->currentPage(),
-                    'last_page'    => $leads->lastPage(),
-                    'per_page'     => $leads->perPage(),
-                    'total'        => $leads->total(),
-                ],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to get leads: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Failed to load leads',
-                'data'    => [],
-                'pagination' => [
-                    'current_page' => 1,
-                    'last_page'    => 1,
-                    'per_page'     => 20,
-                    'total'        => 0,
-                ],
-            ], 500);
-        }
-    }
-
-    private function getSampleLeads(): JsonResponse
-    {
-        $sampleLeads = [
-            [
-                'id'         => 1,
-                'name'       => 'John Doe',
-                'email'      => 'john.doe@example.com',
-                'phone'      => '+255 123 456 789',
-                'status'     => 'new',
-                'created_at' => now()->subDays(2)->toDateTimeString(),
-                'property'   => ['id' => 1, 'title' => 'Mwanza PLS Apartment'],
-                'user'       => ['first_name' => 'John', 'email' => 'john.doe@example.com']
-            ],
-            [
-                'id'         => 2,
-                'name'       => 'Jane Smith',
-                'email'      => 'jane.smith@example.com',
-                'phone'      => '+255 987 654 321',
-                'status'     => 'contacted',
-                'created_at' => now()->subDays(5)->toDateTimeString(),
-                'property'   => ['id' => 2, 'title' => 'Dar es Salaam Beach House'],
-                'user'       => ['first_name' => 'Jane', 'email' => 'jane.smith@example.com']
-            ],
-            [
-                'id'         => 3,
-                'name'       => 'Mike Johnson',
-                'email'      => 'mike.j@example.com',
-                'phone'      => '+255 555 123 456',
-                'status'     => 'interested',
-                'created_at' => now()->subWeek()->toDateTimeString(),
-                'property'   => ['id' => 3, 'title' => 'Arusha Modern Villa'],
-                'user'       => ['first_name' => 'Mike', 'email' => 'mike.j@example.com']
-            ]
-        ];
-
-        Log::info('📋 Returning sample leads: ' . count($sampleLeads));
+        $leads = Lead::with('property', 'user')
+            ->where('agent_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
 
         return response()->json([
-            'data' => $sampleLeads,
+            'data' => $leads->items(),
             'pagination' => [
-                'current_page' => 1,
-                'last_page'    => 1,
-                'per_page'     => 20,
-                'total'        => count($sampleLeads),
+                'current_page' => $leads->currentPage(),
+                'last_page'    => $leads->lastPage(),
+                'per_page'     => $leads->perPage(),
+                'total'        => $leads->total(),
             ],
         ]);
     }
@@ -532,41 +419,17 @@ class AgentController extends Controller
     {
         $user = Auth::user();
 
-        try {
-            $totalLeads     = Lead::where('agent_id', $user->id)->count();
-            $newLeads       = Lead::where('agent_id', $user->id)->where('created_at', '>=', now()->startOfDay())->count();
-            $convertedLeads = Lead::where('agent_id', $user->id)->where('status', 'converted')->count();
-            $conversionRate = $totalLeads > 0 ? ($convertedLeads / $totalLeads) * 100 : 0;
+        $totalLeads     = Lead::where('agent_id', $user->id)->count();
+        $newLeads       = Lead::where('agent_id', $user->id)->where('created_at', '>=', now()->startOfDay())->count();
+        $convertedLeads = Lead::where('agent_id', $user->id)->where('status', 'converted')->count();
+        $conversionRate = $totalLeads > 0 ? ($convertedLeads / $totalLeads) * 100 : 0;
 
-            return response()->json(['data' => [
-                'total_leads'     => $totalLeads,
-                'new_leads'       => $newLeads,
-                'converted_leads' => $convertedLeads,
-                'conversion_rate' => round($conversionRate, 1),
-            ]]);
-        } catch (\Exception $e) {
-            Log::error('Failed to get lead stats: ' . $e->getMessage());
-            return response()->json(['data' => [
-                'total_leads'     => 0,
-                'new_leads'       => 0,
-                'converted_leads' => 0,
-                'conversion_rate' => 0,
-            ]]);
-        }
-    }
-
-    private function getSampleStats(): JsonResponse
-    {
-        $sampleStats = [
-            'total_leads'     => 15,
-            'new_leads'       => 3,
-            'converted_leads' => 8,
-            'conversion_rate' => 53.3,
-        ];
-
-        Log::info('📊 Returning sample stats: ' . json_encode($sampleStats));
-
-        return response()->json(['data' => $sampleStats]);
+        return response()->json(['data' => [
+            'total_leads'     => $totalLeads,
+            'new_leads'       => $newLeads,
+            'converted_leads' => $convertedLeads,
+            'conversion_rate' => round($conversionRate, 1),
+        ]]);
     }
 
     public function createLead(Request $request, Property $property): JsonResponse
@@ -586,35 +449,22 @@ class AgentController extends Controller
             ], 422);
         }
 
-        try {
-            $lead = Lead::create([
-                'agent_id'    => $property->agent_id,
-                'property_id' => $property->id,
-                'user_id'     => Auth::check() ? Auth::id() : null,
-                'name'        => $request->name,
-                'email'       => $request->email,
-                'phone'       => $request->phone,
-                'message'     => $request->message,
-                'source'      => $request->source ?? 'website',
-                'status'      => 'new',
-            ]);
+        $lead = Lead::create([
+            'agent_id'    => $property->agent_id,
+            'property_id' => $property->id,
+            'user_id'     => Auth::check() ? Auth::id() : null,
+            'name'        => $request->name,
+            'email'       => $request->email,
+            'phone'       => $request->phone,
+            'message'     => $request->message,
+            'source'      => $request->source ?? 'website',
+            'status'      => 'new',
+        ]);
 
-            Log::info('Lead created successfully', [
-                'lead_id'     => $lead->id,
-                'property_id' => $property->id,
-                'agent_id'    => $property->agent_id,
-                'name'        => $request->name,
-                'email'       => $request->email,
-            ]);
-
-            return response()->json([
-                'message' => 'Lead created successfully',
-                'data'    => $lead->load('property'),
-            ], 201);
-        } catch (\Exception $e) {
-            Log::error('Failed to create lead: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to create lead'], 500);
-        }
+        return response()->json([
+            'message' => 'Lead created successfully',
+            'data'    => $lead->load('property'),
+        ], 201);
     }
 
     public function updateLeadStatus(Request $request, Lead $lead): JsonResponse
@@ -636,29 +486,17 @@ class AgentController extends Controller
             ], 422);
         }
 
-        try {
-            $lead->update(['status' => $request->status]);
+        $lead->update(['status' => $request->status]);
 
-            Log::info('Lead status updated', [
-                'lead_id'    => $lead->id,
-                'old_status' => $lead->getOriginal('status'),
-                'new_status' => $request->status,
-                'agent_id'   => $user->id,
-            ]);
-
-            return response()->json([
-                'message' => 'Lead status updated successfully',
-                'data'    => $lead->load('property', 'user'),
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to update lead status: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to update lead status'], 500);
-        }
+        return response()->json([
+            'message' => 'Lead status updated successfully',
+            'data'    => $lead->load('property', 'user'),
+        ]);
     }
 
     public function getApplications(): JsonResponse
     {
-        $user         = Auth::user();
+        $user = Auth::user();
         $applications = Application::with(['user', 'property'])
             ->whereHas('property', function ($query) use ($user) {
                 $query->where('agent_id', $user->id);
@@ -716,18 +554,18 @@ class AgentController extends Controller
             ]);
         }
 
-        try {
-            Notification::create([
-                'user_id' => $tenant->user_id,
-                'title'   => 'Application Approved!',
-                'message' => "Your application for {$application->property->title} has been approved. You can now proceed with rent payments.",
-                'type'    => 'application_approved',
-            ]);
-        } catch (\Exception $e) {
-            \Log::warning('Failed to create application approval notification', [
-                'error'          => $e->getMessage(),
-                'application_id' => $application->id,
-            ]);
+        // Silent notification creation
+        if (class_exists(Notification::class)) {
+            try {
+                Notification::create([
+                    'user_id' => $tenant->user_id,
+                    'title'   => 'Application Approved!',
+                    'message' => "Your application for {$application->property->title} has been approved.",
+                    'type'    => 'application_approved',
+                ]);
+            } catch (\Exception $e) {
+                // Silent fail
+            }
         }
 
         return response()->json(['message' => 'Application approved successfully']);
@@ -748,31 +586,21 @@ class AgentController extends Controller
             'rejection_reason' => $reason,
         ]);
 
-        try {
-            Notification::create([
-                'user_id' => $application->user_id,
-                'title'   => 'Application Rejected',
-                'message' => "Your application for {$application->property->title} was rejected. Reason: {$reason}",
-                'type'    => 'application_rejected',
-            ]);
-        } catch (\Exception $e) {
-            \Log::warning('Failed to create application rejection notification', [
-                'error'          => $e->getMessage(),
-                'application_id' => $application->id,
-            ]);
+        // Silent notification
+        if (class_exists(Notification::class)) {
+            try {
+                Notification::create([
+                    'user_id' => $application->user_id,
+                    'title'   => 'Application Rejected',
+                    'message' => "Your application for {$application->property->title} was rejected. Reason: {$reason}",
+                    'type'    => 'application_rejected',
+                ]);
+            } catch (\Exception $e) {
+                // Silent fail
+            }
         }
 
         return response()->json(['message' => 'Application rejected successfully']);
-    }
-
-    private function tenantTablesAvailable(): bool
-    {
-        try {
-            \Schema::hasTable('tenants') && \Schema::hasTable('contracts');
-        } catch (\Exception $e) {
-            return false;
-        }
-        return true;
     }
 
     public function getMyCommissions(): JsonResponse
@@ -781,7 +609,7 @@ class AgentController extends Controller
             return $this->emptyPaginatedResponse();
         }
 
-        $user        = Auth::user();
+        $user = Auth::user();
         $commissions = Commission::with(['property', 'payment'])
             ->where('agent_id', $user->id)
             ->orderBy('created_at', 'desc')
@@ -827,7 +655,7 @@ class AgentController extends Controller
             return $this->emptyPaginatedResponse();
         }
 
-        $user    = Auth::user();
+        $user = Auth::user();
         $payouts = Commission::with(['property', 'payment'])
             ->where('agent_id', $user->id)
             ->where('status', 'paid')
@@ -847,7 +675,7 @@ class AgentController extends Controller
 
     public function getAnalytics(): JsonResponse
     {
-        $user       = Auth::user();
+        $user = Auth::user();
         $properties = Property::where('agent_id', $user->id);
 
         return response()->json(['data' => [
@@ -869,38 +697,28 @@ class AgentController extends Controller
     {
         if (! $this->messageTablesAvailable()) {
             return response()->json([
-                'data' => [
-                    'messages'          => [],
-                    'recipient_options' => [],
-                ],
+                'data' => ['messages' => [], 'recipient_options' => []],
                 'pagination' => [
-                    'current_page' => 1,
-                    'last_page'    => 1,
-                    'per_page'     => 50,
-                    'total'        => 0,
+                    'current_page' => 1, 'last_page' => 1, 'per_page' => 50, 'total' => 0,
                 ],
             ]);
         }
 
-        $user     = Auth::user();
+        $user = Auth::user();
         $ownerIds = $this->linkedOwnerIds($user->id);
 
         $messages = Message::with(['sender', 'recipient', 'property'])
             ->where(function ($q) use ($user) {
-                $q->where('sender_id', $user->id)
-                  ->orWhere('receiver_id', $user->id);
+                $q->where('sender_id', $user->id)->orWhere('receiver_id', $user->id);
             })
             ->where(function ($q) use ($user, $ownerIds) {
-                $q->whereHas('property', function ($pq) use ($user) {
-                    $pq->where('agent_id', $user->id);
-                });
+                $q->whereHas('property', fn($pq) => $pq->where('agent_id', $user->id));
 
                 if ($ownerIds->isNotEmpty()) {
                     $q->orWhere(function ($inner) use ($ownerIds) {
                         $inner->whereNull('property_id')
                               ->where(function ($p) use ($ownerIds) {
-                                  $p->whereIn('sender_id', $ownerIds)
-                                    ->orWhereIn('receiver_id', $ownerIds);
+                                  $p->whereIn('sender_id', $ownerIds)->orWhereIn('receiver_id', $ownerIds);
                               });
                     });
                 }
@@ -908,6 +726,7 @@ class AgentController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(50);
 
+        // Mark as read
         Message::where('receiver_id', $user->id)
             ->whereNull('read_at')
             ->whereIn('id', collect($messages->items())->pluck('id'))
@@ -917,7 +736,6 @@ class AgentController extends Controller
             'data' => [
                 'messages' => array_map(function ($message) use ($user) {
                     $direction = $message->sender_id === $user->id ? 'sent' : 'received';
-
                     return [
                         'id'           => $message->id,
                         'sender_id'    => $message->sender_id,
@@ -965,19 +783,16 @@ class AgentController extends Controller
             ], 422);
         }
 
-        $user        = Auth::user();
+        $user = Auth::user();
         $recipientId = (int) $request->receiver_id;
-        $propertyId  = $request->property_id ? (int) $request->property_id : null;
+        $propertyId = $request->property_id ? (int) $request->property_id : null;
 
-        $propertyQuery = Property::where('agent_id', $user->id)
-            ->where('owner_id', $recipientId);
+        $property = Property::where('agent_id', $user->id)
+            ->where('owner_id', $recipientId)
+            ->when($propertyId, fn($q) => $q->where('id', $propertyId))
+            ->first();
 
-        if ($propertyId) {
-            $propertyQuery->where('id', $propertyId);
-        }
-
-        $property = $propertyQuery->first();
-        if (! $property) {
+        if (!$property) {
             return response()->json(['message' => 'Recipient must be one of your linked owners'], 422);
         }
 
@@ -995,8 +810,6 @@ class AgentController extends Controller
         ], 201);
     }
 
-    // ── Notifications ─────────────────────────────────────────────────────────
-
     public function getAgentNotifications(): JsonResponse
     {
         return response()->json(['data' => []]);
@@ -1007,26 +820,21 @@ class AgentController extends Controller
         return response()->json(['message' => 'Notification sent']);
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
+    // ==================== PRIVATE HELPERS ====================
 
     private function calculateConversionRate(Property $property): float
     {
         $applications = Application::where('property_id', $property->id)->count();
-        $views        = $property->views ?? 1;
-
+        $views = $property->views ?? 1;
         return $views > 0 ? round(($applications / $views) * 100, 2) : 0;
     }
 
     private function calculateLeadConversionRate(User $user): float
     {
-        if (! $this->leadTablesAvailable()) {
-            return 0;
-        }
+        if (! $this->leadTablesAvailable()) return 0;
 
-        $totalLeads     = Lead::where('agent_id', $user->id)->count();
-        $convertedLeads = Application::whereHas('property', function ($query) use ($user) {
-            $query->where('agent_id', $user->id);
-        })->count();
+        $totalLeads = Lead::where('agent_id', $user->id)->count();
+        $convertedLeads = Application::whereHas('property', fn($q) => $q->where('agent_id', $user->id))->count();
 
         return $totalLeads > 0 ? round(($convertedLeads / $totalLeads) * 100, 2) : 0;
     }
@@ -1035,8 +843,8 @@ class AgentController extends Controller
     {
         return Commission::where('agent_id', $user->id)
             ->get()
-            ->groupBy(fn ($c) => optional($c->created_at)->format('M'))
-            ->map(fn ($items, $month) => [
+            ->groupBy(fn($c) => optional($c->created_at)->format('M'))
+            ->map(fn($items, $month) => [
                 'month'  => $month,
                 'amount' => $items->sum('amount'),
                 'count'  => $items->count(),
@@ -1052,7 +860,7 @@ class AgentController extends Controller
             ->orderBy('applications_count', 'desc')
             ->limit(5)
             ->get()
-            ->map(fn ($property) => [
+            ->map(fn($property) => [
                 'id'           => $property->id,
                 'title'        => $property->title,
                 'applications' => $property->applications_count,
@@ -1078,15 +886,15 @@ class AgentController extends Controller
         return Property::with('owner')
             ->where('agent_id', $agentId)
             ->get()
-            ->filter(fn ($p) => $p->owner !== null)
-            ->map(fn ($property) => [
+            ->filter(fn($p) => $p->owner !== null)
+            ->map(fn($property) => [
                 'receiver_id'    => $property->owner->id,
                 'receiver_name'  => trim($property->owner->first_name . ' ' . $property->owner->last_name),
                 'receiver_email' => $property->owner->email,
                 'property_id'    => $property->id,
                 'property_title' => $property->title,
             ])
-            ->unique(fn ($item) => $item['receiver_id'] . '-' . $item['property_id'])
+            ->unique(fn($item) => $item['receiver_id'] . '-' . $item['property_id'])
             ->values()
             ->toArray();
     }
@@ -1104,6 +912,11 @@ class AgentController extends Controller
     private function messageTablesAvailable(): bool
     {
         return Schema::hasTable('messages') && class_exists(Message::class);
+    }
+
+    private function tenantTablesAvailable(): bool
+    {
+        return Schema::hasTable('tenants') && Schema::hasTable('contracts');
     }
 
     private function emptyPaginatedResponse(int $perPage = 20): JsonResponse

@@ -1,243 +1,305 @@
 import type { CSSProperties } from 'react';
 
-// ─── Oweru Brand Color Palette ────────────────────────────────────────────────
-// Source: Oweru Brand Book & Guidelines
-// Navy #0F172A | Gold #C89128 | Gold-light #D4A84B | Off-white #F8F8F9
+// ─── Oweru Design System — matches landlord_dashboard.dart exactly ─────────────
+//
+//  Page bg    : #F1F5F9  (kSlate100)
+//  Header/nav : #1E293B  (kSlate800)
+//  Cards      : #FFFFFF  (kWhite)
+//  Border     : #E2E8F0  (kSlate200)
+//  Text-1     : #0F172A  (kSlate900)
+//  Text-2     : #475569  (kSlate600)
+//  Text-muted : #94A3B8  (kSlate400)
+//  Gold CTA   : #C89128  (buttons & accent links only)
+//
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const palette = {
-  // Brand primaries
-  navy900:     '#0F172A',
-  navy800:     '#141F35',
-  navy700:     '#1A2A47',
-  navy600:     '#1E3358',
-  navy400:     '#3D5E96',
+  // ── Slate scale (1:1 with Flutter kSlate*)
+  slate50:   '#F8FAFC',
+  slate100:  '#F1F5F9',   // kPageBg  — page / outer background
+  slate200:  '#E2E8F0',   // kBorder  — card borders, dividers
+  slate300:  '#CBD5E1',
+  slate400:  '#94A3B8',   // text-muted, icons
+  slate500:  '#64748B',
+  slate600:  '#475569',   // text-secondary
+  slate700:  '#334155',   // drawer active item bg
+  slate800:  '#1E293B',   // kHeaderBg — top bars, panel headers
+  slate900:  '#0F172A',   // kSlate900 — primary text
 
-  // Brand gold
-  gold:        '#C89128',
-  goldLight:   '#D4A84B',
-  goldPale:    '#E8CC8A',
-  goldFaint:   'rgba(200, 145, 40, 0.10)',
-  goldBorder:  'rgba(200, 145, 40, 0.25)',
-  goldGlow:    'rgba(200, 145, 40, 0.18)',
+  // ── Surfaces
+  white:     '#FFFFFF',   // kCardBg  — every card / panel
+  pageBg:    '#F1F5F9',   // kPageBg
 
-  // Neutrals
-  offWhite:    '#F8F8F9',
-  white:       '#FFFFFF',
-  gray100:     '#F1F3F6',
-  gray200:     '#E4E8EF',
-  gray300:     '#C9D1DF',
-  gray400:     '#9AAABF',
-  gray500:     '#6B7E99',
-  gray600:     '#4A5C73',
-  gray700:     '#2E3D52',
+  // ── Gold (CTA buttons & accent text ONLY — not backgrounds)
+  gold:      '#C89128',
+  goldLight: '#D4A84B',
+  goldPale:  'rgba(200,145,40,0.10)',
+  goldBorder:'rgba(200,145,40,0.28)',
+  goldGlow:  '0 4px 14px rgba(200,145,40,0.28)',
 
-  // Semantic
-  green:       '#16a34a',
-  red:         '#dc2626',
-  amber:       '#b45309',
+  // ── Semantic  (matches Flutter kSuccess / kInfo / kWarning / kDanger)
+  green:     '#16A34A',   // kSuccess
+  greenBg:   '#DCFCE7',   // kSuccessBg
+  blue:      '#2563EB',   // kInfo
+  blueBg:    '#DBEAFE',   // kInfoBg
+  amber:     '#D97706',   // kWarning
+  amberBg:   '#FEF3C7',   // kWarningBg
+  red:       '#DC2626',   // kDanger
+  redBg:     '#FFE4E6',   // kDangerBg
 
-  // Legacy aliases (keep for backward compat in inline refs)
-  cream:       '#F8F8F9',
-  muted:       '#9AAABF',
-  border:      'rgba(200, 145, 40, 0.15)',
-  borderSoft:  'rgba(200, 145, 40, 0.10)',
+  // ── Legacy aliases (keep so existing imports don't break)
+  navy900:   '#0F172A',
+  navy800:   '#1E293B',
+  offWhite:  '#F8FAFC',
+  cream:     '#F8FAFC',
+  muted:     '#94A3B8',
+  border:    '#E2E8F0',
+  borderSoft:'rgba(226,232,240,0.6)',
 } as const;
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
-
+// ─── Page wrapper ─────────────────────────────────────────────────────────────
+// Matches: backgroundColor: kPageBg (kSlate100)
 export const pageStyle: CSSProperties = {
-  display: 'grid',
-  gap: '24px',
-  backgroundColor: palette.navy900,
-  color: palette.offWhite,
-  minHeight: '100vh',
+  display:         'grid',
+  gap:             '20px',
+  backgroundColor: palette.pageBg,   // #F1F5F9
+  color:           palette.slate900,
+  minHeight:       '100vh',
+  padding:         '24px',
 };
 
+// ─── Panel / Card ─────────────────────────────────────────────────────────────
+// Matches: Container(color: kWhite, border: Border.all(color: kBorder))
 export const panelStyle: CSSProperties = {
-  background: `linear-gradient(160deg, ${palette.navy800} 0%, ${palette.navy900} 100%)`,
-  border: `1px solid ${palette.border}`,
-  borderRadius: '20px',
-  padding: '28px',
-  color: palette.offWhite,
-  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.28)',
+  background:   palette.white,
+  border:       `1px solid ${palette.slate200}`,
+  borderRadius: '14px',
+  padding:      '24px',
+  color:        palette.slate900,
+  boxShadow:    '0 1px 3px rgba(15,23,42,0.06)',
+};
+
+// ─── Slate header panel ───────────────────────────────────────────────────────
+// Matches: Container(color: kSlate800) used for page/section headers
+export const headerPanelStyle: CSSProperties = {
+  background:   palette.slate800,
+  borderRadius: '14px',
+  padding:      '24px 28px',
+  color:        palette.white,
 };
 
 // ─── Typography ───────────────────────────────────────────────────────────────
 
+// Section label → matches _sectionLabel() — slate-800, 14px, w700
 export const sectionTitleStyle: CSSProperties = {
-  fontSize: '11px',
-  letterSpacing: '0.24em',
+  fontSize:        '11px',
+  letterSpacing:   '0.16em',
+  textTransform:   'uppercase',
+  color:           palette.slate500,   // muted uppercase label, NOT gold
+  fontWeight:      700,
+  marginBottom:    '10px',
+};
+
+// Gold eyebrow (use sparingly — only where Flutter uses gold accent labels)
+export const eyebrowStyle: CSSProperties = {
+  fontSize:      '11px',
+  letterSpacing: '0.20em',
   textTransform: 'uppercase',
-  color: palette.gold,           // Oweru brand gold
-  fontWeight: 700,
-  marginBottom: '10px',
+  color:         palette.gold,
+  fontWeight:    700,
+  marginBottom:  '6px',
 };
 
 export const headingStyle: CSSProperties = {
-  fontSize: 'clamp(24px, 4vw, 32px)',
-  lineHeight: 1.1,
-  margin: 0,
-  fontWeight: 700,
-  color: palette.offWhite,
+  fontSize:      'clamp(20px, 3.5vw, 28px)',
+  lineHeight:    1.15,
+  margin:        0,
+  fontWeight:    800,
+  color:         palette.slate900,
   letterSpacing: '-0.02em',
 };
 
-export const descriptionStyle: CSSProperties = {
-  color: palette.muted,
-  fontSize: '15px',
-  lineHeight: 1.7,
-  margin: 0,
+// Heading used inside dark slate headers
+export const headingLightStyle: CSSProperties = {
+  ...headingStyle,
+  color: palette.white,
 };
 
-// ─── Metric cards ─────────────────────────────────────────────────────────────
+export const descriptionStyle: CSSProperties = {
+  color:      palette.slate600,
+  fontSize:   '14px',
+  lineHeight: 1.65,
+  margin:     0,
+};
+
+export const descriptionLightStyle: CSSProperties = {
+  ...descriptionStyle,
+  color: palette.slate400,
+};
+
+// ─── Metric / stat cards ──────────────────────────────────────────────────────
+// Matches: _StatCard2 — white card, slate border, colored icon badge
 
 export const metricGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  gap: '14px',
+  display:             'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+  gap:                 '12px',
 };
 
 export const metricCardStyle: CSSProperties = {
-  padding: '18px',
-  borderRadius: '14px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: `1px solid ${palette.borderSoft}`,
+  padding:      '16px 18px',
+  borderRadius: '12px',
+  background:   palette.white,
+  border:       `1px solid ${palette.slate200}`,
+  boxShadow:    '0 1px 2px rgba(15,23,42,0.04)',
 };
 
 // ─── Table ────────────────────────────────────────────────────────────────────
 
 export const tableWrapStyle: CSSProperties = {
-  overflowX: 'auto',
-  borderRadius: '12px',
-  border: `1px solid ${palette.borderSoft}`,
+  overflowX:    'auto',
+  borderRadius: '10px',
+  border:       `1px solid ${palette.slate200}`,
 };
 
 export const tableStyle: CSSProperties = {
-  width: '100%',
-  borderCollapse: 'collapse',
-  minWidth: '760px',
+  width:           '100%',
+  borderCollapse:  'collapse',
+  minWidth:        '720px',
 };
 
 export const thStyle: CSSProperties = {
-  textAlign: 'left',
-  padding: '13px 14px',
-  fontSize: '11px',
-  letterSpacing: '0.12em',
+  textAlign:     'left',
+  padding:       '12px 16px',
+  fontSize:      '11px',
+  letterSpacing: '0.10em',
   textTransform: 'uppercase',
-  fontWeight: 700,
-  color: palette.gray500,
-  borderBottom: `1px solid ${palette.borderSoft}`,
-  background: 'rgba(15, 23, 42, 0.50)',
+  fontWeight:    700,
+  color:         palette.slate500,          // slate-500 header label
+  borderBottom:  `1px solid ${palette.slate200}`,
+  background:    palette.slate100,          // kSlate100 table header bg
 };
 
 export const tdStyle: CSSProperties = {
-  padding: '16px 14px',
-  borderBottom: `1px solid rgba(255, 255, 255, 0.04)`,
+  padding:       '14px 16px',
+  borderBottom:  `1px solid ${palette.slate200}`,
   verticalAlign: 'top',
-  color: palette.offWhite,
-  fontSize: '14px',
+  color:         palette.slate900,
+  fontSize:      '13px',
 };
 
 // ─── Buttons ──────────────────────────────────────────────────────────────────
+// primary   → gold bg, white text   (gold CTA — "Collect Rent", "Add Property")
+// secondary → white bg, slate border (outline — matches _SmallButton filled=false)
+// slate     → slate-800 bg, white text (matches _SmallButton filled=true)
+// danger    → red tint
 
-export const buttonStyle = (tone: 'primary' | 'secondary' | 'danger' = 'secondary'): CSSProperties => {
+export const buttonStyle = (
+  tone: 'primary' | 'secondary' | 'slate' | 'danger' = 'secondary'
+): CSSProperties => {
   const map = {
     primary: {
-      color:  palette.navy900,      // dark navy text on gold button
+      color:  '#FFFFFF',
       bg:     palette.gold,
       border: palette.gold,
-      shadow: `0 2px 10px ${palette.goldGlow}`,
+      shadow: `0 2px 10px rgba(200,145,40,0.28)`,
     },
     secondary: {
-      color:  palette.offWhite,
-      bg:     'rgba(255, 255, 255, 0.06)',
-      border: 'rgba(255, 255, 255, 0.14)',
+      color:  palette.slate700,
+      bg:     palette.white,
+      border: palette.slate200,
+      shadow: 'none',
+    },
+    slate: {
+      color:  palette.white,
+      bg:     palette.slate800,
+      border: palette.slate800,
       shadow: 'none',
     },
     danger: {
       color:  palette.red,
-      bg:     'rgba(220, 38, 38, 0.10)',
-      border: 'rgba(220, 38, 38, 0.28)',
+      bg:     palette.redBg,
+      border: 'rgba(220,38,38,0.28)',
       shadow: 'none',
     },
   } as const;
 
   return {
-    display: 'inline-flex',
-    alignItems: 'center',
+    display:        'inline-flex',
+    alignItems:     'center',
     justifyContent: 'center',
-    gap: '8px',
-    padding: '10px 16px',
-    borderRadius: '8px',
-    background: map[tone].bg,
-    border: `1px solid ${map[tone].border}`,
-    color: map[tone].color,
-    fontSize: '13px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    boxShadow: map[tone].shadow,
-    whiteSpace: 'nowrap',
-    letterSpacing: '0.04em',
+    gap:            '8px',
+    padding:        '10px 18px',
+    borderRadius:   '8px',
+    background:     map[tone].bg,
+    border:         `1px solid ${map[tone].border}`,
+    color:          map[tone].color,
+    fontSize:       '13px',
+    fontWeight:     700,
+    cursor:         'pointer',
+    boxShadow:      map[tone].shadow,
+    whiteSpace:     'nowrap',
+    letterSpacing:  '0.02em',
   };
 };
 
 // ─── Forms ────────────────────────────────────────────────────────────────────
 
 export const inputStyle: CSSProperties = {
-  width: '100%',
-  padding: '11px 14px',
+  width:        '100%',
+  padding:      '10px 14px',
   borderRadius: '8px',
-  background: 'rgba(255, 255, 255, 0.04)',
-  border: `1.5px solid ${palette.borderSoft}`,
-  color: palette.offWhite,
-  fontSize: '14px',
-  outline: 'none',
+  background:   palette.white,
+  border:       `1.5px solid ${palette.slate200}`,
+  color:        palette.slate900,
+  fontSize:     '13px',
+  outline:      'none',
+  fontFamily:   'DM Sans, sans-serif',
 };
 
 export const selectStyle: CSSProperties = {
   ...inputStyle,
   appearance: 'none',
+  cursor:     'pointer',
 };
 
 export const textareaStyle: CSSProperties = {
   ...inputStyle,
   minHeight: '120px',
-  resize: 'vertical',
+  resize:    'vertical',
 };
 
 // ─── Status pill ──────────────────────────────────────────────────────────────
+// Matches: Container with color bg + rounded border (kSuccessBg, kDangerBg …)
 
 export const statusPillStyle = (color: string): CSSProperties => ({
-  display: 'inline-flex',
-  alignItems: 'center',
-  padding: '3px 10px',
-  borderRadius: '100px',
-  background: `${color}18`,
-  border: `1px solid ${color}35`,
+  display:       'inline-flex',
+  alignItems:    'center',
+  padding:       '3px 10px',
+  borderRadius:  '999px',
+  background:    `${color}18`,
+  border:        `1px solid ${color}35`,
   color,
-  fontSize: '11px',
-  letterSpacing: '0.08em',
+  fontSize:      '11px',
+  letterSpacing: '0.06em',
   textTransform: 'uppercase',
-  fontWeight: 700,
+  fontWeight:    700,
 });
 
 // ─── Status color helper ──────────────────────────────────────────────────────
 
 export const getStatusColor = (status?: string | null): string => {
   switch ((status || '').toLowerCase()) {
-    case 'approved':
-    case 'active':
-    case 'completed':
+    case 'approved': case 'active': case 'available': case 'completed':
       return palette.green;
-    case 'pending':
-    case 'processing':
+    case 'pending': case 'processing':
       return palette.amber;
-    case 'rejected':
-    case 'failed':
-    case 'cancelled':
+    case 'rejected': case 'failed': case 'cancelled':
       return palette.red;
+    case 'rented': case 'occupied':
+      return palette.blue;
     default:
-      return palette.gray400;
+      return palette.slate400;
   }
 };
 
@@ -246,8 +308,8 @@ export const getStatusColor = (status?: string | null): string => {
 export const formatCurrency = (amount?: number | string | null): string => {
   const value = Number(amount ?? 0);
   return new Intl.NumberFormat('en-TZ', {
-    style: 'currency',
-    currency: 'TZS',
+    style:               'currency',
+    currency:            'TZS',
     maximumFractionDigits: 0,
   }).format(Number.isFinite(value) ? value : 0);
 };
@@ -259,63 +321,61 @@ export const formatDate = (value?: string | null): string => {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-// ---------------------------------------------------------------------------
-// Mobile responsive styles
-// ---------------------------------------------------------------------------
+// ─── Mobile cards ─────────────────────────────────────────────────────────────
 
 export const mobileTableContainer: CSSProperties = { display: 'none' };
 
 export const mobileCard: CSSProperties = {
-  background: palette.navy800,
-  border: `1px solid ${palette.borderSoft}`,
+  background:   palette.white,
+  border:       `1px solid ${palette.slate200}`,
   borderRadius: '12px',
-  padding: '16px',
-  marginBottom: '12px',
-  boxShadow: '0 1px 4px rgba(15, 23, 42, 0.06)',
+  padding:      '16px',
+  marginBottom: '10px',
+  boxShadow:    '0 1px 3px rgba(15,23,42,0.05)',
 };
 
 export const mobileCardHeader: CSSProperties = {
-  display: 'flex',
+  display:        'flex',
   justifyContent: 'space-between',
-  alignItems: 'flex-start',
-  marginBottom: '12px',
-  gap: '8px',
+  alignItems:     'flex-start',
+  marginBottom:   '12px',
+  gap:            '8px',
 };
 
 export const mobileCardTitle: CSSProperties = {
-  fontSize: '15px',
+  fontSize:   '15px',
   fontWeight: 600,
-  color: palette.cream,
-  margin: 0,
+  color:      palette.slate900,
+  margin:     0,
 };
 
 export const mobileCardStatus: CSSProperties = {
-  padding: '3px 9px',
-  borderRadius: '100px',
-  fontSize: '11px',
-  fontWeight: 700,
-  letterSpacing: '0.04em',
+  padding:      '3px 9px',
+  borderRadius: '999px',
+  fontSize:     '11px',
+  fontWeight:   700,
+  letterSpacing:'0.04em',
 };
 
 export const mobileCardSection: CSSProperties = { marginBottom: '10px' };
 
 export const mobileCardLabel: CSSProperties = {
-  fontSize: '11px',
-  color: palette.gray400,
-  fontWeight: 700,
+  fontSize:      '11px',
+  color:         palette.slate400,
+  fontWeight:    700,
   textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-  marginBottom: '3px',
+  letterSpacing: '0.06em',
+  marginBottom:  '3px',
 };
 
 export const mobileCardValue: CSSProperties = {
-  fontSize: '14px',
-  color: palette.cream,
+  fontSize: '13px',
+  color:    palette.slate900,
 };
 
 export const mobileCardActions: CSSProperties = {
-  display: 'flex',
-  gap: '8px',
+  display:  'flex',
+  gap:      '8px',
   flexWrap: 'wrap',
 };
 

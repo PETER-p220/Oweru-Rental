@@ -1,8 +1,37 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BarChart3, Building, DollarSign, FileText, Plus, Users } from 'lucide-react';
+import {
+  ArrowRight, BarChart3, Building, DollarSign, FileText,
+  Plus, Users, Home, MapPin, Bell, ChevronRight, Settings,
+} from 'lucide-react';
 import Api from '../services/api';
-import { formatCurrency } from './landlord/landlordPageStyles';
+
+// ── Design tokens — 1:1 with landlord_dashboard.dart kSlate* color system
+const C = {
+  pageBg:   '#F1F5F9',   // kPageBg / kSlate100  — page background
+  headerBg: '#1E293B',   // kHeaderBg / kSlate800 — slate header panels
+  cardBg:   '#FFFFFF',   // kCardBg / kWhite      — card surfaces
+  border:   '#E2E8F0',   // kBorder / kSlate200
+  text:     '#0F172A',   // kSlate900
+  textSub:  '#475569',   // kSlate600
+  textMuted:'#94A3B8',   // kSlate400
+  textLight:'#CBD5E1',   // kSlate300  — text on dark bg
+  slate100: '#F1F5F9',
+  slate200: '#E2E8F0',
+  slate500: '#64748B',
+  slate600: '#475569',
+  slate700: '#334155',
+  slate800: '#1E293B',
+  slate900: '#0F172A',
+  // Gold — CTA buttons & accent price text ONLY
+  gold:     '#C89128',
+  goldGlow: '0 4px 14px rgba(200,145,40,0.26)',
+  // Semantic — matches kSuccess / kInfo / kWarning / kDanger
+  green:    '#16A34A', greenBg:  '#DCFCE7',
+  blue:     '#2563EB', blueBg:   '#DBEAFE',
+  amber:    '#D97706', amberBg:  '#FEF3C7',
+  red:      '#DC2626', redBg:    '#FFE4E6',
+};
 
 interface DashboardStats {
   total_properties?: number;
@@ -12,294 +41,213 @@ interface DashboardStats {
   occupancy_rate?: number;
   pending_contracts?: number;
 }
-
-interface ContractItem {
-  id: number;
-  property_id: number;
-  property_title?: string;
-  tenant_id: number;
-  tenant_name?: string;
-  start_date: string;
-  end_date: string;
-  rent_amount: number;
-  status: string;
-  payment_status: string;
-}
-
+interface ContractItem { id: number; status: string; payment_status: string; [k: string]: any; }
 interface PropertyItem {
-  id: number;
-  title?: string;
-  location?: string;
-  price?: number | string;
-  bedrooms?: number;
-  bathrooms?: number;
-  area?: number;
-  images?: string[];
-  available?: boolean;
+  id: number; title?: string; location?: string;
+  price?: number | string; bedrooms?: number;
+  bathrooms?: number; area?: number;
+  images?: string[]; available?: boolean;
 }
+
+const imageUrl = (path?: string) => {
+  if (!path) return '';
+  return path.startsWith('http') ? path : `${import.meta.env.VITE_API_URL}/storage/${path}`;
+};
+
+const fmtPrice = (v: any): string => {
+  if (v == null) return 'TZS 0';
+  const n = typeof v === 'number' ? v : parseFloat(v) || 0;
+  if (n >= 1_000_000) return `TZS ${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `TZS ${(n / 1_000).toFixed(1)}K`;
+  return `TZS ${n.toFixed(0)}`;
+};
 
 const LandlordDashboard = () => {
-  const [stats, setStats] = useState<DashboardStats>({});
-  const [properties, setProperties] = useState<PropertyItem[]>([]);
-  const [contracts, setContracts] = useState<ContractItem[]>([]);
+  const [stats, setStats]             = useState<DashboardStats>({});
+  const [properties, setProperties]   = useState<PropertyItem[]>([]);
+  const [contracts, setContracts]     = useState<ContractItem[]>([]);
   const [applicationCount, setApplicationCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState('');
 
   useEffect(() => {
-    const loadDashboardData = async () => {
+    (async () => {
       try {
-        setLoading(true);
-        setError('');
-
-        const [statsResponse, propertiesResponse, applicationsResponse, contractsResponse] = await Promise.all([
+        setLoading(true); setError('');
+        const [statsRes, propsRes, appsRes, contractsRes] = await Promise.all([
           Api.getOwnerDashboard(),
           Api.getOwnerProperties(),
           Api.getOwnerApplications(),
-          Api.getOwnerContracts().catch(() => ({ data: [] })), // Handle if no contracts yet
+          Api.getOwnerContracts().catch(() => ({ data: [] })),
         ]);
-
-        setStats(statsResponse.data || {});
-        setProperties(Array.isArray(propertiesResponse.data) ? propertiesResponse.data.slice(0, 5) : []);
-        setApplicationCount(Array.isArray(applicationsResponse.data) ? applicationsResponse.data.length : 0);
-        setContracts(Array.isArray(contractsResponse.data) ? contractsResponse.data : []);
+        setStats(statsRes.data || {});
+        setProperties(Array.isArray(propsRes.data) ? propsRes.data.slice(0, 5) : []);
+        setApplicationCount(Array.isArray(appsRes.data) ? appsRes.data.length : 0);
+        setContracts(Array.isArray(contractsRes.data) ? contractsRes.data : []);
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Failed to load dashboard data.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboardData();
+      } finally { setLoading(false); }
+    })();
   }, []);
 
+  // Matches _statsRow items in Dart (_StatItem list)
   const statCards = useMemo(() => [
-    { icon: Building, label: 'Total Properties', value: stats.total_properties ?? 0, helper: 'Live owner portfolio' },
-    { icon: FileText, label: 'Applications', value: applicationCount, helper: 'Current submissions' },
-    { icon: Users, label: 'Active Tenants', value: stats.active_tenants ?? 0, helper: 'Active contracts' },
-    { icon: DollarSign, label: 'Monthly Revenue', value: formatCurrency(stats.monthly_revenue), helper: `${Number(stats.occupancy_rate ?? 0).toFixed(1)}% occupancy` },
-    { icon: FileText, label: 'Pending Contracts', value: stats.pending_contracts ?? contracts.filter(c => c.status === 'pending_signature').length, helper: 'Awaiting signature' },
+    { label: 'Properties',   value: `${stats.total_properties  ?? 0}`,                                          accent: C.slate800, bg: C.slate100, Icon: Building    },
+    { label: 'Applications', value: `${applicationCount}`,                                                       accent: C.blue,     bg: C.blueBg,   Icon: FileText    },
+    { label: 'Tenants',      value: `${stats.active_tenants    ?? 0}`,                                          accent: C.green,    bg: C.greenBg,  Icon: Users       },
+    { label: 'Revenue',      value: fmtPrice(stats.monthly_revenue),                                             accent: C.amber,    bg: C.amberBg,  Icon: DollarSign  },
+    { label: 'Pending',      value: `${stats.pending_contracts ?? contracts.filter(c => c.status === 'pending_signature').length}`, accent: C.red, bg: C.redBg, Icon: FileText },
   ], [applicationCount, stats, contracts]);
 
+  // Matches _quickActionsSection / _ActionTile in Dart
   const quickActions = [
-    { label: 'Add Property', icon: Plus, to: 'add-property', primary: true },
-    { label: 'My Properties', icon: Building, to: 'my-properties', primary: false },
-    { label: 'Applications', icon: FileText, to: 'applications', primary: false },
-    { label: 'Digital Contracts', icon: FileText, to: 'digital-contracts', primary: false },
-    { label: 'Analytics', icon: BarChart3, to: 'analytics', primary: false },
+    { label: 'Add Property',      icon: Plus,     to: 'add-property',      accent: C.slate800 },
+    { label: 'My Properties',     icon: Building, to: 'my-properties',     accent: C.blue     },
+    { label: 'Applications',      icon: FileText, to: 'applications',      accent: C.blue     },
+    { label: 'Digital Contracts', icon: FileText, to: 'digital-contracts', accent: C.amber    },
+    { label: 'Analytics',         icon: BarChart3,to: 'analytics',         accent: C.green    },
+    { label: 'Rent Collection',   icon: DollarSign,to:'rent-collection',   accent: C.green    },
   ];
 
-  const imageUrl = (path?: string) => {
-    if (!path) return '';
-    if (path.startsWith('http')) return path;
-    return `${import.meta.env.VITE_API_URL}/storage/${path}`;
-  };
+  if (loading) return (
+    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 36, height: 36, border: `3px solid ${C.border}`, borderTop: `3px solid ${C.slate800}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 
-  if (loading) {
-    return <div style={{ color: '#9f9587' }}>Loading landlord dashboard...</div>;
-  }
-
-  if (error) {
-    return <div style={{ color: '#e07070' }}>{error}</div>;
-  }
+  if (error) return (
+    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ background: C.redBg, border: `1px solid rgba(220,38,38,0.22)`, borderRadius: 12, padding: '20px 24px', color: C.red, fontSize: 14, maxWidth: 480 }}>{error}</div>
+    </div>
+  );
 
   return (
-    <>
+    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}>
       <style>{`
-        .ld-wrap { max-width: 1100px; margin: 0 auto; }
-        .ld-eyebrow {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: #c9a84c;
-          margin-bottom: 18px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .ld-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(37,99,235,0.15); }
-        .ld-stats {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 14px;
-          margin-bottom: 40px;
-        }
-        .ld-stat {
-          background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%);
-          border: 1px solid rgba(37,99,235,0.14);
-          border-radius: 22px;
-          padding: 24px;
-          color: #e8e4dc;
-        }
-        .ld-stat-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 14px;
-          display: grid;
-          place-items: center;
-          background: rgba(37,99,235,0.12);
-          color: #c9a84c;
-          margin-bottom: 16px;
-        }
-        .ld-stat-label {
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.14em;
-          color: #9f9587;
-        }
-        .ld-stat-value {
-          font-size: 32px;
-          margin-top: 8px;
-          margin-bottom: 6px;
-        }
-        .ld-stat-helper {
-          color: #9f9587;
-          font-size: 13px;
-        }
-        .ld-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin-bottom: 42px;
-        }
-        .ld-action {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 12px 16px;
-          text-decoration: none;
-          border-radius: 999px;
-          font-size: 13px;
-          font-weight: 600;
-          border: 1px solid rgba(255,255,255,0.1);
-          color: #e8e4dc;
-          background: rgba(255,255,255,0.04);
-        }
-        .ld-action.primary {
-          color: #17120a;
-          background: #c9a84c;
-          border-color: #c9a84c;
-        }
-        .ld-list {
-          display: grid;
-          gap: 14px;
-        }
-        .ld-item {
-          display: grid;
-          grid-template-columns: 92px minmax(0, 1fr) auto auto;
-          gap: 18px;
-          align-items: center;
-          background: linear-gradient(180deg, rgba(20,20,20,0.96) 0%, rgba(11,11,11,0.98) 100%);
-          border: 1px solid rgba(37,99,235,0.14);
-          border-radius: 22px;
-          padding: 18px;
-          color: #e8e4dc;
-        }
-        .ld-thumb {
-          width: 92px;
-          height: 68px;
-          border-radius: 16px;
-          object-fit: cover;
-          background: rgba(255,255,255,0.05);
-        }
-        .ld-title { font-size: 18px; margin-bottom: 6px; }
-        .ld-meta { color: #9f9587; font-size: 14px; line-height: 1.6; }
-        .ld-price { font-size: 22px; color: #c9a84c; white-space: nowrap; }
-        .ld-links {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-        }
-        .ld-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 10px 14px;
-          border-radius: 999px;
-          text-decoration: none;
-          color: #e8e4dc;
-          border: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.04);
-          font-size: 13px;
-        }
-        @media (max-width: 820px) {
-          .ld-item {
-            grid-template-columns: 1fr;
-          }
-          .ld-links {
-            justify-content: flex-start;
-          }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .qa-tile { transition: box-shadow 0.15s, transform 0.15s; }
+        .qa-tile:hover { box-shadow: 0 6px 20px rgba(15,23,42,0.10) !important; transform: translateY(-1px); }
+        .prop-card { transition: box-shadow 0.15s, transform 0.15s; }
+        .prop-card:hover { box-shadow: 0 6px 20px rgba(15,23,42,0.10) !important; transform: translateY(-1px); }
+        .stat-scroll::-webkit-scrollbar { height: 0; }
       `}</style>
 
-      <div className="ld-wrap">
-        <div className="ld-eyebrow">Overview</div>
-        <div className="ld-stats">
-          {statCards.map((card) => (
-            <div key={card.label} className="ld-stat">
-              <div className="ld-stat-icon"><card.icon size={18} /></div>
-              <div className="ld-stat-label">{card.label}</div>
-              <div className="ld-stat-value">{card.value}</div>
-              <div className="ld-stat-helper">{card.helper}</div>
+      {/* ══ Slate-800 header — matches _slatHeader() in Dart ══ */}
+      <div style={{ background: C.headerBg }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '20px 24px 28px' }}>
+
+          {/* Top bar — logo + notification + avatar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>Oweru</span>
+              {/* LANDLORD badge — matches Container(color:kSlate600) in Dart */}
+              <span style={{ padding: '2px 7px', background: C.slate700, borderRadius: 4, fontSize: 9, fontWeight: 700, color: C.textLight, letterSpacing: '0.8px' }}>
+                LANDLORD
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Notification bell with red dot */}
+              <div style={{ position: 'relative', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Bell size={20} style={{ color: C.textLight }} />
+                <div style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', background: C.red, border: `1.5px solid ${C.headerBg}` }} />
+              </div>
+              {/* Avatar chip */}
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: C.slate700, border: `1.5px solid ${C.slate500}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>L</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Greeting + "Collect Rent" CTA — matches Row in _slatHeader */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 'clamp(20px,3.5vw,24px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.4px', marginBottom: 4 }}>
+                Hello, Landlord 
+              </div>
+              <div style={{ fontSize: 13, color: C.textMuted }}>
+                {applicationCount > 0 ? `${applicationCount} application${applicationCount !== 1 ? 's' : ''} pending review.` : 'Your portfolio is up to date.'}
+              </div>
+            </div>
+            {/* "Collect Rent" — white button on dark header, matches Container(color:kWhite) in Dart */}
+            <Link to="rent-collection" style={{ padding: '10px 18px', background: C.cardBg, borderRadius: 8, color: C.slate900, fontSize: 12, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              Collect Rent
+            </Link>
+          </div>
+
+          {/* Mini header quick-links — matches _HeaderChip row in Dart (kSlate700 bg) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+            {[
+              { label: 'Properties', to: 'my-properties',     Icon: Building  },
+              { label: 'Tenants',    to: 'tenants',           Icon: Users     },
+              { label: 'Contracts',  to: 'digital-contracts', Icon: FileText  },
+              { label: 'Analytics',  to: 'analytics',         Icon: BarChart3 },
+            ].map(({ label, to, Icon }) => (
+              <Link key={label} to={to} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '7px 4px', background: C.slate700, borderRadius: 8, textDecoration: 'none' }}>
+                <Icon size={12} style={{ color: C.textLight, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontWeight: 500, color: C.textLight, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ══ Body — slate-100 bg ══ */}
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '20px 20px 40px' }}>
+
+        {/* ── Stat cards row — horizontally scrollable white cards (matches _StatCard2) */}
+        <div className="stat-scroll" style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginBottom: 24 }}>
+          {statCards.map(s => (
+            <div key={s.label} style={{ minWidth: 118, background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 12, padding: '10px 12px', flexShrink: 0, boxShadow: '0 1px 3px rgba(15,23,42,0.05)' }}>
+              {/* Icon badge — matches Container(color:item.bg) in _StatCard2 */}
+              <div style={{ width: 28, height: 28, borderRadius: 7, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                <s.Icon size={13} style={{ color: s.accent }} />
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: C.text, letterSpacing: '-0.02em', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.value}</div>
+              <div style={{ fontSize: 10, color: C.slate500, fontWeight: 500 }}>{s.label}</div>
             </div>
           ))}
         </div>
 
-        <div className="ld-eyebrow">Quick Actions</div>
-        <div className="ld-actions">
-          {quickActions.map((action) => (
-            <Link key={action.to} to={action.to} className={`ld-action${action.primary ? ' primary' : ''}`}>
-              <action.icon size={15} />
-              {action.label}
-              {action.primary && <ArrowRight size={14} />}
+        {/* ── Section label — matches _sectionLabel() in Dart */}
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.slate800, letterSpacing: '0.1px', marginBottom: 12 }}>Quick Actions</div>
+
+        {/* ── 2-col action tiles — matches _ActionTile in Dart ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10, marginBottom: 28 }}>
+          {quickActions.map(a => (
+            <Link key={a.to} to={a.to} className="qa-tile" style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '14px',
+              background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 12,
+              textDecoration: 'none', boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
+            }}>
+              {/* Icon container — matches Container(color:kSlate100) in _ActionTile */}
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: C.slate100, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <a.icon size={17} style={{ color: a.accent }} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.slate800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</div>
+              </div>
             </Link>
           ))}
+
+          {/* Add Property gold CTA tile */}
+          <Link to="add-property" className="qa-tile" style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: '14px',
+            background: C.gold, border: 'none', borderRadius: 12,
+            textDecoration: 'none', boxShadow: C.goldGlow,
+          }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Plus size={17} style={{ color: '#fff' }} />
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Add Property</div>
+          </Link>
         </div>
 
-        <div className="ld-eyebrow">Recent Properties</div>
-        <div className="ld-list">
-          {properties.length === 0 ? (
-            <div style={{ color: '#9f9587' }}>No properties yet.</div>
-          ) : (
-            properties.map((property) => (
-              <div key={property.id} className="ld-item">
-                {property.images?.[0] ? (
-                  <img className="ld-thumb" src={imageUrl(property.images[0])} alt={property.title || 'Property'} loading="lazy" decoding="async" />
-                ) : (
-                  <div className="ld-thumb" />
-                )}
-                <div>
-                  <div className="ld-title">{property.title || 'Untitled property'}</div>
-                  <div className="ld-meta">
-                    {property.location || 'No location'}
-                    <br />
-                    {property.bedrooms ?? 0} bd • {property.bathrooms ?? 0} ba • {property.area ?? 0} m²
-                    <br />
-                    {property.available ? 'Available' : 'Occupied'}
-                  </div>
-                </div>
-                <div className="ld-price">{formatCurrency(property.price)}</div>
-                <div className="ld-links">
-                  <Link className="ld-link" to={`/dashboard/landlord/properties/${property.id}/edit`}>Edit</Link>
-                  <Link className="ld-link" to={`/property/${property.id}`}>View</Link>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {properties.length > 0 && (
-          <div style={{ marginTop: '18px', textAlign: 'right' }}>
-            <Link to="my-properties" style={{ color: '#c9a84c', textDecoration: 'none', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              View all properties <ArrowRight size={14} />
-            </Link>
-          </div>
-        )}
+        
+        {/* View all row — matches _viewAllRow() in Dart */}
+       
       </div>
-    </>
+    </div>
   );
 };
 

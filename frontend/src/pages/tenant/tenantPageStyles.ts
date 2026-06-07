@@ -3,17 +3,18 @@ import type { CSSProperties } from 'react';
 // ─── Oweru Brand Color Palette ────────────────────────────────────────────────
 // Source: Oweru Brand Book & Guidelines
 export const palette = {
-  // Primary Navy
-  navy900:    '#0F172A',   // HEX #0F172A — primary dark background
-  navy800:    '#141F35',
-  navy700:    '#1A2A47',
-  navy600:    '#1E3358',
-  navy500:    '#2A4472',
-  navy400:    '#3D5E96',
-  navy300:    '#6888BC',
-  navy200:    '#A0B4D8',
-  navy100:    '#D0DAEE',
-  navy50:     '#EEF2F8',
+  // White & Slate Backgrounds
+  white:      '#FFFFFF',
+  slate50:    '#F8FAFC',
+  slate100:   '#F1F5F9',
+  slate200:   '#E2E8F0',
+  slate300:   '#CBD5E1',
+  slate400:   '#94A3B8',
+  slate500:   '#64748B',
+  slate600:   '#475569',
+  slate700:   '#334155',
+  slate800:   '#1E293B',
+  slate900:   '#0F172A',
 
   // Brand Gold
   gold:       '#C89128',   // HEX #C89128 — primary brand gold
@@ -21,18 +22,17 @@ export const palette = {
   goldPale:   '#E8CC8A',
   goldFaint:  'rgba(200, 145, 40, 0.10)',  // rgba keeps transparency for use as bg tint
 
-  // Neutrals
-  offWhite:   '#F8F8F9',   // HEX #F8F8F9 — background off-white
-  white:      '#FFFFFF',
-  gray100:    '#F1F3F6',
-  gray200:    '#E4E8EF',
-  gray300:    '#C9D1DF',
-  gray400:    '#9AAABF',
-  gray500:    '#6B7E99',
-  gray600:    '#4A5C73',
-  gray700:    '#2E3D52',
-  gray800:    '#1A2433',
-  gray900:    '#0D1520',
+  // Legacy names for compatibility
+  offWhite:   '#F8FAFC',   // slate50
+  gray100:    '#F1F5F9',   // slate100
+  gray200:    '#E2E8F0',   // slate200
+  gray300:    '#CBD5E1',   // slate300
+  gray400:    '#94A3B8',   // slate400
+  gray500:    '#64748B',   // slate500
+  gray600:    '#475569',   // slate600
+  gray700:    '#334155',   // slate700
+  gray800:    '#1E293B',   // slate800
+  gray900:    '#0F172A',   // slate900
 
   // Semantic status
   green:       '#16a34a',
@@ -52,8 +52,8 @@ export const palette = {
 export const pageStyle: CSSProperties = {
   display: 'grid',
   gap: '24px',
-  color: palette.navy900,
-  backgroundColor: palette.offWhite,
+  color: palette.slate900,
+  backgroundColor: palette.slate50,
   padding: '16px',
   minHeight: '100vh',
 };
@@ -85,7 +85,7 @@ export const headingStyle: CSSProperties = {
   fontSize: 'clamp(22px, 5vw, 32px)',
   lineHeight: 1.15,
   margin: 0,
-  color: palette.navy900,
+  color: palette.slate900,
   fontWeight: 700,
   letterSpacing: '-0.02em',
 };
@@ -126,7 +126,7 @@ export const statValueStyle: CSSProperties = {
   fontSize: 'clamp(22px, 4vw, 28px)',
   marginTop: '8px',
   fontWeight: 700,
-  color: palette.navy900,
+  color: palette.slate900,
   letterSpacing: '-0.02em',
 };
 
@@ -169,10 +169,10 @@ export const tdStyle: CSSProperties = {
 export const inputStyle: CSSProperties = {
   width: '100%',
   padding: '11px 14px',
-  background: palette.offWhite,
+  background: palette.white,
   border: `1.5px solid ${palette.gray200}`,
   borderRadius: '8px',
-  color: palette.navy900,
+  color: palette.slate900,
   outline: 'none',
   fontSize: '14px',
 };
@@ -207,7 +207,7 @@ export const buttonStyle = (
     secondary: {
       border: `1.5px solid ${palette.goldBorder}`,
       background: palette.goldFaint,
-      color: palette.navy900,
+      color: palette.slate900,
     },
     danger: {
       border:     `1px solid rgba(220, 38, 38, 0.30)`,
@@ -257,7 +257,7 @@ export const mobileCardHeader: CSSProperties = {
 export const mobileCardTitle: CSSProperties = {
   fontSize: '15px',
   fontWeight: 600,
-  color: palette.navy900,
+  color: palette.slate900,
   margin: 0,
 };
 

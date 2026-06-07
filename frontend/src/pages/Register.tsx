@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Phone, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  Eye, EyeOff, Mail, Lock, User, Phone,
+  AlertCircle, ArrowRight, ArrowLeft, Check, ShieldCheck,
+} from 'lucide-react';
 import Api, { TOKEN_KEY } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
+
+const GOLD = '#C89128';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -16,7 +21,7 @@ const Register = () => {
   const [errors,              setErrors]              = useState<string[]>([]);
   const [step,                setStep]                = useState(1);
 
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -53,426 +58,358 @@ const Register = () => {
       const response = await fetch(Api.getGoogleRegisterUrl(formData.userType));
       const data = await response.json();
       window.location.href = data.url;
-    } catch (error) {
-      console.error('Failed to get Google register URL:', error);
-    }
+    } catch (error) { console.error('Failed to get Google register URL:', error); }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateStep2()) return;
-
-    setIsLoading(true);
-    setErrors([]);
-
+    setIsLoading(true); setErrors([]);
     try {
       const response = await Api.register({
-        first_name:            formData.firstName,
-        last_name:             formData.lastName,
-        email:                 formData.email,
-        password:              formData.password,
+        first_name: formData.firstName, last_name: formData.lastName,
+        email: formData.email, password: formData.password,
         password_confirmation: formData.confirmPassword,
-        phone:                 formData.phone,
-        user_type:             formData.userType,   // ← selected role is sent here
+        phone: formData.phone, user_type: formData.userType,
       });
-
-      // api.ts unwraps one level so response.data = { user, token }
       const { user, token } = response.data as any;
-
       if (!user || !token) throw new Error('Invalid response from server');
-
-      // Store token under the same key api.ts reads on every request
       localStorage.setItem(TOKEN_KEY, token);
-
-      // Hydrate AuthContext so DashboardLayout sees the user immediately
       login(user, token);
-
-      // ── KEY FIX: navigate to role-specific dashboard ──
-      // user.userType comes from AuthController->formatUser() as camelCase
       navigate(`/dashboard/${user.userType}`);
-
     } catch (err: any) {
-      console.error('Registration error:', err);
-
-      // Unwrap Laravel validation errors: { errors: { field: ['msg'] } }
       const laravelErrors = err?.response?.data?.errors;
       if (laravelErrors) {
-        const msgs = Object.values(laravelErrors).flat() as string[];
-        setErrors(msgs);
+        setErrors(Object.values(laravelErrors).flat() as string[]);
       } else {
-        setErrors([
-          err?.response?.data?.message ||
-          err?.message ||
-          'Registration failed. Please try again.',
-        ]);
+        setErrors([err?.response?.data?.message || err?.message || 'Registration failed. Please try again.']);
       }
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   };
 
   const pwReqs = [
-    { label: 'At least 8 characters', met: formData.password.length >= 8 },
-    { label: 'Uppercase letter',      met: /[A-Z]/.test(formData.password) },
-    { label: 'Lowercase letter',      met: /[a-z]/.test(formData.password) },
-    { label: 'Contains a number',     met: /\d/.test(formData.password) },
+    { label: 'At least 8 characters', met: formData.password.length >= 8         },
+    { label: 'Uppercase letter',       met: /[A-Z]/.test(formData.password)        },
+    { label: 'Lowercase letter',       met: /[a-z]/.test(formData.password)        },
+    { label: 'Contains a number',      met: /\d/.test(formData.password)           },
   ];
   const pwStrength = pwReqs.filter(r => r.met).length;
+  const strengthColor = ['#DC2626','#D97706','#16A34A','#059669'][pwStrength - 1] || '#E2E8F0';
 
   const userTypes = [
-    { value: 'tenant',   label: 'Tenant',   desc: 'Looking to rent' },
-    { value: 'landlord', label: 'Landlord', desc: 'I own property' },
-    { value: 'agent',    label: 'Agent',    desc: 'Real estate professional' },
-    { value: 'bnb_owner', label: 'BNB Owner', desc: 'I host BNB properties' },
+    { value: 'tenant',    label: 'Tenant',    desc: 'Looking to rent',  color: '#16A34A' },
+    { value: 'landlord',  label: 'Landlord',  desc: 'I own property',   color: '#C89128' },
+    { value: 'agent',     label: 'Agent',     desc: 'Broker listings',  color: '#2563EB' },
+    { value: 'bnb_owner', label: 'BNB Owner', desc: 'I host stays',     color: '#9333EA' },
   ];
 
-  return (
-    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", background: 'var(--bg-primary)', color: 'var(--text-primary)', minHeight: '100vh', display: 'flex' }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
-        * { box-sizing: border-box; }
-        :root {
-          --gold: var(--accent-color); --gold-light: var(--accent-light);
-          --dark: var(--bg-primary); --dark-2: var(--bg-secondary); --dark-3: var(--bg-tertiary);
-          --cream: var(--text-primary); --muted: var(--text-secondary);
-          --border: var(--border-color); --error: #e07070; --success: #70c490;
-        }
-        .rg-right { flex: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 48px; overflow-y: auto; }
-        .rg-left { width: 40%; min-height: 100vh; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 48px; border-right: 1px solid var(--border); flex-shrink: 0; }
-        .rg-left-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 30% 30%, rgba(37,99,235,0.08) 0%, transparent 55%), radial-gradient(ellipse 50% 60% at 80% 80%, rgba(37,99,235,0.05) 0%, transparent 50%), linear-gradient(160deg, #1e293b 0%, #334155 100%); }
-        .rg-left-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(37,99,235,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.035) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 10%, transparent 100%); }
-        .rg-left-watermark { position: absolute; top: -4%; left: -3%; font-size: clamp(100px, 14vw, 180px); font-weight: 700; color: transparent; -webkit-text-stroke: 1px rgba(37,99,235,0.055); line-height: 1; user-select: none; letter-spacing: -0.05em; }
-        .rg-left-content { position: relative; z-index: 2; }
-        .rg-left-eyebrow { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 500; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-        .rg-left-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--gold); }
-        .rg-left-title { font-size: clamp(34px, 3.5vw, 52px); font-weight: 300; line-height: 1.05; letter-spacing: -0.025em; color: var(--cream); margin-bottom: 20px; }
-        .rg-left-title em { font-style: italic; color: var(--gold-light); }
-        .rg-left-desc { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300; line-height: 1.75; color: var(--muted); margin-bottom: 36px; }
-        .rg-benefits { display: flex; flex-direction: column; gap: 0; }
-        .rg-benefit { display: flex; align-items: flex-start; gap: 16px; padding: 16px 0; border-bottom: 1px solid rgba(37,99,235,0.07); }
-        .rg-benefit:last-child { border-bottom: none; }
-        .rg-benefit-num { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 500; color: var(--gold); letter-spacing: 0.1em; padding-top: 2px; flex-shrink: 0; width: 24px; }
-        .rg-benefit-title { font-size: 15px; font-weight: 400; color: var(--cream); margin-bottom: 3px; letter-spacing: -0.01em; }
-        .rg-benefit-desc { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 300; color: var(--muted); line-height: 1.5; }
-        .rg-panel { width: 100%; max-width: 460px; }
-        .rg-logo { display: flex; align-items: baseline; gap: 1px; text-decoration: none; margin-bottom: 44px; }
-        .rg-logo-text { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 300; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream); }
-        .rg-logo-dot { color: var(--gold); font-size: 24px; font-family: 'Cormorant Garamond', serif; }
-        .rg-progress { display: flex; align-items: center; gap: 0; margin-bottom: 36px; }
-        .rg-step { display: flex; align-items: center; gap: 10px; flex: 1; }
-        .rg-step-circle { width: 28px; height: 28px; border: 1px solid rgba(37,99,235,0.2); background: var(--dark-3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; color: var(--muted); transition: all 0.3s; }
-        .rg-step-circle.active { background: var(--gold); border-color: var(--gold); color: #0a0a0a; }
-        .rg-step-circle.done { background: rgba(112,196,144,0.15); border-color: rgba(112,196,144,0.4); color: var(--success); }
-        .rg-step-info { flex: 1; }
-        .rg-step-label { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
-        .rg-step-label.active { color: var(--gold); }
-        .rg-step-name { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; color: rgba(138,128,112,0.6); margin-top: 2px; }
-        .rg-step-name.active { color: var(--cream); }
-        .rg-step-connector { width: 32px; height: 1px; background: rgba(37,99,235,0.15); flex-shrink: 0; margin: 0 8px; position: relative; overflow: hidden; }
-        .rg-step-connector::after { content: ''; position: absolute; inset: 0; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.5s ease; }
-        .rg-step-connector.filled::after { transform: scaleX(1); }
-        .rg-title { font-size: clamp(28px, 3vw, 40px); font-weight: 300; line-height: 1.08; letter-spacing: -0.025em; color: var(--cream); margin-bottom: 6px; }
-        .rg-title em { font-style: italic; color: var(--gold-light); }
-        .rg-subtitle { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300; color: var(--muted); margin-bottom: 32px; }
-        .rg-user-types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 28px; }
+  // Reusable input field
+  const InputField = ({ label, name, type = 'text', placeholder, icon: Icon, toggle, showToggle, onToggle }: any) => (
+    <div>
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#334155', marginBottom: '7px' }}>
+        {label}
+      </label>
+      <div style={{ position: 'relative' }}>
+        <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+          <Icon size={15} />
+        </div>
+        <input
+          type={toggle ? (showToggle ? 'text' : 'password') : type}
+          name={name}
+          value={(formData as any)[name]}
+          onChange={handleChange}
+          placeholder={placeholder}
+          autoComplete={type === 'password' ? 'new-password' : undefined}
+          style={{ width: '100%', padding: `11px 16px 11px ${toggle ? '42px' : '42px'}`, paddingRight: toggle ? '44px' : '16px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '9px', color: '#0F172A', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s', boxSizing: 'border-box' }}
+          onFocus={e => { e.target.style.borderColor = GOLD; e.target.style.boxShadow = `0 0 0 3px ${GOLD}18`; }}
+          onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
+        />
+        {toggle && (
+          <button type="button" onClick={onToggle}
+            style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex', alignItems: 'center', padding: '4px', transition: 'color 0.2s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = GOLD)}
+            onMouseLeave={e => (e.currentTarget.style.color = '#94A3B8')}>
+            {showToggle ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
-        @media (max-width: 480px) {
-          .rg-user-types {
-            grid-template-columns: 1fr;
-            gap: 8px;
-          }
-        }
-        .rg-user-type { background: var(--dark-3); padding: 14px 12px; cursor: pointer; transition: all 0.2s; border: none; text-align: left; position: relative; overflow: hidden; }
-        .rg-user-type.active { background: rgba(37,99,235,0.08); }
-        .rg-user-type::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }
-        .rg-user-type.active::after { transform: scaleX(1); }
-        .rg-user-type-label { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.06em; display: block; margin-bottom: 3px; }
-        .rg-user-type.active .rg-user-type-label { color: var(--gold); }
-        .rg-user-type-desc { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 300; color: rgba(138,128,112,0.5); }
-        .rg-errors { background: rgba(224,112,112,0.05); border: 1px solid rgba(224,112,112,0.2); padding: 14px 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px; }
-        .rg-error-row { display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 300; color: var(--error); }
-        .rg-form { display: flex; flex-direction: column; gap: 0; }
-        .rg-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
-        .rg-field { background: var(--dark-2); border: 1px solid rgba(37,99,235,0.12); border-bottom: none; position: relative; transition: background 0.2s, border-color 0.2s; }
-        .rg-field.last { border-bottom: 1px solid rgba(37,99,235,0.12); }
-        .rg-field:focus-within { background: rgba(37,99,235,0.03); border-color: rgba(37,99,235,0.35); z-index: 1; }
-        .rg-field-label { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); padding: 12px 16px 0 44px; }
-        .rg-field-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(138,128,112,0.45); display: flex; align-items: center; pointer-events: none; }
-        .rg-input { width: 100%; background: transparent; border: none; outline: none; color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300; padding: 4px 16px 12px 44px; }
-        .rg-input::placeholder { color: rgba(138,128,112,0.4); }
-        .rg-eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--muted); display: flex; align-items: center; padding: 4px; transition: color 0.2s; }
-        .rg-eye-btn:hover { color: var(--gold); }
-        .rg-pw-strength { background: var(--dark-3); border: 1px solid rgba(37,99,235,0.08); border-top: none; padding: 16px; }
-        .rg-strength-bar { display: flex; gap: 3px; margin-bottom: 12px; }
-        .rg-strength-seg { flex: 1; height: 2px; background: rgba(37,99,235,0.1); transition: background 0.3s; }
-        .rg-strength-seg.lit-1 { background: #e07070; }
-        .rg-strength-seg.lit-2 { background: #e0a870; }
-        .rg-strength-seg.lit-3 { background: #c9a84c; }
-        .rg-strength-seg.lit-4 { background: #70c490; }
-        .rg-pw-reqs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .rg-pw-req { display: flex; align-items: center; gap: 6px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 300; color: rgba(138,128,112,0.5); transition: color 0.2s; }
-        .rg-pw-req.met { color: var(--success); }
-        .rg-pw-req-dot { width: 5px; height: 5px; border-radius: 50%; border: 1px solid rgba(138,128,112,0.3); flex-shrink: 0; transition: all 0.2s; }
-        .rg-pw-req.met .rg-pw-req-dot { background: var(--success); border-color: var(--success); }
-        .rg-terms { background: var(--dark-2); border: 1px solid rgba(37,99,235,0.12); border-top: none; padding: 16px; display: flex; align-items: flex-start; gap: 12px; margin-bottom: 24px; }
-        .rg-checkbox { width: 14px; height: 14px; border: 1px solid rgba(37,99,235,0.22); background: rgba(37,99,235,0.04); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; margin-top: 2px; transition: all 0.2s; }
-        .rg-checkbox.checked { background: rgba(37,99,235,0.15); border-color: var(--gold); }
-        .rg-checkbox.checked::after { content: ''; width: 6px; height: 6px; background: var(--gold); }
-        .rg-terms-text { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 300; line-height: 1.6; color: var(--muted); }
-        .rg-terms-text a { color: var(--gold); text-decoration: none; transition: color 0.2s; }
-        .rg-terms-text a:hover { color: var(--gold-light); }
-        .rg-btn-row { display: flex; gap: 10px; }
-        .rg-btn-back { display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid rgba(37,99,235,0.2); color: var(--muted); padding: 13px 20px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
-        .rg-btn-back:hover { color: var(--cream); border-color: rgba(37,99,235,0.45); }
-        .rg-btn-primary { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--gold); color: #0a0a0a; padding: 13px 24px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; border: none; cursor: pointer; transition: all 0.25s; clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px)); }
-        .rg-btn-primary:hover:not(:disabled) { background: var(--gold-light); gap: 14px; }
-        .rg-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        .rg-spinner { width: 13px; height: 13px; border: 2px solid rgba(0,0,0,0.2); border-top-color: #0a0a0a; border-radius: 50%; animation: rg-spin 0.7s linear infinite; }
-        @keyframes rg-spin { to { transform: rotate(360deg); } }
-        .rg-footer { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 300; color: var(--muted); text-align: center; margin-top: 28px; }
-        .rg-footer a { color: var(--gold); text-decoration: none; font-weight: 400; transition: color 0.2s; }
-        .rg-footer a:hover { color: var(--gold-light); }
-        @media (max-width: 960px) { .rg-left { display: none; } .rg-right { padding: 40px 24px; } }
-        @media (max-width: 480px) { .rg-field-row { grid-template-columns: 1fr; } .rg-user-types { grid-template-columns: 1fr; } .rg-pw-reqs { grid-template-columns: 1fr; } }
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'DM Sans', system-ui, sans-serif", background: '#F1F5F9' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Cormorant+Garamond:wght@300;400;500&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes spin     { to { transform: rotate(360deg); } }
+        @keyframes fadeUp   { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+        @keyframes pulse-rg { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .rg-type-btn:hover:not(.rg-type-active) { border-color: #94A3B8 !important; background: #F8FAFC !important; }
+        .rg-social-btn:hover { border-color: #94A3B8 !important; background: #F8FAFC !important; }
+        .rg-back-btn:hover { background: #F1F5F9 !important; border-color: #CBD5E1 !important; }
+        @media(max-width:900px){ .rg-left-panel{ display:none!important; } }
+        @media(max-width:640px){ .rg-card{ padding: 28px 20px !important; } }
       `}</style>
 
-      {/* ── Left panel ── */}
-      <div className="rg-left">
-        <div className="rg-left-bg" />
-        <div className="rg-left-grid" />
-        <div className="rg-left-watermark">JOIN</div>
-        <div className="rg-left-content">
-          <div className="rg-left-eyebrow">Why Oweru</div>
-          <h2 className="rg-left-title">Africa's<br /><em>Trusted</em><br />Rental Platform</h2>
-          <p className="rg-left-desc">
-            Join thousands of landlords, agents, and tenants already
-            using Oweru to simplify property rental across Africa.
+      {/* ═══ LEFT — Branding Panel ═══ */}
+      <div className="rg-left-panel" style={{
+        width: '40%', minHeight: '100vh', flexShrink: 0,
+        background: 'linear-gradient(160deg, #0F172A 0%, #1E293B 60%, #0F172A 100%)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        padding: '52px 52px', position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(200,145,40,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(200,145,40,0.04) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(200,145,40,0.09) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '-60px', left: '-60px', width: '360px', height: '360px', background: 'radial-gradient(circle, rgba(22,163,74,0.06) 0%, transparent 65%)', pointerEvents: 'none' }} />
+
+        {/* Logo */}
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <Link to="/"><img src={LOGO} alt="OWERU" style={{ height: '30px', width: 'auto' }} /></Link>
+        </div>
+
+        {/* Content */}
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '28px' }}>
+            <div style={{ width: '28px', height: '2px', background: GOLD }} />
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: GOLD }}>
+              Join Oweru Today
+            </span>
+          </div>
+
+          <h2 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 'clamp(36px, 3.6vw, 52px)', fontWeight: 400, lineHeight: 1.1, color: '#FFFFFF', marginBottom: '22px', letterSpacing: '-0.01em' }}>
+            Africa's <span style={{ fontStyle: 'italic', color: GOLD }}>Premium</span><br />
+            Property Hub.
+          </h2>
+
+          <p style={{ fontSize: '14px', color: '#94A3B8', lineHeight: 1.75, marginBottom: '44px', maxWidth: '320px' }}>
+            Connecting landlords, agents, and tenants seamlessly with a modern digital platform built for Africa.
           </p>
-          <div className="rg-benefits">
+
+          {/* Benefits */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
             {[
-              { num: '01', title: 'Verified Listings',  desc: 'Every property reviewed by our team before going live.' },
-              { num: '02', title: 'Secure Payments',    desc: 'End-to-end encrypted payment processing you can trust.' },
-              { num: '03', title: 'Agent Dashboard',    desc: 'Track leads, commissions, and performance in real time.' },
-              { num: '04', title: 'Fast Approvals',     desc: 'Landlords respond within 24 hours on average.' },
+              { num: '01', title: 'Manually Vetted Listings',               desc: 'Every property is monitored and certified by our administrative team.' },
+              { num: '02', title: 'Unified Payment Infrastructure',          desc: 'Settle payments safely via integrated mobile money and banking networks.' },
+              { num: '03', title: 'Real-time Portfolio Operations',          desc: 'Track leasing metrics, transactions, and occupancy in one place.' },
             ].map(b => (
-              <div key={b.num} className="rg-benefit">
-                <div className="rg-benefit-num">{b.num}</div>
+              <div key={b.num} style={{ display: 'flex', gap: '18px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: GOLD, letterSpacing: '0.06em', paddingTop: '2px', flexShrink: 0 }}>{b.num}</div>
                 <div>
-                  <div className="rg-benefit-title">{b.title}</div>
-                  <div className="rg-benefit-desc">{b.desc}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#FFFFFF', marginBottom: '4px' }}>{b.title}</div>
+                  <div style={{ fontSize: '12px', color: '#64748B', lineHeight: 1.6 }}>{b.desc}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Bottom */}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16A34A', animation: 'pulse-rg 2s ease-in-out infinite' }} />
+          <span style={{ fontSize: '11px', color: '#475569', fontWeight: 500, letterSpacing: '0.06em' }}>
+            © {new Date().getFullYear()} Oweru Group · Dar es Salaam, Tanzania
+          </span>
+        </div>
       </div>
 
-      {/* ── Form side ── */}
-      <div className="rg-right">
-        <div className="rg-panel">
+      {/* ═══ RIGHT — Form Panel ═══ */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', background: '#F1F5F9', overflowY: 'auto' }}>
+        <div style={{ width: '100%', maxWidth: '480px', animation: 'fadeUp 0.4s ease both' }}>
 
-          <Link to="/" className="rg-logo">
-            <img src={LOGO} alt="OWERU" style={{ height: '36px', width: 'auto' }} loading="lazy" decoding="async" />
-          </Link>
+          {/* Card */}
+          <div className="rg-card" style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '40px', boxShadow: '0 4px 24px rgba(15,23,42,0.06)' }}>
 
-          {/* Step progress */}
-          <div className="rg-progress">
-            <div className="rg-step">
-              <div className={`rg-step-circle${step === 1 ? ' active' : ' done'}`}>
-                {step > 1 ? '✓' : '1'}
-              </div>
-              <div className="rg-step-info">
-                <div className={`rg-step-label${step === 1 ? ' active' : ''}`}>Step 01</div>
-                <div className={`rg-step-name${step === 1 ? ' active' : ''}`}>Your Details</div>
-              </div>
+            {/* Logo (mobile) */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '28px' }}>
+              <Link to="/"><img src={LOGO} alt="OWERU" style={{ height: '28px', width: 'auto' }} /></Link>
             </div>
-            <div className={`rg-step-connector${step >= 2 ? ' filled' : ''}`} />
-            <div className="rg-step">
-              <div className={`rg-step-circle${step === 2 ? ' active' : ''}`}>2</div>
-              <div className="rg-step-info">
-                <div className={`rg-step-label${step === 2 ? ' active' : ''}`}>Step 02</div>
-                <div className={`rg-step-name${step === 2 ? ' active' : ''}`}>Set Password</div>
-              </div>
+
+            {/* Step indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0', marginBottom: '28px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px 16px' }}>
+              {[
+                { n: 1, label: 'Personal Info'  },
+                { n: 2, label: 'Security Setup' },
+              ].map((s, i) => (
+                <div key={s.n} style={{ display: 'flex', alignItems: 'center', flex: i === 0 ? 'none' : 1, gap: '8px', ...(i > 0 ? { flex: 1 } : {}) }}>
+                  {i > 0 && (
+                    <div style={{ flex: 1, height: '2px', background: step >= 2 ? GOLD : '#E2E8F0', transition: 'background 0.4s ease', margin: '0 10px' }} />
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', border: `1.5px solid ${step === s.n ? GOLD : step > s.n ? '#16A34A' : '#E2E8F0'}`, background: step === s.n ? `${GOLD}15` : step > s.n ? '#DCFCE7' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.25s', fontSize: '11px', fontWeight: 700, color: step === s.n ? GOLD : step > s.n ? '#16A34A' : '#94A3B8' }}>
+                      {step > s.n ? <Check size={13} strokeWidth={3} /> : s.n}
+                    </div>
+                    <span style={{ fontSize: '12px', fontWeight: step === s.n ? 700 : 500, color: step === s.n ? '#0F172A' : step > s.n ? '#16A34A' : '#94A3B8', transition: 'color 0.25s', whiteSpace: 'nowrap' }}>
+                      {s.label}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
 
-          <h1 className="rg-title">
-            {step === 1 ? (<>Create Your<br /><em>Account</em></>) : (<>Secure Your<br /><em>Account</em></>)}
-          </h1>
-          <p className="rg-subtitle">
-            {step === 1 ? 'Tell us about yourself to get started' : 'Choose a strong password to protect your account'}
-          </p>
+            {/* Heading */}
+            <div style={{ marginBottom: '24px' }}>
+              <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: '5px' }}>
+                {step === 1 ? 'Create your account' : 'Secure your account'}
+              </h1>
+              <p style={{ fontSize: '14px', color: '#64748B' }}>
+                {step === 1 ? 'Enter your details to get started with Oweru.' : 'Set a strong password to protect your workspace.'}
+              </p>
+            </div>
 
-          {/* ── STEP 1 ── */}
-          {step === 1 && (
-            <>
-              <div className="rg-user-types">
-                {userTypes.map(t => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    className={`rg-user-type${formData.userType === t.value ? ' active' : ''}`}
-                    onClick={() => setFormData({ ...formData, userType: t.value })}
-                  >
-                    <span className="rg-user-type-label">{t.label}</span>
-                    <span className="rg-user-type-desc">{t.desc}</span>
-                  </button>
+            {/* Errors */}
+            {errors.length > 0 && (
+              <div style={{ background: '#FFF1F2', border: '1px solid rgba(220,38,38,0.22)', borderRadius: '10px', padding: '13px 14px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {errors.map((e, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: '#DC2626', lineHeight: 1.4 }}>
+                    <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
+                    <span>{e}</span>
+                  </div>
                 ))}
               </div>
+            )}
 
-              {errors.length > 0 && (
-                <div className="rg-errors">
-                  {errors.map((e, i) => (
-                    <div key={i} className="rg-error-row">
-                      <AlertCircle size={12} style={{ flexShrink: 0 }} /> {e}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="rg-form">
-                <div className="rg-field-row">
-                  <div className="rg-field">
-                    <div className="rg-field-icon"><User size={13} /></div>
-                    <div className="rg-field-label">First Name</div>
-                    <input className="rg-input" type="text" name="firstName"
-                      value={formData.firstName} onChange={handleChange} placeholder="First" required />
+            {/* ── STEP 1 ── */}
+            {step === 1 && (
+              <>
+                {/* Role selector */}
+                <div style={{ marginBottom: '22px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#334155', marginBottom: '10px' }}>
+                    I am a…
                   </div>
-                  <div className="rg-field" style={{ borderLeft: '1px solid rgba(37,99,235,0.12)' }}>
-                    <div className="rg-field-icon"><User size={13} /></div>
-                    <div className="rg-field-label">Last Name</div>
-                    <input className="rg-input" type="text" name="lastName"
-                      value={formData.lastName} onChange={handleChange} placeholder="Last" required />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                    {userTypes.map(t => {
+                      const active = formData.userType === t.value;
+                      return (
+                        <button key={t.value} type="button" className={`rg-type-btn ${active ? 'rg-type-active' : ''}`}
+                          onClick={() => setFormData({ ...formData, userType: t.value })}
+                          style={{ padding: '13px 14px', border: `1.5px solid ${active ? t.color : '#E2E8F0'}`, borderRadius: '10px', background: active ? `${t.color}0D` : '#FFFFFF', cursor: 'pointer', textAlign: 'left', transition: 'all 0.18s', fontFamily: "'DM Sans', sans-serif" }}>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: active ? t.color : '#0F172A', marginBottom: '2px', transition: 'color 0.18s' }}>{t.label}</div>
+                          <div style={{ fontSize: '12px', color: '#94A3B8' }}>{t.desc}</div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="rg-field">
-                  <div className="rg-field-icon"><Mail size={13} /></div>
-                  <div className="rg-field-label">Email Address</div>
-                  <input className="rg-input" type="email" name="email"
-                    value={formData.email} onChange={handleChange} placeholder="your@email.com" required />
-                </div>
-                <div className="rg-field last">
-                  <div className="rg-field-icon"><Phone size={13} /></div>
-                  <div className="rg-field-label">Phone Number</div>
-                  <input className="rg-input" type="tel" name="phone"
-                    value={formData.phone} onChange={handleChange} placeholder="+255 XXX XXX XXX" required />
-                </div>
-              </div>
 
-              <div style={{ marginTop: 24 }}>
-                <button type="button" className="rg-btn-primary" style={{ width: '100%' }} onClick={handleNext}>
-                  Continue <ArrowRight size={14} />
+                {/* Name row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                  <InputField label="First Name" name="firstName" placeholder="First name" icon={User} />
+                  <InputField label="Last Name"  name="lastName"  placeholder="Last name"  icon={User} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
+                  <InputField label="Email Address" name="email" type="email" placeholder="name@email.com" icon={Mail} />
+                  <InputField label="Phone Number"  name="phone" type="tel"   placeholder="+255 xxx xxx xxx" icon={Phone} />
+                </div>
+
+                {/* Primary CTA */}
+                <button type="button" onClick={handleNext}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: '#0F172A', color: '#FFFFFF', padding: '14px 24px', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', marginBottom: '20px', fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 14px rgba(15,23,42,0.20)', transition: 'all 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
+                  onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
+                  Continue <ArrowRight size={16} />
                 </button>
-              </div>
 
-              <div style={{ marginTop: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                  <span style={{ fontSize: 12, color: 'var(--muted)', fontFamily: 'DM Sans, sans-serif' }}>Or continue with</span>
-                  <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                {/* Divider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
+                  <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#94A3B8' }}>Or register with</span>
+                  <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
                 </div>
-                <button type="button" onClick={handleGoogleRegister} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--dark-2)', border: '1px solid var(--border)', color: 'var(--cream)', padding: '13px 24px', fontFamily: 'DM Sans, sans-serif', fontSize: '12px', fontWeight: '400', cursor: 'pointer', transition: 'all 0.2s' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24">
+
+                <button type="button" className="rg-social-btn" onClick={handleGoogleRegister}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '10px', color: '#334155', padding: '12px 24px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s', marginBottom: '0' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24">
                     <path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 12 4.9c1.69 0 3.22.6 4.41 1.58l3.3-3.3A11.95 11.95 0 0 0 12 1C8.37 1 5.17 2.91 3.27 5.76l2 4z"/>
                     <path fill="#34A853" d="M16.04 18.01A7.05 7.05 0 0 1 12 19.1c-2.86 0-5.3-1.69-6.49-4.15l-3.95 3.06A11.97 11.97 0 0 0 12 23c2.93 0 5.63-1.05 7.69-2.77l-3.65-2.22z"/>
                     <path fill="#FBBC05" d="M19.69 20.23A12 12 0 0 0 23 12c0-.73-.08-1.44-.2-2.12H12v4.5h6.2a5.27 5.27 0 0 1-2.17 3.47l3.66 2.38z"/>
                     <path fill="#4285F4" d="M5.51 14.95A7.11 7.11 0 0 1 4.9 12c0-1.03.18-2.03.51-2.95L3.27 5.76A12 12 0 0 0 1 12c0 2.1.54 4.08 1.51 5.79l3-2.84z"/>
                   </svg>
-                  Sign up with Google
+                  Continue with Google
                 </button>
-              </div>
-            </>
-          )}
+              </>
+            )}
 
-          {/* ── STEP 2 ── */}
-          {step === 2 && (
-            <>
-              {errors.length > 0 && (
-                <div className="rg-errors">
-                  {errors.map((e, i) => (
-                    <div key={i} className="rg-error-row">
-                      <AlertCircle size={12} style={{ flexShrink: 0 }} /> {e}
-                    </div>
-                  ))}
-                </div>
-              )}
-
+            {/* ── STEP 2 ── */}
+            {step === 2 && (
               <form onSubmit={handleSubmit}>
-                <div className="rg-form">
-                  <div className="rg-field">
-                    <div className="rg-field-icon"><Lock size={13} /></div>
-                    <div className="rg-field-label">Password</div>
-                    <input
-                      className="rg-input" style={{ paddingRight: 44 }}
-                      type={showPassword ? 'text' : 'password'}
-                      name="password" value={formData.password} onChange={handleChange}
-                      placeholder="Create a password" required autoComplete="new-password"
-                    />
-                    <button type="button" className="rg-eye-btn" onClick={() => setShowPassword(!showPassword)}>
-                      {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-                    </button>
-                  </div>
-                  <div className="rg-field last">
-                    <div className="rg-field-icon"><Lock size={13} /></div>
-                    <div className="rg-field-label">Confirm Password</div>
-                    <input
-                      className="rg-input" style={{ paddingRight: 44 }}
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      name="confirmPassword" value={formData.confirmPassword} onChange={handleChange}
-                      placeholder="Repeat your password" required autoComplete="new-password"
-                    />
-                    <button type="button" className="rg-eye-btn" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                      {showConfirmPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-                    </button>
-                  </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+                  <InputField label="Password" name="password" toggle onToggle={() => setShowPassword(!showPassword)} showToggle={showPassword} placeholder="Minimum 8 characters" icon={Lock} />
+                  <InputField label="Confirm Password" name="confirmPassword" toggle onToggle={() => setShowConfirmPassword(!showConfirmPassword)} showToggle={showConfirmPassword} placeholder="Repeat your password" icon={Lock} />
                 </div>
 
+                {/* Password strength */}
                 {formData.password && (
-                  <div className="rg-pw-strength">
-                    <div className="rg-strength-bar">
-                      {[0,1,2,3].map(i => (
-                        <div key={i} className={`rg-strength-seg${i < pwStrength ? ` lit-${pwStrength}` : ''}`} />
+                  <div style={{ marginBottom: '20px', padding: '16px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Password strength</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: strengthColor }}>
+                        {['Weak', 'Fair', 'Good', 'Strong'][pwStrength - 1] || '—'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+                      {[0, 1, 2, 3].map(i => (
+                        <div key={i} style={{ flex: 1, height: '4px', borderRadius: '2px', background: i < pwStrength ? strengthColor : '#E2E8F0', transition: 'background 0.3s ease' }} />
                       ))}
                     </div>
-                    <div className="rg-pw-reqs">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                       {pwReqs.map(r => (
-                        <div key={r.label} className={`rg-pw-req${r.met ? ' met' : ''}`}>
-                          <div className="rg-pw-req-dot" />{r.label}
+                        <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                          <div style={{ width: 14, height: 14, borderRadius: '50%', background: r.met ? '#DCFCE7' : '#F1F5F9', border: `1px solid ${r.met ? '#16A34A' : '#E2E8F0'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.2s' }}>
+                            {r.met && <Check size={8} strokeWidth={3} style={{ color: '#16A34A' }} />}
+                          </div>
+                          <span style={{ fontSize: '12px', color: r.met ? '#334155' : '#94A3B8', fontWeight: r.met ? 600 : 400, transition: 'color 0.2s' }}>{r.label}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <div className="rg-terms">
-                  <div
-                    className={`rg-checkbox${formData.agreeToTerms ? ' checked' : ''}`}
-                    onClick={() => setFormData({ ...formData, agreeToTerms: !formData.agreeToTerms })}
-                  />
-                  <p className="rg-terms-text">
-                    I agree to the <a href="#">Terms and Conditions</a> and <a href="#">Privacy Policy</a>
-                  </p>
-                </div>
+                {/* Terms */}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '24px', cursor: 'pointer', padding: '14px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px' }}>
+                  <input type="checkbox" name="agreeToTerms" checked={formData.agreeToTerms} onChange={handleChange} style={{ display: 'none' }} />
+                  <div style={{ width: 18, height: 18, borderRadius: '5px', border: `1.5px solid ${formData.agreeToTerms ? GOLD : '#CBD5E1'}`, background: formData.agreeToTerms ? `${GOLD}15` : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s', flexShrink: 0, marginTop: '1px' }}>
+                    {formData.agreeToTerms && <Check size={11} strokeWidth={3} style={{ color: GOLD }} />}
+                  </div>
+                  <span style={{ fontSize: '13px', color: '#475569', lineHeight: 1.55 }}>
+                    I agree to the <Link to="#terms" style={{ color: GOLD, fontWeight: 700, textDecoration: 'none' }}>Terms of Service</Link> and <Link to="#privacy" style={{ color: GOLD, fontWeight: 700, textDecoration: 'none' }}>Privacy Policy</Link>.
+                  </span>
+                </label>
 
-                <div className="rg-btn-row">
-                  <button type="button" className="rg-btn-back" onClick={handleBack}>
-                    <ArrowLeft size={13} /> Back
+                {/* Buttons */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="button" className="rg-back-btn" onClick={handleBack}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px 20px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '10px', color: '#334155', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s', flexShrink: 0 }}>
+                    <ArrowLeft size={15} /> Back
                   </button>
-                  <button type="submit" className="rg-btn-primary" disabled={isLoading}>
+                  <button type="submit" disabled={isLoading}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: GOLD, color: '#FFFFFF', padding: '13px 24px', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1, boxShadow: `0 4px 16px ${GOLD}35`, fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s' }}
+                    onMouseEnter={e => !isLoading && (e.currentTarget.style.transform = 'translateY(-1px)')}
+                    onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
                     {isLoading
-                      ? <><div className="rg-spinner" />Creating…</>
-                      : <>Create Account <ArrowRight size={13} /></>
+                      ? <><div style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Creating account…</>
+                      : <>Complete Registration <ArrowRight size={16} /></>
                     }
                   </button>
                 </div>
               </form>
-            </>
-          )}
+            )}
 
-          <div className="rg-footer">
-            Already have an account? <Link to="/login">Sign in</Link>
+            {/* Security note */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', background: '#F1F5F9', borderRadius: '8px', margin: '20px 0' }}>
+              <ShieldCheck size={13} style={{ color: '#16A34A', flexShrink: 0 }} />
+              <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>256-bit SSL encrypted · Your data is secure</span>
+            </div>
+
+            {/* Footer link */}
+            <div style={{ textAlign: 'center', fontSize: '13px', color: '#64748B' }}>
+              Already have an account?{' '}
+              <Link to="/login" style={{ color: GOLD, fontWeight: 700, textDecoration: 'none' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
+                Sign in
+              </Link>
+            </div>
           </div>
-
         </div>
       </div>
     </div>

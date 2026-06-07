@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -245,27 +246,30 @@ const CommercialRoutes = () => (
 // Dashboard redirect component
 const DashboardRedirect = () => {
   const { user } = useAuth();
-  
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  const userType: UserRole = (user.user_type || user.role || 'tenant') as UserRole;
-  
-  switch (userType) {
-    case 'admin':
-      return <Navigate to="/dashboard/admin" replace />;
-    case 'agent':
-      return <Navigate to="/dashboard/agent" replace />;
-    case 'landlord':
-      return <Navigate to="/dashboard/landlord" replace />;
-    case 'bnb_owner':
-      return <Navigate to="/dashboard/bnb_owner" replace />;
-    case 'commercial':
-      return <Navigate to="/dashboard/commercial" replace />;
-    default:
-      return <Navigate to="/dashboard/tenant" replace />;
-  }
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    const userType: UserRole = (user.user_type || user.role || 'tenant') as UserRole;
+
+    const redirectMap: Record<UserRole, string> = {
+      admin: '/dashboard/admin',
+      agent: '/dashboard/agent',
+      landlord: '/dashboard/landlord',
+      bnb_owner: '/dashboard/bnb_owner',
+      commercial: '/dashboard/commercial',
+      tenant: '/dashboard/tenant',
+    };
+
+    const targetPath = redirectMap[userType] || '/dashboard/tenant';
+    navigate(targetPath, { replace: true });
+  }, [user, navigate]);
+
+  return null;
 };
 
 // ─────────────────────────────────────

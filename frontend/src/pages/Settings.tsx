@@ -115,23 +115,26 @@ const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="settings-container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="settings-container" style={{ maxWidth: '1200px', margin: '0 auto', background: '#F1F5F9', minHeight: '100vh' }}>
       <style>{`
         .settings-container {
           padding: 24px 32px;
         }
 
         .settings-title {
-          font-size: 24px;
-          font-weight: 600;
-          margin-bottom: 32px;
-          color: var(--text-primary, #fff);
+          font-size: clamp(24px, 4vw, 28px);
+          font-weight: 800;
+          margin-bottom: 8px;
+          color: #0F172A;
+          font-family: 'DM Sans', sans-serif;
+          letter-spacing: -0.02em;
         }
 
         .settings-description {
           font-size: 16px;
-          color: var(--text-secondary, #9ca3af);
-          margin-bottom: 24px;
+          color: #475569;
+          margin-bottom: 32px;
+          font-family: 'DM Sans', sans-serif;
         }
 
         .settings-actions {
@@ -142,15 +145,17 @@ const SettingsPage: React.FC = () => {
 
         .settings-back-btn {
           padding: 12px 20px;
-          background: #3b82f6;
+          background: #C89128;
           color: white;
           text-decoration: none;
-          border-radius: 8px;
+          border-radius: 10px;
           font-size: 14px;
-          font-weight: 500;
+          font-weight: 600;
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          box-shadow: 0 4px 14px rgba(200,145,40,0.28);
+          font-family: 'DM Sans', sans-serif;
         }
 
         @media (max-width: 768px) {
@@ -207,198 +212,230 @@ const SettingsPage: React.FC = () => {
         <div style={{
           padding: '12px 16px',
           marginBottom: '24px',
-          borderRadius: '8px',
-          backgroundColor: statusMessage.type === 'success' ? '#d1fae5' : '#fee2e2',
+          borderRadius: '10px',
+          backgroundColor: statusMessage.type === 'success' ? '#DCFCE7' : '#FFE4E6',
           border: '1px solid',
-          borderColor: statusMessage.type === 'success' ? '#a7f3d0' : '#fecdd3',
-          color: statusMessage.type === 'success' ? '#065f46' : '#9f1a1c',
+          borderColor: statusMessage.type === 'success' ? 'rgba(22,163,74,0.28)' : 'rgba(220,38,38,0.28)',
+          color: statusMessage.type === 'success' ? '#16A34A' : '#DC2626',
+          fontFamily: 'DM Sans, sans-serif',
+          fontSize: '14px',
         }}>
           {statusMessage.message}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: '32px' }}>
-        <div style={{ marginBottom: '24px' }}>
-          <label htmlFor="name" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-            Name
-          </label>
-          <div style={{ position: 'relative' }}>
-            <User 
-              size={18} 
-              style={{ position: 'absolute', left: '12px', top: '12px', color: '#6b7280' }} 
-            />
+      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '24px', marginBottom: '32px', boxShadow: '0 1px 3px rgba(15,23,42,0.06)' }}>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '20px' }}>
+            <label htmlFor="name" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#0F172A', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>
+              Name
+            </label>
+            <div style={{ position: 'relative' }}>
+              <User 
+                size={18} 
+                style={{ position: 'absolute', left: '12px', top: '12px', color: '#94A3B8' }} 
+              />
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '10px 40px',
+                  border: '1.5px solid #E2E8F0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontFamily: 'DM Sans, sans-serif',
+                  backgroundColor: '#F1F5F9',
+                  color: '#0F172A',
+                  outline: 'none',
+                  transition: 'border-color 0.18s',
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label htmlFor="email" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#0F172A', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>
+              Email
+            </label>
+            <div style={{ position: 'relative' }}>
+              <Mail 
+                size={18} 
+                style={{ position: 'absolute', left: '12px', top: '12px', color: '#94A3B8' }} 
+              />
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleInputChange}
+                style={{
+                  width: '100%',
+                  padding: '10px 40px',
+                  border: '1.5px solid #E2E8F0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontFamily: 'DM Sans, sans-serif',
+                  backgroundColor: '#F1F5F9',
+                  color: '#0F172A',
+                  outline: 'none',
+                  transition: 'border-color 0.18s',
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label htmlFor="currentPassword" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#0F172A', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>
+              Current Password (required to save changes)
+            </label>
             <input
-              id="name"
-              name="name"
-              type="text"
+              id="currentPassword"
+              name="currentPassword"
+              type="password"
               required
-              value={formData.name}
+              value={formData.currentPassword}
               onChange={handleInputChange}
               style={{
                 width: '100%',
-                padding: '10px 40px',
-                border: '1px solid #e5e7eb',
+                padding: '10px 16px',
+                border: '1.5px solid #E2E8F0',
                 borderRadius: '8px',
                 fontSize: '14px',
-                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                fontFamily: 'DM Sans, sans-serif',
+                backgroundColor: '#F1F5F9',
+                color: '#0F172A',
+                outline: 'none',
+                transition: 'border-color 0.18s',
               }}
             />
           </div>
-        </div>
 
-        <div style={{ marginBottom: '24px' }}>
-          <label htmlFor="email" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-            Email
-          </label>
-          <div style={{ position: 'relative' }}>
-            <Mail 
-              size={18} 
-              style={{ position: 'absolute', left: '12px', top: '12px', color: '#6b7280' }} 
-            />
+          <div style={{ marginBottom: '20px' }}>
+            <label htmlFor="newPassword" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#0F172A', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>
+              New Password (optional)
+            </label>
             <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={formData.email}
+              id="newPassword"
+              name="newPassword"
+              type="password"
+              value={formData.newPassword}
               onChange={handleInputChange}
               style={{
                 width: '100%',
-                padding: '10px 40px',
-                border: '1px solid #e5e7eb',
+                padding: '10px 16px',
+                border: '1.5px solid #E2E8F0',
                 borderRadius: '8px',
                 fontSize: '14px',
-                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                fontFamily: 'DM Sans, sans-serif',
+                backgroundColor: '#F1F5F9',
+                color: '#0F172A',
+                outline: 'none',
+                transition: 'border-color 0.18s',
               }}
             />
           </div>
-        </div>
 
-        <div style={{ marginBottom: '24px' }}>
-          <label htmlFor="currentPassword" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-            Current Password (required to save changes)
-          </label>
-          <input
-            id="currentPassword"
-            name="currentPassword"
-            type="password"
-            required
-            value={formData.currentPassword}
-            onChange={handleInputChange}
-            style={{
-              width: '100%',
-              padding: '10px 16px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              fontSize: '14px',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-            }}
-          />
-        </div>
+          <div style={{ marginBottom: '24px' }}>
+            <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#0F172A', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>
+              Confirm New Password
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                border: '1.5px solid #E2E8F0',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontFamily: 'DM Sans, sans-serif',
+                backgroundColor: '#F1F5F9',
+                color: '#0F172A',
+                outline: 'none',
+                transition: 'border-color 0.18s',
+              }}
+            />
+          </div>
 
-        <div style={{ marginBottom: '24px' }}>
-          <label htmlFor="newPassword" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-            New Password (optional)
-          </label>
-          <input
-            id="newPassword"
-            name="newPassword"
-            type="password"
-            value={formData.newPassword}
-            onChange={handleInputChange}
-            style={{
-              width: '100%',
-              padding: '10px 16px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              fontSize: '14px',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-            }}
-          />
-        </div>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <button
+              type="submit"
+              disabled={isSaving}
+              style={{
+                padding: '12px 20px',
+                background: '#C89128',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+                opacity: isSaving ? 0.7 : 1,
+                fontFamily: 'DM Sans, sans-serif',
+                boxShadow: '0 4px 14px rgba(200,145,40,0.28)',
+              }}
+            >
+              <Save size={16} />
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
 
-        <div style={{ marginBottom: '24px' }}>
-          <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-            Confirm New Password
-          </label>
-          <input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            style={{
-              width: '100%',
-              padding: '10px 16px',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              fontSize: '14px',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-            }}
-          />
-        </div>
+            <Link 
+              to="/dashboard" 
+              style={{
+                padding: '12px 20px',
+                border: '1.5px solid #E2E8F0',
+                borderRadius: '10px',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#475569',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontFamily: 'DM Sans, sans-serif',
+                backgroundColor: '#FFFFFF',
+              }}
+            >
+              <Settings size={16} />
+              Cancel
+            </Link>
+          </div>
+        </form>
+      </div>
 
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <button
-            type="submit"
-            disabled={isSaving}
-            style={{
-              padding: '12px 20px',
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: isSaving ? 'not-allowed' : 'pointer',
-              opacity: isSaving ? 0.7 : 1,
-            }}
-          >
-            <Save size={16} />
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
-
-          <Link 
-            to="/dashboard" 
-            style={{
-              padding: '12px 20px',
-              border: '2px solid #3b82f6',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: '#3b82f6',
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <Settings size={16} />
-            Cancel
-          </Link>
-        </div>
-      </form>
-
-      <div className="settings-actions">
+      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(15,23,42,0.06)' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', marginBottom: '12px', fontFamily: 'DM Sans, sans-serif' }}>Danger Zone</h3>
+        <p style={{ fontSize: '14px', color: '#475569', marginBottom: '16px', fontFamily: 'DM Sans, sans-serif' }}>
+          Once you delete your account, there is no going back. Please be certain.
+        </p>
         <button
           onClick={() => {
             if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-              // In a real app, this would be an API call to /api/settings/profile with DELETE method
               alert('Account deleted successfully. In a real app, this would delete your account.');
             }
           }}
           style={{
             padding: '12px 20px',
-            background: '#ef4444',
+            background: '#DC2626',
             color: 'white',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '10px',
             fontSize: '14px',
-            fontWeight: 500,
+            fontWeight: 600,
             cursor: 'pointer',
+            fontFamily: 'DM Sans, sans-serif',
           }}
         >
           Delete Account

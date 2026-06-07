@@ -1,834 +1,420 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Building, Plus, Search, Filter, MapPin, Bed, Bath, Square, DollarSign, Eye, Edit, Trash2, Users, Calendar, TrendingUp, AlertCircle, CheckCircle, X, Home, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Building, Plus, Search, MapPin, Bed, Bath, Square,
+  Eye, Edit, Trash2, Users, Calendar, AlertCircle,
+  CheckCircle, Home, ChevronLeft, ChevronRight, TrendingUp,
+} from 'lucide-react';
 import Api from '../../services/api';
 
+// ── Design tokens — 1:1 with landlord_dashboard.dart kSlate* / kWhite / kGold
+const C = {
+  pageBg:    '#F1F5F9',   // kSlate100  — page background
+  headerBg:  '#1E293B',   // kSlate800  — header/nav panels
+  cardBg:    '#FFFFFF',   // kWhite     — every card surface
+  border:    '#E2E8F0',   // kSlate200  — dividers & borders
+  text:      '#0F172A',   // kSlate900  — primary text
+  textSub:   '#475569',   // kSlate600  — secondary text
+  textMuted: '#94A3B8',   // kSlate400  — muted / placeholders
+  textLight: '#CBD5E1',   // kSlate300  — text on dark bg
+  slate100:  '#F1F5F9',
+  slate500:  '#64748B',
+  // Gold = CTA buttons & accent value text ONLY
+  gold:      '#C89128',
+  goldGlow:  '0 4px 14px rgba(200,145,40,0.26)',
+  // Semantic (matches Flutter kSuccess / kInfo / kWarning / kDanger)
+  green:     '#16A34A', greenBg:  '#DCFCE7',
+  blue:      '#2563EB', blueBg:   '#DBEAFE',
+  amber:     '#D97706', amberBg:  '#FEF3C7',
+  red:       '#DC2626', redBg:    '#FFE4E6',
+};
+
 interface Property {
-  id: number;
-  title: string;
-  location: string;
-  address: string;
-  price: number;
-  type: string;
-  bedrooms: number;
-  bathrooms: number;
-  area: number;
-  image?: string | null;
-  description: string;
-  amenities: string[];
+  id: number; title: string; location: string; address: string; price: number;
+  type: string; bedrooms: number; bathrooms: number; area: number; image?: string | null;
+  description: string; amenities: string[];
   status: 'available' | 'rented' | 'maintenance' | 'listed';
-  listedDate: string;
-  views: number;
-  inquiries: number;
-  currentTenant?: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    contractStart: string;
-    contractEnd: string;
-  };
-  documents: {
-    images: string[];
-    floorPlan: string;
-    certificates: string[];
-  };
+  listedDate: string; views: number; inquiries: number;
+  currentTenant?: { id: number; firstName: string; lastName: string; email: string; phone: string; contractStart: string; contractEnd: string; };
+  documents: { images: string[]; floorPlan: string; certificates: string[]; };
+}
+interface PropertyStats {
+  total: number; available: number; rented: number; maintenance: number;
+  totalValue: number; monthlyRevenue: number; avgOccupancy: number; pendingInquiries: number;
 }
 
-interface PropertyStats {
-  total: number;
-  available: number;
-  rented: number;
-  maintenance: number;
-  totalValue: number;
-  monthlyRevenue: number;
-  avgOccupancy: number;
-  pendingInquiries: number;
-}
+const statusMeta = (status: string) => {
+  switch (status) {
+    case 'available':   return { color: C.green,  bg: C.greenBg,  Icon: CheckCircle };
+    case 'rented':      return { color: C.blue,   bg: C.blueBg,   Icon: Users };
+    case 'maintenance': return { color: C.amber,  bg: C.amberBg,  Icon: AlertCircle };
+    case 'listed':      return { color: C.gold,   bg: '#FEF3C7',  Icon: Home };
+    default:            return { color: C.textMuted, bg: C.slate100, Icon: Home };
+  }
+};
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(n);
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
 
 const MyProperties = () => {
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [stats, setStats] = useState<PropertyStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('listedDate');
+  const [properties, setProperties]         = useState<Property[]>([]);
+  const [stats, setStats]                   = useState<PropertyStats | null>(null);
+  const [loading, setLoading]               = useState(true);
+  const [error, setError]                   = useState('');
+  const [searchTerm, setSearchTerm]         = useState('');
+  const [statusFilter, setStatusFilter]     = useState('all');
+  const [typeFilter, setTypeFilter]         = useState('all');
+  const [sortBy, setSortBy]                 = useState('listedDate');
   const [carouselStates, setCarouselStates] = useState<Record<number, number>>({});
 
-  useEffect(() => {
-    loadProperties();
-  }, []);
+  useEffect(() => { loadProperties(); }, []);
 
   const loadProperties = async () => {
     try {
-      setLoading(true);
-      setError('');
-      
-      // Fetch real properties from API
+      setLoading(true); setError('');
       const response = await Api.getOwnerProperties();
-      
-      console.log('API Response:', response);
-      console.log('Response data:', response.data);
-      
-      let transformedProperties: Property[] = [];
-      
+      let transformed: Property[] = [];
       if (response.data) {
-        console.log('Raw property data:', response.data[0]); // Debug first property
-        // Transform API data to match our interface
-        transformedProperties = response.data.map((property: any) => ({
-          id: property.id,
-          title: property.title,
-          location: property.location,
-          address: property.address || '',
-          price: parseFloat(property.price),
-          type: property.type,
-          bedrooms: property.bedrooms,
-          bathrooms: property.bathrooms,
-          area: property.area,
-          image: property.images && property.images.length > 0 
-            ? (property.images[0].startsWith('http') ? property.images[0] : `${import.meta.env.VITE_API_URL}/storage/${property.images[0]}`)
-            : null,
-          description: property.description,
-          amenities: property.amenities || [],
-          status: property.available ? 'available' : 'rented', // Simplified status
-          listedDate: property.created_at ? new Date(property.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          views: 0, // Add view count if available in API
-          inquiries: 0, // Add inquiry count if available in API
-          currentTenant: property.tenant || null,
+        transformed = response.data.map((p: any) => ({
+          id: p.id, title: p.title, location: p.location, address: p.address || '',
+          price: parseFloat(p.price), type: p.type, bedrooms: p.bedrooms, bathrooms: p.bathrooms, area: p.area,
+          image: p.images?.length ? (p.images[0].startsWith('http') ? p.images[0] : `${import.meta.env.VITE_API_URL}/storage/${p.images[0]}`) : null,
+          description: p.description, amenities: p.amenities || [],
+          status: p.available ? 'available' : 'rented',
+          listedDate: p.created_at ? new Date(p.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          views: 0, inquiries: 0, currentTenant: p.tenant || null,
           documents: {
-            images: property.images ? property.images.map((img: string) => 
-              img.startsWith('http') ? img : `${import.meta.env.VITE_API_URL}/storage/${img}`
-            ) : [],
-            floorPlan: '',
-            certificates: []
-          }
+            images: (p.images || []).map((img: string) => img.startsWith('http') ? img : `${import.meta.env.VITE_API_URL}/storage/${img}`),
+            floorPlan: '', certificates: [],
+          },
         }));
-        
-        console.log('Transformed property:', transformedProperties[0]); // Debug transformed
-        setProperties(transformedProperties);
+        setProperties(transformed);
       }
-      
-      // Load stats if available
       try {
-        const statsResponse = await Api.getOwnerAnalytics();
-        if (statsResponse.data) {
-          const transformedStats: PropertyStats = {
-            total: statsResponse.data.property_performance?.total_properties || 0,
-            available: statsResponse.data.property_performance?.available_properties || 0,
-            rented: statsResponse.data.property_performance?.occupied_properties || 0,
-            maintenance: 0,
-            totalValue: 0,
-            monthlyRevenue: statsResponse.data.financial_metrics?.monthly_revenue || 0,
-            avgOccupancy: statsResponse.data.property_performance?.occupancy_rate || 0,
-            pendingInquiries: 0
-          };
-          setStats(transformedStats);
-        }
-      } catch (statsError) {
-        console.warn('Could not load stats:', statsError);
-        // Set default stats if stats API fails
-        setStats({
-          total: transformedProperties.length || 0,
-          available: transformedProperties.filter(p => p.status === 'available').length || 0,
-          rented: transformedProperties.filter(p => p.status === 'rented').length || 0,
-          maintenance: 0,
-          totalValue: 0,
-          monthlyRevenue: 0,
-          avgOccupancy: 0,
-          pendingInquiries: 0
+        const sr = await Api.getOwnerAnalytics();
+        if (sr.data) setStats({
+          total: sr.data.property_performance?.total_properties || 0,
+          available: sr.data.property_performance?.available_properties || 0,
+          rented: sr.data.property_performance?.occupied_properties || 0,
+          maintenance: 0, totalValue: 0,
+          monthlyRevenue: sr.data.financial_metrics?.monthly_revenue || 0,
+          avgOccupancy: sr.data.property_performance?.occupancy_rate || 0,
+          pendingInquiries: 0,
         });
+      } catch {
+        setStats({ total: transformed.length, available: transformed.filter(p => p.status === 'available').length, rented: transformed.filter(p => p.status === 'rented').length, maintenance: 0, totalValue: 0, monthlyRevenue: 0, avgOccupancy: 0, pendingInquiries: 0 });
       }
-      
-    } catch (err: any) {
-      console.error('Error loading properties:', err);
-      setError('Failed to load properties. Please try again.');
-      setProperties([]);
-      setStats(null);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setError('Failed to load properties. Please try again.'); setProperties([]); setStats(null); }
+    finally { setLoading(false); }
   };
 
-  const deleteProperty = async (propertyId: number) => {
-    try {
-      await Api.deleteOwnerProperty(propertyId);
-      setProperties(prev => prev.filter(p => p.id !== propertyId));
-      // Refresh properties list to get updated stats
-      loadProperties();
-    } catch (e) {
-      setError('Failed to delete property');
-    }
+  const deleteProperty = async (id: number) => {
+    try { await Api.deleteOwnerProperty(id); setProperties(p => p.filter(x => x.id !== id)); loadProperties(); }
+    catch { setError('Failed to delete property.'); }
   };
 
-  const fmt = (n: number) => new Intl.NumberFormat('en-TZ', { 
-    style: 'currency', 
-    currency: 'TZS', 
-    minimumFractionDigits: 0 
-  }).format(n);
-
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-TZ', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available': return '#10b981';
-      case 'rented': return '#3b82f6';
-      case 'maintenance': return '#f59e0b';
-      case 'listed': return '#8b5cf6';
-      default: return '#6b7280';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'available': return CheckCircle;
-      case 'rented': return Users;
-      case 'maintenance': return AlertCircle;
-      case 'listed': return Home;
-      default: return Home;
-    }
-  };
-
-  const filteredAndSortedProperties = properties
-    .filter(property => {
-      const matchesSearch = property.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           property.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           property.address.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = statusFilter === 'all' || property.status === statusFilter;
-      const matchesType = typeFilter === 'all' || property.type === typeFilter;
-      
-      return matchesSearch && matchesStatus && matchesType;
+  const filtered = properties
+    .filter(p => {
+      const q = searchTerm.toLowerCase();
+      return (p.title.toLowerCase().includes(q) || p.location.toLowerCase().includes(q) || p.address.toLowerCase().includes(q))
+        && (statusFilter === 'all' || p.status === statusFilter)
+        && (typeFilter === 'all' || p.type === typeFilter);
     })
     .sort((a, b) => {
-      switch (sortBy) {
-        case 'listedDate':
-          return new Date(b.listedDate).getTime() - new Date(a.listedDate).getTime();
-        case 'price-low':
-          return a.price - b.price;
-        case 'price-high':
-          return b.price - a.price;
-        case 'views':
-          return b.views - a.views;
-        case 'inquiries':
-          return b.inquiries - a.inquiries;
-        default:
-          return 0;
-      }
+      if (sortBy === 'listedDate')  return new Date(b.listedDate).getTime() - new Date(a.listedDate).getTime();
+      if (sortBy === 'price-low')   return a.price - b.price;
+      if (sortBy === 'price-high')  return b.price - a.price;
+      if (sortBy === 'views')       return b.views - a.views;
+      if (sortBy === 'inquiries')   return b.inquiries - a.inquiries;
+      return 0;
     });
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '3px solid #e8e4dc', 
-            borderTop: '3px solid #c9a84c', 
-            borderRadius: '50%', 
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }}></div>
-          <p style={{ color: '#7a7060', fontFamily: 'DM Sans, sans-serif' }}>Loading properties...</p>
-        </div>
+  // Shared select style
+  const selStyle: React.CSSProperties = {
+    padding: '9px 14px', backgroundColor: C.cardBg, border: `1.5px solid ${C.border}`,
+    color: C.text, borderRadius: '8px', fontFamily: 'DM Sans, sans-serif',
+    fontSize: '13px', outline: 'none', cursor: 'pointer', fontWeight: 500,
+  };
+
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px', backgroundColor: C.pageBg }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 40, height: 40, border: `3px solid ${C.border}`, borderTop: `3px solid ${C.gold}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
+        <p style={{ color: C.textMuted, fontSize: '14px', fontFamily: 'DM Sans, sans-serif' }}>Loading properties…</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Building size={28} style={{ color: '#c9a84c' }} />
-            <h1 style={{ color: '#e8e4dc', fontSize: '28px', fontWeight: '500', margin: 0 }}>
-              My Properties
-            </h1>
-            {stats && (
-              <span style={{
-                padding: '4px 12px',
-                backgroundColor: 'rgba(201, 168, 76, 0.1)',
-                color: '#c9a84c',
-                borderRadius: '999px',
-                fontSize: '12px',
-                fontFamily: 'DM Sans, sans-serif',
-                fontWeight: '600'
-              }}>
-                {stats.total} properties
-              </span>
-            )}
-          </div>
-          
-          <Link
-            to="/dashboard/landlord/add-property"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              backgroundColor: '#c9a84c',
-              color: '#080808',
-              textDecoration: 'none',
-              borderRadius: '6px',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
-          >
-            <Plus size={16} />
-            Add Property
-          </Link>
-        </div>
-        <p style={{ color: '#7a7060', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
-          Manage your rental properties and track their performance
-        </p>
-      </div>
+    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', padding: '24px' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+          .prop-card { transition: box-shadow 0.2s, transform 0.2s; }
+          .prop-card:hover { box-shadow: 0 8px 28px rgba(15,23,42,0.12) !important; transform: translateY(-2px); }
+          .act-btn { transition: opacity 0.15s, transform 0.15s; }
+          .act-btn:hover { opacity: 0.86; transform: scale(1.08); }
+          select option { background: #fff; color: #0F172A; }
+        `}</style>
 
-      {/* Property Stats */}
-      {stats && (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-          gap: '20px', 
-          marginBottom: '32px' 
-        }}>
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(201, 168, 76, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#e8e4dc', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.total}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Total Properties
-            </div>
+        {error && (
+          <div style={{ marginBottom: '18px', padding: '13px 16px', borderRadius: '10px', backgroundColor: C.redBg, border: `1px solid rgba(220,38,38,0.22)`, color: C.red, fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>
+            {error}
           </div>
+        )}
 
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(16, 185, 129, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#10b981', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.available}
+        {/* ════ Slate-800 header panel (matches kHeaderBg) ════ */}
+        <div style={{ background: C.headerBg, borderRadius: '14px', padding: '24px 28px', marginBottom: '20px', color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <div style={{ fontSize: '11px', letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: '6px' }}>
+                Property Management
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                <h1 style={{ margin: 0, fontSize: 'clamp(20px,3.5vw,26px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+                  My Properties
+                </h1>
+                {stats && (
+                  <span style={{ padding: '3px 10px', background: 'rgba(255,255,255,0.14)', borderRadius: '999px', fontSize: '12px', color: '#fff', fontWeight: 700 }}>
+                    {stats.total} total
+                  </span>
+                )}
+              </div>
+              <p style={{ margin: 0, color: C.textLight, fontSize: '14px', lineHeight: 1.6 }}>
+                Manage your rental portfolio and track performance
+              </p>
             </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Available
-            </div>
-          </div>
-
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(59, 130, 246, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#3b82f6', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {stats.rented}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Rented
-            </div>
-          </div>
-
-          <div style={{
-            backgroundColor: '#0e0e0e',
-            border: '1px solid rgba(56, 189, 248, 0.12)',
-            borderRadius: '8px',
-            padding: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '24px', fontWeight: '600', color: '#38bdf8', fontFamily: 'DM Sans, sans-serif', marginBottom: '4px' }}>
-              {fmt(stats.monthlyRevenue)}
-            </div>
-            <div style={{ fontSize: '12px', color: '#7a7060', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Monthly Revenue
-            </div>
+            {/* Gold CTA button */}
+            <Link to="/dashboard/landlord/add-property" style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '11px 22px', backgroundColor: C.gold, color: '#fff',
+              textDecoration: 'none', borderRadius: '10px',
+              fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 700,
+              boxShadow: C.goldGlow, letterSpacing: '0.02em', alignSelf: 'flex-start',
+            }}>
+              <Plus size={16} /> Add Property
+            </Link>
           </div>
         </div>
-      )}
 
-      {/* Filters */}
-      <div style={{
-        backgroundColor: '#0e0e0e',
-        border: '1px solid rgba(201, 168, 76, 0.12)',
-        borderRadius: '8px',
-        padding: '20px',
-        marginBottom: '32px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '250px' }}>
-            <Search size={18} style={{ color: '#7a7060' }} />
-            <input
-              type="text"
-              placeholder="Search properties..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: '#e8e4dc',
-                borderRadius: '4px',
-                fontFamily: 'DM Sans, sans-serif',
-                fontSize: '14px',
-                outline: 'none'
-              }}
-            />
+        {/* ════ Stats — white cards on slate-100 bg (matches _StatCard2) ════ */}
+        {stats && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+            {[
+              { label: 'Total Properties', value: stats.total,                color: C.text,  bg: C.slate100, icon: Building },
+              { label: 'Available',        value: stats.available,            color: C.green, bg: C.greenBg,  icon: CheckCircle },
+              { label: 'Rented',           value: stats.rented,               color: C.blue,  bg: C.blueBg,   icon: Users },
+              { label: 'Monthly Revenue',  value: fmt(stats.monthlyRevenue),  color: C.amber, bg: C.amberBg,  icon: TrendingUp },
+            ].map(({ label, value, color, bg, icon: Icon }) => (
+              <div key={label} style={{ backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
+                <div style={{ width: 40, height: 40, borderRadius: '10px', backgroundColor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon size={18} style={{ color }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: typeof value === 'number' ? '22px' : '15px', fontWeight: 800, color: C.text, letterSpacing: '-0.02em', lineHeight: 1.2, fontFamily: 'DM Sans, sans-serif' }}>{value}</div>
+                  <div style={{ fontSize: '11px', color: C.textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px', fontFamily: 'DM Sans, sans-serif' }}>{label}</div>
+                </div>
+              </div>
+            ))}
           </div>
-          
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#e8e4dc',
-              borderRadius: '4px',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-          >
-            <option value="all">All Status</option>
-            <option value="available">Available</option>
-            <option value="rented">Rented</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="listed">Listed</option>
-          </select>
+        )}
 
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#e8e4dc',
-              borderRadius: '4px',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-          >
-            <option value="all">All Types</option>
-            <option value="apartment">Apartment</option>
-            <option value="house">House</option>
-            <option value="studio">Studio</option>
-            <option value="villa">Villa</option>
-          </select>
-
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              padding: '8px 12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#e8e4dc',
-              borderRadius: '4px',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-          >
-            <option value="listedDate">Recently Listed</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-            <option value="views">Most Viewed</option>
-            <option value="inquiries">Most Inquiries</option>
-          </select>
+        {/* ════ Filters — white card ════ */}
+        <div style={{ backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '16px 20px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {/* Search */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '200px', backgroundColor: C.slate100, border: `1.5px solid ${C.border}`, borderRadius: '8px', padding: '0 12px' }}>
+              <Search size={15} style={{ color: C.textMuted, flexShrink: 0 }} />
+              <input
+                type="text" placeholder="Search properties…" value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{ flex: 1, padding: '9px 0', border: 'none', background: 'transparent', color: C.text, fontSize: '13px', fontFamily: 'DM Sans, sans-serif', outline: 'none' }}
+              />
+            </div>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={selStyle}>
+              <option value="all">All Status</option>
+              <option value="available">Available</option>
+              <option value="rented">Rented</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="listed">Listed</option>
+            </select>
+            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={selStyle}>
+              <option value="all">All Types</option>
+              <option value="apartment">Apartment</option>
+              <option value="house">House</option>
+              <option value="studio">Studio</option>
+              <option value="villa">Villa</option>
+            </select>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={selStyle}>
+              <option value="listedDate">Recently Listed</option>
+              <option value="price-low">Price: Low → High</option>
+              <option value="price-high">Price: High → Low</option>
+              <option value="views">Most Viewed</option>
+              <option value="inquiries">Most Inquiries</option>
+            </select>
+            <span style={{ marginLeft: 'auto', fontSize: '12px', color: C.textMuted, whiteSpace: 'nowrap', fontFamily: 'DM Sans, sans-serif' }}>
+              {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* Properties Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
-        {filteredAndSortedProperties.map((property) => {
-          const StatusIcon = getStatusIcon(property.status);
-          
-          return (
-            <div
-              key={property.id}
-              style={{
-                backgroundColor: '#0e0e0e',
-                border: '1px solid rgba(201, 168, 76, 0.12)',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              {/* Property Image Carousel */}
-              <div style={{ 
-                height: '200px', 
-                backgroundColor: 'rgba(201, 168, 76, 0.05)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden'
-              }}>
-                {property.documents.images.length > 0 ? (
-                  <>
-                    {/* Carousel Images */}
-                    <div style={{
-                      display: 'flex',
-                      transition: 'transform 0.3s ease',
-                      transform: `translateX(-${(carouselStates[property.id] || 0) * 100}%)`
-                    }}>
-                      {property.documents.images.map((image, index) => (
+        {/* ════ Property Grid — white cards on slate-100 bg ════ */}
+        {filtered.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: '18px' }}>
+            {filtered.map(property => {
+              const { color: stColor, bg: stBg, Icon: StIcon } = statusMeta(property.status);
+              const imgIndex = carouselStates[property.id] || 0;
+              const images   = property.documents.images;
+              return (
+                <div key={property.id} className="prop-card" style={{ backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(15,23,42,0.06)' }}>
+
+                  {/* Image carousel */}
+                  <div style={{ height: '200px', position: 'relative', overflow: 'hidden', backgroundColor: C.slate100 }}>
+                    {images.length > 0 ? (
+                      <>
                         <img
-                          key={index}
-                          src={image.startsWith('http') ? image : `http://localhost:8000${image}`}
-                          alt={`${property.title} - Image ${index + 1}`}
-                          loading="lazy"
-                          decoding="async"
-                          style={{
-                            width: '100%',
-                            height: '200px',
-                            objectFit: 'cover',
-                            flexShrink: 0
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder-property.jpg';
-                          }}
+                          src={images[imgIndex].startsWith('http') ? images[imgIndex] : `http://localhost:8000${images[imgIndex]}`}
+                          alt={property.title} loading="lazy"
+                          style={{ width: '100%', height: '200px', objectFit: 'cover', display: 'block' }}
+                          onError={e => { e.currentTarget.src = '/placeholder-property.jpg'; }}
                         />
+                        {images.length > 1 && (
+                          <>
+                            <button className="act-btn"
+                              onClick={() => setCarouselStates(p => ({ ...p, [property.id]: imgIndex === 0 ? images.length - 1 : imgIndex - 1 }))}
+                              style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.92)', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}>
+                              <ChevronLeft size={14} style={{ color: C.text }} />
+                            </button>
+                            <button className="act-btn"
+                              onClick={() => setCarouselStates(p => ({ ...p, [property.id]: imgIndex === images.length - 1 ? 0 : imgIndex + 1 }))}
+                              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.92)', border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }}>
+                              <ChevronRight size={14} style={{ color: C.text }} />
+                            </button>
+                            <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 5, zIndex: 2 }}>
+                              {images.map((_, i) => (
+                                <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: i === imgIndex ? C.gold : 'rgba(255,255,255,0.7)', transition: 'background 0.2s' }} />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Building size={44} style={{ color: '#CBD5E1' }} />
+                      </div>
+                    )}
+
+                    {/* Status badge — white pill overlay */}
+                    <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', backgroundColor: 'rgba(255,255,255,0.94)', border: `1px solid ${stColor}30`, color: stColor, borderRadius: '999px', fontSize: '11px', fontWeight: 700, textTransform: 'capitalize', letterSpacing: '0.04em', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+                      <StIcon size={10} /> {property.status}
+                    </div>
+
+                    {/* Edit (gold) / Delete buttons */}
+                    <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 6 }}>
+                      <button className="act-btn"
+                        onClick={() => { window.location.href = `/dashboard/landlord/properties/${property.id}/edit`; }}
+                        style={{ width: 32, height: 32, borderRadius: '8px', backgroundColor: C.gold, border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(200,145,40,0.30)' }}>
+                        <Edit size={13} />
+                      </button>
+                      <button className="act-btn"
+                        onClick={() => deleteProperty(property.id)}
+                        style={{ width: 32, height: 32, borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.92)', border: `1px solid rgba(220,38,38,0.22)`, color: C.red, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card body */}
+                  <div style={{ padding: '18px 20px' }}>
+                    <h3 style={{ margin: '0 0 5px', fontSize: '15px', fontWeight: 700, color: C.text, letterSpacing: '-0.01em', lineHeight: 1.3, fontFamily: 'DM Sans, sans-serif' }}>
+                      {property.title}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: '10px' }}>
+                      <MapPin size={12} style={{ color: C.textMuted, flexShrink: 0 }} />
+                      <span style={{ color: C.textMuted, fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>{property.location}</span>
+                    </div>
+
+                    {/* Spec chips — matches _MetaChip */}
+                    <div style={{ display: 'flex', gap: 8, marginBottom: '12px', flexWrap: 'wrap' }}>
+                      {[
+                        { Icon: Bed,    val: `${property.bedrooms} bd` },
+                        { Icon: Bath,   val: `${property.bathrooms} ba` },
+                        { Icon: Square, val: `${property.area} m²` },
+                      ].map(({ Icon, val }) => (
+                        <div key={val} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', background: C.slate100, borderRadius: '6px' }}>
+                          <Icon size={11} style={{ color: C.textMuted }} />
+                          <span style={{ fontSize: '11px', color: C.textSub, fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>{val}</span>
+                        </div>
                       ))}
                     </div>
-                    
-                    {/* Carousel Controls */}
-                    {property.documents.images.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => {
-                            const currentIndex = carouselStates[property.id] || 0;
-                            const newIndex = currentIndex === 0 ? property.documents.images.length - 1 : currentIndex - 1;
-                            setCarouselStates(prev => ({ ...prev, [property.id]: newIndex }));
-                          }}
-                          style={{
-                            position: 'absolute',
-                            left: '8px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '32px',
-                            height: '32px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            zIndex: 2
-                          }}
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        
-                        <button
-                          onClick={() => {
-                            const currentIndex = carouselStates[property.id] || 0;
-                            const newIndex = currentIndex === property.documents.images.length - 1 ? 0 : currentIndex + 1;
-                            setCarouselStates(prev => ({ ...prev, [property.id]: newIndex }));
-                          }}
-                          style={{
-                            position: 'absolute',
-                            right: '8px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '32px',
-                            height: '32px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            zIndex: 2
-                          }}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                        
-                        {/* Image Indicators */}
-                        <div style={{
-                          position: 'absolute',
-                          bottom: '8px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          display: 'flex',
-                          gap: '4px',
-                          zIndex: 2
-                        }}>
-                          {property.documents.images.map((_, index) => (
-                            <div
-                              key={index}
-                              style={{
-                                width: '8px',
-                                height: '8px',
-                                borderRadius: '50%',
-                                backgroundColor: (carouselStates[property.id] || 0) === index ? '#c9a84c' : 'rgba(255, 255, 255, 0.5)',
-                                transition: 'background-color 0.3s ease'
-                              }}
-                            />
-                          ))}
+
+                    <p style={{ margin: '0 0 12px', color: C.textSub, fontSize: '13px', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {property.description}
+                    </p>
+
+                    {/* Tenant info */}
+                    {property.currentTenant && (
+                      <div style={{ backgroundColor: C.blueBg, border: `1px solid rgba(37,99,235,0.18)`, borderRadius: '8px', padding: '11px 14px', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          <Users size={12} style={{ color: C.blue }} />
+                          <span style={{ color: C.blue, fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'DM Sans, sans-serif' }}>Current Tenant</span>
                         </div>
-                      </>
+                        <div style={{ color: C.text, fontSize: '13px', fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>
+                          {property.currentTenant.firstName} {property.currentTenant.lastName}
+                        </div>
+                        <div style={{ color: C.textMuted, fontSize: '11px', fontFamily: 'DM Sans, sans-serif', marginTop: 2 }}>
+                          {fmtDate(property.currentTenant.contractStart)} – {fmtDate(property.currentTenant.contractEnd)}
+                        </div>
+                      </div>
                     )}
-                  </>
-                ) : (
-                  <Building size={48} style={{ color: '#c9a84c' }} />
-                )}
-                
-                {/* Status Badge */}
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '4px 8px',
-                  backgroundColor: `${getStatusColor(property.status)}15`,
-                  border: `1px solid ${getStatusColor(property.status)}30`,
-                  color: getStatusColor(property.status),
-                  borderRadius: '999px',
-                  fontSize: '11px',
-                  fontFamily: 'DM Sans, sans-serif',
-                  fontWeight: '500',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}>
-                  <StatusIcon size={10} />
-                  {property.status}
-                </div>
 
-                {/* Action Buttons */}
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  left: '12px',
-                  display: 'flex',
-                  gap: '8px'
-                }}>
-                  <button
-                    onClick={() => {
-                      // Test the original route with EditPropertySimple
-                      console.log('Edit button clicked, property ID:', property.id);
-                      window.location.href = `/dashboard/landlord/properties/${property.id}/edit`;
-                    }}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: 'rgba(201, 168, 76, 0.9)',
-                      border: 'none',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    <Edit size={14} />
-                  </button>
-                  <button
-                    onClick={() => deleteProperty(property.id)}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: 'rgba(239, 68, 68, 0.9)',
-                      border: 'none',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
+                    {/* Price + stats (matches _SmallButton row in _PropertyCard) */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: `1px solid ${C.border}` }}>
+                      <div>
+                        <div style={{ color: C.gold, fontSize: '18px', fontWeight: 800, fontFamily: 'DM Sans, sans-serif', letterSpacing: '-0.01em' }}>{fmt(property.price)}</div>
+                        <div style={{ color: C.textMuted, fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>/ month</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Eye size={12} style={{ color: C.textMuted }} />
+                          <span style={{ fontSize: '12px', color: C.textMuted, fontFamily: 'DM Sans, sans-serif' }}>{property.views}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <AlertCircle size={12} style={{ color: C.textMuted }} />
+                          <span style={{ fontSize: '12px', color: C.textMuted, fontFamily: 'DM Sans, sans-serif' }}>{property.inquiries}</span>
+                        </div>
+                      </div>
+                    </div>
 
-              {/* Property Details */}
-              <div style={{ padding: '20px' }}>
-                <div style={{ marginBottom: '12px' }}>
-                  <h3 style={{ 
-                    color: '#e8e4dc', 
-                    fontSize: '16px', 
-                    fontFamily: 'DM Sans, sans-serif', 
-                    fontWeight: '500',
-                    margin: '0 0 8px',
-                    lineHeight: '1.3'
-                  }}>
-                    {property.title}
-                  </h3>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                    <MapPin size={14} style={{ color: '#7a7060' }} />
-                    <span style={{ color: '#7a7060', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>
-                      {property.location}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Bed size={14} style={{ color: '#7a7060' }} />
-                      <span style={{ color: '#7a7060', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                        {property.bedrooms}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Bath size={14} style={{ color: '#7a7060' }} />
-                      <span style={{ color: '#7a7060', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                        {property.bathrooms}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Square size={14} style={{ color: '#7a7060' }} />
-                      <span style={{ color: '#7a7060', fontSize: '12px', fontFamily: 'DM Sans, sans-serif' }}>
-                        {property.area}m²
-                      </span>
-                    </div>
-                  </div>
-
-                  <p style={{ 
-                    color: '#7a7060', 
-                    fontSize: '13px', 
-                    fontFamily: 'DM Sans, sans-serif', 
-                    lineHeight: '1.4',
-                    margin: '0 0 12px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical'
-                  }}>
-                    {property.description}
-                  </p>
-                </div>
-
-                {/* Current Tenant Info */}
-                {property.currentTenant && (
-                  <div style={{
-                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                    border: '1px solid rgba(59, 130, 246, 0.2)',
-                    borderRadius: '6px',
-                    padding: '12px',
-                    marginBottom: '12px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <Users size={14} style={{ color: '#3b82f6' }} />
-                      <span style={{ color: '#3b82f6', fontSize: '12px', fontFamily: 'DM Sans, sans-serif', fontWeight: '500' }}>
-                        Current Tenant
-                      </span>
-                    </div>
-                    <div style={{ color: '#e8e4dc', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>
-                      {property.currentTenant.firstName} {property.currentTenant.lastName}
-                    </div>
-                    <div style={{ color: '#7a7060', fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>
-                      {formatDate(property.currentTenant.contractStart)} - {formatDate(property.currentTenant.contractEnd)}
-                    </div>
-                  </div>
-                )}
-
-                {/* Price and Stats */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid rgba(201, 168, 76, 0.12)' }}>
-                  <div>
-                    <div style={{ color: '#c9a84c', fontSize: '20px', fontFamily: 'DM Sans, sans-serif', fontWeight: '600' }}>
-                      {fmt(property.price)}
-                    </div>
-                    <div style={{ color: '#7a7060', fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>
-                      per month
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Eye size={12} style={{ color: '#7a7060' }} />
-                      <span style={{ color: '#7a7060', fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>
-                        {property.views}
-                      </span>
-                    </div>
-                    
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <AlertCircle size={12} style={{ color: '#7a7060' }} />
-                      <span style={{ color: '#7a7060', fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>
-                        {property.inquiries}
-                      </span>
+                    {/* Listed date */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.slate100}` }}>
+                      <Calendar size={11} style={{ color: C.textMuted }} />
+                      <span style={{ color: C.textMuted, fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>Listed {fmtDate(property.listedDate)}</span>
                     </div>
                   </div>
                 </div>
-
-                {/* Listed Date */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(201, 168, 76, 0.06)' }}>
-                  <Calendar size={12} style={{ color: '#7a7060' }} />
-                  <span style={{ color: '#7a7060', fontSize: '11px', fontFamily: 'DM Sans, sans-serif' }}>
-                    Listed on {formatDate(property.listedDate)}
-                  </span>
-                </div>
-              </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Empty state */
+          <div style={{ textAlign: 'center', padding: '72px 24px', backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '14px', boxShadow: '0 1px 4px rgba(15,23,42,0.04)' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '16px', backgroundColor: C.slate100, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+              <Building size={28} style={{ color: C.textMuted }} />
             </div>
-          );
-        })}
+            <h3 style={{ color: C.text, fontSize: '18px', fontWeight: 700, margin: '0 0 8px', fontFamily: 'DM Sans, sans-serif' }}>No properties found</h3>
+            <p style={{ color: C.textSub, fontFamily: 'DM Sans, sans-serif', marginBottom: '26px', fontSize: '14px' }}>
+              Try adjusting your filters, or add your first property to get started.
+            </p>
+            {/* Gold CTA */}
+            <Link to="/dashboard/landlord/add-property" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 24px', backgroundColor: C.gold, color: '#fff', textDecoration: 'none', borderRadius: '10px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '14px', boxShadow: C.goldGlow }}>
+              <Plus size={16} /> Add Your First Property
+            </Link>
+          </div>
+        )}
       </div>
-
-      {filteredAndSortedProperties.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <Building size={48} style={{ color: '#7a7060', marginBottom: '16px' }} />
-          <h3 style={{ color: '#e8e4dc', fontSize: '18px', marginBottom: '8px' }}>No properties found</h3>
-          <p style={{ color: '#7a7060', fontFamily: 'DM Sans, sans-serif', marginBottom: '24px' }}>
-            Try adjusting your filters or add your first property
-          </p>
-          <Link
-            to="/dashboard/properties/add"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              backgroundColor: '#c9a84c',
-              color: '#080808',
-              textDecoration: 'none',
-              borderRadius: '6px',
-              fontFamily: 'DM Sans, sans-serif',
-              fontWeight: '500'
-            }}
-          >
-            <Plus size={16} />
-            Add Your First Property
-          </Link>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };

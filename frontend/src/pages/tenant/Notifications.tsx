@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, CheckCheck, Archive, Trash2, Search, AlertCircle } from 'lucide-react';
 import Api from '../../services/api';
-import {
-  buttonStyle, descriptionStyle, formatDate, headingStyle,
-  inputStyle, pageStyle, palette, panelStyle, sectionTitleStyle,
-  tableStyle, tableWrapStyle, tdStyle, thStyle,
-  mobileTableContainer, mobileCard, mobileCardHeader,
-  mobileCardSection, mobileCardLabel, mobileCardValue, mobileCardActions,
-} from '../landlord/landlordPageStyles'; // ← shared dark amber theme (cross-folder import)
+import { formatDate } from './tenantPageStyles';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -117,44 +111,30 @@ const Notifications = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ ...pageStyle, padding: '0' }}>
+    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#F1F5F9', color: '#0F172A', minHeight: '100vh', padding: '0' }}>
 
       {/* ── Header ── */}
-      <section style={{ ...panelStyle, position: 'relative' }}>
-        <div style={{
-          position: 'absolute', top: 0, left: 32, right: 32, height: '2px',
-          background: `linear-gradient(90deg, transparent, ${palette.amber}, transparent)`,
-        }} />
-
-        <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap',
-        }}>
+      <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
           <div>
-            <div style={sectionTitleStyle}>
-              <span style={{
-                width: 6, height: 6, borderRadius: '50%',
-                background: palette.amber, display: 'inline-block', marginRight: 6,
-              }} />
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
               Tenant Workspace
             </div>
-            <h1 style={headingStyle}>Notifications</h1>
-            <p style={descriptionStyle}>Stay updated on contracts, applications, and messages.</p>
+            <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 'clamp(20px,3.5vw,28px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>Notifications</h1>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>Stay updated on contracts, applications, and messages.</p>
           </div>
 
           <button
-            style={{ ...buttonStyle('secondary'), padding: '10px 18px', alignSelf: 'flex-end' }}
+            style={{ background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', color: '#C89128', padding: '10px 18px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-end', fontFamily: "'DM Sans', system-ui, sans-serif" }}
             onClick={handleMarkAllRead}
           >
             <CheckCheck size={14} /> Mark All Read
           </button>
         </div>
+      </div>
 
-        {/* Stats + search row */}
-        <div style={{
-          display: 'flex', gap: '14px', marginTop: '24px',
-          flexWrap: 'wrap', alignItems: 'center',
-        }}>
+      {/* ── Stats + search row ── */}
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 40px 0', display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
           {[
             { label: 'Total',     value: stats.total     ?? 0, accent: false },
             { label: 'Unread',    value: stats.unread    ?? 0, accent: true  },
@@ -170,13 +150,13 @@ const Notifications = () => {
             }}>
               <span style={{
                 fontSize: '10px', letterSpacing: '0.15em',
-                textTransform: 'uppercase', color: palette.muted, fontWeight: 700,
+                textTransform: 'uppercase', color: '#64748B', fontWeight: 700,
               }}>
                 {label}
               </span>
               <span style={{
                 fontSize: '20px', fontWeight: 700,
-                color: accent ? palette.amber : palette.cream,
+                color: accent ? '#C89128' : '#0F172A',
               }}>
                 {value}
               </span>
@@ -187,20 +167,19 @@ const Notifications = () => {
           <div style={{ flex: 1, minWidth: '200px', maxWidth: '320px', position: 'relative' }}>
             <Search size={14} style={{
               position: 'absolute', left: 12, top: '50%',
-              transform: 'translateY(-50%)', color: palette.muted,
+              transform: 'translateY(-50%)', color: '#64748B',
             }} />
             <input
-              style={{ ...inputStyle, paddingLeft: '36px', width: '100%' }}
+              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F172A', padding: '10px 12px', borderRadius: 8, outline: 'none', paddingLeft: '36px', width: '100%' }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search notifications…"
             />
           </div>
         </div>
-      </section>
 
       {/* ── Notifications list ── */}
-      <section style={panelStyle}>
+      <section style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 16, padding: '32px' }}>
 
         {error && (
           <div style={{
@@ -215,12 +194,12 @@ const Notifications = () => {
         )}
 
         {/* ── Desktop table ── */}
-        <div style={tableWrapStyle}>
-          <table style={tableStyle}>
+        <div style={{ overflowX: 'auto', borderRadius: 8 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#FFFFFF' }}>
             <thead>
               <tr>
                 {['Title & Message', 'Type', 'Date', 'Actions'].map(h => (
-                  <th key={h} style={thStyle}>{h}</th>
+                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid #E2E8F0', color: '#64748B', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', background: '#F1F5F9' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -228,11 +207,11 @@ const Notifications = () => {
 
               {loading ? (
                 <tr>
-                  <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: palette.muted }}>
+                  <td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#64748B', borderBottom: '1px solid #F1F5F9' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                       <div style={{
                         width: 16, height: 16,
-                        border: `2px solid ${palette.amber}`, borderTopColor: 'transparent',
+                        border: '2px solid #C89128', borderTopColor: 'transparent',
                         borderRadius: '50%', animation: 'spin 0.8s linear infinite',
                       }} />
                       Loading…
@@ -242,9 +221,9 @@ const Notifications = () => {
 
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ ...tdStyle, textAlign: 'center', padding: '40px', color: palette.muted }}>
+                  <td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#64748B', borderBottom: '1px solid #F1F5F9' }}>
                     <Bell size={32} style={{ opacity: 0.25, margin: '0 auto 10px', display: 'block' }} />
-                    <div style={{ fontSize: '16px', fontWeight: 600, color: palette.cream, marginBottom: '4px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 600, color: '#0F172A', marginBottom: '4px' }}>
                       No notifications yet
                     </div>
                     <div style={{ fontSize: '13px', opacity: 0.7 }}>
@@ -262,19 +241,19 @@ const Notifications = () => {
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     {/* Title + message */}
-                    <td style={tdStyle}>
+                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                         {unread && (
                           <div style={{
                             width: 7, height: 7, borderRadius: '50%',
-                            background: palette.amber, flexShrink: 0, marginTop: 6,
+                            background: '#C89128', flexShrink: 0, marginTop: 6,
                           }} />
                         )}
                         <div>
-                          <div style={{ fontWeight: unread ? 600 : 400, color: palette.cream }}>
+                          <div style={{ fontWeight: unread ? 600 : 400, color: '#0F172A' }}>
                             {item.title || 'Notification'}
                           </div>
-                          <div style={{ color: palette.muted, fontSize: '13px', marginTop: '3px' }}>
+                          <div style={{ color: '#64748B', fontSize: '13px', marginTop: '3px' }}>
                             {item.message}
                           </div>
                         </div>
@@ -282,39 +261,35 @@ const Notifications = () => {
                     </td>
 
                     {/* Type */}
-                    <td style={{
-                      ...tdStyle,
-                      color: palette.muted, fontSize: '12px',
-                      textTransform: 'uppercase', letterSpacing: '0.08em',
-                    }}>
+                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                       {getTypeLabel(item.type)}
                     </td>
 
                     {/* Date */}
-                    <td style={{ ...tdStyle, color: palette.muted, fontSize: '13px' }}>
+                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9', color: '#64748B', fontSize: '13px' }}>
                       {formatDate(item.created_at)}
                     </td>
 
                     {/* Actions */}
-                    <td style={tdStyle}>
+                    <td style={{ padding: '12px 16px', borderBottom: '1px solid #F1F5F9' }}>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         {unread && (
                           <button
-                            style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
+                            style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', color: '#0F172A', padding: '5px 10px', fontSize: '12px', borderRadius: '8px', cursor: 'pointer' }}
                             onClick={() => handleMarkRead(item.id)}
                           >
                             <CheckCheck size={11} /> Read
                           </button>
                         )}
                         <button
-                          style={{ ...buttonStyle('secondary'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
+                          style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', color: '#0F172A', padding: '5px 10px', fontSize: '12px', borderRadius: '8px', cursor: 'pointer' }}
                           onClick={() => handleArchive(item.id)}
                           title="Archive"
                         >
                           <Archive size={11} />
                         </button>
                         <button
-                          style={{ ...buttonStyle('danger'), padding: '5px 10px', fontSize: '12px', borderRadius: '8px' }}
+                          style={{ background: 'rgba(220,38,68,0.1)', border: `1px solid rgba(220,38,68,0.3)`, color: '#dc2626', padding: '5px 10px', fontSize: '12px', borderRadius: '8px', cursor: 'pointer' }}
                           onClick={() => handleDelete(item.id)}
                           title="Delete"
                         >
@@ -330,68 +305,68 @@ const Notifications = () => {
         </div>
 
         {/* ── Mobile cards ── */}
-        <div style={mobileTableContainer}>
+        <div style={{ display: 'none', marginTop: '24px' }}>
           {loading ? (
-            <div style={mobileCard}>
-              <div style={mobileCardValue}>Loading notifications…</div>
+            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px', marginBottom: '12px' }}>
+              <div style={{ color: '#0F172A', fontSize: 14 }}>Loading notifications…</div>
             </div>
 
           ) : filtered.length === 0 ? (
-            <div style={mobileCard}>
-              <div style={{ textAlign: 'center', padding: '20px 0', color: palette.muted }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px', marginBottom: '12px' }}>
+              <div style={{ textAlign: 'center', padding: '20px 0', color: '#64748B' }}>
                 <Bell size={28} style={{ opacity: 0.25, margin: '0 auto 8px', display: 'block' }} />
-                <div style={mobileCardValue}>No notifications yet</div>
+                <div style={{ color: '#0F172A', fontSize: 14 }}>No notifications yet</div>
               </div>
             </div>
 
           ) : filtered.map((item) => {
             const unread = isUnread(item);
             return (
-              <div key={item.id} style={mobileCard}>
-                <div style={mobileCardHeader}>
+              <div key={item.id} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px', marginBottom: '12px' }}>
+                <div style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '12px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                       {unread && (
                         <div style={{
                           width: 8, height: 8, borderRadius: '50%',
-                          background: palette.amber, flexShrink: 0, marginTop: 4,
+                          background: '#C89128', flexShrink: 0, marginTop: 4,
                         }} />
                       )}
                       <div>
-                        <div style={{ fontWeight: unread ? 600 : 400, fontSize: '15px', color: palette.cream }}>
+                        <div style={{ fontWeight: unread ? 600 : 400, fontSize: '15px', color: '#0F172A' }}>
                           {item.title || 'Notification'}
                         </div>
-                        <div style={{ color: palette.muted, fontSize: '13px' }}>{item.message}</div>
+                        <div style={{ color: '#64748B', fontSize: '13px' }}>{item.message}</div>
                       </div>
                     </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: palette.muted, whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: '11px', color: '#64748B', whiteSpace: 'nowrap' }}>
                     {formatDate(item.created_at)}
                   </div>
                 </div>
 
-                <div style={mobileCardSection}>
-                  <div style={mobileCardLabel}>Type</div>
-                  <div style={mobileCardValue}>{getTypeLabel(item.type)}</div>
+                <div style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '12px', marginBottom: '12px', display: 'flex', gap: '12px' }}>
+                  <div style={{ color: '#64748B', fontSize: 12, fontWeight: 600, minWidth: '60px' }}>Type</div>
+                  <div style={{ color: '#0F172A', fontSize: 14 }}>{getTypeLabel(item.type)}</div>
                 </div>
 
-                <div style={mobileCardActions}>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   {unread && (
                     <button
-                      style={{ ...buttonStyle('secondary'), flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                      style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', color: '#0F172A', flex: 1, padding: '8px 12px', fontSize: '13px', borderRadius: 8, cursor: 'pointer' }}
                       onClick={() => handleMarkRead(item.id)}
                     >
                       <CheckCheck size={12} /> Read
                     </button>
                   )}
                   <button
-                    style={{ ...buttonStyle('secondary'), flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                    style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', color: '#0F172A', flex: 1, padding: '8px 12px', fontSize: '13px', borderRadius: 8, cursor: 'pointer' }}
                     onClick={() => handleArchive(item.id)}
                   >                           
                     <Archive size={12} /> Archive
                   </button>
                   <button
-                    style={{ ...buttonStyle('danger'), flex: 1, padding: '8px 12px', fontSize: '13px' }}
+                    style={{ background: 'rgba(220,38,68,0.1)', border: `1px solid rgba(220,38,68,0.3)`, color: '#dc2626', flex: 1, padding: '8px 12px', fontSize: '13px', borderRadius: 8, cursor: 'pointer' }}
                     onClick={() => handleDelete(item.id)}
                   >
                     <Trash2 size={12} /> Delete

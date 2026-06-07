@@ -2,11 +2,31 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  Home, MapPin, Bed, Bath, DollarSign, Camera,
-  ChevronLeft, ChevronRight, Check, X, Plus, Trash2,
-  Wifi, Car, Waves, Dumbbell, Coffee, Shield, Trees, ArrowLeft, ArrowRight, AlertCircle, Building, Store, Upload
+  Home, Check, X, Plus, Upload, ArrowLeft, ArrowRight,
+  AlertCircle, Building, CheckCircle,
 } from 'lucide-react';
 import Api from '../../services/api';
+
+// ── Design tokens — 1:1 with landlordPageStyles / MyProperties
+const C = {
+  pageBg:    '#F1F5F9',
+  headerBg:  '#1E293B',
+  cardBg:    '#FFFFFF',
+  border:    '#E2E8F0',
+  text:      '#0F172A',
+  textSub:   '#475569',
+  textMuted: '#94A3B8',
+  textLight: '#CBD5E1',
+  slate100:  '#F1F5F9',
+  slate200:  '#E2E8F0',
+  slate500:  '#64748B',
+  gold:      '#C89128',
+  goldGlow:  '0 4px 14px rgba(200,145,40,0.26)',
+  goldBg:    'rgba(200,145,40,0.08)',
+  goldBorder:'rgba(200,145,40,0.28)',
+  green:     '#16A34A', greenBg: '#DCFCE7',
+  red:       '#DC2626', redBg:   '#FFE4E6',
+};
 
 interface ImageFile {
   file: File;
@@ -19,49 +39,41 @@ const AddProperty = () => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  
+
   const [formData, setFormData] = useState({
-    // Step 1: Basic Info
     title: '',
     description: '',
     type: 'house',
     location: '',
     address: '',
-    
-    // Step 2: Property Details
     price: '',
     bedrooms: 1,
     bathrooms: 1,
-    
-    // Step 3: Features
     amenities: [] as string[],
     images: [] as ImageFile[],
     featured: false,
-    
-    // Location coordinates
     latitude: '',
     longitude: '',
   });
 
   const propertyTypes = [
-    { value: 'house', label: 'House', icon: Home },
-    { value: 'Master-bedroom', label: 'Masterbedroom', icon: Building },
-    { value: 'Single-room', label: 'Single room', icon: Home },
+    { value: 'house',          label: 'House',        icon: Home },
+    { value: 'Master-bedroom', label: 'Master Bedroom', icon: Building },
+    { value: 'Single-room',    label: 'Single Room',  icon: Home },
   ];
 
   const commonAmenities = [
     'Parking', 'Security', 'Gym', 'Pool', 'Garden', 'Balcony',
     'Air Conditioning', 'Heating', 'WiFi', 'Kitchen', 'Laundry',
-    'Elevator', 'Storage', 'Pet Friendly', 'Furnished'
+    'Elevator', 'Storage', 'Pet Friendly', 'Furnished',
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-    
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value
+      [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value,
     }));
   };
 
@@ -70,90 +82,61 @@ const AddProperty = () => {
       ...prev,
       amenities: prev.amenities.includes(amenity)
         ? prev.amenities.filter(a => a !== amenity)
-        : [...prev.amenities, amenity]
+        : [...prev.amenities, amenity],
     }));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    
     files.forEach(file => {
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (event) => {
           const preview = event.target?.result as string;
-          setFormData(prev => ({
-            ...prev,
-            images: [...prev.images, { file, preview }]
-          }));
+          setFormData(prev => ({ ...prev, images: [...prev.images, { file, preview }] }));
         };
         reader.readAsDataURL(file);
       }
     });
-    
-    // Clear the input value to allow uploading the same file again
     e.target.value = '';
   };
 
   const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
+    setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
   };
 
   const validateStep = () => {
     const errs: string[] = [];
-    
     if (step === 1) {
-      if (!formData.title.trim()) errs.push('Property title is required');
+      if (!formData.title.trim())       errs.push('Property title is required');
       if (!formData.description.trim()) errs.push('Description is required');
-      if (!formData.location.trim()) errs.push('Location is required');
-      if (!formData.address.trim()) errs.push('Address is required');
+      if (!formData.location.trim())    errs.push('Location is required');
+      if (!formData.address.trim())     errs.push('Address is required');
     }
-    
     if (step === 2) {
       if (!formData.price || Number(formData.price) <= 0) errs.push('Price must be greater than 0');
     }
-    
     if (step === 3) {
       if (formData.images.length === 0) errs.push('At least one image is required');
     }
-    
     setErrors(errs);
     return errs.length === 0;
   };
 
-  const handleNext = () => {
-    if (validateStep()) {
-      setErrors([]);
-      setStep(step + 1);
-    }
-  };
-
-  const handleBack = () => {
-    setErrors([]);
-    setStep(step - 1);
-  };
+  const handleNext = () => { if (validateStep()) { setErrors([]); setStep(step + 1); } };
+  const handleBack = () => { setErrors([]); setStep(step - 1); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep()) return;
-
     setIsLoading(true);
     setErrors([]);
 
     try {
-      // Check if this is an Oweru property request from admin
       const isOweruProperty = window.location.pathname === '/dashboard/admin/add-oweru-property';
-      
-      // Check if current user is admin
       const isAdmin = user?.user_type === 'admin' || user?.role === 'admin';
-      
-      // Create FormData for file upload
       const formDataToSend = new FormData();
-      
-      // Add all property fields
+
       formDataToSend.append('title', formData.title);
       formDataToSend.append('description', formData.description);
       formDataToSend.append('price', formData.price);
@@ -163,815 +146,361 @@ const AddProperty = () => {
       formDataToSend.append('bedrooms', formData.bedrooms.toString());
       formDataToSend.append('bathrooms', formData.bathrooms.toString());
       formDataToSend.append('featured', formData.featured.toString());
-      
-      // Add amenities as JSON
       formDataToSend.append('amenities', JSON.stringify(formData.amenities));
-      
-      // Add images
       formData.images.forEach((imageFile, index) => {
         formDataToSend.append(`images[${index}]`, imageFile.file);
       });
 
-      // Use different API endpoints based on user role
       let response;
       if (isAdmin) {
-        // Debug: Log user object to check available fields
-        console.log('User object:', user);
-        console.log('User ID:', user?.id);
-        console.log('Images to upload:', formData.images);
-        
-        // For admin users, we need to handle images separately
         let uploadedImages: string[] = [];
-        
-        // Upload images first if any
         if (formData.images.length > 0) {
-          console.log('Uploading images for admin property...');
           const imageFormData = new FormData();
-          
           formData.images.forEach((imageFile, index) => {
             imageFormData.append(`images[${index}]`, imageFile.file);
           });
-          
           try {
             const imageResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/properties/upload-images`, {
               method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Accept': 'application/json',
-              },
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Accept': 'application/json' },
               body: imageFormData,
             });
-            
             if (imageResponse.ok) {
               const imageResult = await imageResponse.json();
               uploadedImages = imageResult.images || [];
-              console.log('Images uploaded successfully:', uploadedImages);
-            } else {
-              console.error('Image upload failed:', imageResponse.statusText);
             }
-          } catch (error) {
-            console.error('Error uploading images:', error);
-          }
+          } catch (error) { console.error('Error uploading images:', error); }
         }
-        
-        // Admin uses admin API (JSON format)
+
         const propertyData = {
-          title: formData.title,
-          description: formData.description,
-          price: formData.price,
-          location: formData.location,
-          address: formData.address,
+          title: formData.title, description: formData.description,
+          price: formData.price, location: formData.location, address: formData.address,
           type: isOweruProperty ? 'oweru_rental' : formData.type,
-          bedrooms: formData.bedrooms,
-          bathrooms: formData.bathrooms,
-          featured: formData.featured,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          amenities: formData.amenities.join(', '), // Convert array to string for admin API
-          owner_id: user?.id || 1, // Add admin user ID as owner, fallback to 1 if undefined
-          landlord_name: 'Oweru Rental', // Set default landlord name for Oweru properties
-          landlord_phone: '+255 712 345 678', // Set default phone for Oweru properties
-          images: uploadedImages, // Use uploaded image URLs
+          bedrooms: formData.bedrooms, bathrooms: formData.bathrooms,
+          featured: formData.featured, latitude: formData.latitude, longitude: formData.longitude,
+          amenities: formData.amenities.join(', '),
+          owner_id: user?.id || 1,
+          landlord_name: 'Oweru Rental',
+          landlord_phone: '+255 712 345 678',
+          images: uploadedImages,
         };
-        
-        console.log('Property data being sent:', propertyData);
         response = await Api.createAdminProperty(propertyData);
       } else {
-        // Landlord uses owner API (FormData format)
         response = await Api.createOwnerProperty(formDataToSend);
       }
-      
+
       if (response.data) {
-        // Navigate based on user role
         if (isAdmin) {
-          navigate('/dashboard/admin/properties', { 
-            state: { success: 'Oweru property added successfully!' } 
-          });
+          navigate('/dashboard/admin/properties', { state: { success: 'Oweru property added successfully!' } });
         } else {
-          navigate('/dashboard/landlord/my-properties', { 
-            state: { success: 'Property added successfully!' } 
-          });
+          navigate('/dashboard/landlord/my-properties', { state: { success: 'Property added successfully!' } });
         }
       } else {
         throw new Error('Failed to create property');
       }
     } catch (err: any) {
-      console.error('Property creation error:', err);
-      
-      // Log the full error response for debugging
-      if (err?.response) {
-        console.error('Error response:', err.response);
-        console.error('Error data:', err.response.data);
-      }
-      
       const laravelErrors = err?.response?.data?.errors;
       if (laravelErrors) {
-        const msgs = Object.values(laravelErrors).flat() as string[];
-        setErrors(msgs);
+        setErrors(Object.values(laravelErrors).flat() as string[]);
       } else {
-        setErrors([
-          err?.response?.data?.message ||
-          err?.message ||
-          'Failed to create property. Please try again.'
-        ]);
+        setErrors([err?.response?.data?.message || err?.message || 'Failed to create property. Please try again.']);
       }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Shared input style
+  const inputCss: React.CSSProperties = {
+    width: '100%', padding: '10px 14px', borderRadius: '8px',
+    background: C.cardBg, border: `1.5px solid ${C.border}`,
+    color: C.text, fontSize: '14px', fontFamily: 'DM Sans, sans-serif',
+    outline: 'none', boxSizing: 'border-box',
+  };
+
+  const steps = [
+    { n: 1, label: 'Basic Info' },
+    { n: 2, label: 'Details' },
+    { n: 3, label: 'Features' },
+  ];
+
   return (
-    <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", background: 'var(--bg-primary)', color: 'var(--text-primary)', minHeight: '100vh' }}>
-      <style>{`
-        .ap-container {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 40px 20px;
-        }
-        
-        .ap-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 40px;
-        }
-        
-        .ap-title {
-          font-size: 32px;
-          font-weight: 300;
-          color: var(--text-primary);
-        }
-        
-        .ap-steps {
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          margin-bottom: 40px;
-        }
-        
-        .ap-step {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        
-        .ap-step-circle {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          border: 2px solid var(--accent-color);
-          background: var(--bg-secondary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 500;
-          color: var(--text-secondary);
-          transition: all 0.3s;
-        }
-        
-        .ap-step-circle.active {
-          background: var(--accent-color);
-          color: var(--bg-primary);
-        }
-        
-        .ap-step-circle.completed {
-          background: var(--accent-light);
-          color: var(--bg-primary);
-        }
-        
-        .ap-step-line {
-          width: 60px;
-          height: 2px;
-          background: var(--border-color);
-          transition: all 0.3s;
-        }
-        
-        .ap-step-line.completed {
-          background: var(--accent-color);
-        }
-        
-        .ap-form-section {
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-color);
-          border-radius: 12px;
-          padding: 32px;
-          margin-bottom: 24px;
-        }
+    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', padding: '24px', fontFamily: 'DM Sans, sans-serif' }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } .ap-input:focus { border-color: ${C.gold} !important; box-shadow: 0 0 0 3px rgba(200,145,40,0.12); } .amenity-item:hover { border-color: ${C.gold} !important; } .type-card:hover { border-color: ${C.gold} !important; }`}</style>
 
-        @media (max-width: 768px) {
-          .ap-form-section {
-            padding: 24px;
-            margin-bottom: 20px;
-          }
-        }
+      <div style={{ maxWidth: '780px', margin: '0 auto' }}>
 
-        @media (max-width: 480px) {
-          .ap-form-section {
-            padding: 20px;
-            margin-bottom: 16px;
-            border-radius: 8px;
-          }
-        }
-        
-        .ap-section-title {
-          font-size: clamp(20px, 4vw, 24px);
-          font-weight: 300;
-          margin-bottom: 20px;
-          color: var(--text-primary);
-        }
-
-        @media (max-width: 480px) {
-          .ap-section-title {
-            font-size: clamp(18px, 5vw, 20px);
-            margin-bottom: 16px;
-          }
-        }
-        
-        .ap-form-group {
-          margin-bottom: 20px;
-        }
-
-        @media (max-width: 480px) {
-          .ap-form-group {
-            margin-bottom: 16px;
-          }
-        }
-        
-        .ap-label {
-          display: block;
-          margin-bottom: 8px;
-          font-weight: 500;
-          color: var(--text-primary);
-        }
-        
-        .ap-input, .ap-textarea, .ap-select {
-          width: 100%;
-          padding: 12px 16px;
-          background: var(--bg-primary);
-          border: 1px solid var(--border-color);
-          border-radius: 8px;
-          color: var(--text-primary);
-          font-size: 16px;
-          transition: all 0.2s;
-        }
-        
-        .ap-input:focus, .ap-textarea:focus, .ap-select:focus {
-          outline: none;
-          border-color: var(--accent-color);
-          box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
-        }
-        
-        .ap-textarea {
-          min-height: 120px;
-          resize: vertical;
-        }
-        
-        .ap-property-types {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-          gap: 12px;
-        }
-        
-        .ap-property-type {
-          background: var(--bg-primary);
-          border: 2px solid var(--border-color);
-          border-radius: 8px;
-          padding: 16px;
-          cursor: pointer;
-          transition: all 0.2s;
-          text-align: center;
-        }
-        
-        .ap-property-type:hover {
-          border-color: var(--accent-color);
-        }
-        
-        .ap-property-type.selected {
-          border-color: var(--accent-color);
-          background: rgba(201, 168, 76, 0.1);
-        }
-        
-        .ap-property-type-icon {
-          font-size: 24px;
-          margin-bottom: 8px;
-          color: var(--accent-color);
-        }
-        
-        .ap-property-type-label {
-          font-weight: 500;
-          color: var(--text-primary);
-        }
-        
-        .ap-number-inputs {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-          gap: 16px;
-        }
-        
-        .ap-amenities {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 12px;
-        }
-        
-        .ap-amenity {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 12px;
-          background: var(--bg-primary);
-          border: 1px solid var(--border-color);
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .ap-amenity:hover {
-          border-color: var(--accent-color);
-        }
-        
-        .ap-amenity.selected {
-          border-color: var(--accent-color);
-          background: rgba(201, 168, 76, 0.1);
-        }
-        
-        .ap-amenity-checkbox {
-          width: 20px;
-          height: 20px;
-          border: 2px solid var(--accent-color);
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-        
-        .ap-amenity.selected .ap-amenity-checkbox {
-          background: var(--accent-color);
-        }
-        
-        .ap-images {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 16px;
-        }
-        
-        .ap-image-item {
-          position: relative;
-          background: var(--bg-primary);
-          border: 1px solid var(--border-color);
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        
-        .ap-image-preview {
-          width: 100%;
-          height: 150px;
-          object-fit: cover;
-        }
-        
-        .ap-image-remove {
-          position: absolute;
-          top: 8px;
-          right: 8px;
-          background: rgba(0, 0, 0, 0.7);
-          color: white;
-          border: none;
-          border-radius: 4px;
-          padding: 4px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .ap-image-remove:hover {
-          background: rgba(0, 0, 0, 0.9);
-        }
-        
-        .ap-add-image {
-          background: var(--bg-primary);
-          border: 2px dashed var(--border-color);
-          border-radius: 8px;
-          height: 150px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .ap-add-image:hover {
-          border-color: var(--accent-color);
-        }
-        
-        .ap-checkbox-group {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        
-        .ap-checkbox {
-          width: 20px;
-          height: 20px;
-          accent-color: var(--accent-color);
-        }
-        
-        .ap-errors {
-          background: rgba(224, 112, 112, 0.1);
-          border: 1px solid rgba(224, 112, 112, 0.3);
-          border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 24px;
-        }
-        
-        .ap-error {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: #e07070;
-          margin-bottom: 8px;
-        }
-        
-        .ap-error:last-child {
-          margin-bottom: 0;
-        }
-        
-        .ap-actions {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 16px;
-        }
-        
-        .ap-btn {
-          padding: 12px 24px;
-          border: none;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        @media (max-width: 480px) {
-          .ap-btn {
-            padding: 10px 20px;
-            font-size: 16px;
-          }
-        }
-        
-        .ap-btn-primary {
-          background: var(--accent-color);
-          color: var(--bg-primary);
-        }
-        
-        .ap-btn-primary:hover:not(:disabled) {
-          background: var(--accent-light);
-        }
-        
-        .ap-btn-secondary {
-          background: var(--bg-primary);
-          color: var(--text-primary);
-          border: 1px solid var(--border-color);
-        }
-        
-        .ap-btn-secondary:hover {
-          border-color: var(--accent-color);
-        }
-        
-        .ap-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        
-        @media (max-width: 768px) {
-          .ap-container {
-            padding: 20px 16px;
-          }
-          
-          .ap-header {
-            flex-direction: column;
-            gap: 20px;
-            text-align: center;
-          }
-          
-          .ap-steps {
-            flex-wrap: wrap;
-            justify-content: center;
-          }
-          
-          .ap-form-section {
-            padding: 24px 16px;
-          }
-          
-          .ap-property-types {
-            grid-template-columns: repeat(2, 1fr);
-          }
-          
-          .ap-actions {
-            flex-direction: column;
-          }
-          
-          .ap-btn {
-            width: 100%;
-            justify-content: center;
-          }
-        }
-      `}</style>
-
-      <div className="ap-container">
-        <div className="ap-header">
-          <Link to="/dashboard/landlord" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', textDecoration: 'none' }}>
-            <ArrowLeft size={20} />
-            Back to Dashboard
-          </Link>
-          <h1 className="ap-title">Add New Property</h1>
-        </div>
-
-        <div className="ap-steps">
-          <div className="ap-step">
-            <div className={`ap-step-circle ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
-              {step > 1 ? <Check size={16} /> : '1'}
+        {/* ── Slate-800 Header ── */}
+        <div style={{ background: C.headerBg, borderRadius: '14px', padding: '24px 28px', marginBottom: '20px', color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <div style={{ fontSize: '11px', letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: '6px' }}>
+                Property Management
+              </div>
+              <h1 style={{ margin: 0, fontSize: 'clamp(20px,3.5vw,26px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+                Add New Property
+              </h1>
+              <p style={{ margin: '6px 0 0', color: C.textLight, fontSize: '14px', lineHeight: 1.6 }}>
+                Fill in the details below to list your property.
+              </p>
             </div>
-            <span>Basic Info</span>
-          </div>
-          <div className={`ap-step-line ${step > 1 ? 'completed' : ''}`}></div>
-          <div className="ap-step">
-            <div className={`ap-step-circle ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
-              {step > 2 ? <Check size={16} /> : '2'}
-            </div>
-            <span>Details</span>
-          </div>
-          <div className={`ap-step-line ${step > 2 ? 'completed' : ''}`}></div>
-          <div className="ap-step">
-            <div className={`ap-step-circle ${step >= 3 ? 'active' : ''}`}>
-              {step > 3 ? <Check size={16} /> : '3'}
-            </div>
-            <span>Features</span>
+            <Link to="/dashboard/landlord/my-properties" style={{
+              display: 'inline-flex', alignItems: 'center', gap: '7px',
+              padding: '9px 18px', background: 'rgba(255,255,255,0.10)',
+              border: '1px solid rgba(255,255,255,0.20)', borderRadius: '8px',
+              color: '#fff', textDecoration: 'none', fontSize: '13px', fontWeight: 600, alignSelf: 'flex-start',
+            }}>
+              <ArrowLeft size={14} /> Back
+            </Link>
           </div>
         </div>
 
+        {/* ── Step Indicators ── */}
+        <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '18px 24px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
+          {steps.map((s, i) => {
+            const done    = step > s.n;
+            const current = step === s.n;
+            return (
+              <div key={s.n} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700, fontSize: '13px',
+                  background: done ? C.green : current ? C.gold : C.slate100,
+                  color: done || current ? '#fff' : C.textMuted,
+                  border: `2px solid ${done ? C.green : current ? C.gold : C.border}`,
+                  transition: 'all 0.3s',
+                }}>
+                  {done ? <Check size={14} /> : s.n}
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: current ? 700 : 500, color: current ? C.gold : done ? C.green : C.textMuted }}>
+                  {s.label}
+                </span>
+                {i < steps.length - 1 && (
+                  <div style={{ width: 40, height: 2, background: step > s.n ? C.gold : C.border, borderRadius: '2px', transition: 'background 0.3s', margin: '0 4px' }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Error Banner ── */}
         {errors.length > 0 && (
-          <div className="ap-errors">
-            {errors.map((error, index) => (
-              <div key={index} className="ap-error">
-                <AlertCircle size={16} />
-                {error}
+          <div style={{ background: C.redBg, border: `1px solid rgba(220,38,38,0.22)`, borderRadius: '10px', padding: '14px 18px', marginBottom: '20px' }}>
+            {errors.map((err, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: C.red, fontSize: '13px', marginBottom: i < errors.length - 1 ? '6px' : 0 }}>
+                <AlertCircle size={14} /> {err}
               </div>
             ))}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Step 1: Basic Information */}
+
+          {/* ══ Step 1: Basic Information ══ */}
           {step === 1 && (
-            <div className="ap-form-section">
-              <h2 className="ap-section-title">Basic Information</h2>
-              
-              <div className="ap-form-group">
-                <label className="ap-label">Property Title *</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className="ap-input"
-                  placeholder="e.g., Modern 2BR Apartment in Masaki"
-                  required
-                />
+            <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '14px', padding: '28px', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
+              <div style={{ fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: C.slate500, fontWeight: 700, marginBottom: '4px' }}>Step 1 of 3</div>
+              <h2 style={{ margin: '0 0 22px', fontSize: '20px', fontWeight: 800, color: C.text, letterSpacing: '-0.01em' }}>Basic Information</h2>
+
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Property Title *</label>
+                <input className="ap-input" type="text" name="title" value={formData.title} onChange={handleInputChange}
+                  style={inputCss} placeholder="e.g., Modern 2BR Apartment in Masaki" required />
               </div>
 
-              <div className="ap-form-group">
-                <label className="ap-label">Description *</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="ap-textarea"
-                  placeholder="Describe your property, highlighting key features and amenities..."
-                  required
-                />
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Description *</label>
+                <textarea className="ap-input" name="description" value={formData.description} onChange={handleInputChange}
+                  style={{ ...inputCss, minHeight: '120px', resize: 'vertical' }}
+                  placeholder="Describe your property, highlighting key features and amenities..." required />
               </div>
 
-              <div className="ap-form-group">
-                <label className="ap-label">Property Type *</label>
-                <div className="ap-property-types">
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Property Type *</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
                   {propertyTypes.map(type => {
                     const Icon = type.icon;
+                    const selected = formData.type === type.value;
                     return (
-                      <div
-                        key={type.value}
-                        className={`ap-property-type ${formData.type === type.value ? 'selected' : ''}`}
+                      <div key={type.value} className="type-card"
                         onClick={() => setFormData(prev => ({ ...prev, type: type.value }))}
-                      >
-                        <Icon className="ap-property-type-icon" />
-                        <div className="ap-property-type-label">{type.label}</div>
+                        style={{
+                          padding: '16px', borderRadius: '10px', cursor: 'pointer', textAlign: 'center',
+                          border: `2px solid ${selected ? C.gold : C.border}`,
+                          background: selected ? C.goldBg : C.slate100,
+                          transition: 'all 0.2s',
+                        }}>
+                        <Icon size={22} style={{ color: selected ? C.gold : C.textMuted, marginBottom: '8px' }} />
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: selected ? C.gold : C.textSub }}>{type.label}</div>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="ap-form-group">
-                <label className="ap-label">Location *</label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="ap-input"
-                  placeholder="e.g., Dar es Salaam, Masaki"
-                  required
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '18px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Location *</label>
+                  <input className="ap-input" type="text" name="location" value={formData.location} onChange={handleInputChange}
+                    style={inputCss} placeholder="e.g., Dar es Salaam, Masaki" required />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Full Address *</label>
+                  <input className="ap-input" type="text" name="address" value={formData.address} onChange={handleInputChange}
+                    style={inputCss} placeholder="e.g., 34 Toure Drive, Masaki" required />
+                </div>
               </div>
 
-              <div className="ap-form-group">
-                <label className="ap-label">Full Address *</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  className="ap-input"
-                  placeholder="e.g., 34 Toure Drive, Masaki, Dar es Salaam"
-                  required
-                />
-              </div>
-
-              <div className="ap-actions">
-                <div></div>
-                <button type="button" onClick={handleNext} className="ap-btn ap-btn-primary">
-                  Next <ArrowRight size={16} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '8px', borderTop: `1px solid ${C.border}` }}>
+                <button type="button" onClick={handleNext}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 24px', background: C.gold, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: C.goldGlow }}>
+                  Next <ArrowRight size={15} />
                 </button>
               </div>
             </div>
           )}
 
-          {/* Step 2: Property Details */}
+          {/* ══ Step 2: Property Details ══ */}
           {step === 2 && (
-            <div className="ap-form-section">
-              <h2 className="ap-section-title">Property Details</h2>
-              
-              <div className="ap-form-group">
-                <label className="ap-label">Monthly Price (TZS) *</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  className="ap-input"
-                  placeholder="e.g., 800000"
-                  min="0"
-                  required
-                />
+            <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '14px', padding: '28px', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
+              <div style={{ fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: C.slate500, fontWeight: 700, marginBottom: '4px' }}>Step 2 of 3</div>
+              <h2 style={{ margin: '0 0 22px', fontSize: '20px', fontWeight: 800, color: C.text, letterSpacing: '-0.01em' }}>Property Details</h2>
+
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Monthly Price (TZS) *</label>
+                <input className="ap-input" type="number" name="price" value={formData.price} onChange={handleInputChange}
+                  style={inputCss} placeholder="e.g., 800000" min="0" required />
               </div>
 
-
-              <div className="ap-form-group">
-                <label className="ap-label">Bedrooms & Bathrooms</label>
-                <div className="ap-number-inputs">
-                  <div>
-                    <label className="ap-label" style={{ fontSize: '14px', marginBottom: '4px' }}>Bedrooms</label>
-                    <input
-                      type="number"
-                      name="bedrooms"
-                      value={formData.bedrooms}
-                      onChange={handleInputChange}
-                      className="ap-input"
-                      min="0"
-                      max="20"
-                    />
-                  </div>
-                  <div>
-                    <label className="ap-label" style={{ fontSize: '14px', marginBottom: '4px' }}>Bathrooms</label>
-                    <input
-                      type="number"
-                      name="bathrooms"
-                      value={formData.bathrooms}
-                      onChange={handleInputChange}
-                      className="ap-input"
-                      min="0"
-                      max="20"
-                    />
-                  </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '18px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Bedrooms</label>
+                  <input className="ap-input" type="number" name="bedrooms" value={formData.bedrooms} onChange={handleInputChange}
+                    style={inputCss} min="0" max="20" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Bathrooms</label>
+                  <input className="ap-input" type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange}
+                    style={inputCss} min="0" max="20" />
                 </div>
               </div>
 
-              <div className="ap-form-group">
-                <label className="ap-label">Location Coordinates (Optional)</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <input
-                    type="number"
-                    name="latitude"
-                    value={formData.latitude}
-                    onChange={handleInputChange}
-                    className="ap-input"
-                    placeholder="Latitude"
-                    step="any"
-                  />
-                  <input
-                    type="number"
-                    name="longitude"
-                    value={formData.longitude}
-                    onChange={handleInputChange}
-                    className="ap-input"
-                    placeholder="Longitude"
-                    step="any"
-                  />
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Location Coordinates <span style={{ color: C.textMuted, fontWeight: 400 }}>(optional)</span></label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <input className="ap-input" type="number" name="latitude" value={formData.latitude} onChange={handleInputChange}
+                    style={inputCss} placeholder="Latitude" step="any" />
+                  <input className="ap-input" type="number" name="longitude" value={formData.longitude} onChange={handleInputChange}
+                    style={inputCss} placeholder="Longitude" step="any" />
                 </div>
               </div>
 
-              <div className="ap-actions">
-                <button type="button" onClick={handleBack} className="ap-btn ap-btn-secondary">
-                  <ArrowLeft size={16} /> Back
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: `1px solid ${C.border}` }}>
+                <button type="button" onClick={handleBack}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 20px', background: C.cardBg, color: C.textSub, border: `1.5px solid ${C.border}`, borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+                  <ArrowLeft size={15} /> Back
                 </button>
-                <button type="button" onClick={handleNext} className="ap-btn ap-btn-primary">
-                  Next <ArrowRight size={16} />
+                <button type="button" onClick={handleNext}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 24px', background: C.gold, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: C.goldGlow }}>
+                  Next <ArrowRight size={15} />
                 </button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Features */}
+          {/* ══ Step 3: Features ══ */}
           {step === 3 && (
-            <div className="ap-form-section">
-              <h2 className="ap-section-title">Property Features</h2>
-              
-              <div className="ap-form-group">
-                <label className="ap-label">Amenities</label>
-                <div className="ap-amenities">
-                  {commonAmenities.map(amenity => (
-                    <div
-                      key={amenity}
-                      className={`ap-amenity ${formData.amenities.includes(amenity) ? 'selected' : ''}`}
-                      onClick={() => handleAmenityToggle(amenity)}
-                    >
-                      <div className="ap-amenity-checkbox">
-                        {formData.amenities.includes(amenity) && <Check size={12} />}
+            <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '14px', padding: '28px', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
+              <div style={{ fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: C.slate500, fontWeight: 700, marginBottom: '4px' }}>Step 3 of 3</div>
+              <h2 style={{ margin: '0 0 22px', fontSize: '20px', fontWeight: 800, color: C.text, letterSpacing: '-0.01em' }}>Property Features</h2>
+
+              {/* Amenities */}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, fontSize: '13px', color: C.text }}>Amenities</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px' }}>
+                  {commonAmenities.map(amenity => {
+                    const selected = formData.amenities.includes(amenity);
+                    return (
+                      <div key={amenity} className="amenity-item"
+                        onClick={() => handleAmenityToggle(amenity)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
+                          border: `1.5px solid ${selected ? C.gold : C.border}`,
+                          background: selected ? C.goldBg : C.slate100,
+                          transition: 'all 0.15s',
+                        }}>
+                        <div style={{
+                          width: 18, height: 18, borderRadius: '4px', flexShrink: 0,
+                          border: `2px solid ${selected ? C.gold : C.textMuted}`,
+                          background: selected ? C.gold : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {selected && <Check size={11} color="#fff" />}
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: 500, color: selected ? C.gold : C.textSub }}>{amenity}</span>
                       </div>
-                      <span>{amenity}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="ap-form-group">
-                <label className="ap-label">Property Images *</label>
-                <div className="ap-images">
+              {/* Images */}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, fontSize: '13px', color: C.text }}>Property Images *</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                   {formData.images.map((imageFile, index) => (
-                    <div key={index} className="ap-image-item">
-                      <img src={imageFile.preview} alt={`Property ${index + 1}`} className="ap-image-preview" loading="lazy" decoding="async" />
-                      <button
-                        type="button"
-                        className="ap-image-remove"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X size={16} />
+                    <div key={index} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: `1px solid ${C.border}` }}>
+                      <img src={imageFile.preview} alt={`Property ${index + 1}`}
+                        style={{ width: '100%', height: '140px', objectFit: 'cover', display: 'block' }} loading="lazy" decoding="async" />
+                      <button type="button" onClick={() => removeImage(index)}
+                        style={{ position: 'absolute', top: '8px', right: '8px', width: 28, height: 28, background: 'rgba(15,23,42,0.7)', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <X size={14} />
                       </button>
                     </div>
                   ))}
-                  <label className="ap-add-image">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      style={{ display: 'none' }}
-                    />
-                    <Upload size={32} color="var(--text-secondary)" />
-                    <span style={{ marginTop: '8px', color: 'var(--text-secondary)' }}>Upload Images</span>
+                  <label style={{
+                    height: '140px', borderRadius: '10px', border: `2px dashed ${C.border}`,
+                    background: C.slate100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', transition: 'border-color 0.2s',
+                  }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = C.gold)}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
+                    <input type="file" multiple accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                    <Upload size={28} style={{ color: C.textMuted, marginBottom: '8px' }} />
+                    <span style={{ fontSize: '12px', color: C.textMuted, fontWeight: 600 }}>Upload Images</span>
                   </label>
                 </div>
+                {formData.images.length > 0 && (
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: C.textMuted }}>
+                    {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} selected
+                  </div>
+                )}
               </div>
 
-              <div className="ap-form-group">
-                <div className="ap-checkbox-group">
-                  <input
-                    type="checkbox"
-                    name="featured"
-                    id="featured"
-                    checked={formData.featured}
-                    onChange={handleInputChange}
-                    className="ap-checkbox"
-                  />
-                  <label htmlFor="featured" className="ap-label" style={{ margin: 0 }}>
-                    Feature this property
-                  </label>
-                </div>
+              {/* Featured */}
+              <div style={{ padding: '14px 16px', background: C.slate100, border: `1px solid ${C.border}`, borderRadius: '10px', marginBottom: '24px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                  <input type="checkbox" name="featured" id="featured" checked={formData.featured} onChange={handleInputChange}
+                    style={{ width: 18, height: 18, accentColor: C.gold, cursor: 'pointer' }} />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Feature this property</div>
+                    <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>Featured properties appear at the top of search results</div>
+                  </div>
+                </label>
               </div>
 
-              <div className="ap-actions">
-                <button type="button" onClick={handleBack} className="ap-btn ap-btn-secondary">
-                  <ArrowLeft size={16} /> Back
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: `1px solid ${C.border}` }}>
+                <button type="button" onClick={handleBack}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 20px', background: C.cardBg, color: C.textSub, border: `1.5px solid ${C.border}`, borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
+                  <ArrowLeft size={15} /> Back
                 </button>
-                <button type="submit" className="ap-btn ap-btn-primary" disabled={isLoading}>
+                <button type="submit" disabled={isLoading}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 24px', background: isLoading ? C.slate500 : C.gold, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer', boxShadow: isLoading ? 'none' : C.goldGlow, transition: 'all 0.2s' }}>
                   {isLoading ? (
-                    <>Creating Property...</>
+                    <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Creating…</>
                   ) : (
-                    <>Create Property <Plus size={16} /></>
+                    <><Plus size={15} /> Create Property</>
                   )}
                 </button>
               </div>

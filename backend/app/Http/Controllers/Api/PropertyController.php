@@ -44,14 +44,11 @@ class PropertyController extends Controller
 
     /**
      * Public property listing — no authentication required.
-     * FIXED: added source filters (has_agent / no_agent), dynamic per_page,
-     *        explicit available=true instead of scope, and orderBy created_at desc.
      */
     public function publicIndex(Request $request): JsonResponse
     {
-        // Load property_images for commercial properties, owner/agent for all
         $query = Property::with(['owner', 'agent', 'propertyImages'])
-            ->where('available', true);  // explicit — does not rely on scope
+            ->where('available', true);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -79,7 +76,6 @@ class PropertyController extends Controller
             $query->where('location', 'like', '%' . $request->location . '%');
         }
 
-        // Use >= so "2+ bedrooms" works correctly
         if ($request->filled('bedrooms')) {
             $query->where('bedrooms', '>=', (int) $request->bedrooms);
         }
@@ -88,11 +84,6 @@ class PropertyController extends Controller
             $query->where('furnished', filter_var($request->furnished, FILTER_VALIDATE_BOOLEAN));
         }
 
-        // ── Source filters sent by Properties.tsx ──────────────────────────
-        // sourceFilter='agent'    → has_agent=true
-        // sourceFilter='landlord' → no_agent=true
-        // sourceFilter='admin'    → properties created by admin users
-        // sourceFilter='all'      → no extra params — show everything
         if ($request->get('has_agent') === 'true') {
             $query->whereNotNull('agent_id');
         }
@@ -101,7 +92,6 @@ class PropertyController extends Controller
             $query->whereNull('agent_id');
         }
 
-        // Admin filter: show properties created by admin users
         if ($request->get('admin_only') === 'true') {
             $query->where(function ($q) {
                 $q->where('type', 'oweru_rental')
@@ -112,7 +102,6 @@ class PropertyController extends Controller
             });
         }
 
-        // Allow frontend to request more items per page (capped at 100)
         $perPage = min((int) ($request->per_page ?? 12), 100);
 
         $properties = $query
@@ -137,50 +126,13 @@ class PropertyController extends Controller
     {
         $property->load(['owner', 'agent', 'propertyImages']);
 
-        \Log::info('Property publicShow - Full Request', [
-            'property_id' => $property->id,
-            'full_url'    => $request->fullUrl(),
-            'query_params'=> $request->query(),
-            'all_params'  => $request->all(),
-            'method'      => $request->method(),
-            'ip'          => $request->ip(),
-        ]);
-
-        // Track agent link clicks
+        // Track agent link clicks (silent increment)
         if ($request->has('agent') && $request->input('agent') == $property->agent_id) {
             try {
-                $beforeClicks = $property->clicks ?? 0;
                 $property->increment('clicks');
-                $property->refresh();
-
-                \Log::info('Property tracking link clicked - SUCCESS', [
-                    'property_id'         => $property->id,
-                    'agent_id'            => $request->input('agent'),
-                    'ip'                  => $request->ip(),
-                    'user_agent'          => $request->userAgent(),
-                    'before_clicks'       => $beforeClicks,
-                    'after_clicks'        => $property->clicks,
-                    'increment_successful'=> ($property->clicks > $beforeClicks),
-                ]);
             } catch (\Exception $e) {
-                \Log::error('Property tracking link click FAILED', [
-                    'property_id'   => $property->id,
-                    'agent_id'      => $request->input('agent'),
-                    'ip'            => $request->ip(),
-                    'user_agent'    => $request->userAgent(),
-                    'error'         => $e->getMessage(),
-                    'current_clicks'=> $property->clicks ?? 0,
-                ]);
+                // Silent fail - do not expose errors to client
             }
-        } else {
-            \Log::info('Property tracking link visit - NO TRACKING', [
-                'property_id'      => $property->id,
-                'has_agent_param'  => $request->has('agent'),
-                'agent_param'      => $request->input('agent'),
-                'property_agent_id'=> $property->agent_id,
-                'agent_match'      => ($request->input('agent') == $property->agent_id),
-                'ip'               => $request->ip(),
-            ]);
         }
 
         return response()->json(['data' => $property]);
@@ -192,11 +144,7 @@ class PropertyController extends Controller
     public function publicBnbIndex(Request $request): JsonResponse
     {
         try {
-            \Log::info('Public BNB Index: Starting query');
-
             $properties = BnbProperty::limit(8)->get();
-
-            \Log::info('Public BNB Index: Query completed, count: ' . $properties->count());
 
             $transformedProperties = $properties->map(function ($property) {
                 $images = ['https://picsum.photos/seed/bnb' . $property->id . '/800/600.jpg'];
@@ -240,13 +188,10 @@ class PropertyController extends Controller
                 ];
             })->toArray();
 
-            \Log::info('Public BNB Index: Returning ' . count($transformedProperties) . ' properties');
-
             return response()->json($transformedProperties);
 
         } catch (\Exception $e) {
-            \Log::error('Public BNB Index Error: ' . $e->getMessage());
-
+            // Return minimal fallback in case of unexpected error
             return response()->json([
                 [
                     'id'             => 999,
@@ -345,12 +290,7 @@ class PropertyController extends Controller
             try {
                 $property->increment('clicks');
             } catch (\Exception $e) {
-                \Log::info('Property tracking link clicked (no increment)', [
-                    'property_id' => $property->id,
-                    'agent_id'    => $request->input('agent'),
-                    'ip'          => $request->ip(),
-                    'user_agent'  => $request->userAgent(),
-                ]);
+                // Silent fail
             }
         }
 
@@ -442,7 +382,6 @@ class PropertyController extends Controller
                 $propertyData['owner_id'] = $request->input('owner_id');
             }
         } else {
-            // Landlord creating their own property
             $propertyData['owner_id'] = $user->id;
         }
 
@@ -494,7 +433,6 @@ class PropertyController extends Controller
             ], 422);
         }
 
-        // Whitelist updatable fields — prevents owner_id/agent_id/dalali tampering
         $property->update($request->only([
             'title', 'description', 'price', 'location', 'address',
             'type', 'bedrooms', 'bathrooms', 'area',
@@ -567,7 +505,7 @@ class PropertyController extends Controller
             return response()->json([
                 'message'       => 'Property already saved',
                 'already_saved' => true,
-            ], 200);  // 200 not 409 — frontend checks already_saved flag
+            ], 200);
         }
 
         SavedProperty::create([
@@ -615,28 +553,27 @@ class PropertyController extends Controller
     public function storeCommercial(Request $request): JsonResponse
     {
         $data = [
-            'title'       => $request->input('title'),
-            'description' => $request->input('description'),
-            'price'       => $request->input('price'),
-            'price_type'  => $request->input('price_type', 'monthly'),
-            'location'    => $request->input('location'),
-            'address'     => $request->input('address'),
-            'type'        => $request->input('type'),
-            'bedrooms'    => $request->input('bedrooms', 0),
-            'bathrooms'   => $request->input('bathrooms', 0),
+            'title'          => $request->input('title'),
+            'description'    => $request->input('description'),
+            'price'          => $request->input('price'),
+            'price_type'     => $request->input('price_type', 'monthly'),
+            'location'       => $request->input('location'),
+            'address'        => $request->input('address'),
+            'type'           => $request->input('type'),
+            'bedrooms'       => $request->input('bedrooms', 0),
+            'bathrooms'      => $request->input('bathrooms', 0),
             'parking_spaces' => $request->input('parking_spaces', 0),
-            'area'        => $request->input('area', 0),
-            'furnished'   => $request->input('furnished', false),
+            'area'           => $request->input('area', 0),
+            'furnished'      => $request->input('furnished', false),
             'available_from' => $request->input('available_from'),
-            'contact_phone' => $request->input('contact_phone'),
-            'contact_email' => $request->input('contact_email'),
-            'amenities'   => $request->input('amenities', []),
-            'featured'    => false,
-            'latitude'    => $request->input('latitude'),
-            'longitude'   => $request->input('longitude'),
+            'contact_phone'  => $request->input('contact_phone'),
+            'contact_email'  => $request->input('contact_email'),
+            'amenities'      => $request->input('amenities', []),
+            'featured'       => false,
+            'latitude'       => $request->input('latitude'),
+            'longitude'      => $request->input('longitude'),
         ];
 
-        // Validation
         $validator = Validator::make($data, [
             'title'          => 'required|string|max:255',
             'description'    => 'required|string',
@@ -672,7 +609,6 @@ class PropertyController extends Controller
 
         $user = Auth::user();
         
-        // Handle image uploads
         $imagePaths = [];
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
@@ -680,7 +616,7 @@ class PropertyController extends Controller
                     $path = $image->store('properties', 'public');
                     $imagePaths[] = [
                         'path' => $path,
-                        'is_primary' => count($imagePaths) === 0 // First image is primary
+                        'is_primary' => count($imagePaths) === 0
                     ];
                 }
             }
@@ -698,7 +634,7 @@ class PropertyController extends Controller
             'area'           => $data['area'],
             'images'         => $imagePaths,
             'amenities'      => $amenities,
-            'featured'       => filter_var($data['featured'], FILTER_VALIDATE_BOOLEAN),
+            'featured'       => false,
             'available'      => true,
             'latitude'       => $data['latitude'],
             'longitude'      => $data['longitude'],
@@ -711,20 +647,5 @@ class PropertyController extends Controller
         ], 201);
     }
 
-    /**
-     * Debug endpoint — REMOVE IN PRODUCTION.
-     * GET /api/debug/properties
-     */
-    public function debugProperties(): JsonResponse
-    {
-        return response()->json([
-            'total_all'          => Property::count(),
-            'total_available'    => Property::where('available', true)->count(),
-            'total_unavailable'  => Property::where('available', false)->count(),
-            'total_null_available' => Property::whereNull('available')->count(),
-            'latest_10'          => Property::latest()->take(10)->get([
-                'id', 'title', 'available', 'owner_id', 'agent_id', 'type', 'created_at',
-            ]),
-        ]);
-    }
+    
 }

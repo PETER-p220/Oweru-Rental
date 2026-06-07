@@ -4,19 +4,6 @@ import { FileCheck, Search, MapPin, AlertCircle, Clock, CheckCircle, Home } from
 import Api from '../../services/api';
 import { formatCurrency, formatDate, getStatusColor } from './tenantPageStyles';
 
-const B = {
-  navy900: '#0F172A',
-  navy800: '#162035',
-  navy700: '#1E2D4A',
-  gold: '#C89128',
-  goldLt: '#D4A843',
-  goldDim: 'rgba(200,145,40,0.12)',
-  cream: '#F8F8F9',
-  slate: '#94A3B8',
-  border: 'rgba(200,145,40,0.18)',
-  borderF: 'rgba(200,145,40,0.08)',
-};
-
 interface ApplicationItem {
   id: number;
   status?: string;
@@ -53,13 +40,13 @@ const ApplicationStatus = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'approved':
-        return <CheckCircle size={16} style={{ color: B.gold }} />;
+        return <CheckCircle size={16} style={{ color: '#C89128' }} />;
       case 'pending':
         return <Clock size={16} style={{ color: '#f59e0b' }} />;
       case 'rejected':
         return <AlertCircle size={16} style={{ color: '#ef4444' }} />;
       default:
-        return <FileCheck size={16} style={{ color: B.slate }} />;
+        return <FileCheck size={16} style={{ color: '#64748B' }} />;
     }
   };
 
@@ -84,22 +71,22 @@ const ApplicationStatus = () => {
         alignItems: 'center', 
         minHeight: '100vh',
         padding: '40px 20px',
-        background: B.navy900,
-        color: B.cream
+        background: '#F1F5F9',
+        color: '#0F172A'
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ 
             width: '40px', 
             height: '40px', 
-            border: '4px solid ' + B.gold, 
-            borderTop: '4px solid ' + B.gold,
+            border: '4px solid #C89128', 
+            borderTop: '4px solid #C89128',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
             marginRight: '16px'
           }} />
           <div>
-            <h3 style={{ marginBottom: '16px', color: B.gold }}>Loading Applications...</h3>
-            <p style={{ color: B.slate }}>Please wait while we fetch your applications.</p>
+            <h3 style={{ marginBottom: '16px', color: '#C89128' }}>Loading Applications...</h3>
+            <p style={{ color: '#64748B' }}>Please wait while we fetch your applications.</p>
           </div>
         </div>
       </div>
@@ -114,18 +101,18 @@ const ApplicationStatus = () => {
         alignItems: 'center', 
         minHeight: '100vh',
         padding: '40px 20px',
-        background: B.navy900,
-        color: B.cream
+        background: '#F1F5F9',
+        color: '#0F172A'
       }}>
         <div style={{ textAlign: 'center' }}>
           <AlertCircle size={48} style={{ color: '#ef4444', marginBottom: '16px' }} />
-          <h3 style={{ marginBottom: '16px', color: B.gold }}>Error Loading Applications</h3>
-          <p style={{ color: B.slate }}>{error}</p>
+          <h3 style={{ marginBottom: '16px', color: '#C89128' }}>Error Loading Applications</h3>
+          <p style={{ color: '#64748B' }}>{error}</p>
           <button 
             onClick={() => window.location.reload()} 
             style={{
-              background: B.gold,
-              color: B.navy900,
+              background: '#C89128',
+              color: '#FFFFFF',
               border: 'none',
               padding: '12px 24px',
               borderRadius: '8px',
@@ -147,38 +134,52 @@ const ApplicationStatus = () => {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: B.navy900, 
-      color: B.cream,
+      background: '#F1F5F9', 
+      color: '#0F172A',
       padding: '20px'
     }}>
       {/* Header */}
       <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '32px',
-        padding: '0 20px',
-        borderBottom: '1px solid ' + B.border
+        background: '#1E293B', 
+        borderBottom: '1px solid #E2E8F0',
+        padding: '52px 40px 44px'
       }}>
-        <Link to="/tenant/dashboard" style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '12px',
-          color: B.cream,
-          textDecoration: 'none'
-        }}>
-          <Home size={20} />
-          <span style={{ fontSize: '18px', fontWeight: '600' }}>Back to Dashboard</span>
-        </Link>
-        
-        <h1 style={{ 
-          fontSize: '28px', 
-          fontWeight: '700', 
-          color: B.cream,
-          margin: 0
-        }}>
-          Application Status
-        </h1>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
+              Tenant Workspace
+            </div>
+            <h1 style={{ 
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+              fontSize: 'clamp(20px,3.5vw,28px)', 
+              fontWeight: '800', 
+              lineHeight: 1.15,
+              letterSpacing: '-0.02em',
+              color: '#FFFFFF',
+              margin: 0
+            }}>
+              Application Status
+            </h1>
+          </div>
+
+          <Link to="/tenant/dashboard" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            color: '#FFFFFF',
+            textDecoration: 'none',
+            background: 'rgba(200,145,40,0.10)',
+            border: '1px solid rgba(200,145,40,0.28)',
+            padding: '10px 18px',
+            borderRadius: '8px',
+            fontWeight: 600,
+            fontSize: '13px',
+            fontFamily: "'DM Sans', system-ui, sans-serif"
+          }}>
+            <Home size={14} />
+            Back to Dashboard
+          </Link>
+        </div>
       </div>
 
       {/* Content */}
@@ -187,9 +188,9 @@ const ApplicationStatus = () => {
           maxWidth: '800px', 
           margin: '0 auto', 
           padding: '32px',
-          background: B.navy800,
+          background: '#FFFFFF',
           borderRadius: '12px',
-          border: '1px solid ' + B.border
+          border: '1px solid #E2E8F0'
         }}>
           {/* Status Header */}
           <div style={{ 
@@ -203,14 +204,14 @@ const ApplicationStatus = () => {
               <h2 style={{ 
                 fontSize: '20px', 
                 fontWeight: '600', 
-                color: B.cream,
+                color: '#0F172A',
                 margin: 0
               }}>
                 Application {getStatusMessage(selectedApplication.status || 'unknown').split(' ')[0]}
               </h2>
               <div style={{ 
                 fontSize: '14px', 
-                color: B.slate,
+                color: '#64748B',
                 marginTop: '4px'
               }}>
                 {getStatusMessage(selectedApplication.status || 'unknown')}
@@ -227,24 +228,24 @@ const ApplicationStatus = () => {
           }}>
             {/* Property Details */}
             <div style={{ 
-              background: B.navy700, 
+              background: '#F1F5F9', 
               padding: '20px', 
               borderRadius: '8px',
-              border: '1px solid ' + B.borderF
+              border: '1px solid #E2E8F0'
             }}>
               <h3 style={{ 
                 fontSize: '16px', 
                 fontWeight: '600', 
-                color: B.gold, 
+                color: '#C89128', 
                 marginBottom: '16px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                <MapPin size={16} style={{ color: B.gold }} />
+                <MapPin size={16} style={{ color: '#C89128' }} />
                 Property Details
               </h3>
-              <div style={{ color: B.slate, lineHeight: '1.6' }}>
+              <div style={{ color: '#64748B', lineHeight: '1.6' }}>
                 <p><strong>Title:</strong> {selectedApplication.property?.title || 'N/A'}</p>
                 <p><strong>Location:</strong> {selectedApplication.property?.location || 'N/A'}</p>
                 <p><strong>Price:</strong> {selectedApplication.property?.price ? formatCurrency(selectedApplication.property.price) : 'N/A'}</p>
@@ -253,15 +254,15 @@ const ApplicationStatus = () => {
 
             {/* Landlord Details */}
             <div style={{ 
-              background: B.navy700, 
+              background: '#F1F5F9', 
               padding: '20px', 
               borderRadius: '8px',
-              border: '1px solid ' + B.borderF
+              border: '1px solid #E2E8F0'
             }}>
               <h3 style={{ 
                 fontSize: '16px', 
                 fontWeight: '600', 
-                color: B.gold, 
+                color: '#C89128', 
                 marginBottom: '16px',
                 display: 'flex',
                 alignItems: 'center',
@@ -271,11 +272,11 @@ const ApplicationStatus = () => {
                   width: '16px', 
                   height: '16px', 
                   borderRadius: '50%', 
-                  background: B.gold 
+                  background: '#C89128' 
                 }} />
                 Landlord Details
               </h3>
-              <div style={{ color: B.slate, lineHeight: '1.6' }}>
+              <div style={{ color: '#64748B', lineHeight: '1.6' }}>
                 <p><strong>Name:</strong> {selectedApplication.landlord?.first_name} {selectedApplication.landlord?.last_name || ''}</p>
                 <p><strong>Email:</strong> {selectedApplication.landlord?.email || 'N/A'}</p>
                 <p><strong>Phone:</strong> {selectedApplication.landlord?.phone || 'N/A'}</p>
@@ -285,37 +286,37 @@ const ApplicationStatus = () => {
 
           {/* Status Timeline */}
           <div style={{ 
-            background: B.navy700, 
+            background: '#F1F5F9', 
             padding: '20px', 
             borderRadius: '8px',
-            border: '1px solid ' + B.borderF
+            border: '1px solid #E2E8F0'
           }}>
             <h3 style={{ 
               fontSize: '16px', 
               fontWeight: '600', 
-              color: B.gold, 
+              color: '#C89128', 
               marginBottom: '16px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px'
             }}>
-              <Clock size={16} style={{ color: B.gold }} />
+              <Clock size={16} style={{ color: '#C89128' }} />
               Application Timeline
             </h3>
-            <div style={{ color: B.slate }}>
+            <div style={{ color: '#64748B' }}>
               <div style={{ 
                 display: 'flex', 
                 alignItems: 'flex-start', 
                 gap: '12px',
                 marginBottom: '12px',
                 padding: '12px',
-                background: B.navy900,
+                background: '#1E293B',
                 borderRadius: '6px'
               }}>
                 <div style={{ 
                   minWidth: '120px', 
                   textAlign: 'right',
-                  color: B.slate,
+                  color: '#64748B',
                   fontSize: '12px'
                 }}>
                   {formatDate(selectedApplication.created_at)}
@@ -323,7 +324,7 @@ const ApplicationStatus = () => {
                 <div>
                   <div style={{ 
                     fontWeight: '600', 
-                    color: B.cream,
+                    color: '#0F172A',
                     marginBottom: '4px'
                   }}>
                     {selectedApplication.status === 'approved' ? 'Application Approved!' : 
@@ -334,7 +335,7 @@ const ApplicationStatus = () => {
                   {selectedApplication.message && (
                     <div style={{ 
                       fontSize: '13px', 
-                      color: B.slate,
+                      color: '#64748B',
                       marginTop: '4px'
                     }}>
                       {selectedApplication.message}
@@ -347,21 +348,21 @@ const ApplicationStatus = () => {
             {/* Next Steps */}
             {selectedApplication.status === 'approved' && (
               <div style={{ 
-                background: B.goldDim, 
+                background: 'rgba(200,145,40,0.10)', 
                 padding: '16px', 
                 borderRadius: '8px',
-                border: '1px solid ' + B.gold,
+                border: '1px solid #C89128',
                 marginTop: '16px'
               }}>
                 <h4 style={{ 
                   fontSize: '14px', 
                   fontWeight: '600', 
-                  color: B.gold, 
+                  color: '#C89128', 
                   marginBottom: '8px'
                 }}>
                   🎉 Next Steps
                 </h4>
-                <div style={{ color: B.slate, lineHeight: '1.6' }}>
+                <div style={{ color: '#64748B', lineHeight: '1.6' }}>
                   <p><strong>1. Contact Your Landlord:</strong> Reach out to discuss next steps and signing the lease agreement.</p>
                   <p><strong>2. Review Lease Agreement:</strong> Carefully review all terms before signing.</p>
                   <p><strong>3. Schedule Move-in:</strong> Coordinate with your landlord for move-in dates and key collection.</p>
@@ -372,21 +373,21 @@ const ApplicationStatus = () => {
 
             {selectedApplication.status === 'pending' && (
               <div style={{ 
-                background: B.goldDim, 
+                background: 'rgba(200,145,40,0.10)', 
                 padding: '16px', 
                 borderRadius: '8px',
-                border: '1px solid ' + B.gold,
+                border: '1px solid #C89128',
                 marginTop: '16px'
               }}>
                 <h4 style={{ 
                   fontSize: '14px', 
                   fontWeight: '600', 
-                  color: B.gold, 
+                  color: '#C89128', 
                   marginBottom: '8px'
                 }}>
                   ⏳ What's Next?
                 </h4>
-                <div style={{ color: B.slate, lineHeight: '1.6' }}>
+                <div style={{ color: '#64748B', lineHeight: '1.6' }}>
                   <p><strong>Application Under Review:</strong> Your application is currently being reviewed by the landlord.</p>
                   <p><strong>Estimated Response Time:</strong> Usually 2-3 business days.</p>
                   <p><strong>What You Can Do:</strong> Ensure your contact information is up to date and be ready to respond quickly.</p>
@@ -410,12 +411,12 @@ const ApplicationStatus = () => {
                 }}>
                   ❌ Application Not Approved
                 </h4>
-                <div style={{ color: B.slate, lineHeight: '1.6' }}>
+                <div style={{ color: '#64748B', lineHeight: '1.6' }}>
                   <p><strong>Reason:</strong> {selectedApplication.message || 'No specific reason provided'}</p>
                   <p><strong>What You Can Do:</strong></p>
                   <ul style={{ 
                     marginLeft: '20px', 
-                    color: B.slate,
+                    color: '#64748B',
                     lineHeight: '1.6'
                   }}>
                     <li>Review the feedback provided and address any concerns</li>
@@ -428,7 +429,7 @@ const ApplicationStatus = () => {
             )}
           </div>
 
-          {/* ✅ FIX 2: Action Buttons are now correctly inside the main content card */}
+          {/* ✅ FIX 2: Action paletteuttons are now correctly inside the main content card */}
           <div style={{ 
             display: 'flex', 
             gap: '12px', 
@@ -440,8 +441,8 @@ const ApplicationStatus = () => {
                 flex: 1,
                 padding: '12px 24px',
                 background: 'transparent',
-                color: B.cream,
-                border: '1px solid ' + B.border,
+                color: '#0F172A',
+                border: '1px solid #E2E8F0',
                 borderRadius: '8px',
                 textAlign: 'center',
                 textDecoration: 'none',
@@ -457,8 +458,8 @@ const ApplicationStatus = () => {
                 style={{
                   flex: 1,
                   padding: '12px 24px',
-                  background: B.gold,
-                  color: B.navy900,
+                  background: '#C89128',
+                  color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
                   textAlign: 'center',
@@ -478,20 +479,20 @@ const ApplicationStatus = () => {
           margin: '0 auto', 
           padding: '32px',
           textAlign: 'center',
-          background: B.navy800,
+          background: '#FFFFFF',
           borderRadius: '12px',
-          border: '1px solid ' + B.border
+          border: '1px solid #E2E8F0'
         }}>
-          <FileCheck size={48} style={{ color: B.slate, marginBottom: '16px' }} />
+          <FileCheck size={48} style={{ color: '#64748B', marginBottom: '16px' }} />
           <h2 style={{ 
             fontSize: '20px', 
             fontWeight: '600', 
-            color: B.cream,
+            color: '#0F172A',
             marginBottom: '16px'
           }}>
             Application Not Found
           </h2>
-          <p style={{ color: B.slate, marginBottom: '24px' }}>
+          <p style={{ color: '#64748B', marginBottom: '24px' }}>
             The application you're looking for could not be found or may have been removed.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
@@ -499,8 +500,8 @@ const ApplicationStatus = () => {
               to="/tenant/dashboard" 
               style={{
                 padding: '12px 24px',
-                background: B.gold,
-                color: B.navy900,
+                background: '#C89128',
+                color: '#FFFFFF',
                 border: 'none',
                 borderRadius: '8px',
                 textAlign: 'center',
@@ -516,8 +517,8 @@ const ApplicationStatus = () => {
               style={{
                 padding: '12px 24px',
                 background: 'transparent',
-                color: B.cream,
-                border: '1px solid ' + B.border,
+                color: '#0F172A',
+                border: '1px solid #E2E8F0',
                 borderRadius: '8px',
                 textAlign: 'center',
                 textDecoration: 'none',

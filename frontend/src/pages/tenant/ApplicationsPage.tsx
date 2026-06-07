@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2, ShieldCheck, ArrowRight, Phone } from 'lucide-react';
 import Api from '../../services/api';
 import SelcomService from '../../services/selcom';
-import { formatCurrency, formatDate } from './tenantPageStyles';
+import { palette, formatCurrency, formatDate, getStatusColor } from './tenantPageStyles';
 
 interface ApplicationItem {
   id: number;
@@ -20,43 +20,22 @@ interface ApplicationItem {
   };
 }
 
-const B = {
-  navy900: '#0F172A',
-  navy800: '#162035',
-  navy700: '#1E2D4A',
-  gold:    '#C89128',
-  goldLt:  '#D4A843',
-  goldDim: 'rgba(200,145,40,0.12)',
-  cream:   '#F8F8F9',
-  slate:   '#94A3B8',
-  blue:    '#3B82F6',
-  border:  'rgba(200,145,40,0.18)',
-  borderF: 'rgba(200,145,40,0.08)',
-};
-
-const statusColorMap: Record<string, string> = {
-  approved:  B.gold,
-  pending:   '#f59e0b',
-  rejected:  '#ef4444',
-  cancelled: '#ef4444',
-  active:    '#10b981',
-};
 
 const StatusBadge = ({ status, rejectionReason }: { status?: string; rejectionReason?: string }) => {
   const s = status || 'unknown';
-  const color = statusColorMap[s] ?? B.slate;
+  const color = getStatusColor(status);
 
   return (
     <div>
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
         padding: '6px 12px',
-        background: `${color}15`, 
+        background: `${color}15`,
         border: `1px solid ${color}30`,
-        color, 
-        fontSize: '10px', 
+        color,
+        fontSize: '10px',
         fontWeight: 700,
-        letterSpacing: '0.08em', 
+        letterSpacing: '0.08em',
         textTransform: 'uppercase',
         borderRadius: '9999px',
         fontFamily: "'Jost', sans-serif",
@@ -65,7 +44,7 @@ const StatusBadge = ({ status, rejectionReason }: { status?: string; rejectionRe
         {s.charAt(0).toUpperCase() + s.slice(1)}
       </span>
       {s === 'rejected' && rejectionReason && (
-        <div style={{ marginTop: 8, fontSize: 12, color: '#f87171', lineHeight: 1.4 }}>
+        <div style={{ marginTop: 8, fontSize: 12, color: palette.red, lineHeight: 1.4 }}>
           {rejectionReason}
         </div>
       )}
@@ -246,9 +225,9 @@ const ApplicationsPage = () => {
 
   return (
     <div style={{ 
-      fontFamily: "'Jost', 'Futura PT', sans-serif", 
-      background: B.navy900, 
-      color: B.cream, 
+      fontFamily: "'DM Sans', system-ui, sans-serif", 
+      background: '#F1F5F9', 
+      color: '#0F172A', 
       minHeight: '100vh',
       paddingBottom: '80px'
     }}>
@@ -257,8 +236,8 @@ const ApplicationsPage = () => {
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .ap-panel {
-          background: ${B.navy800};
-          border: 1px solid ${B.border};
+          background: ${palette.slate800};
+          border: 1px solid ${palette.slate200};
           border-radius: 16px;
           padding: 24px;
           margin: 16px;
@@ -267,9 +246,9 @@ const ApplicationsPage = () => {
 
         .ap-search {
           width: 100%;
-          background: ${B.navy900};
-          border: 1px solid ${B.border};
-          color: ${B.cream};
+          background: ${palette.slate900};
+          border: 1px solid ${palette.slate200};
+          color: ${palette.white};
           padding: 14px 16px 14px 48px;
           border-radius: 12px;
           font-size: 15px;
@@ -277,13 +256,13 @@ const ApplicationsPage = () => {
           transition: all 0.2s;
         }
         .ap-search:focus {
-          border-color: ${B.gold};
-          box-shadow: 0 0 0 3px ${B.gold}20;
+          border-color: ${palette.gold};
+          box-shadow: 0 0 0 3px ${palette.gold}20;
         }
 
         .mobile-card {
-          background: ${B.navy800};
-          border: 1px solid ${B.border};
+          background: ${palette.slate800};
+          border: 1px solid ${palette.slate200};
           border-radius: 16px;
           padding: 20px;
           margin-bottom: 16px;
@@ -299,9 +278,9 @@ const ApplicationsPage = () => {
           padding: 12px 10px;
           font-size: 12px;
           font-weight: 600;
-          border: 2px solid ${B.border};
-          background: ${B.navy900};
-          color: ${B.cream};
+          border: 2px solid ${palette.slate200};
+          background: ${palette.slate900};
+          color: ${palette.white};
           border-radius: 10px;
           transition: all 0.2s;
         }
@@ -312,23 +291,25 @@ const ApplicationsPage = () => {
       `}</style>
 
       {/* Header */}
-      <div className="ap-panel">
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(to right, ${B.gold}, ${B.goldLt})`, borderRadius: '16px 16px 0 0' }} />
-        
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em', color: B.gold, marginBottom: 6 }}>TENANT PORTAL</div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', margin: 0 }}>My Applications</h1>
-          <p style={{ color: B.slate, marginTop: 6, fontSize: 14.5 }}>Track and manage all your rental applications</p>
-        </div>
+      <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
+              Tenant Workspace
+            </div>
+            <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 'clamp(20px,3.5vw,28px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>My Applications</h1>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>Track and manage all your rental applications</p>
+          </div>
 
-        <div style={{ position: 'relative' }}>
-          <Search size={18} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: B.slate }} />
-          <input 
-            className="ap-search" 
-            value={search} 
-            onChange={e => setSearch(e.target.value)} 
-            placeholder="Search properties or locations..." 
-          />
+          <div style={{ position: 'relative', minWidth: '280px', maxWidth: '400px' }}>
+            <Search size={18} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+            <input 
+              style={{ width: '100%', background: '#0F172A', border: '1px solid #E2E8F0', color: '#FFFFFF', padding: '12px 16px 12px 48px', borderRadius: '12px', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '14px', outline: 'none', transition: 'all 0.2s' }}
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+              placeholder="Search properties or locations..." 
+            />
+          </div>
         </div>
       </div>
 
@@ -341,14 +322,14 @@ const ApplicationsPage = () => {
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '100px 20px', color: B.slate }}>
+          <div style={{ textAlign: 'center', padding: '100px 20px', color: palette.slate600 }}>
             <Loader2 size={28} style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
             <div>Loading your applications...</div>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '90px 20px', color: B.slate }}>
+          <div style={{ textAlign: 'center', padding: '90px 20px', color: palette.slate600 }}>
             <ClipboardList size={48} style={{ margin: '0 auto 20px', opacity: 0.6 }} />
-            <div style={{ fontSize: 18, fontWeight: 600, color: B.cream, marginBottom: 8 }}>No applications yet</div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: palette.white, marginBottom: 8 }}>No applications yet</div>
             <div style={{ maxWidth: 280, margin: '0 auto', lineHeight: 1.6 }}>
               Start exploring properties and submit your first application.
             </div>
@@ -362,30 +343,30 @@ const ApplicationsPage = () => {
                     <div style={{ fontWeight: 600, fontSize: 16.5, lineHeight: 1.3 }}>
                       {item.property?.title || 'Untitled Property'}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: B.slate, fontSize: 13, marginTop: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: palette.slate600, fontSize: 13, marginTop: 6 }}>
                       <MapPin size={14} />
                       {item.property?.location || 'Location not specified'}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 18, color: B.gold }}>
+                  <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 18, color: palette.gold }}>
                     {formatCurrency(item.property?.price)}
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <StatusBadge status={item.status} rejectionReason={item.rejection_reason} />
-                  <div style={{ fontSize: 12.5, color: B.slate, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ fontSize: 12.5, color: palette.slate600, display: 'flex', alignItems: 'center', gap: 5 }}>
                     <Clock size={13} /> {formatDate(item.created_at)}
                   </div>
                 </div>
 
                 {item.message && (
                   <div style={{ 
-                    background: B.navy900, 
+                    background: palette.slate900, 
                     borderRadius: 10, 
                     padding: '12px 14px', 
                     fontSize: 13.5, 
-                    color: B.slate, 
+                    color: palette.slate600, 
                     lineHeight: 1.55,
                     marginBottom: 18 
                   }}>
@@ -399,8 +380,8 @@ const ApplicationsPage = () => {
                       onClick={() => openPaymentModal(item.id)}
                       style={{
                         width: '100%',
-                        background: B.gold,
-                        color: B.navy900,
+                        background: palette.gold,
+                        color: palette.slate900,
                         border: 'none',
                         padding: '14px',
                         borderRadius: 12,
@@ -446,8 +427,8 @@ const ApplicationsPage = () => {
           zIndex: 2000, padding: '20px 16px'
         }}>
           <div style={{
-            background: B.navy800,
-            border: `1px solid ${B.border}`,
+            background: palette.slate800,
+            border: `1px solid ${palette.slate200}`,
             borderRadius: 20,
             width: '100%',
             maxWidth: 420,
@@ -457,33 +438,33 @@ const ApplicationsPage = () => {
           }}>
             {/* Header */}
             <div style={{ 
-              background: `linear-gradient(135deg, ${B.navy900}, #1a2a44)`, 
+              background: `linear-gradient(135deg, ${palette.slate900}, #1a2a44)`, 
               padding: '24px 24px 20px',
-              borderBottom: `1px solid ${B.border}`
+              borderBottom: `1px solid ${palette.slate200}`
             }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: B.gold, marginBottom: 4 }}>SECURE PAYMENT</div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: palette.gold, marginBottom: 4 }}>SECURE PAYMENT</div>
               <div style={{ fontSize: 22, fontWeight: 700 }}>Pay Monthly Rent</div>
-              <div style={{ color: B.slate, fontSize: 13, marginTop: 4 }}>Powered by Selcom • Oweru</div>
+              <div style={{ color: palette.slate600, fontSize: 13, marginTop: 4 }}>Powered by Selcom • Oweru</div>
             </div>
 
             <div style={{ padding: '24px' }}>
               {/* Property Summary */}
               <div style={{ 
-                background: B.navy900, 
+                background: palette.slate900, 
                 borderRadius: 14, 
                 padding: 16, 
                 marginBottom: 24,
-                border: `1px solid ${B.borderF}`
+                border: `1px solid ${palette.borderFaint}`
               }}>
                 <div style={{ fontWeight: 600, fontSize: 15.5 }}>{activeApp.property?.title}</div>
                 {activeApp.property?.location && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: B.slate, marginTop: 6, fontSize: 13 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: palette.slate600, marginTop: 6, fontSize: 13 }}>
                     <MapPin size={15} /> {activeApp.property.location}
                   </div>
                 )}
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${B.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: B.slate, fontSize: 13 }}>Amount Due</span>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: B.gold }}>
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${palette.slate200}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: palette.slate600, fontSize: 13 }}>Amount Due</span>
+                  <span style={{ fontSize: 22, fontWeight: 700, color: palette.gold }}>
                     Tsh {modalAmount.toLocaleString()}
                   </span>
                 </div>
@@ -491,7 +472,7 @@ const ApplicationsPage = () => {
 
               {/* Provider Selection */}
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: B.slate, marginBottom: 10 }}>PAYMENT PROVIDER</div>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: palette.slate600, marginBottom: 10 }}>PAYMENT PROVIDER</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {[
                     { value: 'tigo', label: 'Tigo Pesa' },
@@ -514,9 +495,9 @@ const ApplicationsPage = () => {
 
               {/* Phone Input */}
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: B.slate, marginBottom: 8 }}>PHONE NUMBER</div>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: palette.slate600, marginBottom: 8 }}>PHONE NUMBER</div>
                 <div style={{ position: 'relative' }}>
-                  <Phone size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: B.slate }} />
+                  <Phone size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: palette.slate600 }} />
                   <input
                     type="tel"
                     value={phoneNumber}
@@ -526,10 +507,10 @@ const ApplicationsPage = () => {
                     style={{
                       width: '100%',
                       padding: '14px 14px 14px 52px',
-                      background: B.navy900,
-                      border: `1px solid ${B.border}`,
+                      background: palette.slate900,
+                      border: `1px solid ${palette.slate200}`,
                       borderRadius: 12,
-                      color: B.cream,
+                      color: palette.white,
                       fontSize: 16,
                       outline: 'none'
                     }}
@@ -578,9 +559,9 @@ const ApplicationsPage = () => {
                   style={{
                     flex: 1,
                     padding: '14px',
-                    background: B.navy900,
-                    border: `1px solid ${B.border}`,
-                    color: B.cream,
+                    background: palette.slate900,
+                    border: `1px solid ${palette.slate200}`,
+                    color: palette.white,
                     borderRadius: 12,
                     fontWeight: 600,
                     cursor: paying ? 'not-allowed' : 'pointer',
@@ -597,8 +578,8 @@ const ApplicationsPage = () => {
                     style={{
                       flex: 1.8,
                       padding: '14px',
-                      background: paying ? `${B.gold}aa` : B.gold,
-                      color: B.navy900,
+                      background: paying ? `${palette.gold}aa` : palette.gold,
+                      color: palette.slate900,
                       border: 'none',
                       borderRadius: 12,
                       fontWeight: 700,

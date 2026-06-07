@@ -9,28 +9,31 @@ import type { Property } from '../types';
 import Api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
-/* ─── TOKENS — matches Home page exactly ─── */
+/* ─── TOKENS — matches landlord design system ─── */
 const t = {
-  navy900: '#0F172A',
-  navy800: '#162035',
-  navy700: '#1E2D4A',
-  gold:    '#C89128',
-  goldLt:  '#D4A843',
-  goldDim: 'rgba(200,145,40,0.12)',
-  cream:   '#F8F8F9',
-  slate:   '#94A3B8',
-  border:  'rgba(200,145,40,0.18)',
-  green:   '#10b981',
-  red:     '#ef4444',
-  amber:   '#f59e0b',
+  slate900: '#0F172A',
+  slate800: '#1E293B',
+  slate700: '#334155',
+  gold:     '#C89128',
+  goldLight: '#D4A84B',
+  goldPale:  'rgba(200,145,40,0.10)',
+  goldBorder: 'rgba(200,145,40,0.28)',
+  white:    '#FFFFFF',
+  slate100: '#F1F5F9',
+  slate200: '#E2E8F0',
+  slate400: '#94A3B8',
+  slate600: '#475569',
+  green:    '#16A34A',
+  red:      '#DC2626',
+  amber:    '#D97706',
 } as const;
 
-const body: React.CSSProperties  = { fontFamily: "'Jost', sans-serif" };
-const serif: React.CSSProperties = { fontFamily: "'Jost', sans-serif", fontWeight: 700 };
+const body: React.CSSProperties  = { fontFamily: "'DM Sans', sans-serif" };
+const serif: React.CSSProperties = { fontFamily: "'DM Sans', sans-serif", fontWeight: 700 };
 
 const card = (extra?: React.CSSProperties): React.CSSProperties => ({
-  backgroundColor: t.navy800,
-  border: `1px solid ${t.border}`,
+  backgroundColor: t.white,
+  border: `1px solid ${t.slate200}`,
   borderRadius: 12,
   overflow: 'hidden',
   ...extra,
@@ -57,13 +60,14 @@ const solidBtn: React.CSSProperties = {
   padding: '14px 20px',
   background: t.gold,
   border: 'none',
-  color: t.navy900,
-  borderRadius: 6,
+  color: t.slate900,
+  borderRadius: 10,
   fontSize: 13,
-  fontWeight: 700,
+  fontWeight: 600,
   cursor: 'pointer',
   letterSpacing: '0.08em',
   textTransform: 'uppercase',
+  boxShadow: '0 4px 14px rgba(200,145,40,0.28)',
 };
 
 const ghostBtn = (color: string): React.CSSProperties => ({
@@ -72,11 +76,11 @@ const ghostBtn = (color: string): React.CSSProperties => ({
   width: '100%',
   padding: '13px 20px',
   backgroundColor: 'transparent',
-  border: `1px solid ${t.border}`,
+  border: `1px solid ${t.slate200}`,
   color,
-  borderRadius: 6,
+  borderRadius: 10,
   fontSize: 13,
-  fontWeight: 600,
+  fontWeight: 500,
   cursor: 'pointer',
   transition: 'all 0.2s',
   letterSpacing: '0.06em',
@@ -200,21 +204,23 @@ const PropertyDetail = () => {
   const nextImg = () => setSelectedImg(i => (i + 1) % images.length);
 
   return (
-    <div style={{ background: t.navy900, minHeight: '100vh', color: t.cream }}>
+    <div style={{ background: t.slate100, minHeight: '100vh', color: t.slate900 }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
 
         :root {
-          --navy-900: #0F172A;
-          --navy-800: #162035;
-          --navy-700: #1E2D4A;
+          --slate-900: #0F172A;
+          --slate-800: #1E293B;
+          --slate-700: #334155;
+          --slate-100: #F1F5F9;
+          --slate-200: #E2E8F0;
+          --slate-400: #94A3B8;
           --gold: #C89128;
-          --gold-lt: #D4A843;
-          --gold-dim: rgba(200,145,40,0.12);
-          --cream: #F8F8F9;
-          --slate: #94A3B8;
-          --border: rgba(200,145,40,0.18);
+          --gold-light: #D4A84B;
+          --gold-pale: rgba(200,145,40,0.10);
+          --gold-border: rgba(200,145,40,0.28);
+          --white: #FFFFFF;
         }
 
         .pd-thumb { opacity:.4; transition:opacity .2s; cursor:pointer; border-radius:6px; overflow:hidden; }
@@ -222,20 +228,20 @@ const PropertyDetail = () => {
         .pd-thumb.active { opacity:1; outline:2px solid var(--gold); outline-offset:1px; }
 
         .pd-icon-btn {
-          background:rgba(15,23,42,0.75); border:1px solid var(--border);
+          background:rgba(255,255,255,0.9); border:1px solid var(--slate-200);
           border-radius:50%; width:38px; height:38px;
           display:flex; align-items:center; justify-content:center;
           cursor:pointer; backdrop-filter:blur(10px); transition:all .2s;
         }
-        .pd-icon-btn:hover { background:var(--gold-dim); border-color:var(--gold); }
+        .pd-icon-btn:hover { background:var(--gold-pale); border-color:var(--gold); }
 
         .pd-nav-btn {
-          background:rgba(15,23,42,0.75); border:1px solid var(--border);
+          background:rgba(255,255,255,0.9); border:1px solid var(--slate-200);
           border-radius:50%; width:42px; height:42px;
           display:flex; align-items:center; justify-content:center;
-          cursor:pointer; backdrop-filter:blur(10px); transition:all .2s; color:var(--cream);
+          cursor:pointer; backdrop-filter:blur(10px); transition:all .2s; color:var(--slate-900);
         }
-        .pd-nav-btn:hover { background:var(--gold-dim); border-color:var(--gold); }
+        .pd-nav-btn:hover { background:var(--gold-pale); border-color:var(--gold); }
 
         .pd-btn { transition:filter .15s, transform .15s; }
         .pd-btn:hover { filter:brightness(1.08); transform:translateY(-1px); }
@@ -243,26 +249,26 @@ const PropertyDetail = () => {
 
         .pd-amenity-tag {
           display:inline-flex; align-items:center; gap:6px;
-          padding:7px 13px; background:var(--gold-dim);
-          border:1px solid var(--border); border-radius:6px;
-          font-size:12px; color:var(--cream); font-family:'Jost',sans-serif;
+          padding:7px 13px; background:var(--gold-pale);
+          border:1px solid var(--slate-200); border-radius:8px;
+          font-size:12px; color:var(--slate-900); font-family:'DM Sans',sans-serif;
           transition:background .2s, border-color .2s;
         }
-        .pd-amenity-tag:hover { background:rgba(200,145,40,0.2); border-color:rgba(200,145,40,0.45); }
+        .pd-amenity-tag:hover { background:rgba(200,145,40,0.15); border-color:var(--gold); }
 
         .pd-stat-box {
           display:flex; flex-direction:column; align-items:center; justify-content:center;
-          padding:18px 12px; background:var(--navy-700); border:1px solid var(--border);
+          padding:18px 12px; background:var(--white); border:1px solid var(--slate-200);
           border-radius:10px; text-align:center; transition:background .2s, border-color .2s;
         }
-        .pd-stat-box:hover { background:var(--gold-dim); border-color:rgba(200,145,40,0.45); }
+        .pd-stat-box:hover { background:var(--gold-pale); border-color:var(--gold); }
 
         .pd-back-link { transition:color .2s; }
         .pd-back-link:hover { color:var(--gold) !important; }
 
         .pd-detail-row {
           display:flex; justify-content:space-between; align-items:center;
-          padding:9px 0; border-bottom:1px solid rgba(200,145,40,0.08);
+          padding:9px 0; border-bottom:1px solid var(--slate-200);
         }
         .pd-detail-row:last-child { border-bottom:none; }
 
@@ -270,13 +276,13 @@ const PropertyDetail = () => {
           display:inline-flex; align-items:center; gap:6px;
           font-size:10px; font-weight:600; letter-spacing:0.22em;
           text-transform:uppercase; color:var(--gold);
-          background:var(--gold-dim); padding:4px 12px;
-          border:1px solid var(--border); font-family:'Jost',sans-serif;
+          background:var(--gold-pale); padding:4px 12px;
+          border:1px solid var(--slate-200); font-family:'DM Sans',sans-serif;
         }
 
         .trust-row {
           display:flex; align-items:center; gap:10px; padding:7px 0;
-          border-bottom:1px solid rgba(200,145,40,0.07);
+          border-bottom:1px solid var(--slate-200);
         }
         .trust-row:last-child { border-bottom:none; }
 
@@ -295,15 +301,15 @@ const PropertyDetail = () => {
 
         {/* Loading */}
         {loading && (
-          <div style={{ textAlign: 'center', padding: '80px 20px', color: t.slate }}>
-            <div style={{ ...body, fontSize: 20, marginBottom: 10, color: t.cream, fontWeight: 700 }}>Loading property…</div>
+          <div style={{ textAlign: 'center', padding: '80px 20px', color: t.slate400 }}>
+            <div style={{ ...body, fontSize: 20, marginBottom: 10, color: t.slate900, fontWeight: 700 }}>Loading property…</div>
             <div style={{ ...body, fontSize: 13 }}>Fetching details from our database</div>
           </div>
         )}
 
         {/* Error */}
         {!loading && error && (
-          <div style={{ textAlign: 'center', padding: '80px 20px', color: t.slate }}>
+          <div style={{ textAlign: 'center', padding: '80px 20px', color: t.slate400 }}>
             <div style={{ ...body, fontSize: 20, marginBottom: 10, color: t.red, fontWeight: 700 }}>{error}</div>
             <div style={{ ...body, fontSize: 13 }}>Please try again or return to the listings.</div>
             <Link to="/properties" style={{ ...body, fontSize: 13, color: t.gold, marginTop: 16, display: 'inline-block' }}>← Back to Properties</Link>
@@ -317,7 +323,7 @@ const PropertyDetail = () => {
             <Link
               to="/properties"
               className="pd-back-link"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, ...body, fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.slate, textDecoration: 'none', marginBottom: 28 }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 7, ...body, fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.slate600, textDecoration: 'none', marginBottom: 28 }}
             >
               <ArrowLeft size={14} /> Back to Properties
             </Link>
@@ -330,10 +336,10 @@ const PropertyDetail = () => {
                     {property.type ? property.type.charAt(0).toUpperCase() + property.type.slice(1) : 'Property'}
                     {property.featured && <><Star size={9} fill="currentColor" /> Featured</>}
                   </div>
-                  <h1 style={{ ...serif, fontSize: 'clamp(24px,4vw,36px)', color: t.cream, margin: '0 0 12px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                  <h1 style={{ ...serif, fontSize: 'clamp(24px,4vw,36px)', color: t.slate900, margin: '0 0 12px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
                     {property.title}
                   </h1>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', ...body, fontSize: 13, color: t.slate }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', ...body, fontSize: 13, color: t.slate600 }}>
                     <MapPin size={13} style={{ color: t.gold, flexShrink: 0 }} />
                     {property.location || property.address || 'Location not specified'}
                     {property.available !== false && <span style={pill(t.green)}>Available</span>}
@@ -343,11 +349,11 @@ const PropertyDetail = () => {
 
                 {/* Price — desktop top-right */}
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.slate, marginBottom: 4 }}>Monthly Rent</div>
+                  <div style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.slate600, marginBottom: 4 }}>Monthly Rent</div>
                   <div style={{ ...serif, fontSize: 30, color: t.gold, lineHeight: 1 }}>
                     {formatPrice(property.price || 0)}
                   </div>
-                  <div style={{ ...body, fontSize: 12, color: t.slate, marginTop: 4 }}>TZS / month</div>
+                  <div style={{ ...body, fontSize: 12, color: t.slate600, marginTop: 4 }}>TZS / month</div>
                 </div>
               </div>
             </div>
@@ -360,7 +366,7 @@ const PropertyDetail = () => {
 
                 {/* Gallery */}
                 <div style={card()}>
-                  <div style={{ position: 'relative', height: 420, overflow: 'hidden', background: t.navy700 }}>
+                  <div style={{ position: 'relative', height: 420, overflow: 'hidden', background: t.slate200 }}>
                     <img
                       src={getPropertyImageUrl(property, selectedImg)}
                       alt={property.title}
@@ -388,14 +394,14 @@ const PropertyDetail = () => {
 
                     {/* Featured badge */}
                     {property.featured && (
-                      <div style={{ position: 'absolute', top: 14, left: 14, background: t.gold, color: t.navy900, padding: '4px 10px', borderRadius: 4, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ position: 'absolute', top: 14, left: 14, background: t.gold, color: t.slate900, padding: '4px 10px', borderRadius: 4, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Star size={9} fill="currentColor" /> Featured
                       </div>
                     )}
 
                     {/* Image counter */}
                     {images.length > 1 && (
-                      <div style={{ position: 'absolute', bottom: 14, right: 14, ...body, fontSize: 11, color: t.cream, background: 'rgba(15,23,42,0.7)', padding: '4px 10px', borderRadius: 20, backdropFilter: 'blur(6px)' }}>
+                      <div style={{ position: 'absolute', bottom: 14, right: 14, ...body, fontSize: 11, color: t.white, background: 'rgba(15,23,42,0.7)', padding: '4px 10px', borderRadius: 20, backdropFilter: 'blur(6px)' }}>
                         <Camera size={10} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} />
                         {selectedImg + 1} / {images.length}
                       </div>
@@ -404,13 +410,13 @@ const PropertyDetail = () => {
 
                   {/* Thumbnails */}
                   {images.length > 1 && (
-                    <div style={{ display: 'flex', gap: 8, padding: '12px 14px', overflowX: 'auto', background: t.navy800 }}>
+                    <div style={{ display: 'flex', gap: 8, padding: '12px 14px', overflowX: 'auto', background: t.white }}>
                       {images.map((_: any, i: number) => (
                         <div
                           key={i}
                           className={`pd-thumb${selectedImg === i ? ' active' : ''}`}
                           onClick={() => setSelectedImg(i)}
-                          style={{ width: 68, height: 48, flexShrink: 0, borderRadius: 6, overflow: 'hidden', background: t.navy700 }}
+                          style={{ width: 68, height: 48, flexShrink: 0, borderRadius: 6, overflow: 'hidden', background: t.slate200 }}
                         >
                           <img
                             src={getPropertyImageUrl(property, i)}
@@ -432,8 +438,8 @@ const PropertyDetail = () => {
                   {features.map(({ icon: Icon, label, value }) => (
                     <div key={label} className="pd-stat-box">
                       <Icon size={18} style={{ color: t.gold, marginBottom: 8 }} />
-                      <div style={{ ...body, fontSize: 16, fontWeight: 700, color: t.cream, lineHeight: 1 }}>{value}</div>
-                      <div style={{ ...body, fontSize: 10, color: t.slate, marginTop: 4, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>{label}</div>
+                      <div style={{ ...body, fontSize: 16, fontWeight: 700, color: t.slate900, lineHeight: 1 }}>{value}</div>
+                      <div style={{ ...body, fontSize: 10, color: t.slate600, marginTop: 4, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>{label}</div>
                     </div>
                   ))}
                 </div>
@@ -442,7 +448,7 @@ const PropertyDetail = () => {
                 {property.description && (
                   <div style={card({ padding: '24px 26px', overflow: 'visible' })}>
                     <div className="section-tag" style={{ marginBottom: 16, display: 'inline-flex' }}>About this property</div>
-                    <p style={{ ...body, fontSize: 14, color: t.slate, lineHeight: 1.85, margin: 0 }}>
+                    <p style={{ ...body, fontSize: 14, color: t.slate600, lineHeight: 1.85, margin: 0 }}>
                       {property.description}
                     </p>
                   </div>
@@ -472,10 +478,10 @@ const PropertyDetail = () => {
                   {/* Gold top accent — same style as search card in Home */}
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: t.gold, borderRadius: '12px 12px 0 0' }} />
 
-                  <div style={{ borderBottom: `1px solid ${t.border}`, paddingBottom: 16, marginBottom: 16 }}>
-                    <div style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.slate, marginBottom: 6 }}>Monthly Rent</div>
+                  <div style={{ borderBottom: `1px solid ${t.slate200}`, paddingBottom: 16, marginBottom: 16 }}>
+                    <div style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.slate600, marginBottom: 6 }}>Monthly Rent</div>
                     <div style={{ ...serif, fontSize: 28, color: t.gold, lineHeight: 1 }}>{formatPrice(property.price || 0)}</div>
-                    <div style={{ ...body, fontSize: 12, color: t.slate, marginTop: 5 }}>TZS per month</div>
+                    <div style={{ ...body, fontSize: 12, color: t.slate600, marginTop: 5 }}>TZS per month</div>
                   </div>
 
                   {[
@@ -485,8 +491,8 @@ const PropertyDetail = () => {
                     { label: 'Listed',        value: property.createdAt ? new Date(property.createdAt).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A' },
                   ].map(({ label, value, color }) => (
                     <div key={label} className="pd-detail-row">
-                      <span style={{ ...body, fontSize: 12, color: t.slate }}>{label}</span>
-                      <span style={{ ...body, fontSize: 12.5, fontWeight: 600, color: color ?? t.cream, textTransform: 'capitalize' }}>{value}</span>
+                      <span style={{ ...body, fontSize: 12, color: t.slate600 }}>{label}</span>
+                      <span style={{ ...body, fontSize: 12.5, fontWeight: 600, color: color ?? t.slate900, textTransform: 'capitalize' }}>{value}</span>
                     </div>
                   ))}
                 </div>
@@ -502,16 +508,16 @@ const PropertyDetail = () => {
                     onClick={handleToggleSave}
                     disabled={!property}
                     style={{
-                      ...ghostBtn(isSaved ? t.gold : t.slate),
-                      backgroundColor: isSaved ? t.goldDim : 'transparent',
-                      borderColor: isSaved ? t.gold : t.border,
+                      ...ghostBtn(isSaved ? t.gold : t.slate600),
+                      backgroundColor: isSaved ? t.goldPale : 'transparent',
+                      borderColor: isSaved ? t.gold : t.slate200,
                     }}
                   >
                     <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} style={{ transition: 'fill .2s' }} />
                     {isSaved ? 'Saved to My List' : 'Save Property'}
                   </button>
 
-                  <button style={ghostBtn(t.cream)} className="pd-btn">
+                  <button style={ghostBtn(t.slate900)} className="pd-btn">
                     Schedule a Viewing
                   </button>
                 </div>
@@ -522,7 +528,7 @@ const PropertyDetail = () => {
                     <MapPin size={13} style={{ color: t.gold }} />
                     <span style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold }}>Location</span>
                   </div>
-                  <div style={{ ...body, fontSize: 13, color: t.cream, lineHeight: 1.6 }}>
+                  <div style={{ ...body, fontSize: 13, color: t.slate900, lineHeight: 1.6 }}>
                     {property.location || property.address || 'Location not specified'}
                   </div>
                 </div>
@@ -531,10 +537,10 @@ const PropertyDetail = () => {
                 {property?.dalali && (
                   <div style={card({ padding: '16px 18px', overflow: 'visible' })}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <Shield size={13} style={{ color: t.slate }} />
-                      <span style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.slate }}>Listed by Agent</span>
+                      <Shield size={13} style={{ color: t.slate600 }} />
+                      <span style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.slate600 }}>Listed by Agent</span>
                     </div>
-                    <div style={{ ...body, fontSize: 12, color: t.slate }}>
+                    <div style={{ ...body, fontSize: 12, color: t.slate600 }}>
                       Agent Code: <strong style={{ color: t.gold, fontFamily: 'monospace' }}>{property.dalali?.code || 'N/A'}</strong>
                     </div>
                   </div>
@@ -545,7 +551,7 @@ const PropertyDetail = () => {
                   {['Verified Listing', 'Secure Application Process', 'Tenant Support 24/7'].map(item => (
                     <div key={item} className="trust-row">
                       <div style={{ width: 7, height: 7, background: t.gold, borderRadius: '50%', flexShrink: 0 }} />
-                      <span style={{ ...body, fontSize: 12, color: t.slate }}>{item}</span>
+                      <span style={{ ...body, fontSize: 12, color: t.slate600 }}>{item}</span>
                     </div>
                   ))}
                 </div>
@@ -560,21 +566,21 @@ const PropertyDetail = () => {
               >
                 <div style={{ ...card({ padding: '36px 32px 28px', maxWidth: 380, width: '100%' }), position: 'relative', textAlign: 'center', overflow: 'visible' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: t.gold, borderRadius: '12px 12px 0 0' }} />
-                  <button onClick={() => setShowSignInModal(false)} style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: t.slate, cursor: 'pointer', display: 'flex', padding: 6, borderRadius: 4 }}>
+                  <button onClick={() => setShowSignInModal(false)} style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: t.slate600, cursor: 'pointer', display: 'flex', padding: 6, borderRadius: 4 }}>
                     <X size={18} />
                   </button>
-                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: t.goldDim, border: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '12px auto 18px' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: t.goldPale, border: `1px solid ${t.slate200}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '12px auto 18px' }}>
                     <Shield size={22} style={{ color: t.gold }} />
                   </div>
-                  <h3 style={{ ...serif, fontSize: 22, color: t.cream, margin: '0 0 10px' }}>Sign In Required</h3>
-                  <p style={{ ...body, fontSize: 13, color: t.slate, lineHeight: 1.75, margin: '0 0 24px' }}>
+                  <h3 style={{ ...serif, fontSize: 22, color: t.slate900, margin: '0 0 10px' }}>Sign In Required</h3>
+                  <p style={{ ...body, fontSize: 13, color: t.slate600, lineHeight: 1.75, margin: '0 0 24px' }}>
                     You need to be signed in to apply for this property.
                   </p>
-                  <div style={{ height: 1, background: t.border, margin: '0 0 20px' }} />
+                  <div style={{ height: 1, background: t.slate200, margin: '0 0 20px' }} />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                     <button onClick={() => navigate('/login', { state: { from: `/property/${id}` } })} style={solidBtn} className="pd-btn">Sign In to My Account</button>
                     <button onClick={() => navigate('/register', { state: { from: `/property/${id}` } })} style={ghostBtn(t.gold)} className="pd-btn">Create a Free Account</button>
-                    <button onClick={() => setShowSignInModal(false)} style={ghostBtn(t.slate)} className="pd-btn">Maybe Later</button>
+                    <button onClick={() => setShowSignInModal(false)} style={ghostBtn(t.slate600)} className="pd-btn">Maybe Later</button>
                   </div>
                 </div>
               </div>
@@ -585,16 +591,16 @@ const PropertyDetail = () => {
               <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.92)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1000 }}>
                 <div style={{ ...card({ padding: '32px', maxWidth: 400, width: '90%' }), position: 'relative', textAlign: 'center', overflow: 'visible' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: t.amber, borderRadius: '12px 12px 0 0' }} />
-                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '12px auto 18px' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '12px auto 18px' }}>
                     <Shield size={22} style={{ color: t.amber }} />
                   </div>
-                  <h3 style={{ ...serif, fontSize: 20, color: t.cream, margin: '0 0 12px' }}>Tenant Access Required</h3>
-                  <p style={{ ...body, fontSize: 13, color: t.slate, lineHeight: 1.75, margin: '0 0 24px' }}>
+                  <h3 style={{ ...serif, fontSize: 20, color: t.slate900, margin: '0 0 12px' }}>Tenant Access Required</h3>
+                  <p style={{ ...body, fontSize: 13, color: t.slate600, lineHeight: 1.75, margin: '0 0 24px' }}>
                     Only tenant accounts can apply for rental properties. Please switch to or register a tenant account to proceed.
                   </p>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={() => setShowTenantModal(false)} style={{ ...solidBtn, flex: 1 }} className="pd-btn">Got it</button>
-                    <button onClick={() => { setShowTenantModal(false); setShowSignInModal(true); }} style={{ ...ghostBtn(t.slate), flex: 1 }} className="pd-btn">Switch Account</button>
+                    <button onClick={() => { setShowTenantModal(false); setShowSignInModal(true); }} style={{ ...ghostBtn(t.slate600), flex: 1 }} className="pd-btn">Switch Account</button>
                   </div>
                 </div>
               </div>

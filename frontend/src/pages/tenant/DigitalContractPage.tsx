@@ -7,23 +7,6 @@ import Api from '../../services/api';
 import { formatDate, formatCurrency } from './tenantPageStyles';
 
 // ---------------------------------------------------------------------------
-// Color Palette - Oweru Brand
-// ---------------------------------------------------------------------------
-
-const B = {
-  navy900: '#0F172A',
-  navy800: '#162035',
-  navy700: '#1E2D4A',
-  gold:    '#C89128',
-  goldLt:  '#D4A843',
-  goldDim: 'rgba(200,145,40,0.12)',
-  cream:   '#F8F8F9',
-  slate:   '#94A3B8',
-  border:  'rgba(200,145,40,0.18)',
-  borderF: 'rgba(200,145,40,0.08)',
-};
-
-// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -99,7 +82,7 @@ const STATUS_META: Record<string, { label: string; color: string; icon: React.Re
 };
 
 const getStatusMeta = (s: string) =>
-  STATUS_META[s] ?? { label: s.replace(/_/g, ' '), color: B.slate, icon: null, desc: '' };
+  STATUS_META[s] ?? { label: s.replace(/_/g, ' '), color: '#64748B', icon: null, desc: '' };
 
 // Accordion sections
 const FIELD_SECTIONS: { title: string; ids: string[] }[] = [
@@ -160,7 +143,7 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.strokeStyle = B.gold;
+    ctx.strokeStyle = '#C89128';
     ctx.lineWidth   = 2.5;
     ctx.lineCap     = 'round';
     ctx.lineJoin    = 'round';
@@ -222,13 +205,13 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: B.gold, marginBottom: 4 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: '#C89128', marginBottom: 4 }}>
               SAHIHI YA KIDIJITALI
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: B.cream, margin: 0 }}>Chora Sahihi Yako</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0F172A', margin: 0 }}>Chora Sahihi Yako</h3>
           </div>
           <button
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: 8, borderRadius: 8 }}
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: 8, borderRadius: 8 }}
             onClick={onCancel}
             aria-label="Funga"
           >
@@ -236,13 +219,13 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
           </button>
         </div>
 
-        <p style={{ color: B.slate, fontSize: 13, marginBottom: 14 }}>
+        <p style={{ color: '#64748B', fontSize: 13, marginBottom: 14 }}>
           Chora sahihi yako kwenye sanduku hapa chini kwa kutumia kidole au panya.
         </p>
 
         {/* Canvas */}
         <div style={{
-          border: `1.5px solid ${B.gold}55`, borderRadius: 12,
+          border: `1.5px solid rgba(200,145,40,0.33)`, borderRadius: 12,
           overflow: 'hidden', background: 'rgba(255,255,255,0.025)',
         }}>
           <canvas
@@ -267,10 +250,10 @@ const SignaturePad = ({ overlayStyle, cardStyle, onSave, onCancel }: SignaturePa
             Futa
           </button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '8px 16px', borderRadius: 8 }} onClick={onCancel}>
+            <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '8px 16px', borderRadius: 8 }} onClick={onCancel}>
               Ghairi
             </button>
-            <button style={{ background: B.gold, border: 'none', color: B.navy900, padding: '8px 22px', borderRadius: 8, fontWeight: 600 }} onClick={save}>
+            <button style={{ background: '#C89128', border: 'none', color: '#0F172A', padding: '8px 22px', borderRadius: 8, fontWeight: 600 }} onClick={save}>
               Hifadhi Sahihi
             </button>
           </div>
@@ -320,13 +303,13 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
     const shared = { disabled: isReadOnly, required: field.required };
     switch (field.type) {
       case 'text':
-        return <input style={{ width: '100%', background: B.navy900, border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '12px', borderRadius: 8, outline: 'none' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <input style={{ width: '100%', background: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '12px', borderRadius: 8, outline: 'none' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       case 'date':
-        return <input type="date" style={{ width: '100%', background: B.navy900, border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '12px', borderRadius: 8, outline: 'none' }} value={val} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <input type="date" style={{ width: '100%', background: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '12px', borderRadius: 8, outline: 'none' }} value={val} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       case 'number':
-        return <input type="number" style={{ width: '100%', background: B.navy900, border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '12px', borderRadius: 8, outline: 'none' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <input type="number" style={{ width: '100%', background: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '12px', borderRadius: 8, outline: 'none' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       case 'textarea':
-        return <textarea style={{ width: '100%', minHeight: 80, background: B.navy900, border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '12px', borderRadius: 8, outline: 'none', resize: 'vertical' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <textarea style={{ width: '100%', minHeight: 80, background: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '12px', borderRadius: 8, outline: 'none', resize: 'vertical' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       default:
         return null;
     }
@@ -355,21 +338,21 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
 
   return (
     <div style={overlay}>
-      <div style={{ background: B.navy800, border: `1px solid ${B.border}`, maxWidth: 820, width: '100%', maxHeight: '94vh', overflowY: 'auto', borderRadius: 16 }}>
+      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxWidth: 820, width: '100%', maxHeight: '94vh', overflowY: 'auto', borderRadius: 16 }}>
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, padding: '24px 24px 0' }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: B.gold, marginBottom: 4 }}>
-              {contract.status === 'pending_signature' ? 'SAHIHI MKATABA' : 'ANGALIA MKATABA'}
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', color: '#C89128', marginBottom: 4 }}>
+              {contract.status === 'pending_signature' ? 'SAHIHI Mkataba' : 'ANGALIA Mkataba'}
             </div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: B.cream, margin: '0 0 6px' }}>{contract.title}</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>{contract.title}</h2>
             {contract.property && (
-              <p style={{ color: B.slate, fontSize: 13, margin: 0, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                <MapPin size={12} style={{ color: B.gold }} />
+              <p style={{ color: '#64748B', fontSize: 13, margin: 0, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                <MapPin size={12} style={{ color: '#C89128' }} />
                 {[contract.property.title, contract.property.location].filter(Boolean).join(' — ')}
                 {contract.property.price && (
-                  <span style={{ color: B.gold, fontWeight: 600, marginLeft: 4 }}>
+                  <span style={{ color: '#C89128', fontWeight: 600, marginLeft: 4 }}>
                     {formatCurrency(contract.property.price)}/mwezi
                   </span>
                 )}
@@ -377,7 +360,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
             )}
           </div>
           <button
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: 8, borderRadius: 8, flexShrink: 0 }}
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: 8, borderRadius: 8, flexShrink: 0 }}
             onClick={onClose} aria-label="Funga"
           >
             <X size={16} />
@@ -394,7 +377,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
           }}>
             {sm.icon} {sm.label}
             {sm.desc && (
-              <span style={{ color: B.slate, fontSize: 12, fontWeight: 400, marginLeft: 4 }}>
+              <span style={{ color: '#64748B', fontSize: 12, fontWeight: 400, marginLeft: 4 }}>
                 — {sm.desc}
               </span>
             )}
@@ -404,18 +387,18 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
           {hasFile(contract) && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: `${B.goldDim}`, border: `1px solid ${B.gold}30`,
+              background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.19)',
               borderRadius: 10, padding: '12px 16px', marginBottom: 20,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <FileText size={18} style={{ color: B.gold }} />
+                <FileText size={18} style={{ color: '#C89128' }} />
                 <div>
-                  <div style={{ color: B.cream, fontSize: 14, fontWeight: 600 }}>{fileLabel(contract)}</div>
-                  <div style={{ color: B.slate, fontSize: 12 }}>Hati ya mkataba — pakua ili kusoma vizuri</div>
+                  <div style={{ color: '#0F172A', fontSize: 14, fontWeight: 600 }}>{fileLabel(contract)}</div>
+                  <div style={{ color: '#64748B', fontSize: 12 }}>Hati ya mkataba — pakua ili kusoma vizuri</div>
                 </div>
               </div>
               <button
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '6px 14px', fontSize: 12, borderRadius: 8 }}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '6px 14px', fontSize: 12, borderRadius: 8 }}
                 onClick={() => onDownload(contract.id, contract.file_name || 'mkataba.pdf')}
               >
                 <Download size={12} /> Pakua
@@ -432,7 +415,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
 
           {/* Fields */}
           {visibleFields.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: B.slate }}>
+            <div style={{ textAlign: 'center', padding: '32px 0', color: '#64748B' }}>
               <FileCheck size={36} style={{ opacity: 0.3, display: 'block', margin: '0 auto 12px' }} />
               <div style={{ fontSize: 14 }}>Mkataba huu hauna sehemu za kujaza.</div>
               {hasFile(contract) && <div style={{ fontSize: 12, marginTop: 6 }}>Pakua hati ili kusoma maudhui yote.</div>}
@@ -450,14 +433,14 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
 
                 return (
                   <div key={section.title} style={{
-                    border: `1px solid ${isOpen ? `${B.gold}30` : 'rgba(255,255,255,0.07)'}`,
+                    border: `1px solid ${isOpen ? 'rgba(200,145,40,0.19)' : 'rgba(255,255,255,0.07)'}`,
                     borderRadius: 12, overflow: 'hidden', marginBottom: 4, transition: 'border-color 0.2s',
                   }}>
                     <button
                       style={{
                         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '14px 18px', border: 'none', cursor: 'pointer', color: B.cream,
-                        background: isOpen ? `${B.goldDim}` : 'rgba(255,255,255,0.02)',
+                        padding: '14px 18px', border: 'none', cursor: 'pointer', color: '#0F172A',
+                        background: isOpen ? 'rgba(200,145,40,0.10)' : 'rgba(255,255,255,0.02)',
                       }}
                       onClick={() => setActiveSection(isOpen ? null : section.title)}
                     >
@@ -465,7 +448,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
                         <span style={{ fontWeight: 600, fontSize: 14 }}>{section.title}</span>
                         <span style={{
                           fontSize: 11, borderRadius: 6, padding: '2px 8px',
-                          color:      complete ? '#16a34a'              : B.slate,
+                          color:      complete ? '#16a34a'              : '#64748B',
                           background: complete ? 'rgba(22,163,74,0.12)' : 'rgba(255,255,255,0.05)',
                         }}>
                           {filled.length}/{fields.length}
@@ -473,7 +456,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {complete && <CheckCircle size={14} style={{ color: '#16a34a' }} />}
-                        {isOpen ? <ChevronUp size={16} style={{ color: B.slate }} /> : <ChevronDown size={16} style={{ color: B.slate }} />}
+                        {isOpen ? <ChevronUp size={16} style={{ color: '#64748B' }} /> : <ChevronDown size={16} style={{ color: '#64748B' }} />}
                       </div>
                     </button>
 
@@ -481,7 +464,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
                       <div style={{ padding: '16px 18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {fields.map(field => (
                           <div key={field.id}>
-                            <label style={{ display: 'block', marginBottom: 7, color: B.cream, fontSize: 13, fontWeight: 600 }}>
+                            <label style={{ display: 'block', marginBottom: 7, color: '#0F172A', fontSize: 13, fontWeight: 600 }}>
                               {field.label}
                               {field.required && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
                             </label>
@@ -497,10 +480,10 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
               {/* Ungrouped fields */}
               {ungroupedFields.length > 0 && (
                 <div style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 4 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: B.cream }}>Sehemu Nyingine</div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: '#0F172A' }}>Sehemu Nyingine</div>
                   {ungroupedFields.map(field => (
                     <div key={field.id}>
-                      <label style={{ display: 'block', marginBottom: 7, color: B.cream, fontSize: 13, fontWeight: 600 }}>
+                      <label style={{ display: 'block', marginBottom: 7, color: '#0F172A', fontSize: 13, fontWeight: 600 }}>
                         {field.label}{field.required && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
                       </label>
                       {renderInput(field)}
@@ -515,18 +498,18 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
                 style={{
                   border: signatureDataUrl
                     ? '1.5px solid rgba(22,163,74,0.4)'
-                    : `1.5px solid ${B.gold}55`,
+                    : '1.5px solid rgba(200,145,40,0.33)',
                   borderRadius: 12,
                   padding: '20px 18px',
                   marginTop: 6,
                   background: signatureDataUrl
                     ? 'rgba(22,163,74,0.05)'
-                    : `${B.goldDim}`,
+                    : 'rgba(200,145,40,0.10)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                  <PenTool size={16} style={{ color: B.gold }} />
-                  <span style={{ fontWeight: 700, fontSize: 14, color: B.cream }}>
+                  <PenTool size={16} style={{ color: '#C89128' }} />
+                  <span style={{ fontWeight: 700, fontSize: 14, color: '#0F172A' }}>
                     Sahihi ya Mpangaji
                     {!isReadOnly && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
                   </span>
@@ -540,7 +523,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
                 {signatureDataUrl ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                     <div style={{
-                      border: `1px solid ${B.gold}35`, borderRadius: 8,
+                      border: '1px solid rgba(200,145,40,0.21)', borderRadius: 8,
                       background: 'rgba(255,255,255,0.03)', padding: '8px 12px',
                     }}>
               <img
@@ -553,7 +536,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
                     </div>
                     {!isReadOnly && (
                       <button
-                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '8px 16px', fontSize: 13, borderRadius: 8 }}
+                        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '8px 16px', fontSize: 13, borderRadius: 8 }}
                         onClick={() => setShowSignPad(true)}
                       >
                         <PenTool size={13} /> Badilisha Sahihi
@@ -562,13 +545,13 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <p style={{ color: B.slate, fontSize: 13, margin: 0 }}>
+                    <p style={{ color: '#64748B', fontSize: 13, margin: 0 }}>
                       Bonyeza kitufe hapa chini ili kutoa sahihi yako ya kidijitali.
-                      Sahihi ni <strong style={{ color: B.cream }}>lazima</strong> kabla ya kuwasilisha mkataba.
+                      Sahihi ni <strong style={{ color: '#0F172A' }}>lazima</strong> kabla ya kuwasilisha mkataba.
                     </p>
                     {!isReadOnly && (
                       <button
-                        style={{ background: B.gold, border: 'none', color: B.navy900, padding: '12px 24px', alignSelf: 'flex-start', borderRadius: 8, fontWeight: 600 }}
+                        style={{ background: '#C89128', border: 'none', color: '#0F172A', padding: '12px 24px', alignSelf: 'flex-start', borderRadius: 8, fontWeight: 600 }}
                         onClick={() => setShowSignPad(true)}
                       >
                         <PenTool size={15} /> Toa Sahihi Yako
@@ -599,12 +582,12 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
             borderTop: '1px solid rgba(255,255,255,0.06)',
             flexWrap: 'wrap',
           }}>
-            <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: B.cream, padding: '10px 20px', borderRadius: 8 }} onClick={onClose}>
+            <button style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '10px 20px', borderRadius: 8 }} onClick={onClose}>
               Funga
             </button>
             {contract.status === 'pending_signature' && (
               <button
-                style={{ background: B.gold, border: 'none', color: B.navy900, padding: '10px 28px', borderRadius: 8, fontWeight: 600 }}
+                style={{ background: '#C89128', border: 'none', color: '#0F172A', padding: '10px 28px', borderRadius: 8, fontWeight: 600 }}
                 onClick={handleSubmit}
                 disabled={submitting}
               >
@@ -626,7 +609,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
       {showSignPad && (
         <SignaturePad
           overlayStyle={overlay}
-          cardStyle={{ background: B.navy800, border: `1px solid ${B.border}`, borderRadius: 16 }}
+          cardStyle={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 16 }}
           onSave={(dataUrl) => {
             setSignatureDataUrl(dataUrl);
             setShowSignPad(false);
@@ -720,7 +703,7 @@ const DigitalContractPage = () => {
   return (
     <div className="dc-container">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
 
@@ -728,7 +711,7 @@ const DigitalContractPage = () => {
           max-width: 1400px;
           margin: 0 auto;
           padding: 32px 24px;
-          background: #0F172A;
+          background: #F1F5F9;
           min-height: 100vh;
         }
 
@@ -740,7 +723,7 @@ const DigitalContractPage = () => {
         .dc-title {
           font-size: clamp(36px, 5vw, 56px);
           font-weight: 800;
-          color: #FFFFFF;
+          color: #0F172A;
           margin-bottom: 16px;
           letter-spacing: -0.03em;
           line-height: 1.1;
@@ -748,7 +731,7 @@ const DigitalContractPage = () => {
 
         .dc-subtitle {
           font-size: 18px;
-          color: #94A3B8;
+          color: #64748B;
           font-weight: 400;
           margin-bottom: 32px;
         }
@@ -775,8 +758,8 @@ const DigitalContractPage = () => {
         }
 
         .dc-card {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.08);
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
           border-radius: 24px;
           overflow: hidden;
           transition: all 0.3s ease;
@@ -785,18 +768,18 @@ const DigitalContractPage = () => {
         .dc-card:hover {
           transform: translateY(-4px);
           box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-          border-color: rgba(200,145,40,0.3);
+          border-color: rgba(200,145,40,0.28);
         }
 
         .dc-card-header {
           padding: 24px 24px 20px;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
+          border-bottom: 1px solid #F1F5F9;
         }
 
         .dc-card-title {
           font-size: 20px;
           font-weight: 700;
-          color: #FFFFFF;
+          color: #0F172A;
           margin-bottom: 8px;
           line-height: 1.3;
         }
@@ -805,7 +788,7 @@ const DigitalContractPage = () => {
           display: flex;
           align-items: center;
           gap: 8px;
-          color: #94A3B8;
+          color: #64748B;
           font-size: 15px;
         }
 
@@ -827,7 +810,7 @@ const DigitalContractPage = () => {
 
         .dc-card-footer {
           padding: 20px 24px;
-          border-top: 1px solid rgba(255,255,255,0.05);
+          border-top: 1px solid #F1F5F9;
           display: flex;
           gap: 12px;
         }
@@ -840,7 +823,7 @@ const DigitalContractPage = () => {
           gap: 8px;
           padding: 12px 20px;
           border-radius: 12px;
-          font-family: 'Inter', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
@@ -850,20 +833,20 @@ const DigitalContractPage = () => {
 
         .dc-btn-primary {
           background: #C89128;
-          color: #FFFFFF;
+          color: #0F172A;
         }
         .dc-btn-primary:hover {
-          background: #D4A843;
+          background: #C89128;
           transform: translateY(-1px);
         }
 
         .dc-btn-secondary {
-          background: rgba(255,255,255,0.05);
-          color: #FFFFFF;
-          border: 1px solid rgba(255,255,255,0.1);
+          background: #F1F5F9;
+          color: #0F172A;
+          border: 1px solid #E2E8F0;
         }
         .dc-btn-secondary:hover {
-          background: rgba(255,255,255,0.08);
+          background: #E2E8F0;
         }
 
         /* Mobile responsiveness */
@@ -889,19 +872,25 @@ const DigitalContractPage = () => {
       `}</style>
 
       {/* Header */}
-      <div className="dc-header">
-        <h1 className="dc-title">Digital Contracts</h1>
-        <p className="dc-subtitle">View, fill, and sign your rental contracts online</p>
-        
-        {needsSigning.length > 0 && (
-          <div className="dc-alert">
-            <PenTool size={20} />
-            <div>
-              <div>You need to sign {needsSigning.length === 1 ? 'a contract' : `${needsSigning.length} contracts`}</div>
-              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Click the "Sign" button on the relevant contract below</div>
+      <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
+              Tenant Workspace
             </div>
+            <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 'clamp(20px,3.5vw,28px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>Digital Contracts</h1>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>View, fill, and sign your rental contracts online</p>
           </div>
-        )}
+
+          {needsSigning.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'rgba(200,145,40,0.1)', border: '1px solid rgba(200,145,40,0.2)', padding: '12px 18px', borderRadius: 12, color: '#C89128', fontWeight: 600, fontSize: '13px' }}>
+              <PenTool size={16} />
+              <div>
+                <div>Sign {needsSigning.length === 1 ? 'contract' : `${needsSigning.length} contracts`}</div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Error/Success Messages */}

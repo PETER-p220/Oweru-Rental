@@ -12,12 +12,12 @@ use Illuminate\Support\Str;
 class ImageUploadController extends Controller
 {
     /**
-     * Upload an image file
+     * Upload a single image
      */
     public function upload(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -27,36 +27,22 @@ class ImageUploadController extends Controller
             ], 422);
         }
 
-        try {
-            $image = $request->file('image');
-            
-            // Generate unique filename
-            $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
-            
-            // Store in public storage
-            $path = $image->storeAs('bnb-properties', $filename, 'public');
-            
-            // Get the public URL
-            $url = Storage::url($path);
-            
-            // Ensure full URL
-            if (!str_starts_with($url, 'http')) {
-                $url = config('app.url') . $url;
-            }
-            
-            return response()->json([
-                'message' => 'Image uploaded successfully',
-                'url' => $url,
-                'filename' => $filename,
-                'path' => $path,
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to upload image',
-                'error' => $e->getMessage(),
-            ], 500);
+        $image = $request->file('image');
+        $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+        $path = $image->storeAs('bnb-properties', $filename, 'public');
+        $url = Storage::url($path);
+
+        // Ensure full URL
+        if (!str_starts_with($url, 'http')) {
+            $url = config('app.url') . $url;
         }
+
+        return response()->json([
+            'message'  => 'Image uploaded successfully',
+            'url'      => $url,
+            'filename' => $filename,
+            'path'     => $path,
+        ]);
     }
 
     /**
@@ -65,50 +51,41 @@ class ImageUploadController extends Controller
     public function uploadMultiple(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'images' => 'required|array|max:10', // Max 10 images
-            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max each
+            'images'   => 'required|array|max:10',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors(),
+                'errors'  => $validator->errors(),
             ], 422);
         }
 
-        try {
-            $uploadedImages = [];
-            $images = $request->file('images');
-            
-            foreach ($images as $image) {
-                $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
-                $path = $image->storeAs('bnb-properties', $filename, 'public');
-                $url = Storage::url($path);
-                
-                // Ensure full URL
-                if (!str_starts_with($url, 'http')) {
-                    $url = config('app.url') . $url;
-                }
-                
-                $uploadedImages[] = [
-                    'url' => $url,
-                    'filename' => $filename,
-                    'path' => $path,
-                ];
+        $uploadedImages = [];
+        $images = $request->file('images');
+
+        foreach ($images as $image) {
+            $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+            $path = $image->storeAs('bnb-properties', $filename, 'public');
+            $url = Storage::url($path);
+
+            if (!str_starts_with($url, 'http')) {
+                $url = config('app.url') . $url;
             }
-            
-            return response()->json([
-                'message' => 'Images uploaded successfully',
-                'images' => $uploadedImages,
-                'count' => count($uploadedImages),
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to upload images',
-                'error' => $e->getMessage(),
-            ], 500);
+
+            $uploadedImages[] = [
+                'url'      => $url,
+                'filename' => $filename,
+                'path'     => $path,
+            ];
         }
+
+        return response()->json([
+            'message' => 'Images uploaded successfully',
+            'images'  => $uploadedImages,
+            'count'   => count($uploadedImages),
+        ]);
     }
 
     /**
@@ -123,32 +100,23 @@ class ImageUploadController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors(),
+                'errors'  => $validator->errors(),
             ], 422);
         }
 
-        try {
-            $path = $request->input('path');
-            
-            if (Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
-                
-                return response()->json([
-                    'message' => 'Image deleted successfully',
-                    'path' => $path,
-                ]);
-            } else {
-                return response()->json([
-                    'message' => 'Image not found',
-                    'path' => $path,
-                ], 404);
-            }
-            
-        } catch (\Exception $e) {
+        $path = $request->input('path');
+
+        if (Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
             return response()->json([
-                'message' => 'Failed to delete image',
-                'error' => $e->getMessage(),
-            ], 500);
+                'message' => 'Image deleted successfully',
+                'path'    => $path,
+            ]);
         }
+
+        return response()->json([
+            'message' => 'Image not found',
+            'path'    => $path,
+        ], 404);
     }
 }
