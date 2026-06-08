@@ -1,32 +1,54 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  Send, Search, Phone, Video, MoreVertical, Check, CheckCheck,
-  Reply, Edit2, Trash2, Paperclip, Smile, Home, X,
-  ChevronLeft, Wifi, WifiOff, Plus, MessageSquarePlus, Clock, Hash
+  Send, Search, Plus, MessageSquarePlus,
+  ChevronLeft, X, Paperclip, Phone, Video,
+  Bell, Check, CheckCheck,
 } from 'lucide-react';
 import MessagesService, { type Message, type Conversation } from '../services/messages';
 
-interface Props {
-  role?: 'tenant' | 'agent' | 'landlord';
-}
-
-const ROLE_CONFIG = {
-  tenant:   { accent: '#6C63FF', label: 'Tenant Inbox',   tagline: 'Talk to your landlord or agent' },
-  agent:    { accent: '#0EA5E9', label: 'Agent Inbox',    tagline: 'Manage client conversations' },
-  landlord: { accent: '#10B981', label: 'Landlord Inbox', tagline: 'Connect with your tenants' },
+// ── Design tokens
+const C = {
+  pageBg:    '#F1F5F9',
+  sidebarBg: '#0F172A',
+  headerBg:  '#1E293B',
+  chatBg:    '#0A1120',
+  bubbleIn:  '#1E293B',
+  inputBg:   '#1E293B',
+  border:    'rgba(255,255,255,0.07)',
+  text:      '#F1F5F9',
+  textSub:   '#CBD5E1',
+  textMuted: '#64748B',
+  slate700:  '#334155',
+  gold:      '#C89128',
+  goldGlow:  '0 4px 14px rgba(200,145,40,0.26)',
+  green:     '#16A34A',
+  red:       '#DC2626',
 };
+
+const ROLE_ACCENT: Record<string, string> = {
+  tenant:   '#2563EB',
+  agent:    '#0EA5E9',
+  landlord: '#C89128',
+};
+
+const ROLE_META: Record<string, { title: string; sub: string; badge: string }> = {
+  tenant:   { title: 'Tenant Inbox',   sub: 'Talk to your landlord or agent', badge: 'Tenant'   },
+  agent:    { title: 'Agent Inbox',    sub: 'Manage client conversations',    badge: 'Agent'    },
+  landlord: { title: 'Landlord Inbox', sub: 'Connect with your tenants',      badge: 'Landlord' },
+};
+
+interface Props { role?: 'tenant' | 'agent' | 'landlord'; }
 
 const initials = (name: string) =>
   name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
 
-const relativeTime = (iso: string) => {
+const relTime = (iso: string) => {
   if (!iso) return '';
-  const diff = Date.now() - new Date(iso).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'now';
-  if (minutes < 60) return `${minutes}m`;
-  if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
-  return `${Math.floor(minutes / 1440)}d`;
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1)    return 'now';
+  if (m < 60)   return `${m}m`;
+  if (m < 1440) return `${Math.floor(m / 60)}h`;
+  return `${Math.floor(m / 1440)}d`;
 };
 
 const fullTime = (iso: string) =>
@@ -34,74 +56,41 @@ const fullTime = (iso: string) =>
 
 const Avatar = ({ name, size = 40, accent }: { name: string; size?: number; accent: string }) => (
   <div style={{
-    width: size, height: size,
-    borderRadius: '50%',
-    background: `linear-gradient(135deg, ${accent}30, ${accent}60)`,
-    border: `2px solid ${accent}40`,
+    width: size, height: size, borderRadius: '50%', flexShrink: 0,
+    background: `${accent}18`, border: `1.5px solid ${accent}40`,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: size * 0.38, fontWeight: 700, color: accent, flexShrink: 0,
+    fontSize: Math.round(size * 0.36), fontWeight: 700, color: accent,
+    letterSpacing: '-0.01em',
   }}>
-    {initials(name)}
+    {initials(name || '?')}
   </div>
 );
 
-const MOBILE_STYLES = `
-  @media (max-width: 640px) {
-    .msg-sidebar {
-      width: 100% !important;
-      min-width: unset !important;
-      display: flex !important;
-    }
-    .msg-sidebar.hidden-mobile {
-      display: none !important;
-    }
-    .msg-chat {
-      display: none !important;
-    }
-    .msg-chat.active-mobile {
-      display: flex !important;
-      width: 100% !important;
-    }
-    .msg-back-btn {
-      display: flex !important;
-    }
-  }
-  @media (min-width: 641px) {
-    .msg-sidebar { display: flex !important; }
-    .msg-chat { display: flex !important; }
-    .msg-back-btn { display: none !important; }
-  }
-`;
-
 const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
-  const cfg = ROLE_CONFIG[role];
+  const accent = ROLE_ACCENT[role] || C.gold;
+  const meta   = ROLE_META[role];
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selected, setSelected] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [draft, setDraft] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [sideSearch, setSideSearch] = useState('');
-  const [newChatOpen, setNewChatOpen] = useState(false);
-  const [userQuery, setUserQuery] = useState('');
-  const [foundUsers, setFoundUsers] = useState<any[]>([]);
-  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [conversations,  setConversations]  = useState<Conversation[]>([]);
+  const [selected,       setSelected]       = useState<Conversation | null>(null);
+  const [messages,       setMessages]       = useState<Message[]>([]);
+  const [draft,          setDraft]          = useState('');
+  const [loading,        setLoading]        = useState(true);
+  const [sending,        setSending]        = useState(false);
+  const [sideSearch,     setSideSearch]     = useState('');
+  const [newChatOpen,    setNewChatOpen]    = useState(false);
+  const [userQuery,      setUserQuery]      = useState('');
+  const [foundUsers,     setFoundUsers]     = useState<any[]>([]);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
-  const [online, setOnline] = useState(true);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomRef   = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const loadConversations = useCallback(async () => {
     try {
       const data = await MessagesService.getConversations();
       setConversations(data.conversations || []);
-    } catch (err) {
-      console.error('Failed to load conversations', err);
-    } finally {
-      setLoading(false);
-    }
+    } catch { /* silent */ }
+    finally { setLoading(false); }
   }, []);
 
   const loadMessages = useCallback(async (userId: number) => {
@@ -109,387 +98,301 @@ const SharedMessagesPage = ({ role = 'tenant' }: Props) => {
       const data = await MessagesService.getMessages(userId);
       setMessages(data.messages || []);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    } catch (err) {
-      console.error('Failed to load messages', err);
-    }
+    } catch { /* silent */ }
   }, []);
 
   useEffect(() => {
     loadConversations();
-    const interval = setInterval(() => {
+    const iv = setInterval(() => {
       loadConversations();
       if (selected) loadMessages(selected.id);
-    }, 15000);
-    const handleOnline = () => setOnline(true);
-    const handleOffline = () => setOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+    }, 15_000);
+    return () => clearInterval(iv);
   }, [selected]);
 
-  useEffect(() => {
-    if (selected) loadMessages(selected.id);
-  }, [selected]);
+  useEffect(() => { if (selected) loadMessages(selected.id); }, [selected]);
 
   const sendMessage = async () => {
     if (!draft.trim() || sending || !selected) return;
     setSending(true);
     try {
-      const newMsg = await MessagesService.sendMessage({
-        receiver_id: selected.id,
-        content: draft.trim(),
-        reply_to_id: replyTo?.id,
-      });
-      setMessages(prev => [...prev, newMsg]);
+      const msg = await MessagesService.sendMessage({ receiver_id: selected.id, content: draft.trim() });
+      setMessages(p => [...p, msg]);
       setDraft('');
-      setReplyTo(null);
       loadConversations();
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSending(false);
-    }
+    } catch { /* silent */ }
+    finally { setSending(false); }
   };
 
   useEffect(() => {
     if (!userQuery.trim()) { setFoundUsers([]); return; }
-    const timer = setTimeout(async () => {
-      try {
-        const users = await MessagesService.searchUsers(userQuery);
-        setFoundUsers(users || []);
-      } catch { setFoundUsers([]); }
+    const t = setTimeout(async () => {
+      try { setFoundUsers((await MessagesService.searchUsers(userQuery)) || []); }
+      catch { setFoundUsers([]); }
     }, 350);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [userQuery]);
 
   const openConversation = (user: any) => {
-    const newConv: Conversation = {
-      id: user.id, user,
-      latest_message: null as any,
-      unread_count: 0,
-      updated_at: new Date().toISOString(),
-    };
-    setSelected(newConv);
-    setNewChatOpen(false);
-    setUserQuery('');
-    setFoundUsers([]);
-    setMessages([]);
-    setMobileChatOpen(true);
+    setSelected({ id: user.id, user, latest_message: null as any, unread_count: 0, updated_at: new Date().toISOString() });
+    setNewChatOpen(false); setUserQuery(''); setFoundUsers([]); setMessages([]); setMobileChatOpen(true);
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.user?.name?.toLowerCase().includes(sideSearch.toLowerCase()) ||
-    conv.latest_message?.content?.toLowerCase().includes(sideSearch.toLowerCase())
+  const filtered = conversations.filter(c =>
+    c.user?.name?.toLowerCase().includes(sideSearch.toLowerCase()) ||
+    c.latest_message?.content?.toLowerCase().includes(sideSearch.toLowerCase())
   );
 
+  const totalUnread = conversations.reduce((s, c) => s + (c.unread_count || 0), 0);
+
+  const darkInput: React.CSSProperties = {
+    width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.06)',
+    border: `1px solid ${C.border}`, borderRadius: 8, color: C.text,
+    fontSize: 13, outline: 'none', fontFamily: 'DM Sans, sans-serif',
+    boxSizing: 'border-box' as const, transition: 'border-color 0.2s',
+  };
+
   return (
-    <div style={{
-      display: 'flex', height: '100dvh',
-      background: '#0f172a',
-      fontFamily: "'DM Sans', system-ui, sans-serif",
-      overflow: 'hidden', color: '#e2e8f0',
-      position: 'relative',
-    }}>
-      <style>{MOBILE_STYLES}</style>
+    <div style={{ display: 'flex', height: '100dvh', background: C.chatBg, fontFamily: "'DM Sans', system-ui, sans-serif", overflow: 'hidden', color: C.text }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 
-      {/* ── SIDEBAR ── */}
-      <aside
-        className={`msg-sidebar${mobileChatOpen ? ' hidden-mobile' : ''}`}
-        style={{
-          width: 340, minWidth: 320,
-          borderRight: '1px solid #1e293b',
-          flexDirection: 'column',
-          background: '#0f172a',
-        }}
-      >
-        {/* Header */}
-        <div style={{ padding: '16px', borderBottom: '1px solid #1e293b' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em' }}>{cfg.label}</div>
-              <div style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>{cfg.tagline}</div>
+        /* scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 4px; }
+
+        /* hover states */
+        .conv-row:hover { background: rgba(255,255,255,0.05) !important; }
+        .icon-btn:hover { background: rgba(255,255,255,0.09) !important; }
+        .user-row:hover { background: rgba(255,255,255,0.07) !important; }
+        .dark-input:focus { border-color: ${accent} !important; }
+
+        /* mobile */
+        @media (max-width: 640px) {
+          .msg-sidebar { width:100% !important; min-width:unset !important; display:flex !important; }
+          .msg-sidebar.hide-mob { display:none !important; }
+          .msg-chat { display:none !important; }
+          .msg-chat.show-mob { display:flex !important; width:100% !important; }
+          .back-btn { display:flex !important; }
+        }
+        @media (min-width: 641px) {
+          .msg-sidebar { display:flex !important; }
+          .msg-chat { display:flex !important; }
+          .back-btn { display:none !important; }
+        }
+      `}</style>
+
+      {/* ══ SIDEBAR ══ */}
+      <aside className={`msg-sidebar${mobileChatOpen ? ' hide-mob' : ''}`}
+        style={{ width: 300, minWidth: 260, flexDirection: 'column', background: C.sidebarBg, borderRight: `1px solid ${C.border}` }}>
+
+        {/* Sidebar header */}
+        <div style={{ background: C.headerBg, padding: '16px 14px 13px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Role badge */}
+              <span style={{ padding: '3px 8px', background: `${accent}20`, border: `1px solid ${accent}35`, borderRadius: 5, fontSize: 9, fontWeight: 700, color: accent, letterSpacing: '0.10em', textTransform: 'uppercase' }}>
+                {meta.badge}
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: C.text, letterSpacing: '-0.01em' }}>{meta.title}</span>
             </div>
-            <button
-              onClick={() => setNewChatOpen(true)}
-              style={{
-                padding: '8px', background: cfg.accent + '20',
-                border: `1px solid ${cfg.accent}40`,
-                borderRadius: 10, color: cfg.accent, cursor: 'pointer',
-                display: 'flex', alignItems: 'center',
-              }}
-            >
-              <Plus size={20} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              {totalUnread > 0 && (
+                <div style={{ position: 'relative' }}>
+                  <Bell size={15} style={{ color: C.textMuted }} />
+                  <div style={{ position: 'absolute', top: -2, right: -2, width: 6, height: 6, borderRadius: '50%', background: C.red, border: `1.5px solid ${C.headerBg}` }} />
+                </div>
+              )}
+              <button onClick={() => setNewChatOpen(true)} className="icon-btn"
+                style={{ padding: 7, background: `${accent}18`, border: `1px solid ${accent}35`, borderRadius: 7, color: accent, cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'background 0.15s' }}>
+                <Plus size={15} />
+              </button>
+            </div>
           </div>
-
-          {/* Search */}
+          <p style={{ fontSize: 12, color: C.textMuted, marginBottom: 11 }}>{meta.sub}</p>
           <div style={{ position: 'relative' }}>
-            <Search size={15} style={{ position: 'absolute', left: 12, top: 12, color: '#475569' }} />
-            <input
-              type="text"
-              placeholder="Search conversations..."
-              value={sideSearch}
-              onChange={e => setSideSearch(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 12px 10px 38px',
-                background: '#1e293b', border: '1px solid #334155',
-                borderRadius: 10, color: '#e2e8f0', fontSize: 13, outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
+            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: C.textMuted, pointerEvents: 'none' }} />
+            <input type="text" placeholder="Search…" value={sideSearch} onChange={e => setSideSearch(e.target.value)}
+              className="dark-input"
+              style={{ ...darkInput, paddingLeft: 32, paddingTop: 8, paddingBottom: 8 }} />
           </div>
         </div>
 
         {/* Conversation list */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#64748b', fontSize: 14 }}>Loading…</div>
-          ) : filteredConversations.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#64748b', fontSize: 14 }}>No conversations found</div>
-          ) : (
-            filteredConversations.map(conv => {
-              const isSelected = selected?.id === conv.id;
-              return (
-                <div
-                  key={conv.id}
-                  onClick={() => { setSelected(conv); setMobileChatOpen(true); }}
-                  style={{
-                    padding: '12px 14px',
-                    display: 'flex', gap: 10, cursor: 'pointer',
-                    background: isSelected ? cfg.accent + '12' : 'transparent',
-                    borderLeft: isSelected ? `3px solid ${cfg.accent}` : '3px solid transparent',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  <Avatar name={conv.user?.name || 'User'} size={44} accent={cfg.accent} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: '#f1f5f9' }}>
-                        {conv.user?.name || 'Unknown'}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#475569' }}>{relativeTime(conv.updated_at || '')}</div>
+            <div style={{ padding: '48px 16px', textAlign: 'center', color: C.textMuted, fontSize: 13 }}>
+              <div style={{ width: 18, height: 18, border: `2px solid rgba(255,255,255,0.08)`, borderTopColor: accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 10px' }} />
+              Loading…
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: '48px 16px', textAlign: 'center', color: C.textMuted, fontSize: 13 }}>No conversations yet</div>
+          ) : filtered.map(conv => {
+            const sel = selected?.id === conv.id;
+            return (
+              <div key={conv.id} className="conv-row"
+                onClick={() => { setSelected(conv); setMobileChatOpen(true); }}
+                style={{ padding: '11px 13px', display: 'flex', gap: 10, cursor: 'pointer', alignItems: 'center', background: sel ? `${accent}12` : 'transparent', borderLeft: `3px solid ${sel ? accent : 'transparent'}`, transition: 'background 0.12s', animation: 'fadeIn 0.2s ease' }}>
+                <Avatar name={conv.user?.name || 'User'} size={38} accent={accent} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: 6 }}>
+                      {conv.user?.name || 'Unknown'}
                     </div>
-                    <div style={{
-                      fontSize: 13, color: conv.unread_count > 0 ? '#cbd5e1' : '#64748b',
-                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    }}>
-                      {conv.latest_message?.content || 'No messages yet'}
-                    </div>
+                    <div style={{ fontSize: 10, color: C.textMuted, flexShrink: 0 }}>{relTime(conv.updated_at || '')}</div>
                   </div>
-                  {conv.unread_count > 0 && (
-                    <div style={{
-                      width: 20, height: 20, borderRadius: '50%',
-                      background: cfg.accent, color: '#fff',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 700, flexShrink: 0, alignSelf: 'center',
-                    }}>
-                      {conv.unread_count}
-                    </div>
-                  )}
+                  <div style={{ fontSize: 12, color: conv.unread_count > 0 ? C.textSub : C.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {conv.latest_message?.content || 'No messages yet'}
+                  </div>
                 </div>
-              );
-            })
-          )}
+                {conv.unread_count > 0 && (
+                  <div style={{ width: 17, height: 17, borderRadius: '50%', background: accent, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
+                    {conv.unread_count > 9 ? '9+' : conv.unread_count}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </aside>
 
-      {/* ── CHAT AREA ── */}
-      <main
-        className={`msg-chat${mobileChatOpen ? ' active-mobile' : ''}`}
-        style={{ flex: 1, flexDirection: 'column', background: '#0a1628', minWidth: 0 }}
-      >
+      {/* ══ CHAT AREA ══ */}
+      <main className={`msg-chat${mobileChatOpen ? ' show-mob' : ''}`}
+        style={{ flex: 1, flexDirection: 'column', background: C.chatBg, minWidth: 0 }}>
+
         {selected ? (
           <>
             {/* Chat header */}
-            <div style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid #1e293b',
-              background: '#0f172a',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
+            <div style={{ background: C.headerBg, borderBottom: `1px solid ${C.border}`, padding: '11px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button
-                  className="msg-back-btn"
-                  onClick={() => setMobileChatOpen(false)}
-                  style={{
-                    background: 'none', border: 'none', color: '#94a3b8',
-                    cursor: 'pointer', padding: '4px', display: 'none',
-                    alignItems: 'center',
-                  }}
-                >
-                  <ChevronLeft size={24} />
+                <button className="back-btn icon-btn" onClick={() => setMobileChatOpen(false)}
+                  style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', padding: 6, display: 'none', alignItems: 'center', borderRadius: 7, transition: 'background 0.12s' }}>
+                  <ChevronLeft size={19} />
                 </button>
-                <Avatar name={selected.user?.name || ''} size={38} accent={cfg.accent} />
+                <Avatar name={selected.user?.name || ''} size={34} accent={accent} />
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.user?.name}</div>
-                  <div style={{ fontSize: 11, color: selected.user?.is_online ? '#22c55e' : '#475569' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{selected.user?.name}</div>
+                  <div style={{ fontSize: 11, color: selected.user?.is_online ? C.green : C.textMuted, marginTop: 1 }}>
                     {selected.user?.is_online ? '● Online' : 'Offline'}
                   </div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 2 }}>
-                <button style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer' }}>
-                  <Phone size={18} color="#64748b" />
-                </button>
-                <button style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer' }}>
-                  <Video size={18} color="#64748b" />
-                </button>
+                {([Phone, Video] as any[]).map((Icon: any, i: number) => (
+                  <button key={i} className="icon-btn"
+                    style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', borderRadius: 7, color: C.textMuted, transition: 'background 0.12s' }}>
+                    <Icon size={16} />
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Messages */}
-            <div style={{
-              flex: 1, overflowY: 'auto',
-              padding: '16px',
-              display: 'flex', flexDirection: 'column', gap: 12,
-            }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {messages.length === 0 ? (
-                <div style={{ textAlign: 'center', marginTop: 60, color: '#64748b', fontSize: 14 }}>
-                  No messages yet. Say hello!
+                <div style={{ textAlign: 'center', marginTop: 80, color: C.textMuted, fontSize: 13 }}>
+                  No messages yet. Say hello! 👋
                 </div>
-              ) : (
-                messages.map(msg => (
-                  <div key={msg.id} style={{
-                    display: 'flex',
-                    justifyContent: msg.is_from_me ? 'flex-end' : 'flex-start',
+              ) : messages.map(msg => (
+                <div key={msg.id} style={{ display: 'flex', justifyContent: msg.is_from_me ? 'flex-end' : 'flex-start', animation: 'fadeIn 0.18s ease' }}>
+                  <div style={{
+                    maxWidth: '74%', padding: '10px 14px',
+                    background: msg.is_from_me ? accent : C.bubbleIn,
+                    borderRadius: msg.is_from_me ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    color: C.text, boxShadow: msg.is_from_me ? `0 2px 8px ${accent}30` : 'none',
                   }}>
-                    <div style={{
-                      maxWidth: '78%',
-                      backgroundColor: msg.is_from_me ? cfg.accent : '#1e293b',
-                      padding: '10px 14px',
-                      borderRadius: msg.is_from_me ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                      color: msg.is_from_me ? '#fff' : '#e2e8f0',
-                    }}>
-                      <p style={{ margin: 0, lineHeight: 1.5, fontSize: 14 }}>{msg.content}</p>
-                      <div style={{ fontSize: 10, textAlign: 'right', marginTop: 4, opacity: 0.65 }}>
-                        {fullTime(msg.created_at)}
-                      </div>
+                    <p style={{ margin: 0, lineHeight: 1.55, fontSize: 14 }}>{msg.content}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 4 }}>
+                      <span style={{ fontSize: 10, opacity: 0.55 }}>{fullTime(msg.created_at)}</span>
+                      {msg.is_from_me && (
+                        msg.is_read
+                          ? <CheckCheck size={11} style={{ opacity: 0.65 }} />
+                          : <Check size={11} style={{ opacity: 0.45 }} />
+                      )}
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
               <div ref={bottomRef} />
             </div>
 
-            {/* Input */}
-            <div style={{ padding: '12px 14px', borderTop: '1px solid #1e293b', background: '#0f172a' }}>
+            {/* Input bar */}
+            <div style={{ background: C.headerBg, borderTop: `1px solid ${C.border}`, padding: '11px 14px', flexShrink: 0 }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <button style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0 }}>
-                  <Paperclip size={20} color="#475569" />
+                <button className="icon-btn"
+                  style={{ padding: 9, background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, borderRadius: 8, color: C.textMuted, transition: 'background 0.12s' }}>
+                  <Paperclip size={16} />
                 </button>
-                <textarea
-                  ref={textareaRef}
-                  value={draft}
-                  onChange={e => setDraft(e.target.value)}
-                  placeholder="Type a message..."
-                  rows={1}
-                  style={{
-                    flex: 1, background: '#1e293b',
-                    border: '1px solid #334155', borderRadius: 12,
-                    padding: '10px 14px', color: '#e2e8f0',
-                    fontSize: 14, resize: 'none',
-                    minHeight: 44, maxHeight: 120, outline: 'none',
-                    fontFamily: 'inherit',
-                  }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
+                <textarea ref={textareaRef} value={draft} onChange={e => setDraft(e.target.value)}
+                  placeholder="Type a message…" rows={1}
+                  style={{ ...darkInput, flex: 1, resize: 'none', minHeight: 40, maxHeight: 110, lineHeight: 1.5, fontSize: 14, padding: '10px 14px' }}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                 />
-                <button
-                  onClick={sendMessage}
-                  disabled={!draft.trim() || sending}
-                  style={{
-                    width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                    background: draft.trim() ? cfg.accent : '#1e293b',
-                    border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: draft.trim() ? 'pointer' : 'not-allowed',
-                    transition: 'background 0.2s',
-                  }}
-                >
-                  <Send size={18} color="#fff" />
+                <button onClick={sendMessage} disabled={!draft.trim() || sending}
+                  style={{ width: 40, height: 40, borderRadius: 9, flexShrink: 0, border: 'none', background: draft.trim() ? C.gold : 'rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: draft.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.18s', boxShadow: draft.trim() ? C.goldGlow : 'none', opacity: sending ? 0.7 : 1 }}>
+                  {sending
+                    ? <div style={{ width: 13, height: 13, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                    : <Send size={15} color="#fff" />
+                  }
                 </button>
               </div>
             </div>
           </>
         ) : (
-          <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', color: '#64748b',
-          }}>
-            <div style={{
-              width: 80, height: 80, borderRadius: 24,
-              background: cfg.accent + '15',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
-            }}>
-              <MessageSquarePlus size={40} color={cfg.accent} />
+          /* Empty state */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+            <div style={{ width: 68, height: 68, borderRadius: 18, background: `${accent}14`, border: `1.5px solid ${accent}28`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+              <MessageSquarePlus size={30} color={accent} />
             </div>
-            <h2 style={{ color: '#f1f5f9', marginBottom: 8, fontSize: 18, fontWeight: 600 }}>
-              No conversation selected
-            </h2>
-            <p style={{ fontSize: 14, textAlign: 'center', padding: '0 24px' }}>
-              Select a conversation from the sidebar or start a new chat
+            <div style={{ fontSize: 17, fontWeight: 800, color: C.text, marginBottom: 7, letterSpacing: '-0.01em' }}>No conversation selected</div>
+            <p style={{ fontSize: 13, color: C.textMuted, textAlign: 'center', maxWidth: 250, lineHeight: 1.65, margin: '0 0 22px' }}>
+              Select a conversation from the sidebar or start a new one.
             </p>
+            <button onClick={() => setNewChatOpen(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 22px', background: C.gold, border: 'none', borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: C.goldGlow, fontFamily: 'inherit' }}>
+              <Plus size={15} /> New Conversation
+            </button>
           </div>
         )}
       </main>
 
-      {/* New Chat Modal */}
+      {/* ══ New Chat Modal ══ */}
       {newChatOpen && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(15,23,42,0.95)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: '16px',
-        }}>
-          <div style={{
-            background: '#1e293b', borderRadius: 16,
-            width: '100%', maxWidth: 400, padding: 20,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>New Conversation</h3>
-              <button
-                onClick={() => setNewChatOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-              >
-                <X size={22} />
+        <div onClick={e => { if (e.target === e.currentTarget) setNewChatOpen(false); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(10,17,32,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: C.headerBg, borderRadius: 13, width: '100%', maxWidth: 390, padding: '22px 20px', border: `1px solid ${C.border}`, boxShadow: '0 20px 60px rgba(0,0,0,0.40)', animation: 'fadeIn 0.2s ease' }}>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+              <div>
+                <div style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textMuted, fontWeight: 700, marginBottom: 3 }}>Messaging</div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: C.text, letterSpacing: '-0.01em' }}>New Conversation</div>
+              </div>
+              <button onClick={() => setNewChatOpen(false)} className="icon-btn"
+                style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', padding: 6, borderRadius: 7, transition: 'background 0.12s' }}>
+                <X size={17} />
               </button>
             </div>
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={userQuery}
+
+            <input type="text" placeholder="Search by name or email…" value={userQuery}
               onChange={e => setUserQuery(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 14px',
-                background: '#0f172a', border: '1px solid #334155',
-                borderRadius: 10, color: '#e2e8f0', marginBottom: 12,
-                fontSize: 14, outline: 'none', boxSizing: 'border-box',
-              }}
-            />
-            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+              className="dark-input"
+              style={{ ...darkInput, marginBottom: 10 }} />
+
+            <div style={{ maxHeight: 290, overflowY: 'auto' }}>
+              {foundUsers.length === 0 && userQuery.trim() && (
+                <div style={{ textAlign: 'center', padding: '24px 0', color: C.textMuted, fontSize: 13 }}>No users found</div>
+              )}
               {foundUsers.map(user => (
-                <button
-                  key={user.id}
-                  onClick={() => openConversation(user)}
-                  style={{
-                    width: '100%', padding: '10px 12px',
-                    background: 'transparent', border: 'none',
-                    textAlign: 'left', borderRadius: 8, marginBottom: 4,
-                    display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
-                  }}
-                >
-                  <Avatar name={user.name} size={38} accent={cfg.accent} />
+                <button key={user.id} className="user-row" onClick={() => openConversation(user)}
+                  style={{ width: '100%', padding: '9px 10px', background: 'transparent', border: 'none', textAlign: 'left', borderRadius: 8, marginBottom: 3, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'background 0.12s', fontFamily: 'inherit' }}>
+                  <Avatar name={user.name} size={34} accent={accent} />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: '#f1f5f9' }}>{user.name}</div>
-                    <div style={{ fontSize: 12, color: '#64748b' }}>{user.user_type}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: C.text }}>{user.name}</div>
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 1, textTransform: 'capitalize' }}>{user.user_type}</div>
                   </div>
                 </button>
               ))}

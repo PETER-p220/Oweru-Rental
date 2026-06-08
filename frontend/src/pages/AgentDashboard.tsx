@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Api from '../services/api';
-import { descriptionStyle, formatCurrency, headingStyle, pageStyle, panelStyle, sectionTitleStyle, statCardStyle, statGridStyle, statLabelStyle, statValueStyle, tableStyle, tableWrapStyle, tdStyle, thStyle } from './agent/agentPageStyles';
+
+const formatCurrency = (value: number | string | undefined) => {
+  if (value === undefined || value === null) return 'TZS 0';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS' }).format(num);
+};
 
 const AgentDashboard = () => {
   const [stats, setStats] = useState<any>(null);
@@ -32,69 +37,74 @@ const AgentDashboard = () => {
   }, []);
 
   return (
-    <div style={pageStyle}>
-      {/* ── Overview panel ── */}
-      <section style={panelStyle}>
-        <div style={sectionTitleStyle}>Agent Workspace</div>
-        <h1 style={headingStyle}>Overview</h1>
-        <p style={{ ...descriptionStyle, marginTop: '8px' }}>
-          Your dashboard reads from the Laravel agent endpoints so listings, leads, and commissions stay aligned with the backend.
-        </p>
-        {error && (
-          <div style={{
-            marginTop: '14px',
-            padding: '12px 16px',
-            background: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '8px',
-            color: '#dc2626',
-            fontSize: '14px',
-          }}>
-            {error}
-          </div>
-        )}
-        <div style={{ ...statGridStyle, marginTop: '24px' }}>
-          <div style={statCardStyle('#2563eb')}>
-            <div style={statLabelStyle}>Listings</div>
-            <div style={statValueStyle}>{loading ? '—' : stats?.total_listings || 0}</div>
-          </div>
-          <div style={statCardStyle('#16a34a')}>
-            <div style={statLabelStyle}>Active Listings</div>
-            <div style={statValueStyle}>{loading ? '—' : stats?.active_listings || 0}</div>
-          </div>
-          <div style={statCardStyle('#d97706')}>
-            <div style={statLabelStyle}>Leads</div>
-            <div style={statValueStyle}>{loading ? '—' : stats?.total_leads || 0}</div>
-          </div>
-          <div style={statCardStyle('#7c3aed')}>
-            <div style={statLabelStyle}>Commissions</div>
-            <div style={statValueStyle}>{loading ? '—' : formatCurrency(stats?.total_commissions)}</div>
+    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#F1F5F9', color: '#0F172A', minHeight: '100vh', padding: '0' }}>
+      {/* ── Header ── */}
+      <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
+              Agent Workspace
+            </div>
+            <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 'clamp(20px,3.5vw,28px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>Agent Dashboard</h1>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>
+              Your dashboard reads from the Laravel agent endpoints so listings, leads, and commissions stay aligned with the backend.
+            </p>
           </div>
         </div>
-      </section>
+      </div>
+
+      {/* ── Stats ── */}
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 40px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#2563eb' }} />
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Listings</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.total_listings || 0}</div>
+        </div>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#16a34a' }} />
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Active Listings</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.active_listings || 0}</div>
+        </div>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#d97706' }} />
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Leads</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.total_leads || 0}</div>
+        </div>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#7c3aed' }} />
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Commissions</div>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : formatCurrency(stats?.total_commissions)}</div>
+        </div>
+      </div>
+
+      {/* ── Error Message ── */}
+      {error && (
+        <div style={{ maxWidth: '1280px', margin: '24px auto 0', padding: '12px 16px', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: '8px', color: '#dc2626', fontSize: '14px' }}>
+          {error}
+        </div>
+      )}
 
       {/* ── Listings + Leads ── */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '20px' }}>
+      <div style={{ maxWidth: '1280px', margin: '24px auto 0', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '20px' }}>
 
         {/* Recent Listings */}
-        <div style={panelStyle}>
-          <div style={sectionTitleStyle}>Listings</div>
-          <h2 style={{ margin: '0 0 16px', fontSize: '20px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
+          <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
             Recent Listings
           </h2>
-          <div style={tableWrapStyle}>
-            <table style={tableStyle}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th style={thStyle}>Property</th>
-                  <th style={thStyle}>Owner</th>
-                  <th style={thStyle}>Price</th>
+                  <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Property</th>
+                  <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Owner</th>
+                  <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Price</th>
                 </tr>
               </thead>
               <tbody>
                 {listings.length === 0 ? (
                   <tr>
-                    <td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>
+                    <td style={{ padding: '12px', color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>
                       No listings yet.
                     </td>
                   </tr>
@@ -102,14 +112,14 @@ const AgentDashboard = () => {
                   <tr key={item.id} style={{ transition: 'background 0.15s' }}
                     onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <td style={tdStyle}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #E2E8F0' }}>
                       <div style={{ fontWeight: 500, color: '#1e293b' }}>{item.title}</div>
                       <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.location}</div>
                     </td>
-                    <td style={tdStyle}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #E2E8F0' }}>
                       <div style={{ color: '#475569' }}>{item.owner?.first_name} {item.owner?.last_name}</div>
                     </td>
-                    <td style={{ ...tdStyle, fontWeight: 600, color: '#2563eb' }}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #E2E8F0', fontWeight: 600, color: '#2563eb' }}>
                       {formatCurrency(item.price)}
                     </td>
                   </tr>
@@ -128,24 +138,23 @@ const AgentDashboard = () => {
         </div>
 
         {/* Recent Leads */}
-        <div style={panelStyle}>
-          <div style={sectionTitleStyle}>Pipeline</div>
-          <h2 style={{ margin: '0 0 16px', fontSize: '20px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
+          <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
             Recent Leads
           </h2>
-          <div style={tableWrapStyle}>
-            <table style={tableStyle}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th style={thStyle}>Lead</th>
-                  <th style={thStyle}>Source</th>
-                  <th style={thStyle}>Status</th>
+                  <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Lead</th>
+                  <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Source</th>
+                  <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {leads.length === 0 ? (
                   <tr>
-                    <td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>
+                    <td style={{ padding: '12px', color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>
                       No leads yet.
                     </td>
                   </tr>
@@ -153,16 +162,16 @@ const AgentDashboard = () => {
                   <tr key={item.id}
                     onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <td style={tdStyle}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #E2E8F0' }}>
                       <div style={{ fontWeight: 500, color: '#1e293b' }}>
                         {item.name || item.user?.first_name || 'Lead'}
                       </div>
                       <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.email}</div>
                     </td>
-                    <td style={{ ...tdStyle, color: '#475569', textTransform: 'capitalize' }}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #E2E8F0', color: '#475569', textTransform: 'capitalize' }}>
                       {item.source || 'website'}
                     </td>
-                    <td style={tdStyle}>
+                    <td style={{ padding: '12px', borderBottom: '1px solid #E2E8F0' }}>
                       <StatusBadge status={item.status || 'new'} />
                     </td>
                   </tr>
@@ -179,7 +188,7 @@ const AgentDashboard = () => {
             </Link>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 };

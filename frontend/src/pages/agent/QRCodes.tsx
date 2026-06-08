@@ -69,85 +69,82 @@ const QRCodes = () => {
   const readyCount = items.filter(i => i.qr).length;
 
   return (
-    <div style={{ background: '#0F172A', minHeight: '100vh', padding: '0 0 40px' }}>
+    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#F1F5F9', color: '#0F172A', minHeight: '100vh', padding: '0' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,300;0,400;0,600;1,300&display=swap');
         *,*::before,*::after{box-sizing:border-box;}
         :root{
           --gold:#C89128;--gold-lt:#D4A843;--gold-dim:rgba(200,145,40,0.12);
-          --navy-900:#0F172A;--navy-800:#162035;--navy-700:#1E2D4A;
-          --cream:#F8F8F9;--slate:#94A3B8;--border:rgba(200,145,40,0.18);
+          --slate-800:#1E293B;--slate-700:#334155;--slate-600:#475569;
+          --cream:#F8F8F9;--slate:#94A3B8;--border:#E2E8F0;
           --success:#10b981;--danger:#ef4444;
-          --sans:'Jost',sans-serif;--serif:'Playfair Display',Georgia,serif;
+          --sans:'DM Sans',system-ui,sans-serif;
         }
         @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-        @keyframes qr-reveal{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
 
         .qr-header{
-          background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 100%);
-          border-bottom:1px solid var(--border);padding:40px 24px 32px;
+          background:var(--slate-800);
+          border-bottom:1px solid var(--border);padding:52px 40px 44px;
         }
-        .qr-eyebrow{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);background:var(--gold-dim);border:1px solid var(--border);padding:4px 12px;margin-bottom:14px;}
-        .qr-title{font-family:var(--serif);font-size:clamp(24px,4vw,36px);font-weight:300;color:var(--cream);margin:0 0 8px;letter-spacing:-.02em;}
-        .qr-title em{font-style:italic;color:var(--gold);}
-        .qr-desc{font-family:var(--sans);font-size:13px;color:var(--slate);font-weight:300;line-height:1.65;max-width:540px;margin-bottom:24px;}
+        .qr-eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(200,145,40,0.28);padding:4px 12px;margin-bottom:10px;}
+        .qr-title{font-family:var(--sans);font-size:clamp(20px,3.5vw,28px);font-weight:800;color:#FFFFFF;margin:0 0 8px;letter-spacing:-.02em;}
+        .qr-desc{font-family:var(--sans);font-size:13px;color:var(--slate);font-weight:400;line-height:1.65;max-width:540px;margin-bottom:24px;}
 
-        .qr-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:340px;}
-        .qr-stat{background:var(--navy-800);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
-        .qr-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
-        .qr-stat:nth-child(1)::before{background:var(--gold);}
-        .qr-stat:nth-child(2)::before{background:var(--success);}
-        .qr-stat-label{font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--slate);margin-bottom:8px;}
-        .qr-stat-val{font-family:var(--serif);font-size:28px;font-weight:300;color:var(--cream);}
+        .qr-stats{display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:16px;max-width:1280px;margin:24px auto 0;}
+        .qr-stat{background:#FFFFFF;border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;}
+        .qr-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+        .qr-stat:nth-child(1)::before{background:#38bdf8;}
+        .qr-stat:nth-child(2)::before{background:#22c55e;}
+        .qr-stat-label{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:8px;}
+        .qr-stat-val{font-family:var(--sans);font-size:28px;font-weight:800;color:#0F172A;letter-spacing:-.02em;}
 
-        .qr-body{max-width:800px;margin:0 auto;padding:28px 16px;}
+        .qr-body{max-width:1280px;margin:24px auto 0;padding:0 40px 40px;}
 
-        .qr-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-left:3px solid var(--danger);border-radius:8px;padding:12px 16px;font-family:var(--sans);font-size:13px;color:var(--danger);margin-bottom:20px;}
+        .qr-error{background:rgba(220,38,68,.08);border:1px solid rgba(220,38,68,.25);border-left:3px solid var(--danger);border-radius:8px;padding:12px 16px;font-family:var(--sans);font-size:14px;color:#dc2626;margin-bottom:20px;}
 
         .qr-empty{text-align:center;padding:64px 24px;color:var(--slate);}
-        .qr-empty-ico{width:56px;height:56px;border-radius:16px;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--gold);}
-        .qr-empty-title{font-family:var(--serif);font-size:22px;font-weight:300;color:var(--cream);margin-bottom:6px;}
+        .qr-empty-ico{width:56px;height:56px;border-radius:16px;background:var(--gold-dim);border:1px solid rgba(200,145,40,0.28);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--gold);}
+        .qr-empty-title{font-family:var(--sans);font-size:22px;font-weight:800;color:#0F172A;margin-bottom:6px;}
 
-        .qr-table-container{background:var(--navy-800);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+        .qr-table-container{background:#FFFFFF;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
         .qr-table{width:100%;border-collapse:collapse;font-family:var(--sans);}
-        .qr-table thead{background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 100%);border-bottom:2px solid var(--border);}
-        .qr-table th{padding:14px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--border);}
+        .qr-table thead{background:#F8FAFC;border-bottom:1px solid var(--border);}
+        .qr-table th{padding:12px;text-align:left;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#64748B;border-bottom:1px solid var(--border);}
         .qr-table th:first-child{padding-left:20px;}
         .qr-table th:last-child{padding-right:20px;text-align:center;}
-        .qr-table tbody tr{border-bottom:1px solid rgba(200,145,40,.08);transition:background-color .2s;}
-        .qr-table tbody tr:hover{background:rgba(200,145,40,.04);}
-        .qr-table td{padding:12px 16px;color:var(--cream);font-size:13px;vertical-align:middle;}
+        .qr-table tbody tr{border-bottom:1px solid var(--border);transition:background-color .2s;}
+        .qr-table tbody tr:hover{background:#F8FAFC;}
+        .qr-table td{padding:12px;color:#0F172A;font-size:13px;vertical-align:middle;}
         .qr-table td:first-child{padding-left:20px;}
         .qr-table td:last-child{padding-right:20px;text-align:center;}
 
-        .qr-td-property{font-family:var(--serif);font-size:14px;font-weight:400;color:var(--cream);line-height:1.3;}
-        .qr-td-location{display:flex;align-items:center;gap:5px;font-family:var(--sans);font-size:12px;color:var(--slate);margin-top:2px;}
+        .qr-td-property{font-family:var(--sans);font-size:13px;font-weight:500;color:#0F172A;line-height:1.3;}
+        .qr-td-location{display:flex;align-items:center;gap:4px;font-family:var(--sans);font-size:12px;color:var(--slate);margin-top:4px;}
 
         .qr-td-qr{width:80px;text-align:center;}
         .qr-td-qr img{width:48px;height:48px;border-radius:8px;background:white;padding:4px;object-fit:contain;}
-        .qr-td-qr .placeholder{width:48px;height:48px;border-radius:8px;background:var(--navy-700);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--slate);font-size:10px;margin:0 auto;}
+        .qr-td-qr .placeholder{width:48px;height:48px;border-radius:8px;background:#F1F5F9;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--slate);font-size:10px;margin:0 auto;}
 
         .qr-td-status{text-align:center;}
-        .qr-status{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:20px;}
-        .qr-status.ready{background:rgba(16,185,129,.12);color:var(--success);border:1px solid rgba(16,185,129,.25);}
-        .qr-status.unavail{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.2);}
+        .qr-status{display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:20px;}
+        .qr-status.ready{background:rgba(16,185,129,.08);color:#16a34a;border:1px solid rgba(16,185,129,.2);}
+        .qr-status.unavail{background:rgba(239,68,68,.08);color:#dc2626;border:1px solid rgba(239,68,68,.2);}
         .qr-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-        .qr-status.ready .qr-status-dot{background:var(--success);}
-        .qr-status.unavail .qr-status-dot{background:var(--danger);}
+        .qr-status.ready .qr-status-dot{background:#16a34a;}
+        .qr-status.unavail .qr-status-dot{background:#dc2626;}
 
-        .qr-td-url{font-family:var(--monospace,monospace);font-size:11px;color:var(--gold);}
-        .qr-td-url a{display:flex;align-items:center;gap:6px;color:var(--gold);text-decoration:none;overflow:hidden;}
+        .qr-td-url{font-family:var(--sans);font-size:11px;color:#2563eb;}
+        .qr-td-url a{display:flex;align-items:center;gap:6px;color:#2563eb;text-decoration:none;overflow:hidden;}
         .qr-td-url a span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
-        .qr-td-url a:hover{color:var(--gold-lt);}
+        .qr-td-url a:hover{color:#1d4ed8;}
 
         .qr-td-actions{display:flex;gap:8px;justify-content:center;}
         .qr-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-size:11px;font-weight:600;border-radius:7px;padding:6px 12px;cursor:pointer;transition:all .18s;border:1px solid;white-space:nowrap;}
-        .qr-btn-dl{background:var(--gold);border-color:var(--gold);color:var(--navy-900);}
+        .qr-btn-dl{background:var(--gold);border-color:var(--gold);color:#FFFFFF;}
         .qr-btn-dl:hover{background:var(--gold-lt);border-color:var(--gold-lt);box-shadow:0 2px 8px rgba(200,145,40,.3);}
         .qr-btn-copy{background:transparent;border-color:var(--border);color:var(--slate);}
         .qr-btn-copy:hover{border-color:var(--gold);color:var(--gold);}
-        .qr-btn-copied{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:var(--success);}
+        .qr-btn-copied{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.2);color:#16a34a;}
 
         @media(max-width:768px){
           .qr-table-container{overflow-x:auto;}
@@ -156,28 +153,32 @@ const QRCodes = () => {
           .qr-td-qr img,.qr-td-qr .placeholder{width:40px;height:40px;}
           .qr-td-url a span{max-width:120px;}
           .qr-btn{font-size:10px;padding:5px 8px;}
+          .qr-header{padding:40px 24px 32px;}
+          .qr-body{padding:0 24px 24px;}
         }
       `}</style>
 
       {/* ── Header ── */}
       <div className="qr-header">
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div className="qr-eyebrow">Agent Workspace</div>
-          <h1 className="qr-title">QR <em>Codes</em></h1>
+          <h1 className="qr-title">QR Codes</h1>
           <p className="qr-desc">
             Unique QR codes for each of your listings. Scan to open the property page instantly.
             Download for print marketing — flyers, banners, business cards.
           </p>
-          <div className="qr-stats">
-            <div className="qr-stat">
-              <div className="qr-stat-label">Listings</div>
-              <div className="qr-stat-val">{items.length}</div>
-            </div>
-            <div className="qr-stat">
-              <div className="qr-stat-label">Ready</div>
-              <div className="qr-stat-val">{readyCount}</div>
-            </div>
-          </div>
+        </div>
+      </div>
+
+      {/* ── Stats ── */}
+      <div className="qr-stats">
+        <div className="qr-stat">
+          <div className="qr-stat-label">Listings</div>
+          <div className="qr-stat-val">{items.length}</div>
+        </div>
+        <div className="qr-stat">
+          <div className="qr-stat-label">Ready</div>
+          <div className="qr-stat-val">{readyCount}</div>
         </div>
       </div>
 
@@ -201,8 +202,8 @@ const QRCodes = () => {
                 {[0,1,2,3].map(i => (
                   <tr key={i}>
                     <td>
-                      <div style={{ height:14, width:'75%', borderRadius:4, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite', marginBottom:4 }} />
-                      <div style={{ height:11, width:'50%', borderRadius:4, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                      <div style={{ height:14, width:'75%', borderRadius:4, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite', marginBottom:4 }} />
+                      <div style={{ height:11, width:'50%', borderRadius:4, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
                     </td>
                     <td className="qr-td-qr">
                       <div className="placeholder">...</div>
@@ -214,12 +215,12 @@ const QRCodes = () => {
                       </div>
                     </td>
                     <td className="qr-td-url">
-                      <div style={{ height:11, width:'60%', borderRadius:4, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                      <div style={{ height:11, width:'60%', borderRadius:4, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
                     </td>
                     <td className="qr-td-actions">
                       <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
-                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
-                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
                       </div>
                     </td>
                   </tr>
@@ -238,7 +239,7 @@ const QRCodes = () => {
               </svg>
             </div>
             <div className="qr-empty-title">No QR Codes Yet</div>
-            <p style={{ fontFamily: "'Jost', sans-serif", fontSize: 14, color: '#94A3B8' }}>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 14, color: '#94A3B8' }}>
               QR codes will appear here once your listings are active.
             </p>
           </div>
@@ -333,7 +334,7 @@ const QRCodes = () => {
                             </button>
                           </>
                         ) : (
-                          <span style={{ color: 'var(--slate)', fontSize: '11px' }}>—</span>
+                          <span style={{ color: '#94A3B8', fontSize: '11px' }}>—</span>
                         )}
                       </td>
                     </tr>

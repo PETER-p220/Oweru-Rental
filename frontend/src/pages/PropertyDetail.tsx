@@ -346,15 +346,6 @@ const PropertyDetail = () => {
                     {property.furnished && <span style={pill(t.gold)}>Furnished</span>}
                   </div>
                 </div>
-
-                {/* Price — desktop top-right */}
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.slate600, marginBottom: 4 }}>Monthly Rent</div>
-                  <div style={{ ...serif, fontSize: 30, color: t.gold, lineHeight: 1 }}>
-                    {formatPrice(property.price || 0)}
-                  </div>
-                  <div style={{ ...body, fontSize: 12, color: t.slate600, marginTop: 4 }}>TZS / month</div>
-                </div>
               </div>
             </div>
 

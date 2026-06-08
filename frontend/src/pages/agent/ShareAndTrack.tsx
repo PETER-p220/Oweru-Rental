@@ -102,45 +102,43 @@ const ShareAndTrack = () => {
   };
 
   return (
-    <div style={{ background: '#0F172A', minHeight: '100vh', padding: '0 0 40px' }}>
+    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#F1F5F9', color: '#0F172A', minHeight: '100vh', padding: '0' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,300;0,400;1,300&display=swap');
         *,*::before,*::after{box-sizing:border-box;}
         :root{
           --gold:#C89128;--gold-lt:#D4A843;--gold-dim:rgba(200,145,40,0.12);
-          --navy-900:#0F172A;--navy-800:#162035;--navy-700:#1E2D4A;
-          --cream:#F8F8F9;--slate:#94A3B8;--border:rgba(200,145,40,0.18);
+          --slate-800:#1E293B;--slate-700:#334155;--slate-600:#475569;
+          --cream:#F8F8F9;--slate:#94A3B8;--border:#E2E8F0;
           --success:#10b981;--danger:#ef4444;
-          --sans:'Jost',sans-serif;--serif:'Playfair Display',Georgia,serif;
+          --sans:'DM Sans',system-ui,sans-serif;
         }
         @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
         .sat-header{
-          background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 100%);
-          border-bottom:1px solid var(--border);padding:40px 24px 32px;
+          background:var(--slate-800);
+          border-bottom:1px solid var(--border);padding:52px 40px 44px;
         }
-        .sat-eyebrow{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);background:var(--gold-dim);border:1px solid var(--border);padding:4px 12px;margin-bottom:14px;}
-        .sat-title{font-family:var(--serif);font-size:clamp(24px,4vw,36px);font-weight:300;color:var(--cream);margin:0 0 8px;letter-spacing:-.02em;}
-        .sat-title em{font-style:italic;color:var(--gold);}
-        .sat-desc{font-family:var(--sans);font-size:13px;color:var(--slate);font-weight:300;line-height:1.65;max-width:540px;margin-bottom:24px;}
+        .sat-eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);background:var(--gold-dim);border:1px solid rgba(200,145,40,0.28);padding:4px 12px;margin-bottom:10px;}
+        .sat-title{font-family:var(--sans);font-size:clamp(20px,3.5vw,28px);font-weight:800;color:#FFFFFF;margin:0 0 8px;letter-spacing:-.02em;}
+        .sat-desc{font-family:var(--sans);font-size:13px;color:var(--slate);font-weight:400;line-height:1.65;max-width:540px;margin-bottom:24px;}
 
-        .sat-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-        .sat-stat{background:var(--navy-800);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
-        .sat-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+        .sat-stats{display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:16px;max-width:1280px;margin:24px auto 0;}
+        .sat-stat{background:#FFFFFF;border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;}
+        .sat-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
         .sat-stat:nth-child(1)::before{background:var(--gold);}
         .sat-stat:nth-child(2)::before{background:var(--success);}
         .sat-stat:nth-child(3)::before{background:#f59e0b;}
-        .sat-stat-label{font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--slate);margin-bottom:8px;}
-        .sat-stat-val{font-family:var(--serif);font-size:28px;font-weight:300;color:var(--cream);}
+        .sat-stat-label{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:8px;}
+        .sat-stat-val{font-family:var(--sans);font-size:28px;font-weight:800;color:#0F172A;letter-spacing:-.02em;}
 
-        .sat-body{max-width:760px;margin:0 auto;padding:28px 16px;}
+        .sat-body{max-width:1280px;margin:24px auto 0;padding:0 40px 40px;}
 
         .sat-toolbar{display:flex;gap:8px;margin-bottom:20px;align-items:center;}
-        .sat-search{flex:1;min-width:0;display:flex;align-items:center;background:var(--navy-800);border:1px solid var(--border);border-radius:9px;overflow:hidden;transition:border-color .18s;}
+        .sat-search{flex:1;min-width:0;display:flex;align-items:center;background:#FFFFFF;border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .18s;}
         .sat-search:focus-within{border-color:var(--gold);}
         .sat-search-ico{padding:0 12px;color:var(--slate);display:flex;align-items:center;flex-shrink:0;}
-        .sat-search-inp{flex:1;background:transparent;border:none;outline:none;color:var(--cream);font-family:var(--sans);font-size:13px;padding:10px 10px 10px 0;}
+        .sat-search-inp{flex:1;background:transparent;border:none;outline:none;color:#0F172A;font-family:var(--sans);font-size:14px;padding:10px 10px 10px 0;}
         .sat-search-inp::placeholder{color:rgba(148,163,184,.5);}
         .sat-refresh{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans);font-size:12px;font-weight:600;border-radius:8px;padding:9px 14px;cursor:pointer;white-space:nowrap;transition:all .18s;flex-shrink:0;}
         .sat-refresh:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
@@ -150,36 +148,36 @@ const ShareAndTrack = () => {
         .sat-meta-dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:blink 2s infinite;}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-        .sat-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-left:3px solid var(--danger);border-radius:8px;padding:12px 16px;font-family:var(--sans);font-size:13px;color:var(--danger);margin-bottom:16px;}
+        .sat-error{background:rgba(220,38,68,.08);border:1px solid rgba(220,38,68,.25);border-left:3px solid var(--danger);border-radius:8px;padding:12px 16px;font-family:var(--sans);font-size:14px;color:#dc2626;margin-bottom:16px;}
 
         .sat-empty{text-align:center;padding:56px 24px;color:var(--slate);font-family:var(--sans);font-size:14px;}
-        .sat-empty-ico{width:52px;height:52px;border-radius:14px;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--gold);}
+        .sat-empty-ico{width:52px;height:52px;border-radius:14px;background:var(--gold-dim);border:1px solid rgba(200,145,40,0.28);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--gold);}
 
-        .sat-table-container{background:var(--navy-800);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+        .sat-table-container{background:#FFFFFF;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
         .sat-table{width:100%;border-collapse:collapse;font-family:var(--sans);}
-        .sat-table thead{background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 100%);border-bottom:2px solid var(--border);}
-        .sat-table th{padding:14px 16px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);border-bottom:1px solid var(--border);}
+        .sat-table thead{background:#F8FAFC;border-bottom:1px solid var(--border);}
+        .sat-table th{padding:12px;text-align:left;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#64748B;border-bottom:1px solid var(--border);}
         .sat-table th:first-child{padding-left:20px;width:40px;}
         .sat-table th:last-child{padding-right:20px;text-align:center;width:180px;}
-        .sat-table tbody tr{border-bottom:1px solid rgba(200,145,40,.08);transition:background-color .2s;}
-        .sat-table tbody tr:hover{background:rgba(200,145,40,.04);}
-        .sat-table td{padding:12px 16px;color:var(--cream);font-size:13px;vertical-align:middle;}
+        .sat-table tbody tr{border-bottom:1px solid var(--border);transition:background-color .2s;}
+        .sat-table tbody tr:hover{background:#F8FAFC;}
+        .sat-table td{padding:12px;color:#0F172A;font-size:13px;vertical-align:middle;}
         .sat-table td:first-child{padding-left:20px;}
         .sat-table td:last-child{padding-right:20px;text-align:center;}
 
         .sat-td-num{width:40px;text-align:center;}
-        .sat-td-num-inner{width:28px;height:28px;border-radius:8px;background:var(--gold-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:11px;font-weight:700;color:var(--gold);margin:0 auto;}
+        .sat-td-num-inner{width:28px;height:28px;border-radius:8px;background:var(--gold-dim);border:1px solid rgba(200,145,40,0.28);display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--gold);margin:0 auto;}
 
-        .sat-td-property{font-family:var(--serif);font-size:14px;font-weight:400;color:var(--cream);letter-spacing:-.01em;line-height:1.3;max-width:300px;}
+        .sat-td-property{font-family:var(--sans);font-size:13px;font-weight:500;color:#0F172A;letter-spacing:-.01em;line-height:1.3;max-width:300px;}
 
-        .sat-td-url{font-family:var(--monospace,monospace);font-size:11px;color:var(--gold);}
-        .sat-td-url a{display:flex;align-items:center;gap:6px;color:var(--gold);text-decoration:none;overflow:hidden;}
+        .sat-td-url{font-family:var(--sans);font-size:11px;color:#2563eb;}
+        .sat-td-url a{display:flex;align-items:center;gap:6px;color:#2563eb;text-decoration:none;overflow:hidden;}
         .sat-td-url a span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
-        .sat-td-url a:hover{color:var(--gold-lt);}
+        .sat-td-url a:hover{color:#1d4ed8;}
 
         .sat-td-stats{display:flex;gap:8px;align-items:center;}
         .sat-badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--sans);font-size:11px;font-weight:600;border-radius:20px;padding:3px 10px;border:1px solid;}
-        .sat-badge-clicks{color:#38bdf8;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.2);}
+        .sat-badge-clicks{color:#0ea5e9;background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.2);}
         .sat-badge-shares{color:#f59e0b;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.2);}
         .sat-date{font-family:var(--sans);font-size:11px;color:var(--slate);margin-left:auto;white-space:nowrap;}
 
@@ -187,7 +185,7 @@ const ShareAndTrack = () => {
         .sat-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--sans);font-size:11px;font-weight:600;border-radius:7px;padding:6px 12px;cursor:pointer;transition:all .18s;border:1px solid;white-space:nowrap;}
         .sat-btn-copy{color:var(--gold);background:var(--gold-dim);border-color:rgba(200,145,40,.3);}
         .sat-btn-copy:hover{background:rgba(200,145,40,.2);border-color:var(--gold);}
-        .sat-btn-copied{color:#10b981;background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);}
+        .sat-btn-copied{color:#16a34a;background:rgba(22,163,74,.08);border-color:rgba(22,163,74,.2);}
         .sat-btn-wa{color:#25d366;background:rgba(37,211,102,.08);border-color:rgba(37,211,102,.25);}
         .sat-btn-wa:hover{background:rgba(37,211,102,.15);border-color:rgba(37,211,102,.5);}
 
@@ -198,6 +196,8 @@ const ShareAndTrack = () => {
           .sat-td-property{max-width:200px;font-size:13px;}
           .sat-td-url a span{max-width:120px;}
           .sat-btn{font-size:10px;padding:5px 8px;}
+          .sat-header{padding:40px 24px 32px;}
+          .sat-body{padding:0 24px 24px;}
         }
 
         @media(max-width:600px){
@@ -208,27 +208,29 @@ const ShareAndTrack = () => {
 
       {/* ── Header ── */}
       <div className="sat-header">
-        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div className="sat-eyebrow">Agent Workspace</div>
-          <h1 className="sat-title">Share & <em>Track</em></h1>
+          <h1 className="sat-title">Share & Track</h1>
           <p className="sat-desc">
             Tracking links for your listings. Clicks are recorded automatically when someone opens your link.
             Copy or share via WhatsApp — every share is counted. Auto-refreshes every {POLL_INTERVAL_MS / 1000}s.
           </p>
-          <div className="sat-stats">
-            <div className="sat-stat">
-              <div className="sat-stat-label">Total Links</div>
-              <div className="sat-stat-val">{links.length}</div>
-            </div>
-            <div className="sat-stat">
-              <div className="sat-stat-label">Total Clicks</div>
-              <div className="sat-stat-val">{totalClicks}</div>
-            </div>
-            <div className="sat-stat">
-              <div className="sat-stat-label">Total Shares</div>
-              <div className="sat-stat-val">{totalShares}</div>
-            </div>
-          </div>
+        </div>
+      </div>
+
+      {/* ── Stats ── */}
+      <div className="sat-stats">
+        <div className="sat-stat">
+          <div className="sat-stat-label">Total Links</div>
+          <div className="sat-stat-val">{links.length}</div>
+        </div>
+        <div className="sat-stat">
+          <div className="sat-stat-label">Total Clicks</div>
+          <div className="sat-stat-val">{totalClicks}</div>
+        </div>
+        <div className="sat-stat">
+          <div className="sat-stat-label">Total Shares</div>
+          <div className="sat-stat-val">{totalShares}</div>
         </div>
       </div>
 
@@ -243,7 +245,7 @@ const ShareAndTrack = () => {
             <input className="sat-search-inp" placeholder="Search properties…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <button onClick={() => fetchLinks(true)} disabled={refreshing} className="sat-refresh"
-            style={{ color: refreshing ? 'var(--slate)' : 'var(--gold)', background: 'var(--gold-dim)', border: '1px solid rgba(200,145,40,.25)' }}>
+            style={{ color: refreshing ? '#94A3B8' : '#C89128', background: 'rgba(200,145,40,0.12)', border: '1px solid rgba(200,145,40,0.25)' }}>
             <RefreshIcon spinning={refreshing} />
             {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>
@@ -279,21 +281,21 @@ const ShareAndTrack = () => {
                       <div className="sat-td-num-inner">...</div>
                     </td>
                     <td>
-                      <div style={{ height:14, width:'60%', borderRadius:4, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                      <div style={{ height:14, width:'60%', borderRadius:4, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
                     </td>
                     <td className="sat-td-url">
-                      <div style={{ height:11, width:'75%', borderRadius:4, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                      <div style={{ height:11, width:'75%', borderRadius:4, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
                     </td>
                     <td className="sat-td-stats">
                       <div style={{ display:'flex', gap:8 }}>
-                        <div style={{ width:50, height:20, borderRadius:20, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
-                        <div style={{ width:50, height:20, borderRadius:20, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                        <div style={{ width:50, height:20, borderRadius:20, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                        <div style={{ width:50, height:20, borderRadius:20, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
                       </div>
                     </td>
                     <td className="sat-td-actions">
                       <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
-                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
-                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#1E2D4A 25%,#243350 50%,#1E2D4A 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
+                        <div style={{ width:60, height:28, borderRadius:7, background:'linear-gradient(90deg,#E2E8F0 25%,#F1F5F9 50%,#E2E8F0 75%)', backgroundSize:'200% 100%', animation:'shimmer 1.4s infinite' }} />
                       </div>
                     </td>
                   </tr>
@@ -309,7 +311,7 @@ const ShareAndTrack = () => {
                 <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
               </svg>
             </div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 300, color: '#F8F8F9', marginBottom: 6 }}>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 20, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
               No tracking links found
             </div>
             <div>

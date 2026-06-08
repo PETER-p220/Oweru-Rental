@@ -124,32 +124,30 @@ const AddListing: React.FC = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,300;0,400;1,300&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
         :root{
           --n9:#0F172A;--n8:#162035;--n7:#1E2D4A;
           --gold:#C89128;--gl:#D4A843;--gd:rgba(200,145,40,.12);--gb:rgba(200,145,40,.18);
           --cream:#F8F8F9;--slate:#94A3B8;--bdr:rgba(200,145,40,.18);
           --ok:#10b981;--err:#ef4444;
-          --sans:'Jost',system-ui,sans-serif;--serif:'Playfair Display',Georgia,serif;
+          --sans:'DM Sans',system-ui,sans-serif;
         }
         .al-wrap{max-width:860px;margin:0 auto;padding:0 0 60px;}
         .al-back{display:inline-flex;align-items:center;gap:8px;color:var(--slate);text-decoration:none;font-family:var(--sans);font-size:13px;font-weight:500;margin-bottom:24px;transition:color .2s;letter-spacing:.04em;}
         .al-back:hover{color:var(--gold);}
         .al-eyebrow{display:inline-flex;align-items:center;gap:6px;font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);background:var(--gd);border:1px solid var(--bdr);padding:4px 12px;margin-bottom:12px;}
-        .al-title{font-family:var(--serif);font-size:clamp(26px,4vw,40px);font-weight:300;color:var(--cream);margin-bottom:8px;letter-spacing:-.02em;line-height:1.1;}
-        .al-title em{font-style:italic;color:var(--gold);}
-        .al-subtitle{font-family:var(--sans);font-size:14px;color:var(--slate);font-weight:300;margin-bottom:36px;}
+        .al-title{font-family:var(--sans);font-size:clamp(20px,3.5vw,28px);font-weight:800;color:var(--cream);margin-bottom:8px;letter-spacing:-.02em;line-height:1.15;}
+        .al-subtitle{font-family:var(--sans);font-size:13px;color:var(--slate);font-weight:400;margin-bottom:36px;}
 
         /* Form */
         .al-form{display:flex;flex-direction:column;gap:20px;}
 
         /* Section card */
-        .al-sec{background:var(--n8);border:1px solid var(--bdr);border-radius:14px;overflow:hidden;}
-        .al-sec-head{display:flex;align-items:center;gap:12px;padding:18px 26px;background:linear-gradient(135deg,var(--n9) 0%,var(--n8) 100%);border-bottom:1px solid var(--bdr);position:relative;}
-        .al-sec-head::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gl));}
+        .al-sec{background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;}
+        .al-sec-head{display:flex;align-items:center;gap:12px;padding:18px 26px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;position:relative;}
+        .al-sec-head::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);}
         .al-sec-icon{width:34px;height:34px;border-radius:8px;background:var(--gd);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;color:var(--gold);flex-shrink:0;}
-        .al-sec-title{font-family:var(--serif);font-size:19px;font-weight:400;color:var(--cream);letter-spacing:-.01em;}
+        .al-sec-title{font-family:var(--sans);font-size:18px;font-weight:700;color:var(--n9);letter-spacing:-.01em;}
         .al-sec-body{padding:24px 26px;}
 
         /* Grids */
@@ -159,29 +157,29 @@ const AddListing: React.FC = () => {
 
         /* Fields */
         .al-fld{display:flex;flex-direction:column;gap:6px;}
-        .al-lbl{font-family:var(--sans);font-size:10px;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.14em;display:flex;align-items:center;gap:5px;}
-        .al-inp,.al-ta,.al-sel{background:var(--n7);border:1px solid var(--bdr);color:var(--cream);padding:11px 14px;font-family:var(--sans);font-size:14px;font-weight:400;border-radius:8px;transition:border-color .2s,box-shadow .2s;appearance:none;-webkit-appearance:none;outline:none;width:100%;}
+        .al-lbl{font-family:var(--sans);font-size:11px;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:5px;}
+        .al-inp,.al-ta,.al-sel{background:#F8FAFC;border:1px solid #E2E8F0;color:var(--n9);padding:11px 14px;font-family:var(--sans);font-size:14px;font-weight:400;border-radius:8px;transition:border-color .2s,box-shadow .2s;appearance:none;-webkit-appearance:none;outline:none;width:100%;}
         .al-inp:focus,.al-ta:focus,.al-sel:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,145,40,.1);}
         .al-inp::placeholder,.al-ta::placeholder{color:rgba(148,163,184,.4);}
-        .al-sel option{background:var(--n7);color:var(--cream);}
+        .al-sel option{background:#FFFFFF;color:var(--n9);}
         .al-ta{min-height:120px;resize:vertical;line-height:1.65;}
 
         /* Toggle rows */
-        .al-tog-row{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--n7);border:1px solid var(--bdr);border-radius:10px;cursor:pointer;transition:border-color .2s;margin-bottom:10px;}
+        .al-tog-row{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;cursor:pointer;transition:border-color .2s;margin-bottom:10px;}
         .al-tog-row:last-child{margin-bottom:0;}
         .al-tog-row:hover{border-color:rgba(200,145,40,.4);}
-        .al-tog{width:44px;height:24px;border-radius:12px;background:var(--n9);border:1px solid var(--bdr);position:relative;transition:background .2s,border-color .2s;flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;outline:none;}
-        .al-tog::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--slate);transition:transform .22s,background .22s;}
+        .al-tog{width:44px;height:24px;border-radius:12px;background:#E2E8F0;border:1px solid #CBD5E1;position:relative;transition:background .2s,border-color .2s;flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;outline:none;}
+        .al-tog::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#FFFFFF;transition:transform .22s,background .22s;}
         .al-tog:checked{background:var(--gold);border-color:var(--gold);}
-        .al-tog:checked::after{transform:translateX(20px);background:var(--n9);}
-        .al-tog-main{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--cream);margin-bottom:2px;}
-        .al-tog-sub{font-family:var(--sans);font-size:12px;color:var(--slate);font-weight:300;}
+        .al-tog:checked::after{transform:translateX(20px);background:#FFFFFF;}
+        .al-tog-main{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--n9);margin-bottom:2px;}
+        .al-tog-sub{font-family:var(--sans);font-size:12px;color:var(--slate);font-weight:400;}
 
         /* Upload */
-        .al-upload{border:2px dashed var(--bdr);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:all .2s;background:var(--n7);margin-bottom:18px;display:block;}
+        .al-upload{border:2px dashed #E2E8F0;border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:all .2s;background:#F8FAFC;margin-bottom:18px;display:block;}
         .al-upload:hover{border-color:var(--gold);background:rgba(200,145,40,.04);}
         .al-img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;}
-        .al-img-item{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--n9);border:1px solid var(--bdr);}
+        .al-img-item{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#F8FAFC;border:1px solid #E2E8F0;}
         .al-img-item img{width:100%;height:100%;object-fit:cover;display:block;}
         .al-img-del{position:absolute;top:7px;right:7px;background:rgba(9,15,29,.8);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--cream);transition:background .2s;}
         .al-img-del:hover{background:rgba(239,68,68,.85);}
@@ -191,12 +189,12 @@ const AddListing: React.FC = () => {
         .al-err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:var(--err);padding:13px 16px;border-radius:10px;font-family:var(--sans);font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
 
         /* Actions */
-        .al-acts{display:flex;gap:12px;justify-content:flex-end;padding:18px 26px;background:var(--n9);border:1px solid var(--bdr);border-radius:14px;}
+        .al-acts{display:flex;gap:12px;justify-content:flex-end;padding:18px 26px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;}
         .al-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;font-family:var(--sans);font-size:13px;font-weight:700;border-radius:8px;cursor:pointer;transition:all .2s;text-decoration:none;border:none;letter-spacing:.04em;}
         .al-btn-p{background:var(--gold);color:var(--n9);}
         .al-btn-p:hover:not(:disabled){background:var(--gl);transform:translateY(-1px);}
-        .al-btn-s{background:transparent;color:var(--slate);border:1px solid var(--bdr) !important;}
-        .al-btn-s:hover{color:var(--cream);border-color:var(--gold) !important;}
+        .al-btn-s{background:transparent;color:var(--slate);border:1px solid #E2E8F0 !important;}
+        .al-btn-s:hover{color:var(--n9);border-color:var(--gold) !important;}
         .al-btn:disabled{opacity:.5;cursor:not-allowed;}
         @keyframes spin{to{transform:rotate(360deg)}}
         .spin{width:15px;height:15px;border:2px solid var(--n9);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;}
@@ -210,14 +208,26 @@ const AddListing: React.FC = () => {
         }
       `}</style>
 
-      <div className="al-wrap">
+      {/* Header */}
+      <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
+              Agent Workspace
+            </div>
+            <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 'clamp(20px,3.5vw,28px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>Add New Listing</h1>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>
+              List your property for rent and reach potential tenants across Africa
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="al-wrap" style={{ padding: '24px 40px 0' }}>
         <div>
           <Link to={user?.userType === 'agent' ? '/dashboard/agent/my-listings' : '/dashboard/landlord/my-properties'} className="al-back">
             <ArrowLeft size={14} /> Back to {user?.userType === 'agent' ? 'My Listings' : 'My Properties'}
           </Link>
-          <div className="al-eyebrow"><Building size={10} /> New Listing</div>
-          <h1 className="al-title">Add New <em>Property</em></h1>
-          <p className="al-subtitle">List your property for rent and reach potential tenants across Africa</p>
         </div>
 
         {error && <div className="al-err"><X size={15} style={{flexShrink:0}}/>{error}</div>}

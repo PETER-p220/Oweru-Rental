@@ -5,9 +5,9 @@ import {
   Home, Search, Bell, Settings, LogOut, Menu, Building, Users,
   TrendingUp, DollarSign, Star, BarChart3, FileText, Plus, X,
   ChevronRight, QrCode, Link2, ShieldCheck, CreditCard, Wallet,
-  Receipt, UserCheck, MessageSquare, AlertCircle, PieChart,
-  RefreshCw, Clock, BookOpen, Landmark, Eye, Bed, Bath,
-  Calendar, MapPin, Hotel, Briefcase,
+  Receipt, MessageSquare, AlertCircle, PieChart,
+  RefreshCw, BookOpen, Landmark, Eye,
+  Calendar, Hotel, Briefcase,
 } from 'lucide-react';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
@@ -18,139 +18,134 @@ interface DashboardLayoutProps {
 
 export type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner' | 'commercial';
 
+// ── Pure slate/white token system — no accent colors in nav
+const T = {
+  // Page & surfaces
+  pageBg:      '#F1F5F9',   // slate-100 — page background
+  sidebarBg:   '#0F172A',   // slate-900 — sidebar body
+  headerBg:    '#1E293B',   // slate-800 — topbar + sidebar logo bar
+  cardBg:      '#FFFFFF',
+
+  // Text on light surfaces
+  text:        '#0F172A',   // slate-900
+  textSub:     '#475569',   // slate-600
+  textMuted:   '#94A3B8',   // slate-400
+
+  // Text on dark surfaces (sidebar)
+  textOnDark:  '#F1F5F9',   // slate-100
+  textOnDarkM: '#64748B',   // slate-500
+  textOnDarkS: '#94A3B8',   // slate-400
+
+  // Borders
+  borderDark:  '#1E293B',   // slate-800 — inside sidebar
+  borderLight: '#E2E8F0',   // slate-200 — inside page
+
+  // Slate scale
+  slate200:    '#E2E8F0',
+  slate300:    '#CBD5E1',
+  slate400:    '#94A3B8',
+  slate500:    '#64748B',
+  slate600:    '#475569',
+  slate700:    '#334155',
+  slate800:    '#1E293B',
+  slate900:    '#0F172A',
+
+  // Gold — CTA & active indicator ONLY
+  gold:        '#C89128',
+  goldGlow:    '0 0 8px rgba(200,145,40,0.35)',
+};
+
 const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();
+  const navigate    = useNavigate();
   const { pathname } = useLocation();
-  const { user } = useAuth();
+  const { user }    = useAuth();
 
-  const userType: UserRole = (user?.userType ||
-                           user?.user_type ||
-                           user?.role ||
-                           user?.userRole ||
-                           'tenant') as UserRole;
+  const userType: UserRole = (
+    user?.userType || user?.user_type || user?.role || user?.userRole || 'tenant'
+  ) as UserRole;
 
-  const navigation: Record<UserRole, { name: string; icon: any; href: string; color: string; badge?: string }[]> = {
+  // ── Navigation items — all icons use inherited slate color (no per-item accent)
+  const navigation: Record<UserRole, { name: string; icon: any; href: string; badge?: string }[]> = {
     tenant: [
-      { name: 'Overview',           icon: Home,          href: '',                              color: '#c9a84c' },
-      { name: 'Browse Properties',  icon: Search,        href: '/dashboard/tenant/properties',  color: '#60a5fa' },
-      { name: 'My Applications',    icon: FileText,      href: 'applications',                  color: '#a78bfa' },
-      { name: 'Saved Properties',   icon: Star,          href: 'saved-properties',              color: '#f59e0b' },
-      { name: 'Digital Contracts',  icon: FileText,      href: 'digital-contracts',             color: '#34d399' },
-      { name: 'Rent Payments',      icon: CreditCard,    href: 'payments',                      color: '#10b981' },
-      { name: 'Payment History',    icon: Receipt,       href: 'payment-history',               color: '#6ee7b7' },
-      { name: 'Messages',           icon: MessageSquare, href: 'messages',                      color: '#f87171' },
-      { name: 'Notifications',      icon: Bell,          href: 'notifications',                 color: '#fb923c' },
+      { name: 'Overview',          icon: Home,          href: ''                             },
+      { name: 'Browse Properties', icon: Search,        href: '/dashboard/tenant/properties' },
+      { name: 'My Applications',   icon: FileText,      href: 'applications'                 },
+      { name: 'Saved Properties',  icon: Star,          href: 'saved-properties'             },
+      { name: 'Digital Contracts', icon: FileText,      href: 'digital-contracts'            },
+      { name: 'Rent Payments',     icon: CreditCard,    href: 'payments'                     },
+      { name: 'Payment History',   icon: Receipt,       href: 'payment-history'              },
+      { name: 'Messages',          icon: MessageSquare, href: 'messages'                     },
+      { name: 'Notifications',     icon: Bell,          href: 'notifications'                },
     ],
     landlord: [
-      { name: 'Overview',           icon: Home,          href: '',                color: '#c9a84c' },
-      { name: 'My Properties',      icon: Building,      href: 'my-properties',   color: '#f59e0b' },
-      { name: 'Add Property',       icon: Plus,          href: 'add-property',    color: '#34d399' },
-      { name: 'Applications',       icon: FileText,      href: 'applications',    color: '#60a5fa' },
-      { name: 'My Tenants',         icon: Users,         href: 'tenants',         color: '#a78bfa' },
-      { name: 'Digital Contracts',  icon: BookOpen,      href: 'digital-contracts', color: '#f472b6' },
-      { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection', color: '#10b981' },
-      { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts',        color: '#6ee7b7' },
-      { name: 'Commission Reports', icon: PieChart,      href: 'commissions',     color: '#fb923c' },
-      { name: 'Analytics',          icon: BarChart3,     href: 'analytics',       color: '#f87171' },
-      { name: 'Messages',           icon: MessageSquare, href: 'messages',        color: '#94a3b8' },
+      { name: 'Overview',           icon: Home,          href: ''               },
+      { name: 'My Properties',      icon: Building,      href: 'my-properties'  },
+      { name: 'Add Property',       icon: Plus,          href: 'add-property'   },
+      { name: 'Applications',       icon: FileText,      href: 'applications'   },
+      { name: 'My Tenants',         icon: Users,         href: 'tenants'        },
+      { name: 'Digital Contracts',  icon: BookOpen,      href: 'digital-contracts' },
+      { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection'},
+      { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts'       },
+      { name: 'Commission Reports', icon: PieChart,      href: 'commissions'    },
+      { name: 'Analytics',          icon: BarChart3,     href: 'analytics'      },
+      { name: 'Messages',           icon: MessageSquare, href: 'messages'       },
     ],
     agent: [
-      { name: 'Overview',           icon: Home,          href: '',               color: '#c9a84c' },
-      { name: 'My Listings',        icon: Building,      href: 'my-listings',    color: '#f59e0b' },
-      { name: 'Add Listing',        icon: Plus,          href: 'listings/add',   color: '#34d399' },
-      { name: 'Linked Owners',      icon: Landmark,      href: 'linked-owners',  color: '#60a5fa' },
-      { name: 'Share & Track',      icon: Link2,         href: 'tracking',       color: '#a78bfa' },
-      { name: 'QR Codes',           icon: QrCode,        href: 'qr-codes',       color: '#f472b6' },
-      { name: 'Leads & Visitors',   icon: Eye,           href: 'leads',          color: '#38bdf8' },
-      { name: 'Applications',       icon: FileText,      href: 'applications',   color: '#94a3b8' },
-      { name: 'My Commissions',     icon: DollarSign,    href: 'commissions',    color: '#10b981' },
-      { name: 'Payout History',     icon: Receipt,       href: 'payouts',        color: '#6ee7b7' },
-      { name: 'Analytics',          icon: TrendingUp,    href: 'analytics',      color: '#f87171' },
-      { name: 'Messages',           icon: MessageSquare, href: 'messages',       color: '#fb923c' },
+      { name: 'Overview',         icon: Home,          href: ''              },
+      { name: 'My Listings',      icon: Building,      href: 'my-listings'   },
+      { name: 'Add Listing',      icon: Plus,          href: 'listings/add'  },
+      { name: 'Linked Owners',    icon: Landmark,      href: 'linked-owners' },
+      { name: 'Share & Track',    icon: Link2,         href: 'tracking'      },
+      { name: 'QR Codes',         icon: QrCode,        href: 'qr-codes'      },
+      { name: 'Leads & Visitors', icon: Eye,           href: 'leads'         },
+      { name: 'Applications',     icon: FileText,      href: 'applications'  },
+      { name: 'My Commissions',   icon: DollarSign,    href: 'commissions'   },
+      { name: 'Payout History',   icon: Receipt,       href: 'payouts'       },
+      { name: 'Analytics',        icon: TrendingUp,    href: 'analytics'     },
+      { name: 'Messages',         icon: MessageSquare, href: 'messages'      },
     ],
     admin: [
-      { name: 'Overview',             icon: Home,        href: '',                   color: '#c9a84c' },
-      { name: 'Users',                icon: Users,       href: 'users',              color: '#60a5fa' },
-      { name: 'Properties',           icon: Building,    href: 'properties',         color: '#f59e0b' },
-      { name: 'Add Oweru Properties', icon: Plus,        href: 'oweru-properties',   color: '#c9a84c' },
-      { name: 'BNB Properties',       icon: Hotel,       href: 'bnb-properties',     color: '#f472b6' },
-      { name: 'Transactions',         icon: RefreshCw,   href: 'transactions',       color: '#6ee7b7' },
-      { name: 'Commission',           icon: PieChart,    href: 'commission',         color: '#10b981' },
-      { name: 'Payments',             icon: CreditCard,  href: 'payments',           color: '#f472b6' },
-      { name: 'Contracts',            icon: BookOpen,    href: 'contracts',          color: '#a78bfa' },
-      { name: 'Verification',         icon: ShieldCheck, href: 'verification',       color: '#34d399' },
-      { name: 'Alerts',               icon: AlertCircle, href: 'alerts',             color: '#f87171' },
-      { name: 'Settings',             icon: Settings,    href: 'settings',           color: '#fb923c' },
+      { name: 'Overview',             icon: Home,        href: ''                 },
+      { name: 'Users',                icon: Users,       href: 'users'            },
+      { name: 'Properties',           icon: Building,    href: 'properties'       },
+      { name: 'Add Oweru Properties', icon: Plus,        href: 'oweru-properties' },
+      { name: 'BNB Properties',       icon: Hotel,       href: 'bnb-properties'   },
+      { name: 'Transactions',         icon: RefreshCw,   href: 'transactions'     },
+      { name: 'Commission',           icon: PieChart,    href: 'commission'       },
+      { name: 'Payments',             icon: CreditCard,  href: 'payments'         },
+      { name: 'Contracts',            icon: BookOpen,    href: 'contracts'        },
+      { name: 'Verification',         icon: ShieldCheck, href: 'verification'     },
+      { name: 'Alerts',               icon: AlertCircle, href: 'alerts'           },
+      { name: 'Settings',             icon: Settings,    href: 'settings'         },
     ],
     bnb_owner: [
-      { name: 'Overview',          icon: Home,          href: '',                  color: '#c9a84c' },
-      { name: 'My BNB Properties', icon: Hotel,         href: 'bnb-properties',    color: '#f472b6' },
-      { name: 'Add Property',      icon: Plus,          href: 'bnb-properties/add', color: '#34d399' },
-      { name: 'Bookings',          icon: Calendar,      href: 'bnb-bookings',      color: '#60a5fa' },
-      { name: 'Reviews',           icon: Star,          href: 'bnb-reviews',       color: '#f59e0b' },
-      { name: 'Analytics',         icon: BarChart3,     href: 'bnb-analytics',     color: '#a78bfa' },
-      { name: 'Messages',          icon: MessageSquare, href: 'messages',          color: '#f87171' },
-      { name: 'Settings',          icon: Settings,      href: 'settings',          color: '#fb923c' },
+      { name: 'Overview',          icon: Home,          href: ''                    },
+      { name: 'My BNB Properties', icon: Hotel,         href: 'bnb-properties'      },
+      { name: 'Add Property',      icon: Plus,          href: 'bnb-properties/add'  },
+      { name: 'Bookings',          icon: Calendar,      href: 'bnb-bookings'        },
+      { name: 'Reviews',           icon: Star,          href: 'bnb-reviews'         },
+      { name: 'Analytics',         icon: BarChart3,     href: 'bnb-analytics'       },
+      { name: 'Messages',          icon: MessageSquare, href: 'messages'            },
+      { name: 'Settings',          icon: Settings,      href: 'settings'            },
     ],
     commercial: [
-      { name: 'Overview',        icon: Home,          href: '',               color: '#c9a84c' },
-      { name: 'My Properties',   icon: Building,      href: 'my-properties',  color: '#f59e0b' },
-      { name: 'Add Property',    icon: Plus,          href: 'properties/add', color: '#34d399' },
-      { name: 'Applications',    icon: FileText,      href: 'applications',   color: '#60a5fa' },
-      { name: 'Analytics',       icon: BarChart3,     href: 'analytics',      color: '#a78bfa' },
-      { name: 'Reports',         icon: PieChart,      href: 'reports',        color: '#fb923c' },
-      { name: 'Profile',         icon: Briefcase,     href: 'profile',        color: '#38bdf8' },
-      { name: 'Settings',        icon: Settings,      href: 'settings',       color: '#94a3b8' },
+      { name: 'Overview',      icon: Home,          href: ''               },
+      { name: 'My Properties', icon: Building,      href: 'my-properties'  },
+      { name: 'Add Property',  icon: Plus,          href: 'properties/add' },
+      { name: 'Applications',  icon: FileText,      href: 'applications'   },
+      { name: 'Analytics',     icon: BarChart3,     href: 'analytics'      },
+      { name: 'Reports',       icon: PieChart,      href: 'reports'        },
+      { name: 'Profile',       icon: Briefcase,     href: 'profile'        },
+      { name: 'Settings',      icon: Settings,      href: 'settings'       },
     ],
   };
 
-  const roleConfig: Record<UserRole, { label: string; accent: string; sidebarBg: string; border: string }> = {
-    tenant:     { label: 'Tenant',     accent: '#70c490', sidebarBg: 'linear-gradient(160deg,#0c1610 0%,#111a14 100%)', border: 'rgba(112,196,144,0.12)' },
-    landlord:   { label: 'Landlord',   accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1507 0%,#1f1a0b 100%)', border: 'rgba(37,99,235,0.12)'   },
-    agent:      { label: 'Dalali',     accent: '#38bdf8', sidebarBg: 'linear-gradient(160deg,#05101a 0%,#0c1824 100%)', border: 'rgba(56,189,248,0.12)'   },
-    admin:      { label: 'Admin',      accent: '#f87171', sidebarBg: 'linear-gradient(160deg,#1a0505 0%,#1f0c0c 100%)', border: 'rgba(248,113,113,0.12)'  },
-    bnb_owner:  { label: 'BNB Owner',  accent: '#f472b6', sidebarBg: 'linear-gradient(160deg,#2a0f1a 0%,#3f1425 100%)', border: 'rgba(244,114,182,0.12)'  },
-    commercial: { label: 'Commercial', accent: '#c9a84c', sidebarBg: 'linear-gradient(160deg,#1a1200 0%,#221a00 100%)', border: 'rgba(201,168,76,0.15)'   },
+  // Role config — label only (no per-role accent colors)
+  const roleLabel: Record<UserRole, string> = {
+    tenant: 'Tenant', landlord: 'Landlord', agent: 'Agent',
+    admin: 'Admin', bnb_owner: 'BNB Owner', commercial: 'Commercial',
   };
-
-  const cfg = roleConfig[userType] ?? roleConfig.tenant;
-  const dashboardRoot = `/dashboard/${userType}`;
-
-  const handleLogout = async () => {
-    try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-      });
-    } catch (e) {
-      console.error('Logout error:', e);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      navigate('/login');
-    }
-  };
-
-  const getFullPath = (href: string): string => {
-    if (href === '') return dashboardRoot;
-    if (href.startsWith('/')) return href;
-    return `${dashboardRoot}/${href}`;
-  };
-
-  const isActive = (href: string): boolean => {
-    const fullPath = getFullPath(href);
-    if (href === '') return pathname === fullPath || pathname === '/dashboard';
-    return pathname === fullPath || pathname.startsWith(fullPath + '/');
-  };
-
-  const initials =
-    `${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}` || 'U';
-
-  const navItems = navigation[userType] ?? navigation.tenant;
 
   const sectionMap: Record<UserRole, { label: string; items: string[] }[]> = {
     tenant: [
@@ -165,21 +160,20 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { label: 'Insights',   items: ['Analytics','Messages'] },
     ],
     agent: [
-      { label: 'Listings',  items: ['Overview','My Listings','Add Listing','Linked Owners'] },
-      { label: 'Tracking',  items: ['Share & Track','QR Codes','Leads & Visitors','Applications'] },
-      { label: 'Finance',   items: ['My Commissions','Payout History'] },
-      { label: 'Insights',  items: ['Analytics','Messages'] },
+      { label: 'Listings', items: ['Overview','My Listings','Add Listing','Linked Owners'] },
+      { label: 'Tracking', items: ['Share & Track','QR Codes','Leads & Visitors','Applications'] },
+      { label: 'Finance',  items: ['My Commissions','Payout History'] },
+      { label: 'Insights', items: ['Analytics','Messages'] },
     ],
     admin: [
-      { label: 'Platform',   items: ['Overview','Users','Properties','Verification'] },
-      { label: 'Operations', items: ['Transactions','Commission','Payments','Contracts'] },
+      { label: 'Platform',   items: ['Overview','Users','Properties','Verification','Add Oweru Properties'] },
+      { label: 'Operations', items: ['Transactions','Commission','Payments','Contracts','BNB Properties'] },
       { label: 'Monitoring', items: ['Alerts','Settings'] },
     ],
     bnb_owner: [
       { label: 'Properties', items: ['Overview','My BNB Properties','Add Property'] },
       { label: 'Bookings',   items: ['Bookings','Reviews'] },
-      { label: 'Analytics',  items: ['Analytics','Messages'] },
-      { label: 'Settings',   items: ['Settings'] },
+      { label: 'Insights',   items: ['Analytics','Messages','Settings'] },
     ],
     commercial: [
       { label: 'Properties', items: ['Overview','My Properties','Add Property'] },
@@ -188,418 +182,307 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     ],
   };
 
-  const sections = sectionMap[userType] ?? sectionMap.tenant;
+  const dashboardRoot = `/dashboard/${userType}`;
+  const navItems      = navigation[userType] ?? navigation.tenant;
+  const sections      = sectionMap[userType]  ?? sectionMap.tenant;
+  const label         = roleLabel[userType]   ?? 'User';
 
-  const roleQuickLinks: Record<UserRole, {
-    primary: string; primaryLabel: string; primaryIcon: any;
-    secondary: string; secondaryLabel: string; secondaryIcon: any;
-    settings?: string; settingsLabel?: string;
-  }> = {
-    tenant:     { primary: getFullPath('messages'),      primaryLabel: 'Messages',     primaryIcon: MessageSquare, secondary: getFullPath('notifications'),  secondaryLabel: 'Notifications', secondaryIcon: Bell,        settings: getFullPath('settings'), settingsLabel: 'Account Settings'  },
-    landlord:   { primary: getFullPath('tenants'),       primaryLabel: 'Tenants',      primaryIcon: Users,         secondary: getFullPath('my-properties'),  secondaryLabel: 'Properties',    secondaryIcon: Building,    settings: getFullPath('settings'), settingsLabel: 'Account Settings'  },
-    agent:      { primary: getFullPath('leads'),         primaryLabel: 'Leads',        primaryIcon: Eye,           secondary: getFullPath('tracking'),       secondaryLabel: 'Tracking',      secondaryIcon: Link2,       settings: getFullPath('settings'), settingsLabel: 'Account Settings'  },
-    admin:      { primary: getFullPath('verification'),  primaryLabel: 'Verification', primaryIcon: ShieldCheck,   secondary: getFullPath('alerts'),         secondaryLabel: 'Alerts',        secondaryIcon: AlertCircle, settings: getFullPath('settings'), settingsLabel: 'System Settings'   },
-    bnb_owner:  { primary: getFullPath('bnb-bookings'),  primaryLabel: 'Bookings',     primaryIcon: Calendar,      secondary: getFullPath('bnb-reviews'),    secondaryLabel: 'Reviews',       secondaryIcon: Star,        settings: getFullPath('settings'), settingsLabel: 'Account Settings'  },
-    commercial: { primary: getFullPath('my-properties'), primaryLabel: 'Properties',   primaryIcon: Building,      secondary: getFullPath('applications'),   secondaryLabel: 'Applications',  secondaryIcon: FileText,    settings: getFullPath('settings'), settingsLabel: 'Business Settings' },
+  const getFullPath = (href: string) => {
+    if (href === '') return dashboardRoot;
+    if (href.startsWith('/')) return href;
+    return `${dashboardRoot}/${href}`;
   };
 
-  const quickLinks = roleQuickLinks[userType] ?? roleQuickLinks.tenant;
-  const settingsPath = quickLinks.settings ?? dashboardRoot;
-  const PrimaryQuickIcon = quickLinks.primaryIcon;
-  const SecondaryQuickIcon = quickLinks.secondaryIcon;
-  const settingsLabel = quickLinks.settingsLabel ?? 'Account Settings';
+  const isActive = (href: string) => {
+    const fp = getFullPath(href);
+    if (href === '') return pathname === fp || pathname === '/dashboard';
+    return pathname === fp || pathname.startsWith(fp + '/');
+  };
+
+  const initials =
+    `${user?.firstName?.charAt(0) ?? ''}${user?.lastName?.charAt(0) ?? ''}` || 'U';
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+      });
+    } catch (e) { console.error('Logout error:', e); }
+    finally { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/login'); }
+  };
 
   return (
-    <div style={{
-      fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-      background: 'var(--bg-primary)',
-      color: 'var(--text-primary)',
-      minHeight: '100vh',
-      display: 'flex',
-    }}>
+    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: T.pageBg, color: T.text, minHeight: '100vh', display: 'flex' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap');
-
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes dot-pulse { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
 
-        :root {
-          --accent: ${cfg.accent};
-          --border: ${cfg.border};
-        }
-
+        /* ── Scrollbar ── */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb { background: ${T.slate700}; border-radius: 4px; }
 
-        /* ── Sidebar ── */
+        /* ══ SIDEBAR ══ */
         .dl-sidebar {
-          width: 256px;
-          background: ${cfg.sidebarBg};
-          border-right: 1px solid var(--border);
-          display: flex;
-          flex-direction: column;
-          flex-shrink: 0;
-          position: sticky;
-          top: 0;
-          height: 100vh;
+          width: 244px; flex-shrink: 0;
+          background: ${T.sidebarBg};
+          border-right: 1px solid ${T.borderDark};
+          display: flex; flex-direction: column;
+          position: sticky; top: 0; height: 100vh;
           overflow: hidden;
-          transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+          transition: transform 0.30s cubic-bezier(0.22,1,0.36,1);
           z-index: 100;
         }
+        .dl-sidebar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
 
-        .dl-sidebar-scroll {
-          flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-        }
-
+        /* Logo bar — slate-800 strip at top of sidebar */
         .dl-logo-bar {
-          padding: 22px 24px 20px;
-          border-bottom: 1px solid var(--border);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+          padding: 16px 18px;
+          background: ${T.headerBg};
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          display: flex; align-items: center; justify-content: space-between;
           flex-shrink: 0;
         }
-
-        .dl-logo { text-decoration: none; display: flex; align-items: baseline; }
-        .dl-tagline { font-size: 9px; font-weight: 400; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-secondary, #6b7280); margin-top: 2px; }
-
         .dl-close-btn {
-          display: none;
-          background: none; border: none;
-          color: var(--text-secondary, #6b7280); cursor: pointer; padding: 6px;
-          transition: color 0.2s;
-          border-radius: 4px;
+          display: none; background: none; border: none; padding: 6px;
+          color: ${T.textOnDarkM}; cursor: pointer; border-radius: 6px; align-items: center;
+          transition: background 0.15s, color 0.15s;
         }
-        .dl-close-btn:hover { color: var(--text-primary, #fff); }
+        .dl-close-btn:hover { background: rgba(255,255,255,0.08); color: ${T.textOnDark}; }
 
+        /* User block */
         .dl-user {
-          padding: 18px 24px 16px;
-          border-bottom: 1px solid var(--border);
+          padding: 14px 18px 13px;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
           flex-shrink: 0;
         }
-
         .dl-avatar {
-          width: 38px; height: 38px;
-          background: rgba(37,99,235,0.08);
-          border: 1px solid rgba(37,99,235,0.22);
-          border-radius: 2px;
+          width: 36px; height: 36px; border-radius: 50%;
+          background: ${T.slate700}; border: 1.5px solid ${T.slate600};
           display: flex; align-items: center; justify-content: center;
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 15px; font-weight: 500;
-          color: var(--accent);
-          letter-spacing: 0.04em;
-          margin-bottom: 11px;
-          flex-shrink: 0;
+          font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 10px;
+          letter-spacing: -0.01em;
         }
-
         .dl-user-name {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 16px; font-weight: 500;
-          color: var(--text-primary, #fff); letter-spacing: 0.01em;
-          margin-bottom: 2px;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          font-size: 13px; font-weight: 700; color: ${T.textOnDark};
+          margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-
         .dl-user-email {
-          font-size: 11px; font-weight: 300;
-          color: var(--text-secondary, #6b7280); margin-bottom: 10px;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          font-size: 11px; color: ${T.textOnDarkM};
+          margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-
+        /* Role badge — pure slate, no accent bg */
         .dl-role-tag {
           display: inline-flex; align-items: center; gap: 6px;
-          font-size: 9px; font-weight: 500;
-          letter-spacing: 0.2em; text-transform: uppercase;
-          color: var(--accent);
-          border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-          padding: 4px 10px;
-          background: color-mix(in srgb, var(--accent) 6%, transparent);
-          border-radius: 2px;
+          font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+          padding: 3px 9px; border-radius: 4px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.10);
+          color: ${T.slate300};
         }
-
         .dl-role-dot {
           width: 5px; height: 5px; border-radius: 50%;
-          background: var(--accent);
-          flex-shrink: 0;
-          box-shadow: 0 0 6px var(--accent);
-          animation: glow-pulse 2.5s ease-in-out infinite;
+          background: ${T.gold}; flex-shrink: 0;
+          animation: dot-pulse 2.5s ease-in-out infinite;
+          box-shadow: 0 0 6px rgba(200,145,40,0.50);
         }
 
-        @keyframes glow-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-
-        .dl-nav { padding: 8px 0 12px; }
-
+        /* Nav */
+        .dl-nav { padding: 4px 0 8px; }
         .dl-nav-section {
-          padding: 14px 24px 4px;
-          font-size: 9px; font-weight: 500;
-          letter-spacing: 0.22em; text-transform: uppercase;
-          color: rgba(122,112,96,0.45);
+          padding: 12px 18px 5px;
+          font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+          color: ${T.slate500};
           display: flex; align-items: center; gap: 8px;
         }
-        .dl-nav-section::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, rgba(122,112,96,0.15), transparent); }
+        .dl-nav-section::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.06); }
 
         .dl-nav-link {
-          display: flex; align-items: center; gap: 11px;
-          padding: 9px 24px;
-          text-decoration: none;
-          color: var(--text-secondary, #6b7280);
-          font-size: 12.5px; font-weight: 400;
-          transition: all 0.18s;
+          display: flex; align-items: center; gap: 10px;
+          padding: 8px 18px; text-decoration: none;
+          color: ${T.slate400};
+          font-size: 13px; font-weight: 500;
           border-left: 2px solid transparent;
-          position: relative;
+          transition: background 0.12s, color 0.12s, border-left-color 0.12s;
         }
-        .dl-nav-link:hover { color: var(--nav-color, var(--text-primary, #fff)); background: var(--nav-hover-bg, rgba(255,255,255,0.03)); border-left-color: var(--nav-color, rgba(37,99,235,0.3)); }
-        .dl-nav-link.active { color: var(--nav-color, var(--accent)); background: var(--nav-active-bg, rgba(37,99,235,0.07)); border-left-color: var(--nav-color, var(--accent)); }
-
-        .dl-nav-link-icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .dl-nav-link:hover {
+          color: ${T.textOnDark};
+          background: rgba(255,255,255,0.05);
+          border-left-color: ${T.slate500};
+        }
+        /* Active — white text on slate-700 bg, gold left border */
+        .dl-nav-link.active {
+          color: #fff;
+          background: ${T.slate700};
+          border-left-color: ${T.gold};
+          font-weight: 700;
+        }
+        .dl-nav-link.active .dl-nav-icon { color: ${T.gold}; }
+        .dl-nav-icon { width:15px; height:15px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 
         .dl-nav-badge {
-          margin-left: auto;
-          font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
-          padding: 2px 6px; border-radius: 999px;
-          background: rgba(248,113,113,0.15); color: #f87171;
-          border: 1px solid rgba(248,113,113,0.2);
+          margin-left: auto; font-size: 9px; font-weight: 700; padding: 2px 7px;
+          border-radius: 999px; background: rgba(220,38,38,0.14); color: #F87171;
+          border: 1px solid rgba(220,38,38,0.22);
         }
 
+        /* Sidebar footer */
         .dl-sidebar-footer {
-          padding: 14px 24px 18px;
-          border-top: 1px solid var(--border);
-          display: flex; flex-direction: column; gap: 1px;
-          flex-shrink: 0;
+          padding: 10px 18px 14px;
+          border-top: 1px solid rgba(255,255,255,0.06);
+          display: flex; flex-direction: column; gap: 1px; flex-shrink: 0;
         }
-
-        .dl-sidebar-footer-btn {
-          display: flex; align-items: center; gap: 11px;
-          padding: 9px 0;
-          background: none; border: none;
-          color: var(--text-secondary, #6b7280);
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12.5px; font-weight: 400;
-          cursor: pointer; text-decoration: none;
-          transition: color 0.18s; text-align: left;
-          border-radius: 2px;
+        .dl-footer-btn {
+          display: flex; align-items: center; gap: 9px; padding: 9px 4px;
+          background: none; border: none; color: ${T.slate500};
+          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+          cursor: pointer; text-decoration: none; text-align: left; border-radius: 6px;
+          transition: color 0.15s, background 0.15s;
         }
-        .dl-sidebar-footer-btn:hover { color: var(--text-primary, #fff); }
-        .dl-sidebar-footer-btn.danger:hover { color: #e07070; }
+        .dl-footer-btn:hover { color: ${T.textOnDark}; background: rgba(255,255,255,0.05); }
+        .dl-footer-btn.danger { color: ${T.slate500}; }
+        .dl-footer-btn.danger:hover { color: #FCA5A5; background: rgba(220,38,38,0.07); }
 
-        /* ── Main area ── */
-        .dl-main {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          min-height: 100vh;
-          overflow: hidden;
-          min-width: 0;
-          background: var(--bg-primary);
-        }
+        /* ══ MAIN ══ */
+        .dl-main { flex:1; display:flex; flex-direction:column; min-height:100vh; overflow:hidden; min-width:0; background:${T.pageBg}; }
 
+        /* Topbar — slate-800 */
         .dl-topbar {
-          background: rgba(14,14,14,0.95);
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-          padding: 0 36px;
-          height: 58px;
-          display: flex; align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          flex-shrink: 0;
-          position: sticky;
-          top: 0; z-index: 50;
-          backdrop-filter: blur(12px);
+          background: ${T.headerBg};
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          padding: 0 24px; height: 54px;
+          display: flex; align-items: center; justify-content: space-between; gap: 12px;
+          flex-shrink: 0; position: sticky; top: 0; z-index: 50;
         }
-
-        .dl-topbar-left { display: flex; align-items: center; gap: 14px; }
+        .dl-topbar-left { display:flex; align-items:center; gap:10px; }
 
         .dl-menu-toggle {
-          display: none;
-          background: none; border: 1px solid rgba(255,255,255,0.07);
-          color: var(--text-secondary, #6b7280); cursor: pointer;
-          padding: 7px; border-radius: 4px;
-          transition: all 0.2s; align-items: center; justify-content: center;
+          display: none; background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.10);
+          color: ${T.textOnDark}; cursor: pointer; padding: 7px; border-radius: 8px;
+          align-items: center; justify-content: center; transition: background 0.15s;
         }
-        .dl-menu-toggle:hover { color: var(--text-primary, #fff); border-color: rgba(255,255,255,0.15); }
+        .dl-menu-toggle:hover { background: rgba(255,255,255,0.12); }
 
-        .dl-breadcrumb { display: flex; align-items: center; gap: 7px; }
-
+        /* Breadcrumb */
+        .dl-breadcrumb { display:flex; align-items:center; gap:5px; }
         .dl-bc-home {
-          font-size: 10px; font-weight: 400;
-          letter-spacing: 0.12em; text-transform: uppercase;
-          color: rgba(122,112,96,0.5); text-decoration: none;
-          transition: color 0.18s;
+          font-size:11px; font-weight:500; letter-spacing:0.10em; text-transform:uppercase;
+          color:${T.slate500}; text-decoration:none; transition:color 0.15s;
         }
-        .dl-bc-home:hover { color: var(--text-secondary, #6b7280); }
+        .dl-bc-home:hover { color:${T.textOnDark}; }
+        .dl-bc-sep { color:${T.slate600}; display:flex; align-items:center; }
+        .dl-bc-current { font-size:11px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; color:${T.slate300}; }
 
-        .dl-bc-sep { color: rgba(122,112,96,0.25); display: flex; align-items: center; }
+        .dl-topbar-right { display:flex; align-items:center; gap:2px; }
+        .dl-topbar-divider { width:1px; height:16px; background:${T.slate700}; margin:0 4px; }
 
-        .dl-bc-current {
-          font-size: 10px; font-weight: 500;
-          letter-spacing: 0.12em; text-transform: uppercase;
-          color: var(--accent);
-        }
-
-        .dl-topbar-right { display: flex; align-items: center; gap: 3px; }
-
-        .dl-topbar-btn {
-          width: 34px; height: 34px;
-          background: transparent;
-          border: 1px solid transparent;
-          color: var(--text-secondary, #6b7280);
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer; text-decoration: none; border-radius: 4px;
-          transition: all 0.18s;
-        }
-        .dl-topbar-btn:hover { color: var(--text-primary, #fff); border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); }
-
-        .dl-topbar-divider { width: 1px; height: 18px; background: rgba(255,255,255,0.06); margin: 0 4px; }
-
+        /* Role pill — slate, no accent bg */
         .dl-topbar-role {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 9px; font-weight: 500;
-          letter-spacing: 0.18em; text-transform: uppercase;
-          color: var(--accent);
-          padding: 4px 10px;
-          border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-          background: color-mix(in srgb, var(--accent) 5%, transparent);
-          border-radius: 2px;
-          white-space: nowrap;
+          display:flex; align-items:center; gap:6px;
+          font-size:9px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase;
+          color:${T.slate300}; padding:4px 10px;
+          border:1px solid rgba(255,255,255,0.10);
+          background:rgba(255,255,255,0.06);
+          border-radius:4px; white-space:nowrap;
         }
 
-        .dl-content {
-          flex: 1;
-          padding: 36px 40px;
-          overflow-y: auto;
-          overflow-x: hidden;
+        /* Topbar icon buttons */
+        .dl-topbar-btn {
+          width:34px; height:34px; background:transparent;
+          border:1px solid transparent; color:${T.slate500};
+          display:flex; align-items:center; justify-content:center;
+          cursor:pointer; text-decoration:none; border-radius:8px;
+          transition: color 0.15s, background 0.15s, border-color 0.15s;
         }
+        .dl-topbar-btn:hover { color:${T.textOnDark}; background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.10); }
+        .dl-logout-btn { color: rgba(248,113,113,0.45); }
+        .dl-logout-btn:hover { color:#FCA5A5 !important; background:rgba(220,38,38,0.08) !important; border-color:rgba(220,38,38,0.20) !important; }
 
-        .dl-overlay {
-          position: fixed; inset: 0;
-          background: rgba(0,0,0,0.75);
-          z-index: 90;
-          backdrop-filter: blur(6px);
-        }
+        /* Content */
+        .dl-content { flex:1; padding:28px 32px; overflow-y:auto; overflow-x:hidden; }
 
-        /* ── Tablet breakpoint ── */
+        /* Overlay */
+        .dl-overlay { position:fixed; inset:0; background:rgba(10,16,28,0.72); z-index:90; backdrop-filter:blur(4px); }
+
+        /* ── Responsive ── */
         @media (max-width: 1024px) {
           .dl-sidebar {
-            position: fixed;
-            top: 0; left: 0; bottom: 0;
+            position: fixed; top:0; left:0; bottom:0;
             transform: translateX(-100%);
-            box-shadow: 8px 0 40px rgba(0,0,0,0.6);
+            box-shadow: 8px 0 32px rgba(0,0,0,0.45);
           }
           .dl-sidebar.open { transform: translateX(0); }
-          .dl-close-btn { display: flex; }
+          .dl-close-btn  { display: flex; }
           .dl-menu-toggle { display: flex; }
-          .dl-topbar { padding: 0 20px; }
-          .dl-content { padding: 28px 20px; }
+          .dl-topbar { padding: 0 18px; }
+          .dl-content { padding: 22px 18px; }
           .dl-topbar-role { display: none; }
-          .dl-nav-link { padding: 12px 24px; font-size: 14px; }
-          .dl-nav-section { padding: 16px 24px 8px; font-size: 11px; }
         }
-
-        /* ── Mobile breakpoint ── */
         @media (max-width: 768px) {
-          .dl-sidebar { width: min(280px, 85vw); }
-          .dl-topbar { padding: 0 16px; height: 56px; }
-          .dl-content { padding: 20px 16px; }
+          .dl-sidebar { width: min(256px, 84vw); }
+          .dl-topbar { padding: 0 14px; height: 50px; }
+          .dl-content { padding: 16px 14px; }
           .dl-topbar-divider { display: none; }
-          .dl-topbar-right { gap: 2px; }
-          .dl-topbar-btn { width: 36px; height: 36px; }
-          .dl-breadcrumb .dl-bc-current { display: none; }
-          .dl-nav-link { padding: 12px 20px; font-size: 14px; }
-          .dl-nav-section { padding: 12px 20px 4px; font-size: 10px; }
-          .dl-logo-bar { padding: 16px 20px; }
-          .dl-user { padding: 16px 20px; }
-          .dl-sidebar-footer { padding: 12px 20px 16px; }
-          .dl-user-name { font-size: 15px; }
-          .dl-user-email { font-size: 10px; }
+          .dl-bc-current { display: none; }
         }
-
-        /* ── Small Mobile breakpoint ── */
         @media (max-width: 480px) {
-          .dl-sidebar { width: min(260px, 90vw); }
-          .dl-topbar { padding: 0 12px; height: 52px; }
-          .dl-content { padding: 16px 12px; }
-          .dl-topbar-right { gap: 1px; }
-          .dl-topbar-btn { width: 32px; height: 32px; }
-          .dl-breadcrumb { gap: 4px; }
-          .dl-nav-link { padding: 10px 16px; font-size: 13px; }
-          .dl-nav-section { padding: 10px 16px 2px; font-size: 9px; }
-          .dl-logo-bar { padding: 12px 16px; }
-          .dl-user { padding: 12px 16px; }
-          .dl-sidebar-footer { padding: 8px 16px 12px; }
-          .dl-user-name { font-size: 14px; }
-          .dl-user-email { font-size: 9px; }
-          .dl-avatar { width: 32px; height: 32px; font-size: 13px; }
-          .dl-tagline { font-size: 8px; }
-          .dl-nav-link-icon { margin-right: 8px; }
-          .dl-nav-badge { font-size: 8px; padding: 2px 6px; }
-        }
-
-        /* ── Enhanced Mobile Grid Support ── */
-        @media (max-width: 768px) {
-          .dl-content > * { max-width: 100%; }
-          .dl-content > [style*="grid"] { grid-template-columns: 1fr !important; gap: 12px !important; }
-          .dl-content > [style*="display: grid"] { grid-template-columns: 1fr !important; gap: 12px !important; }
-        }
-
-        @media (max-width: 480px) {
-          .dl-content > * { max-width: 100%; }
-          .dl-content > [style*="grid"] { grid-template-columns: 1fr !important; gap: 8px !important; }
-          .dl-content > [style*="display: grid"] { grid-template-columns: 1fr !important; gap: 8px !important; }
+          .dl-topbar { padding: 0 10px; height: 46px; }
+          .dl-content { padding: 12px 10px; }
+          .dl-topbar-btn { width: 30px; height: 30px; }
         }
       `}</style>
 
-      {sidebarOpen && (
-        <div className="dl-overlay" onClick={() => setSidebarOpen(false)} />
-      )}
+      {sidebarOpen && <div className="dl-overlay" onClick={() => setSidebarOpen(false)} />}
 
       {/* ══ SIDEBAR ══ */}
       <aside className={`dl-sidebar${sidebarOpen ? ' open' : ''}`}>
 
+        {/* Logo bar — slate-800 */}
         <div className="dl-logo-bar">
           <div>
-            <Link to="/" className="dl-logo">
-              <img src={LOGO} alt="OWERU" style={{ height: '24px', width: 'auto' }} />
+            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+              <img src={LOGO} alt="OWERU" style={{ height: 22, width: 'auto' }} />
             </Link>
-            <div className="dl-tagline">Real Estate Management</div>
+            <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: T.slate500, marginTop: 4 }}>
+              Real Estate Management
+            </div>
           </div>
           <button className="dl-close-btn" onClick={() => setSidebarOpen(false)}>
-            <X size={15} />
+            <X size={14} />
           </button>
         </div>
 
+        {/* User block */}
         <div className="dl-user">
           <div className="dl-avatar">{initials}</div>
           <div className="dl-user-name">{user?.firstName} {user?.lastName}</div>
           <div className="dl-user-email">{user?.email}</div>
           <div className="dl-role-tag">
             <span className="dl-role-dot" />
-            {cfg.label}
+            {label}
           </div>
         </div>
 
+        {/* Nav */}
         <div className="dl-sidebar-scroll">
           <nav className="dl-nav">
-            {sections.map((section) => {
-              const sectionItems = navItems.filter((item) => section.items.includes(item.name));
-              if (!sectionItems.length) return null;
+            {sections.map(section => {
+              const items = navItems.filter(i => section.items.includes(i.name));
+              if (!items.length) return null;
               return (
                 <div key={section.label}>
                   <div className="dl-nav-section">{section.label}</div>
-                  {sectionItems.map((item) => (
+                  {items.map(item => (
                     <Link
                       key={item.name}
                       to={getFullPath(item.href)}
                       className={`dl-nav-link${isActive(item.href) ? ' active' : ''}`}
                       onClick={() => setSidebarOpen(false)}
-                      style={{
-                        '--nav-color': item.color,
-                        '--nav-hover-bg': `${item.color}10`,
-                        '--nav-active-bg': `${item.color}18`,
-                      } as React.CSSProperties}
                     >
-                      <span className="dl-nav-link-icon" style={{ color: isActive(item.href) ? item.color : undefined }}>
+                      <span className="dl-nav-icon">
                         <item.icon size={14} />
                       </span>
                       {item.name}
@@ -612,13 +495,14 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           </nav>
         </div>
 
+        {/* Footer */}
         <div className="dl-sidebar-footer">
-          <Link to={settingsPath} className="dl-sidebar-footer-btn" onClick={() => setSidebarOpen(false)}>
-            <Settings size={13} style={{ color: 'var(--text-secondary, #6b7280)' }} />
-            {settingsLabel}
+          <Link to={`${dashboardRoot}/settings`} className="dl-footer-btn" onClick={() => setSidebarOpen(false)}>
+            <Settings size={13} style={{ flexShrink: 0 }} />
+            Account Settings
           </Link>
-          <button className="dl-sidebar-footer-btn danger" onClick={handleLogout}>
-            <LogOut size={13} />
+          <button className="dl-footer-btn danger" onClick={handleLogout}>
+            <LogOut size={13} style={{ flexShrink: 0 }} />
             Sign Out
           </button>
         </div>
@@ -627,16 +511,17 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       {/* ══ MAIN ══ */}
       <main className="dl-main">
 
+        {/* Topbar — slate-800 */}
         <header className="dl-topbar">
           <div className="dl-topbar-left">
             <button className="dl-menu-toggle" onClick={() => setSidebarOpen(true)}>
-              <Menu size={16} />
+              <Menu size={15} />
             </button>
             <nav className="dl-breadcrumb">
-              <Link to={`/dashboard/${userType}`} className="dl-bc-home">Dashboard</Link>
+              <Link to={dashboardRoot} className="dl-bc-home">Dashboard</Link>
               {title && title !== 'Dashboard' && (
                 <>
-                  <ChevronRight size={9} className="dl-bc-sep" />
+                  <ChevronRight size={9} className="dl-bc-sep" style={{ color: T.slate600 }} />
                   <span className="dl-bc-current">{title}</span>
                 </>
               )}
@@ -644,34 +529,29 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           </div>
 
           <div className="dl-topbar-right">
+            {/* Role pill — slate only */}
             <span className="dl-topbar-role">
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', boxShadow: '0 0 5px var(--accent)', flexShrink: 0 }} />
-              {cfg.label}
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: T.gold, boxShadow: T.goldGlow, flexShrink: 0, animation: 'dot-pulse 2.5s ease-in-out infinite' }} />
+              {label}
             </span>
             <div className="dl-topbar-divider" />
-            <Link to={quickLinks.primary} className="dl-topbar-btn" title={quickLinks.primaryLabel}>
-              <PrimaryQuickIcon size={14} />
+            <Link to={`${dashboardRoot}/messages`} className="dl-topbar-btn" title="Messages">
+              <MessageSquare size={14} />
             </Link>
-            <Link to={quickLinks.secondary} className="dl-topbar-btn" title={quickLinks.secondaryLabel}>
-              <SecondaryQuickIcon size={14} />
+            <Link to={`${dashboardRoot}/notifications`} className="dl-topbar-btn" title="Notifications">
+              <Bell size={14} />
             </Link>
             <div className="dl-topbar-divider" />
-            <Link to={settingsPath} className="dl-topbar-btn" title="Settings">
+            <Link to={`${dashboardRoot}/settings`} className="dl-topbar-btn" title="Settings">
               <Settings size={14} />
             </Link>
-            <button
-              className="dl-topbar-btn"
-              onClick={handleLogout}
-              title="Sign out"
-              style={{ color: 'rgba(224,112,112,0.5)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#e07070')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(224,112,112,0.5)')}
-            >
+            <button className="dl-topbar-btn dl-logout-btn" onClick={handleLogout} title="Sign out">
               <LogOut size={14} />
             </button>
           </div>
         </header>
 
+        {/* Page content — slate-100 bg */}
         <div className="dl-content">
           {children}
         </div>
