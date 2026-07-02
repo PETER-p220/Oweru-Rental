@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2, ShieldCheck, ArrowRight, Phone, Info } from 'lucide-react';
+import {
+  Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign,
+  CheckCircle, Loader2, ShieldCheck, Phone, Info, X,
+} from 'lucide-react';
 import Api from '../../services/api';
-import { palette, formatCurrency, formatDate, getStatusColor } from './tenantPageStyles';
 
 interface ApplicationItem {
   id: number;
@@ -22,37 +24,236 @@ interface ApplicationItem {
   };
 }
 
+/* ─────────────────────────────────────────────────────────────────
+   Design tokens — matches the Properties (browse listings) page:
+   slate-100 #F1F5F9 (page bg) · slate-800 #1E293B (header/nav)
+   white #FFFFFF (cards) · slate-200 #E2E8F0 (border)
+   slate-900 #0F172A (text-1) · slate-600 #475569 (text-2)
+   slate-400 #94A3B8 (text-muted) · gold #C89128 (CTA buttons)
+───────────────────────────────────────────────────────────────── */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;}
 
-const StatusBadge = ({ status, rejectionReason }: { status?: string; rejectionReason?: string }) => {
-  const s = status || 'unknown';
-  const color = getStatusColor(status);
+.ap-root{
+  --slate-100:#F1F5F9;
+  --slate-200:#E2E8F0;
+  --slate-400:#94A3B8;
+  --slate-600:#475569;
+  --slate-800:#1E293B;
+  --slate-900:#0F172A;
+  --white:#FFFFFF;
+  --gold:#C89128;
+  --gold-light:#D4A84B;
+  --gold-pale:rgba(200,145,40,0.10);
+  --gold-border:rgba(200,145,40,0.28);
+  --success:#16A34A;
+  --success-bg:#DCFCE7;
+  --danger:#DC2626;
+  --danger-bg:#FFE4E6;
+  --warning:#D97706;
+  --warning-bg:#FEF3C7;
+  --info:#2563EB;
+  --info-bg:#DBEAFE;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --r:12px;--r-sm:8px;
 
-  return (
-    <div>
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        padding: '6px 12px',
-        background: `${color}15`,
-        border: `1px solid ${color}30`,
-        color,
-        fontSize: '10px',
-        fontWeight: 700,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        borderRadius: '9999px',
-        fontFamily: "'Jost', sans-serif",
-      }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-        {s.charAt(0).toUpperCase() + s.slice(1)}
-      </span>
-      {s === 'rejected' && rejectionReason && (
-        <div style={{ marginTop: 8, fontSize: 12, color: palette.red, lineHeight: 1.4 }}>
-          {rejectionReason}
-        </div>
-      )}
-    </div>
-  );
-};
+  font-family:var(--sans);
+  background:var(--slate-100);
+  color:var(--slate-900);
+  min-height:100vh;
+  padding-bottom:80px;
+}
+
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Header ── */
+.ap-header{background:var(--slate-800);border-bottom:1px solid var(--slate-200);}
+.ap-header-inner{
+  max-width:1280px;margin:0 auto;padding:52px 40px 44px;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;
+}
+.ap-eyebrow{
+  font-size:10px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:10px;display:inline-flex;align-items:center;gap:10px;
+  background:var(--gold-pale);border:1px solid var(--gold-border);padding:4px 12px;
+}
+.ap-title{font-size:clamp(20px,3.5vw,28px);font-weight:800;line-height:1.15;letter-spacing:-.02em;color:var(--white);margin:0;}
+.ap-subtitle{font-size:13px;font-weight:400;color:var(--slate-400);margin:8px 0 0;}
+.ap-search-wrap{position:relative;min-width:280px;max-width:400px;}
+.ap-search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--slate-400);}
+.ap-search-input{
+  width:100%;background:var(--slate-900);border:1px solid var(--slate-200);color:var(--white);
+  padding:12px 16px 12px 48px;border-radius:12px;font-family:var(--sans);font-size:14px;
+  outline:none;transition:border-color .18s,box-shadow .18s;
+}
+.ap-search-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-pale);}
+.ap-search-input::placeholder{color:var(--slate-400);}
+
+/* ── Body ── */
+.ap-body{max-width:1280px;margin:0 auto;padding:0 16px;}
+
+.ap-error{
+  display:flex;align-items:center;gap:10px;color:var(--danger);background:var(--danger-bg);
+  border:1px solid rgba(220,38,38,.25);padding:14px 16px;border-radius:var(--r-sm);margin:20px 0;font-size:13px;
+}
+
+.ap-loading{text-align:center;padding:100px 20px;color:var(--slate-600);}
+.ap-loading svg{animation:spin 1s linear infinite;margin-bottom:12px;}
+
+.ap-empty{text-align:center;padding:90px 20px;color:var(--slate-600);}
+.ap-empty svg{margin:0 auto 20px;opacity:.5;color:var(--slate-400);}
+.ap-empty-title{font-size:18px;font-weight:700;color:var(--slate-900);margin-bottom:8px;}
+.ap-empty-desc{max-width:280px;margin:0 auto;line-height:1.6;}
+
+/* ── Application Card ── */
+.ap-card{
+  background:var(--white);border:1px solid var(--slate-200);border-radius:var(--r);
+  padding:20px;margin:16px 0;transition:box-shadow .22s,transform .22s,border-color .22s;
+}
+.ap-card:hover{box-shadow:0 12px 32px rgba(0,0,0,.08);transform:translateY(-2px);border-color:var(--gold-border);}
+.ap-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;}
+.ap-card-title{font-weight:700;font-size:16.5px;line-height:1.3;color:var(--slate-900);}
+.ap-card-location{display:flex;align-items:center;gap:6px;color:var(--slate-600);font-size:13px;margin-top:6px;}
+.ap-card-location svg{color:var(--gold);flex-shrink:0;}
+.ap-card-price{text-align:right;font-weight:700;font-size:18px;color:var(--gold);white-space:nowrap;}
+
+.ap-card-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.ap-card-date{font-size:12.5px;color:var(--slate-400);display:flex;align-items:center;gap:5px;}
+
+.ap-card-message{
+  background:var(--slate-100);border:1px solid var(--slate-200);border-radius:10px;
+  padding:12px 14px;font-size:13.5px;color:var(--slate-600);line-height:1.55;margin-bottom:18px;
+}
+
+.ap-next-step{
+  display:flex;align-items:flex-start;gap:8px;background:var(--gold-pale);border:1px solid var(--gold-border);
+  border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--slate-600);line-height:1.5;
+}
+.ap-next-step svg{color:var(--gold);flex-shrink:0;margin-top:2px;}
+
+.ap-pay-btn{
+  width:100%;background:var(--gold);color:var(--white);border:none;padding:14px;border-radius:var(--r-sm);
+  font-weight:700;font-size:14.5px;display:flex;align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;transition:background .18s;box-shadow:0 4px 14px rgba(200,145,40,.28);
+}
+.ap-pay-btn:hover{background:var(--gold-light);}
+
+.ap-paid-banner{
+  display:flex;align-items:center;justify-content:center;gap:8px;background:var(--success-bg);
+  color:var(--success);padding:12px;border-radius:var(--r-sm);font-weight:600;font-size:14px;
+}
+
+/* ── Status Badge ── */
+.ap-status{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;border-radius:9999px;font-family:var(--sans);
+}
+.ap-status-dot{width:6px;height:6px;border-radius:50%;}
+.ap-rejection-reason{margin-top:8px;font-size:12px;color:var(--danger);line-height:1.4;}
+
+/* ── Payment Modal ── */
+.ap-overlay{
+  position:fixed;inset:0;z-index:2000;background:rgba(15,23,42,.6);backdrop-filter:blur(8px) saturate(1.4);
+  display:flex;align-items:center;justify-content:center;padding:20px 16px;
+}
+.ap-modal{
+  background:var(--white);border:1px solid var(--slate-200);border-radius:20px;width:100%;max-width:420px;
+  max-height:94vh;overflow-y:auto;box-shadow:0 30px 70px rgba(0,0,0,.25);
+}
+.ap-modal-head{
+  background:linear-gradient(135deg,var(--slate-800) 0%,var(--slate-900) 100%);
+  padding:24px 24px 20px;border-bottom:1px solid var(--slate-200);position:relative;
+}
+.ap-modal-head::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--gold),var(--gold-light));
+}
+.ap-modal-eyebrow{font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--gold);margin-bottom:4px;}
+.ap-modal-title{font-size:22px;font-weight:700;color:var(--white);}
+.ap-modal-sub{color:var(--slate-400);font-size:13px;margin-top:4px;}
+.ap-modal-close{
+  position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:9px;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:var(--slate-400);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s;
+}
+.ap-modal-close:hover{background:rgba(255,255,255,.2);color:var(--white);}
+.ap-modal-close:disabled{opacity:.4;cursor:not-allowed;}
+
+.ap-modal-body{padding:24px;}
+
+.ap-property-summary{
+  background:var(--slate-100);border:1px solid var(--slate-200);border-radius:14px;padding:16px;margin-bottom:24px;
+}
+.ap-property-name{font-weight:600;font-size:15.5px;color:var(--slate-900);}
+.ap-property-loc{display:flex;align-items:center;gap:6px;color:var(--slate-600);margin-top:6px;font-size:13px;}
+.ap-property-loc svg{color:var(--gold);}
+.ap-amount-row{
+  margin-top:14px;padding-top:14px;border-top:1px solid var(--slate-200);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.ap-amount-label{color:var(--slate-600);font-size:13px;}
+.ap-amount-value{font-size:22px;font-weight:700;color:var(--gold);}
+
+.ap-field-label{
+  font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--slate-600);
+  text-transform:uppercase;margin-bottom:10px;
+}
+.ap-provider-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.ap-provider-btn{
+  flex:1;padding:12px 10px;font-size:12px;font-weight:600;border:2px solid var(--slate-200);
+  background:var(--slate-100);color:var(--slate-600);border-radius:10px;transition:all .18s;cursor:pointer;
+}
+.ap-provider-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ap-provider-btn[data-active='true'].tigo{border-color:#00D4AA;background:rgba(0,212,170,.10);color:#049c7c;}
+.ap-provider-btn[data-active='true'].mpesa{border-color:#00C853;background:rgba(0,200,83,.10);color:#0a9142;}
+.ap-provider-btn[data-active='true'].airtel{border-color:#FF6B35;background:rgba(255,107,53,.10);color:#c94e21;}
+.ap-provider-btn[data-active='true'].halopesa{border-color:#9C27B0;background:rgba(156,39,176,.10);color:#7b1d8a;}
+
+.ap-phone-wrap{position:relative;margin-bottom:24px;}
+.ap-phone-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--slate-400);}
+.ap-phone-input{
+  width:100%;padding:14px 14px 14px 52px;background:var(--slate-100);border:1px solid var(--slate-200);
+  border-radius:12px;color:var(--slate-900);font-size:16px;outline:none;font-family:var(--sans);
+  transition:border-color .18s,box-shadow .18s;
+}
+.ap-phone-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-pale);}
+.ap-phone-input:disabled{opacity:.6;}
+.ap-phone-input::placeholder{color:var(--slate-400);}
+
+.ap-secure-row{
+  display:flex;align-items:center;gap:10px;background:var(--success-bg);border:1px solid rgba(22,163,74,.25);
+  border-radius:var(--r-sm);padding:12px 16px;margin-bottom:24px;font-size:13px;color:var(--success);
+}
+
+.ap-result{
+  padding:14px 16px;border-radius:var(--r-sm);margin-bottom:20px;display:flex;gap:12px;font-size:13.5px;line-height:1.5;
+}
+.ap-result.success{background:var(--success-bg);border:1px solid rgba(22,163,74,.3);color:var(--success);}
+.ap-result.waiting{background:var(--gold-pale);border:1px solid var(--gold-border);color:var(--gold);}
+.ap-result.error{background:var(--danger-bg);border:1px solid rgba(220,38,38,.3);color:var(--danger);}
+.ap-result svg{flex-shrink:0;}
+
+.ap-modal-actions{display:flex;gap:12px;}
+.ap-btn-cancel{
+  flex:1;padding:14px;background:var(--slate-100);border:1px solid var(--slate-200);color:var(--slate-900);
+  border-radius:var(--r-sm);font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .18s;
+}
+.ap-btn-cancel:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+.ap-btn-cancel:disabled{opacity:.5;cursor:not-allowed;}
+.ap-btn-pay{
+  flex:1.8;padding:14px;background:var(--gold);color:var(--white);border:none;border-radius:var(--r-sm);
+  font-weight:700;font-size:15px;font-family:var(--sans);cursor:pointer;transition:background .18s;
+  display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 20px rgba(200,145,40,.3);
+}
+.ap-btn-pay:hover:not(:disabled){background:var(--gold-light);}
+.ap-btn-pay:disabled{opacity:.55;cursor:not-allowed;box-shadow:none;}
+
+@media(max-width:768px){
+  .ap-header-inner{padding:36px 20px 28px;}
+  .ap-body{padding:0 12px;}
+}
+`;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const parseRent = (price?: number | string): number => {
@@ -62,9 +263,101 @@ const parseRent = (price?: number | string): number => {
   return parseFloat(cleaned) || 0;
 };
 
-const makeOrderId = (appId: number) => `RENT-${appId}-${Date.now()}`;
+const formatCurrency = (price?: number | string): string => {
+  const n = parseRent(price);
+  if (!n) return 'Price on request';
+  return `Tsh ${n.toLocaleString()}`;
+};
+
+const formatDate = (d?: string): string => {
+  if (!d) return '';
+  try {
+    return new Date(d).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return d;
+  }
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: '#D97706',
+  approved: '#16A34A',
+  accepted: '#16A34A',
+  rejected: '#DC2626',
+  cancelled: '#94A3B8',
+  unknown: '#94A3B8',
+};
+const getStatusColor = (status?: string) => STATUS_COLORS[status || 'unknown'] ?? '#94A3B8';
+
+const PROVIDERS = [
+  { value: 'tigo', label: 'Tigo Pesa' },
+  { value: 'mpesa', label: 'M-Pesa' },
+  { value: 'airtel', label: 'Airtel Money' },
+  { value: 'halopesa', label: 'Halopesa' },
+] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+const StatusBadge = memo(({ status, rejectionReason }: { status?: string; rejectionReason?: string }) => {
+  const s = status || 'unknown';
+  const color = getStatusColor(status);
+
+  return (
+    <div>
+      <span className="ap-status" style={{ background: `${color}15`, border: `1px solid ${color}30`, color }}>
+        <span className="ap-status-dot" style={{ background: color }} />
+        {s.charAt(0).toUpperCase() + s.slice(1)}
+      </span>
+      {s === 'rejected' && rejectionReason && (
+        <div className="ap-rejection-reason">{rejectionReason}</div>
+      )}
+    </div>
+  );
+});
+StatusBadge.displayName = 'StatusBadge';
+
+const ApplicationCard = memo(({ item, onPay }: { item: ApplicationItem; onPay: (id: number) => void }) => (
+  <div className="ap-card">
+    <div className="ap-card-top">
+      <div style={{ flex: 1 }}>
+        <div className="ap-card-title">{item.property?.title || 'Untitled Property'}</div>
+        <div className="ap-card-location">
+          <MapPin size={14} />
+          {item.property?.location || 'Location not specified'}
+        </div>
+      </div>
+      <div className="ap-card-price">{formatCurrency(item.property?.price)}</div>
+    </div>
+
+    <div className="ap-card-meta">
+      <StatusBadge status={item.status} rejectionReason={item.rejection_reason} />
+      <div className="ap-card-date">
+        <Clock size={13} /> {formatDate(item.created_at)}
+      </div>
+    </div>
+
+    {item.message && <div className="ap-card-message">"{item.message}"</div>}
+
+    <div>
+      {item.next_step && (
+        <div className="ap-next-step">
+          <Info size={16} />
+          {item.next_step}
+        </div>
+      )}
+
+      {item.can_pay_rent ? (
+        <button className="ap-pay-btn" onClick={() => onPay(item.id)}>
+          <DollarSign size={18} /> Pay Rent Now
+        </button>
+      ) : item.rent_paid ? (
+        <div className="ap-paid-banner">
+          <CheckCircle size={18} /> Rent Paid Successfully
+        </div>
+      ) : null}
+    </div>
+  </div>
+));
+ApplicationCard.displayName = 'ApplicationCard';
 
 const ApplicationsPage = () => {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
@@ -84,8 +377,29 @@ const ApplicationsPage = () => {
   const [rentOrderId, setRentOrderId] = useState('');
   const rentPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const refreshApplications = useCallback(async () => {
+    const res = await Api.getTenantApplications();
+    setApplications(Array.isArray(res.data) ? res.data : []);
+  }, []);
+
+  const handleApplyForProperty = useCallback(async (id: string) => {
+    try {
+      if (!id || isNaN(parseInt(id))) throw new Error('Invalid property ID');
+      await Api.createApplication({
+        property_id: parseInt(id),
+        message: 'I am interested in this property and would like to schedule a viewing.',
+      });
+      alert('Application submitted successfully!');
+      window.history.replaceState({}, '', window.location.pathname);
+      await refreshApplications();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Failed to submit application.');
+    }
+  }, [refreshApplications]);
+
   useEffect(() => {
     if (propertyId) handleApplyForProperty(propertyId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
 
   useEffect(() => {
@@ -101,11 +415,6 @@ const ApplicationsPage = () => {
     };
     fetchApplications();
   }, []);
-
-  const refreshApplications = async () => {
-    const res = await Api.getTenantApplications();
-    setApplications(Array.isArray(res.data) ? res.data : []);
-  };
 
   useEffect(() => {
     if (payResult !== 'waiting' || !rentOrderId) return;
@@ -134,24 +443,9 @@ const ApplicationsPage = () => {
     poll();
     rentPollRef.current = setInterval(poll, 3000);
     return () => { if (rentPollRef.current) clearInterval(rentPollRef.current); };
-  }, [payResult, rentOrderId]);
+  }, [payResult, rentOrderId, refreshApplications]);
 
-  const handleApplyForProperty = async (id: string) => {
-    try {
-      if (!id || isNaN(parseInt(id))) throw new Error('Invalid property ID');
-      await Api.createApplication({
-        property_id: parseInt(id),
-        message: 'I am interested in this property and would like to schedule a viewing.',
-      });
-      alert('Application submitted successfully!');
-      window.history.replaceState({}, '', window.location.pathname);
-      await refreshApplications();
-    } catch (err: any) {
-      alert(err?.response?.data?.message || err?.message || 'Failed to submit application.');
-    }
-  };
-
-  const handlePayRent = async (appId: number) => {
+  const handlePayRent = useCallback(async (appId: number) => {
     if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
       setPayResult('error');
       setPayMessage('Please enter a valid phone number (at least 10 digits).');
@@ -182,18 +476,18 @@ const ApplicationsPage = () => {
     } finally {
       setPaying(false);
     }
-  };
+  }, [phoneNumber, paymentProvider]);
 
-  const openPaymentModal = (appId: number) => {
+  const openPaymentModal = useCallback((appId: number) => {
     if (rentPollRef.current) clearInterval(rentPollRef.current);
     setPaymentModal(appId);
     setPayResult(null);
     setPayMessage('');
     setRentOrderId('');
     setPhoneNumber('');
-  };
+  }, []);
 
-  const closePaymentModal = () => {
+  const closePaymentModal = useCallback(() => {
     if (payResult === 'waiting') return;
     if (rentPollRef.current) clearInterval(rentPollRef.current);
     setPaymentModal(null);
@@ -201,408 +495,160 @@ const ApplicationsPage = () => {
     setPayMessage('');
     setRentOrderId('');
     setPhoneNumber('');
-  };
+  }, [payResult]);
 
-  const filtered = useMemo(() => 
+  const filtered = useMemo(() =>
     applications.filter(item => {
       const hay = `${item.property?.title || ''} ${item.property?.location || ''} ${item.message || ''}`.toLowerCase();
       return hay.includes(search.toLowerCase());
-    }), 
+    }),
     [applications, search]
   );
-
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    applications.forEach(a => {
-      const s = a.status || 'unknown';
-      counts[s] = (counts[s] || 0) + 1;
-    });
-    return counts;
-  }, [applications]);
 
   const activeApp = paymentModal ? applications.find(a => a.id === paymentModal) : null;
   const modalAmount = activeApp ? parseRent(activeApp.property?.price) : 0;
 
   return (
-    <div style={{ 
-      fontFamily: "'DM Sans', system-ui, sans-serif", 
-      background: '#F1F5F9', 
-      color: '#0F172A', 
-      minHeight: '100vh',
-      paddingBottom: '80px'
-    }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .ap-panel {
-          background: ${palette.slate800};
-          border: 1px solid ${palette.slate200};
-          border-radius: 16px;
-          padding: 24px;
-          margin: 16px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .ap-search {
-          width: 100%;
-          background: ${palette.slate900};
-          border: 1px solid ${palette.slate200};
-          color: ${palette.white};
-          padding: 14px 16px 14px 48px;
-          border-radius: 12px;
-          font-size: 15px;
-          outline: none;
-          transition: all 0.2s;
-        }
-        .ap-search:focus {
-          border-color: ${palette.gold};
-          box-shadow: 0 0 0 3px ${palette.gold}20;
-        }
-
-        .mobile-card {
-          background: ${palette.slate800};
-          border: 1px solid ${palette.slate200};
-          border-radius: 16px;
-          padding: 20px;
-          margin-bottom: 16px;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .mobile-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 15px 35px rgba(200,145,40,0.08);
-        }
-
-        .pay-provider-btn {
-          flex: 1;
-          padding: 12px 10px;
-          font-size: 12px;
-          font-weight: 600;
-          border: 2px solid ${palette.slate200};
-          background: ${palette.slate900};
-          color: ${palette.white};
-          border-radius: 10px;
-          transition: all 0.2s;
-        }
-        .pay-provider-btn[data-active='true'].tigo    { border-color: #00D4AA; background: rgba(0,212,170,.12); color: #00D4AA; }
-        .pay-provider-btn[data-active='true'].mpesa   { border-color: #00C853; background: rgba(0,200,83,.12);  color: #00C853; }
-        .pay-provider-btn[data-active='true'].airtel  { border-color: #FF6B35; background: rgba(255,107,53,.12); color: #FF6B35; }
-        .pay-provider-btn[data-active='true'].halopesa{ border-color: #9C27B0; background: rgba(156,39,176,.12); color: #9C27B0; }
-      `}</style>
+    <div className="ap-root">
+      <style>{CSS}</style>
 
       {/* Header */}
-      <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+      <div className="ap-header">
+        <div className="ap-header-inner">
           <div>
-            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
-              Tenant Workspace
-            </div>
-            <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 'clamp(20px,3.5vw,28px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>My Applications</h1>
-            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>Track and manage all your rental applications</p>
+            <div className="ap-eyebrow">Tenant Workspace</div>
+            <h1 className="ap-title">My Applications</h1>
+            <p className="ap-subtitle">Track and manage all your rental applications</p>
           </div>
 
-          <div style={{ position: 'relative', minWidth: '280px', maxWidth: '400px' }}>
-            <Search size={18} style={{ position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
-            <input 
-              style={{ width: '100%', background: '#0F172A', border: '1px solid #E2E8F0', color: '#FFFFFF', padding: '12px 16px 12px 48px', borderRadius: '12px', fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '14px', outline: 'none', transition: 'all 0.2s' }}
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-              placeholder="Search properties or locations..." 
+          <div className="ap-search-wrap">
+            <Search size={18} className="ap-search-icon" />
+            <input
+              className="ap-search-input"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search properties or locations..."
             />
           </div>
         </div>
       </div>
 
-      {/* Applications List - Mobile Optimized */}
-      <div style={{ padding: '0 16px' }}>
+      {/* Applications List */}
+      <div className="ap-body">
         {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#f87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.25)', padding: '14px 16px', borderRadius: 12, marginBottom: 20 }}>
+          <div className="ap-error">
             <AlertCircle size={18} /> {error}
           </div>
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '100px 20px', color: palette.slate600 }}>
-            <Loader2 size={28} style={{ animation: 'spin 1s linear infinite', marginBottom: 12 }} />
+          <div className="ap-loading">
+            <Loader2 size={28} />
             <div>Loading your applications...</div>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '90px 20px', color: palette.slate600 }}>
-            <ClipboardList size={48} style={{ margin: '0 auto 20px', opacity: 0.6 }} />
-            <div style={{ fontSize: 18, fontWeight: 600, color: palette.white, marginBottom: 8 }}>No applications yet</div>
-            <div style={{ maxWidth: 280, margin: '0 auto', lineHeight: 1.6 }}>
-              Start exploring properties and submit your first application.
-            </div>
+          <div className="ap-empty">
+            <ClipboardList size={48} />
+            <div className="ap-empty-title">No applications yet</div>
+            <div className="ap-empty-desc">Start exploring properties and submit your first application.</div>
           </div>
         ) : (
           <div>
             {filtered.map(item => (
-              <div key={item.id} className="mobile-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 16.5, lineHeight: 1.3 }}>
-                      {item.property?.title || 'Untitled Property'}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: palette.slate600, fontSize: 13, marginTop: 6 }}>
-                      <MapPin size={14} />
-                      {item.property?.location || 'Location not specified'}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', fontWeight: 700, fontSize: 18, color: palette.gold }}>
-                    {formatCurrency(item.property?.price)}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <StatusBadge status={item.status} rejectionReason={item.rejection_reason} />
-                  <div style={{ fontSize: 12.5, color: palette.slate600, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Clock size={13} /> {formatDate(item.created_at)}
-                  </div>
-                </div>
-
-                {item.message && (
-                  <div style={{ 
-                    background: palette.slate900, 
-                    borderRadius: 10, 
-                    padding: '12px 14px', 
-                    fontSize: 13.5, 
-                    color: palette.slate600, 
-                    lineHeight: 1.55,
-                    marginBottom: 18 
-                  }}>
-                    "{item.message}"
-                  </div>
-                )}
-
-                <div>
-                  {item.next_step && (
-                    <div style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 8,
-                      background: 'rgba(200,145,40,0.08)', border: '1px solid rgba(200,145,40,0.2)',
-                      borderRadius: 12, padding: '12px 14px', marginBottom: 12,
-                      fontSize: 13, color: palette.slate600, lineHeight: 1.5,
-                    }}>
-                      <Info size={16} style={{ color: palette.gold, flexShrink: 0, marginTop: 2 }} />
-                      {item.next_step}
-                    </div>
-                  )}
-
-                  {item.can_pay_rent ? (
-                    <button 
-                      onClick={() => openPaymentModal(item.id)}
-                      style={{
-                        width: '100%',
-                        background: palette.gold,
-                        color: palette.slate900,
-                        border: 'none',
-                        padding: '14px',
-                        borderRadius: 12,
-                        fontWeight: 700,
-                        fontSize: 14.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        boxShadow: '0 4px 15px rgba(200,145,40,0.3)'
-                      }}
-                    >
-                      <DollarSign size={18} /> Pay Rent Now
-                    </button>
-                  ) : item.rent_paid ? (
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      gap: 8, 
-                      background: 'rgba(16,185,129,0.1)', 
-                      color: '#10b981', 
-                      padding: '12px', 
-                      borderRadius: 12,
-                      fontWeight: 600 
-                    }}>
-                      <CheckCircle size={18} /> Rent Paid Successfully
-                    </div>
-                  ) : null}
-                </div>
-              </div>
+              <ApplicationCard key={item.id} item={item} onPay={openPaymentModal} />
             ))}
           </div>
         )}
       </div>
 
-      {/* Payment Modal - Professional & Clean */}
+      {/* Payment Modal */}
       {paymentModal && activeApp && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15,23,42,0.92)', backdropFilter: 'blur(12px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 2000, padding: '20px 16px'
-        }}>
-          <div style={{
-            background: palette.slate800,
-            border: `1px solid ${palette.slate200}`,
-            borderRadius: 20,
-            width: '100%',
-            maxWidth: 420,
-            maxHeight: '94vh',
-            overflow: 'hidden',
-            boxShadow: '0 30px 70px rgba(0,0,0,0.5)'
-          }}>
-            {/* Header */}
-            <div style={{ 
-              background: `linear-gradient(135deg, ${palette.slate900}, #1a2a44)`, 
-              padding: '24px 24px 20px',
-              borderBottom: `1px solid ${palette.slate200}`
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', color: palette.gold, marginBottom: 4 }}>SECURE PAYMENT</div>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>Pay Monthly Rent</div>
-              <div style={{ color: palette.slate600, fontSize: 13, marginTop: 4 }}>Powered by Selcom • Oweru</div>
+        <div className="ap-overlay" onClick={() => payResult !== 'waiting' && closePaymentModal()}>
+          <div className="ap-modal" onClick={e => e.stopPropagation()}>
+            <div className="ap-modal-head">
+              {payResult !== 'waiting' && (
+                <button className="ap-modal-close" onClick={closePaymentModal} disabled={paying}>
+                  <X size={15} />
+                </button>
+              )}
+              <div className="ap-modal-eyebrow">SECURE PAYMENT</div>
+              <div className="ap-modal-title">Pay Monthly Rent</div>
+              <div className="ap-modal-sub">Powered by Selcom · Oweru</div>
             </div>
 
-            <div style={{ padding: '24px' }}>
+            <div className="ap-modal-body">
               {/* Property Summary */}
-              <div style={{ 
-                background: palette.slate900, 
-                borderRadius: 14, 
-                padding: 16, 
-                marginBottom: 24,
-                border: `1px solid ${palette.borderFaint}`
-              }}>
-                <div style={{ fontWeight: 600, fontSize: 15.5 }}>{activeApp.property?.title}</div>
+              <div className="ap-property-summary">
+                <div className="ap-property-name">{activeApp.property?.title}</div>
                 {activeApp.property?.location && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: palette.slate600, marginTop: 6, fontSize: 13 }}>
+                  <div className="ap-property-loc">
                     <MapPin size={15} /> {activeApp.property.location}
                   </div>
                 )}
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${palette.slate200}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: palette.slate600, fontSize: 13 }}>Amount Due</span>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: palette.gold }}>
-                    Tsh {modalAmount.toLocaleString()}
-                  </span>
+                <div className="ap-amount-row">
+                  <span className="ap-amount-label">Amount Due</span>
+                  <span className="ap-amount-value">Tsh {modalAmount.toLocaleString()}</span>
                 </div>
               </div>
 
               {/* Provider Selection */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: palette.slate600, marginBottom: 10 }}>PAYMENT PROVIDER</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  {[
-                    { value: 'tigo', label: 'Tigo Pesa' },
-                    { value: 'mpesa', label: 'M-Pesa' },
-                    { value: 'airtel', label: 'Airtel Money' },
-                    { value: 'halopesa', label: 'Halopesa' },
-                  ].map((p) => (
-                    <button
-                      key={p.value}
-                      className={`pay-provider-btn ${p.value}`}
-                      data-active={paymentProvider === p.value ? 'true' : 'false'}
-                      onClick={() => setPaymentProvider(p.value as any)}
-                      disabled={paying}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
+              <div className="ap-field-label">PAYMENT PROVIDER</div>
+              <div className="ap-provider-grid">
+                {PROVIDERS.map(p => (
+                  <button
+                    key={p.value}
+                    className={`ap-provider-btn ${p.value}`}
+                    data-active={paymentProvider === p.value ? 'true' : 'false'}
+                    onClick={() => setPaymentProvider(p.value)}
+                    disabled={paying}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
 
               {/* Phone Input */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.8px', color: palette.slate600, marginBottom: 8 }}>PHONE NUMBER</div>
-                <div style={{ position: 'relative' }}>
-                  <Phone size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: palette.slate600 }} />
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="0712 345 678"
-                    disabled={paying}
-                    style={{
-                      width: '100%',
-                      padding: '14px 14px 14px 52px',
-                      background: palette.slate900,
-                      border: `1px solid ${palette.slate200}`,
-                      borderRadius: 12,
-                      color: palette.white,
-                      fontSize: 16,
-                      outline: 'none'
-                    }}
-                  />
-                </div>
+              <div className="ap-field-label">PHONE NUMBER</div>
+              <div className="ap-phone-wrap">
+                <Phone size={18} className="ap-phone-icon" />
+                <input
+                  type="tel"
+                  className="ap-phone-input"
+                  value={phoneNumber}
+                  onChange={e => setPhoneNumber(e.target.value)}
+                  placeholder="0712 345 678"
+                  disabled={paying}
+                />
               </div>
 
               {/* Security */}
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 10, 
-                background: 'rgba(16,185,129,0.08)', 
-                border: '1px solid rgba(16,185,129,0.25)', 
-                borderRadius: 12, 
-                padding: '12px 16px',
-                marginBottom: 24,
-                fontSize: 13,
-                color: '#34d399'
-              }}>
-                <ShieldCheck size={18} /> 256-bit SSL Secured • Trusted by Selcom
+              <div className="ap-secure-row">
+                <ShieldCheck size={18} /> 256-bit SSL Secured · Trusted by Selcom
               </div>
 
               {/* Result Messages */}
               {payResult && (
-                <div style={{
-                  padding: '14px 16px',
-                  borderRadius: 12,
-                  marginBottom: 20,
-                  display: 'flex',
-                  gap: 12,
-                  background: payResult === 'success' ? 'rgba(16,185,129,0.1)' : payResult === 'waiting' ? 'rgba(200,145,40,0.1)' : 'rgba(239,68,68,0.1)',
-                  border: `1px solid ${payResult === 'success' ? '#10b98150' : payResult === 'waiting' ? 'rgba(200,145,40,0.3)' : '#ef444450'}`,
-                  color: payResult === 'success' ? '#34d399' : payResult === 'waiting' ? palette.gold : '#f87171'
-                }}>
+                <div className={`ap-result ${payResult}`}>
                   {payResult === 'success' ? <CheckCircle size={20} /> : payResult === 'waiting' ? <Loader2 size={20} style={{ animation: 'spin 0.9s linear infinite' }} /> : <AlertCircle size={20} />}
-                  <span style={{ fontSize: 13.5, lineHeight: 1.5 }}>{payMessage}</span>
+                  <span>{payMessage}</span>
                 </div>
               )}
 
               {/* Buttons */}
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button 
-                  onClick={closePaymentModal} 
+              <div className="ap-modal-actions">
+                <button
+                  className="ap-btn-cancel"
+                  onClick={closePaymentModal}
                   disabled={paying || payResult === 'waiting'}
-                  style={{
-                    flex: 1,
-                    padding: '14px',
-                    background: palette.slate900,
-                    border: `1px solid ${palette.slate200}`,
-                    color: palette.white,
-                    borderRadius: 12,
-                    fontWeight: 600,
-                    cursor: paying ? 'not-allowed' : 'pointer',
-                    opacity: paying ? 0.6 : 1
-                  }}
                 >
                   {payResult === 'success' ? 'Done' : 'Cancel'}
                 </button>
 
                 {payResult !== 'success' && payResult !== 'waiting' && (
                   <button
+                    className="ap-btn-pay"
                     onClick={() => handlePayRent(paymentModal)}
                     disabled={paying || !phoneNumber || phoneNumber.length < 10}
-                    style={{
-                      flex: 1.8,
-                      padding: '14px',
-                      background: paying ? `${palette.gold}aa` : palette.gold,
-                      color: palette.slate900,
-                      border: 'none',
-                      borderRadius: 12,
-                      fontWeight: 700,
-                      fontSize: 15,
-                      cursor: paying || !phoneNumber || phoneNumber.length < 10 ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      boxShadow: paying ? 'none' : '0 6px 20px rgba(200,145,40,0.35)'
-                    }}
                   >
                     {paying ? (
                       <> <Loader2 size={18} style={{ animation: 'spin 0.9s linear infinite' }} /> Processing... </>
