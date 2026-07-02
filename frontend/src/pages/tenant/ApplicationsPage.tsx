@@ -106,43 +106,77 @@ const CSS = `
 .ap-empty-title{font-size:18px;font-weight:700;color:var(--slate-900);margin-bottom:8px;}
 .ap-empty-desc{max-width:280px;margin:0 auto;line-height:1.6;}
 
-/* ── Application Card ── */
-.ap-card{
+/* ── Table (default, desktop/tablet) ── */
+.ap-table-wrap{
   background:var(--white);border:1px solid var(--slate-200);border-radius:var(--r);
-  padding:20px;margin:16px 0;transition:box-shadow .22s,transform .22s,border-color .22s;
+  overflow:hidden;margin:20px 0 40px;box-shadow:0 4px 20px rgba(0,0,0,.04);
 }
-.ap-card:hover{box-shadow:0 12px 32px rgba(0,0,0,.08);transform:translateY(-2px);border-color:var(--gold-border);}
-.ap-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;}
-.ap-card-title{font-weight:700;font-size:16.5px;line-height:1.3;color:var(--slate-900);}
-.ap-card-location{display:flex;align-items:center;gap:6px;color:var(--slate-600);font-size:13px;margin-top:6px;}
-.ap-card-location svg{color:var(--gold);flex-shrink:0;}
-.ap-card-price{text-align:right;font-weight:700;font-size:18px;color:var(--gold);white-space:nowrap;}
-
-.ap-card-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
-.ap-card-date{font-size:12.5px;color:var(--slate-400);display:flex;align-items:center;gap:5px;}
-
-.ap-card-message{
-  background:var(--slate-100);border:1px solid var(--slate-200);border-radius:10px;
-  padding:12px 14px;font-size:13.5px;color:var(--slate-600);line-height:1.55;margin-bottom:18px;
+.ap-table-scroll{overflow-x:auto;}
+.ap-table{width:100%;border-collapse:collapse;min-width:820px;}
+.ap-table thead th{
+  text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--slate-400);background:var(--slate-100);padding:14px 18px;border-bottom:1px solid var(--slate-200);
+  white-space:nowrap;
 }
+.ap-table thead th.ap-th-right{text-align:right;}
+.ap-table tbody tr{border-bottom:1px solid var(--slate-200);transition:background .15s;}
+.ap-table tbody tr:last-child{border-bottom:none;}
+.ap-table tbody tr:hover{background:var(--slate-100);}
+.ap-table td{padding:16px 18px;font-size:13.5px;color:var(--slate-900);vertical-align:middle;}
+.ap-td-right{text-align:right;}
 
-.ap-next-step{
-  display:flex;align-items:flex-start;gap:8px;background:var(--gold-pale);border:1px solid var(--gold-border);
-  border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--slate-600);line-height:1.5;
+.ap-row-title{font-weight:600;font-size:14px;color:var(--slate-900);line-height:1.3;}
+.ap-row-location{display:flex;align-items:center;gap:5px;color:var(--slate-600);font-size:12px;margin-top:4px;white-space:nowrap;}
+.ap-row-location svg{color:var(--gold);flex-shrink:0;}
+.ap-row-message{color:var(--slate-400);font-size:12px;margin-top:5px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.ap-row-price{font-weight:700;color:var(--gold);white-space:nowrap;}
+
+.ap-row-date{display:flex;align-items:center;gap:5px;color:var(--slate-600);font-size:12.5px;white-space:nowrap;}
+.ap-row-date svg{color:var(--slate-400);flex-shrink:0;}
+
+.ap-row-next-step{
+  display:flex;align-items:flex-start;gap:6px;font-size:12px;color:var(--slate-600);line-height:1.45;max-width:220px;
 }
-.ap-next-step svg{color:var(--gold);flex-shrink:0;margin-top:2px;}
+.ap-row-next-step svg{color:var(--gold);flex-shrink:0;margin-top:1px;}
 
 .ap-pay-btn{
-  width:100%;background:var(--gold);color:var(--white);border:none;padding:14px;border-radius:var(--r-sm);
-  font-weight:700;font-size:14.5px;display:flex;align-items:center;justify-content:center;gap:8px;
-  cursor:pointer;transition:background .18s;box-shadow:0 4px 14px rgba(200,145,40,.28);
+  background:var(--gold);color:var(--white);border:none;padding:9px 16px;border-radius:var(--r-sm);
+  font-weight:700;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;transition:background .18s;box-shadow:0 3px 10px rgba(200,145,40,.25);white-space:nowrap;
 }
 .ap-pay-btn:hover{background:var(--gold-light);}
 
 .ap-paid-banner{
-  display:flex;align-items:center;justify-content:center;gap:8px;background:var(--success-bg);
-  color:var(--success);padding:12px;border-radius:var(--r-sm);font-weight:600;font-size:14px;
+  display:inline-flex;align-items:center;gap:6px;background:var(--success-bg);
+  color:var(--success);padding:8px 14px;border-radius:var(--r-sm);font-weight:600;font-size:12.5px;white-space:nowrap;
 }
+.ap-dash{color:var(--slate-400);}
+
+/* ── Mobile card fallback (table becomes stacked cards under 760px) ── */
+.ap-cards{display:none;}
+.ap-card{
+  background:var(--white);border:1px solid var(--slate-200);border-radius:var(--r);
+  padding:18px;margin-bottom:14px;
+}
+.ap-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.ap-card-title{font-weight:700;font-size:15.5px;line-height:1.3;color:var(--slate-900);}
+.ap-card-location{display:flex;align-items:center;gap:6px;color:var(--slate-600);font-size:12.5px;margin-top:6px;}
+.ap-card-location svg{color:var(--gold);flex-shrink:0;}
+.ap-card-price{text-align:right;font-weight:700;font-size:16px;color:var(--gold);white-space:nowrap;}
+.ap-card-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.ap-card-date{font-size:12px;color:var(--slate-400);display:flex;align-items:center;gap:5px;}
+.ap-card-message{
+  background:var(--slate-100);border:1px solid var(--slate-200);border-radius:10px;
+  padding:12px 14px;font-size:13px;color:var(--slate-600);line-height:1.55;margin-bottom:16px;
+}
+.ap-next-step{
+  display:flex;align-items:flex-start;gap:8px;background:var(--gold-pale);border:1px solid var(--gold-border);
+  border-radius:var(--r-sm);padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:var(--slate-600);line-height:1.5;
+}
+.ap-next-step svg{color:var(--gold);flex-shrink:0;margin-top:2px;}
+.ap-card .ap-pay-btn{width:100%;padding:13px;font-size:14px;}
+.ap-card .ap-paid-banner{width:100%;justify-content:center;padding:11px;}
 
 /* ── Status Badge ── */
 .ap-status{
@@ -253,6 +287,10 @@ const CSS = `
   .ap-header-inner{padding:36px 20px 28px;}
   .ap-body{padding:0 12px;}
 }
+@media(max-width:760px){
+  .ap-table-wrap{display:none;}
+  .ap-cards{display:block;margin-top:20px;}
+}
 `;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -315,6 +353,61 @@ const StatusBadge = memo(({ status, rejectionReason }: { status?: string; reject
 });
 StatusBadge.displayName = 'StatusBadge';
 
+const PayAction = memo(({ item, onPay }: { item: ApplicationItem; onPay: (id: number) => void }) => {
+  if (item.can_pay_rent) {
+    return (
+      <button className="ap-pay-btn" onClick={() => onPay(item.id)}>
+        <DollarSign size={14} /> Pay Rent
+      </button>
+    );
+  }
+  if (item.rent_paid) {
+    return (
+      <span className="ap-paid-banner">
+        <CheckCircle size={14} /> Paid
+      </span>
+    );
+  }
+  return <span className="ap-dash">—</span>;
+});
+PayAction.displayName = 'PayAction';
+
+const ApplicationRow = memo(({ item, onPay }: { item: ApplicationItem; onPay: (id: number) => void }) => (
+  <tr>
+    <td>
+      <div className="ap-row-title">{item.property?.title || 'Untitled Property'}</div>
+      <div className="ap-row-location">
+        <MapPin size={12} />
+        {item.property?.location || 'Location not specified'}
+      </div>
+      {item.message && <div className="ap-row-message" title={item.message}>"{item.message}"</div>}
+    </td>
+    <td className="ap-row-price">{formatCurrency(item.property?.price)}</td>
+    <td>
+      <StatusBadge status={item.status} rejectionReason={item.rejection_reason} />
+    </td>
+    <td>
+      <div className="ap-row-date">
+        <Clock size={12} /> {formatDate(item.created_at)}
+      </div>
+    </td>
+    <td>
+      {item.next_step ? (
+        <div className="ap-row-next-step">
+          <Info size={13} />
+          {item.next_step}
+        </div>
+      ) : (
+        <span className="ap-dash">—</span>
+      )}
+    </td>
+    <td className="ap-td-right">
+      <PayAction item={item} onPay={onPay} />
+    </td>
+  </tr>
+));
+ApplicationRow.displayName = 'ApplicationRow';
+
 const ApplicationCard = memo(({ item, onPay }: { item: ApplicationItem; onPay: (id: number) => void }) => (
   <div className="ap-card">
     <div className="ap-card-top">
@@ -346,11 +439,11 @@ const ApplicationCard = memo(({ item, onPay }: { item: ApplicationItem; onPay: (
       )}
 
       {item.can_pay_rent ? (
-        <button className="ap-pay-btn" onClick={() => onPay(item.id)}>
+        <button className="ap-pay-btn" style={{ width: '100%', padding: 13, fontSize: 14 }} onClick={() => onPay(item.id)}>
           <DollarSign size={18} /> Pay Rent Now
         </button>
       ) : item.rent_paid ? (
-        <div className="ap-paid-banner">
+        <div className="ap-paid-banner" style={{ width: '100%', justifyContent: 'center', padding: 11 }}>
           <CheckCircle size={18} /> Rent Paid Successfully
         </div>
       ) : null}
@@ -553,11 +646,37 @@ const ApplicationsPage = () => {
             <div className="ap-empty-desc">Start exploring properties and submit your first application.</div>
           </div>
         ) : (
-          <div>
-            {filtered.map(item => (
-              <ApplicationCard key={item.id} item={item} onPay={openPaymentModal} />
-            ))}
-          </div>
+          <>
+            {/* Table view — desktop/tablet */}
+            <div className="ap-table-wrap">
+              <div className="ap-table-scroll">
+                <table className="ap-table">
+                  <thead>
+                    <tr>
+                      <th>Property</th>
+                      <th>Rent</th>
+                      <th>Status</th>
+                      <th>Applied</th>
+                      <th>Next Step</th>
+                      <th className="ap-th-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(item => (
+                      <ApplicationRow key={item.id} item={item} onPay={openPaymentModal} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Stacked cards — mobile */}
+            <div className="ap-cards">
+              {filtered.map(item => (
+                <ApplicationCard key={item.id} item={item} onPay={openPaymentModal} />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
