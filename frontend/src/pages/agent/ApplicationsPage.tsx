@@ -171,6 +171,15 @@ const ApplicationsPage = () => {
                           ✓ Site visit paid
                         </div>
                       )}
+                    <div style={{ marginTop: 6 }}>
+                      {item.rent_payment_status === 'paid' ? (
+                        <div style={{ fontSize: '11px', color: '#059669' }}>✓ Rent paid</div>
+                      ) : (
+                        <div style={{ fontSize: '11px', color: '#d97706' }}>
+                          Rent: {(item.rent_payment_status ?? 'pending')}
+                        </div>
+                      )}
+                    </div>
                     </td>
                     <td style={{ padding: '12px', color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif" }}>{formatDate(item.created_at)}</td>
                     <td style={{ padding: '12px', color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif" }}>

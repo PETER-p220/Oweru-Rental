@@ -184,14 +184,59 @@ class SelcomPaymentService
      */
     public function checkOrderStatus(string $orderId): array
     {
-        $appKey = env('OWERU_APP_KEY');
-        $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
+        // 1) Preferred: Selcom transaction status (uses SELCOM_API_KEY + vendor_id)
+        try {
+            $apiKey   = config('services.selcom.api_key');
+            $vendorId = config('services.selcom.vendor_id');
+            $baseUrl  = config('services.selcom.base_url');
 
-        if (empty($appKey)) {
-            return ['success' => false, 'paid' => false, 'failed' => false];
+            if ($apiKey && $vendorId && $baseUrl) {
+                $response = Http::withHeaders([
+                    'Accept' => 'application/json',
+                    'X-API-Key' => $apiKey,
+                ])->timeout(30)->get($baseUrl . '/transaction/status', [
+                    'vendor_id' => $vendorId,
+                    'merchant_transaction_id' => $orderId,
+                ]);
+
+                if ($response->successful()) {
+                    $data = $response->json() ?? [];
+                    $status = strtoupper((string) ($data['status'] ?? $data['payment_status'] ?? ''));
+                    $resultCode = (string) ($data['resultcode'] ?? $data['result_code'] ?? '');
+
+                    $paid = $status === 'COMPLETED'
+                        || $status === 'SUCCESS'
+                        || $status === 'PAID'
+                        || $resultCode === '000';
+
+                    $failed = in_array($status, ['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'ERROR'], true)
+                        || in_array($resultCode, ['001', '002', '999'], true);
+
+                    return [
+                        'success' => true,
+                        'paid' => $paid,
+                        'failed' => $failed && ! $paid,
+                        'status' => $status ?: null,
+                        'data' => $data,
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Selcom transaction/status check failed (will fallback)', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
         }
 
+        // 2) Fallback: Oweru checkout order-status (uses OWERU_APP_KEY)
         try {
+            $appKey = env('OWERU_APP_KEY');
+            $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
+
+            if (empty($appKey)) {
+                return ['success' => false, 'paid' => false, 'failed' => false];
+            }
+
             $response = Http::withHeaders([
                 'X-App-Key' => $appKey,
                 'Accept' => 'application/json',
@@ -206,6 +251,7 @@ class SelcomPaymentService
             }
 
             $data = $response->json() ?? [];
+
             $status = strtoupper((string) (
                 $data['payment_status']
                 ?? $data['status']
@@ -217,6 +263,7 @@ class SelcomPaymentService
 
             $paid = $resultCode === '000'
                 || in_array($status, ['COMPLETED', 'SUCCESS', 'PAID', 'SUCCESSFUL'], true);
+
             $failed = in_array($status, ['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'ERROR'], true)
                 || in_array($resultCode, ['001', '002', '999'], true);
 
@@ -228,7 +275,7 @@ class SelcomPaymentService
                 'data' => $data,
             ];
         } catch (\Throwable $e) {
-            Log::warning('Oweru order status check failed', [
+            Log::warning('Selcom order-status check failed', [
                 'order_id' => $orderId,
                 'error' => $e->getMessage(),
             ]);

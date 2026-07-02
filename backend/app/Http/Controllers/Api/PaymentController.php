@@ -304,6 +304,10 @@ class PaymentController extends Controller
                 app(\App\Services\SiteVisitPaymentService::class)->confirmByOrderId($transid, $request->all());
                 app(\App\Services\RentPaymentService::class)->confirmByOrderId($transid, $request->all());
             }
+            if ($reference && $reference !== $transid) {
+                app(\App\Services\SiteVisitPaymentService::class)->confirmByOrderId((string) $reference, $request->all());
+                app(\App\Services\RentPaymentService::class)->confirmByOrderId((string) $reference, $request->all());
+            }
             
             // Use PaymentProcessingService to handle payment completion
             try {

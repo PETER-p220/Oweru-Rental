@@ -244,6 +244,15 @@ const ApplicationsPage = () => {
                           <div style={{ maxWidth: '240px', color: C.textSub, fontSize: '13px', lineHeight: 1.6 }}>
                             {app.message || <span style={{ color: C.textMuted, fontStyle: 'italic' }}>No message provided.</span>}
                           </div>
+                          <div style={{ marginTop: 10 }}>
+                            {app.rent_payment_status === 'paid' ? (
+                              <div style={{ fontSize: 12, color: C.green, fontWeight: 700 }}>✓ Rent paid</div>
+                            ) : (
+                              <div style={{ fontSize: 12, color: C.amber, fontWeight: 700 }}>
+                                Rent: {(app.rent_payment_status ?? 'pending')}
+                              </div>
+                            )}
+                          </div>
                         </td>
 
                         {/* Actions */}

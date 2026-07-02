@@ -172,7 +172,7 @@ const ApplicationsPage = () => {
       if (res.data?.order_id) {
         setRentOrderId(res.data.order_id);
         setPayResult('waiting');
-        setPayMessage(res.message || `Approve the ${paymentProvider.toUpperCase()} prompt on your phone.`);
+        setPayMessage('USSD prompt sent. Waiting for confirmation...');
       } else {
         throw new Error(res.message || 'Payment initiation failed');
       }
