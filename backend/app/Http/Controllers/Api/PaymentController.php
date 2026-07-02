@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\User;
+use App\Models\Application;
 use App\Services\PaymentProcessingService;
 use App\Services\SelcomPaymentService;
 use Illuminate\Http\Request;
@@ -298,6 +299,10 @@ class PaymentController extends Controller
                 'transid'   => $transid,
                 'reference' => $reference,
             ]);
+
+            if ($transid) {
+                app(\App\Services\SiteVisitPaymentService::class)->confirmByOrderId($transid, $request->all());
+            }
             
             // Use PaymentProcessingService to handle payment completion
             try {
@@ -340,6 +345,12 @@ class PaymentController extends Controller
                 if ($payment) {
                     $payment->update(['status' => 'failed']);
                     Log::info('Payment marked as failed', ['payment_id' => $payment->id]);
+                }
+
+                if ($transid) {
+                    Application::where('transaction_id', $transid)
+                        ->where('payment_status', 'pending')
+                        ->update(['payment_status' => 'failed']);
                 }
             } catch (\Exception $e) {
                 Log::error('Error marking payment as failed', ['error' => $e->getMessage()]);

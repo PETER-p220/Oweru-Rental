@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,7 +14,7 @@ const int kItemsPerPage = 12;
 // ── Types ────────────────────────────────────────────────────
 typedef PropertyMap = Map<String, dynamic>;
 
-enum ModalStep { none, auth, apply, payment, success }
+enum ModalStep { none, auth, apply, payment, pendingPayment, paymentFailed, success }
 enum SourceFilter { all, agent, landlord, admin }
 enum ViewMode { grid, list }
 enum ToastType { success, error, info, warning }
@@ -84,6 +85,8 @@ SourceFilter _getSource(PropertyMap p) {
   return SourceFilter.landlord;
 }
 
+bool _requiresSiteVisitFee(PropertyMap p) => p['agent_id'] != null;
+
 String _sourceLabel(SourceFilter s) {
   switch (s) {
     case SourceFilter.agent: return 'Agent';
@@ -153,6 +156,11 @@ class _PropertiesPageState extends State<PropertiesPage> {
 
   // Modal
   ModalStep _modal = ModalStep.none;
+  bool _successWasSiteVisit = true;
+  String _pendingOrderId = '';
+  String _pollMessage = '';
+  Timer? _pollTimer;
+  int _pollAttempts = 0;
   PropertyMap? _selProp;
   bool _paying = false;
   String _paymentMethod = 'tigo';
@@ -182,6 +190,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
 
   @override
   void dispose() {
+    _stopPolling();
     _searchCtrl.dispose();
     _phoneCtrl.dispose();
     _jumpCtrl.dispose();
@@ -349,14 +358,96 @@ class _PropertiesPageState extends State<PropertiesPage> {
     });
   }
 
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _pollAttempts = 0;
+  }
+
+  void _startPolling() {
+    _stopPolling();
+    _pollAttempts = 0;
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _pollPaymentStatus());
+    _pollPaymentStatus();
+  }
+
+  Future<void> _pollPaymentStatus() async {
+    if (_pendingOrderId.isEmpty) return;
+    _pollAttempts += 1;
+    final res = await TenantApiService.checkSiteVisitPaymentStatus(_pendingOrderId);
+    final status = res['data']?['payment_status']?.toString();
+    if (!mounted) return;
+
+    if (status == 'paid') {
+      _stopPolling();
+      setState(() {
+        _successWasSiteVisit = true;
+        _modal = ModalStep.success;
+      });
+      _addToast(ToastType.success, 'Payment confirmed',
+          message: 'Site visit fee received successfully.', durationMs: 6000);
+    } else if (status == 'failed') {
+      _stopPolling();
+      setState(() => _modal = ModalStep.paymentFailed);
+    } else if (_pollAttempts >= 40) {
+      _stopPolling();
+      setState(() => _pollMessage = 'Payment is taking longer than expected. Check My Applications for status.');
+    }
+  }
+
   void _closeModal() {
-    if (_paying) return;
+    if (_paying || _modal == ModalStep.pendingPayment) return;
+    _stopPolling();
     setState(() {
       _modal = ModalStep.none;
       _selProp = null;
       _phoneNumber = '';
       _phoneCtrl.clear();
+      _pendingOrderId = '';
+      _pollMessage = '';
     });
+  }
+
+  void _cancelPendingPayment() {
+    _stopPolling();
+    setState(() {
+      _pendingOrderId = '';
+      _pollMessage = '';
+      _modal = ModalStep.payment;
+    });
+  }
+
+  Future<void> _handleProceedApply() async {
+    if (_selProp == null) return;
+    if (_requiresSiteVisitFee(_selProp!)) {
+      setState(() => _modal = ModalStep.payment);
+      return;
+    }
+    setState(() => _paying = true);
+    try {
+      final propertyId = _selProp!['id'] as int?;
+      if (propertyId == null) {
+        _addToast(ToastType.error, 'Application failed', message: 'Property information is missing.');
+        return;
+      }
+      await TenantApiService.createApplication({
+        'property_id': propertyId,
+        'owner_id': _selProp!['owner_id'],
+        'message': 'I am interested in renting ${_selProp!['title'] ?? 'this property'}.',
+        'payment_status': 'waived',
+      });
+      if (mounted) {
+        setState(() {
+          _successWasSiteVisit = false;
+          _modal = ModalStep.success;
+        });
+      }
+    } catch (e) {
+      _addToast(ToastType.error, 'Application failed',
+          message: 'Could not submit application. Please try again.', durationMs: 7000);
+    } finally {
+      if (mounted) setState(() => _paying = false);
+    }
   }
 
   Future<void> _handlePay() async {
@@ -366,74 +457,34 @@ class _PropertiesPageState extends State<PropertiesPage> {
           durationMs: 5000);
       return;
     }
+    final propertyId = _selProp?['id'] as int?;
+    if (propertyId == null) {
+      _addToast(ToastType.error, 'Payment failed', message: 'Property information is missing.');
+      return;
+    }
+
     setState(() => _paying = true);
     try {
-      final propertyId = _selProp?['id'] as int?;
-      if (propertyId == null) {
-        _addToast(ToastType.error, 'Payment failed',
-            message: 'Property information is missing.', durationMs: 7000);
-        return;
-      }
-
-      final userService = UserService();
-      await userService.ensureLoaded();
-      final token = userService.token;
-
-      if (token == null) {
-        _addToast(ToastType.error, 'Authentication required',
-            message: 'Please log in to continue.', durationMs: 7000);
-        setState(() => _paying = false);
-        return;
-      }
-
-      final response = await http.get(
-        Uri.parse('$kApiBase/user'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      Map<String, dynamic>? userData;
-      if (response.statusCode == 200) {
-        userData = jsonDecode(response.body);
-      }
-
-      final tenantId = userData?['id'] ?? 0;
-      final customerEmail = userData?['email'] ?? 'tenant@oweru.com';
-      final firstName = userData?['first_name'] ?? '';
-      final lastName = userData?['last_name'] ?? '';
-      final customerName = (firstName.isNotEmpty && lastName.isNotEmpty)
-          ? '$firstName $lastName'
-          : (firstName.isNotEmpty ? firstName : 'Customer');
-
-      final paymentResponse = await TenantApiService.initiateSelcomPayment(
-        amount: 20000.0,
-        phoneNumber: _phoneNumber,
-        provider: _paymentMethod,
+      final result = await TenantApiService.initiateSiteVisitPayment(
         propertyId: propertyId,
-        tenantId: tenantId,
-        paymentType: 'site_visit',
-        customerEmail: customerEmail,
-        customerName: customerName,
+        phoneNumber: _phoneNumber.trim(),
+        provider: _paymentMethod,
       );
 
-      if (paymentResponse['success'] == true) {
-        final transactionId = paymentResponse['data']?['transaction_id'] ?? paymentResponse['transaction_id'];
-        _addToast(ToastType.success, 'Payment initiated',
-            message: 'Check your ${_paymentMethod.toUpperCase()} prompt. Ref: $transactionId', durationMs: 8000);
-
-        final applicationData = {
-          'property_id': propertyId,
-          'status': 'pending',
-          'payment_status': 'paid',
-          'payment_method': _paymentMethod,
-          'transaction_id': transactionId,
-        };
-        await TenantApiService.createApplication(applicationData);
-        if (mounted) setState(() { _modal = ModalStep.success; });
+      final orderId = result['data']?['order_id']?.toString();
+      if (result['success'] == true && orderId != null && orderId.isNotEmpty) {
+        setState(() {
+          _pendingOrderId = orderId;
+          _pollMessage = '';
+          _modal = ModalStep.pendingPayment;
+        });
+        _addToast(ToastType.info, 'Approve on your phone',
+            message: result['message']?.toString() ??
+                'Check your ${_paymentMethod.toUpperCase()} prompt and enter your PIN.',
+            durationMs: 10000);
+        _startPolling();
       } else {
-        final errorMessage = paymentResponse['message'] ?? paymentResponse['error'] ?? 'Payment initiation failed';
+        final errorMessage = result['message'] ?? 'Payment initiation failed';
         _addToast(ToastType.error, 'Payment failed', message: errorMessage, durationMs: 7000);
       }
     } catch (e) {
@@ -493,8 +544,10 @@ class _PropertiesPageState extends State<PropertiesPage> {
       if (_modal == ModalStep.apply && _selProp != null)
         _ApplyModal(
           property: _selProp!,
+          requiresFee: _requiresSiteVisitFee(_selProp!),
+          processing: _paying,
           onClose: _closeModal,
-          onProceed: () => setState(() => _modal = ModalStep.payment),
+          onProceed: _handleProceedApply,
         ),
       if (_modal == ModalStep.payment && _selProp != null)
         _PaymentModal(
@@ -507,8 +560,21 @@ class _PropertiesPageState extends State<PropertiesPage> {
           paymentMethod: _paymentMethod,
           onMethodChanged: (v) => setState(() => _paymentMethod = v),
         ),
+      if (_modal == ModalStep.pendingPayment && _pendingOrderId.isNotEmpty)
+        _PendingPaymentModal(
+          provider: _paymentMethod,
+          orderId: _pendingOrderId,
+          message: _pollMessage,
+          onCancel: _cancelPendingPayment,
+        ),
+      if (_modal == ModalStep.paymentFailed)
+        _PaymentFailedModal(
+          onClose: _closeModal,
+          onRetry: () => setState(() => _modal = ModalStep.payment),
+        ),
       if (_modal == ModalStep.success)
         _SuccessModal(
+          isSiteVisit: _successWasSiteVisit,
           onClose: () {
             _closeModal();
             Navigator.of(context).pushNamed('/dashboard/tenant/applications');
@@ -1423,8 +1489,8 @@ class _PropertyCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(6)),
-              child: const Text('Visit Site',
-                style: TextStyle(color: kBg, fontSize: 12, fontWeight: FontWeight.w700)),
+              child: Text(_requiresSiteVisitFee(property) ? 'Visit Site' : 'Apply',
+                style: const TextStyle(color: kBg, fontSize: 12, fontWeight: FontWeight.w700)),
             ),
           ),
         ]),
@@ -1511,8 +1577,8 @@ class _PropertyCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(6)),
-              child: const Text('Book Visit',
-                style: TextStyle(color: kBg, fontSize: 13, fontWeight: FontWeight.w700)),
+              child: Text(_requiresSiteVisitFee(property) ? 'Book Visit' : 'Apply',
+                style: const TextStyle(color: kBg, fontSize: 13, fontWeight: FontWeight.w700)),
             ),
           ),
         ]),
@@ -1803,15 +1869,27 @@ class _AuthOption extends StatelessWidget {
 // ── Apply Modal ──────────────────────────────────────────────
 class _ApplyModal extends StatelessWidget {
   final PropertyMap property;
+  final bool requiresFee;
+  final bool processing;
   final VoidCallback onClose;
   final VoidCallback onProceed;
-  const _ApplyModal({required this.property, required this.onClose, required this.onProceed});
+  const _ApplyModal({
+    required this.property,
+    required this.requiresFee,
+    this.processing = false,
+    required this.onClose,
+    required this.onProceed,
+  });
 
   @override
   Widget build(BuildContext context) => _ModalShell(
     onClose: onClose,
     child: Column(mainAxisSize: MainAxisSize.min, children: [
-      _ModalHeader(title: 'Book Site Visit', subtitle: 'Review before proceeding', onClose: onClose),
+      _ModalHeader(
+        title: requiresFee ? 'Book Site Visit' : 'Apply for Property',
+        subtitle: requiresFee ? 'Review before proceeding' : 'Submit to the landlord',
+        onClose: onClose,
+      ),
       Flexible(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(18),
@@ -1834,11 +1912,17 @@ class _ApplyModal extends StatelessWidget {
               ]),
             ),
             const SizedBox(height: 14),
-            _FeeBlock(),
-            const SizedBox(height: 12),
-            const Text(
-              'This fee covers the site visit arrangement. Once paid, the agent is notified immediately and will contact you within 24 hours.',
-              style: TextStyle(color: kSlate, fontSize: 12, height: 1.6)),
+            if (requiresFee) ...[
+              _FeeBlock(),
+              const SizedBox(height: 12),
+              const Text(
+                'This fee covers the site visit arrangement. Once paid, the agent is notified immediately and will contact you within 24 hours.',
+                style: TextStyle(color: kSlate, fontSize: 12, height: 1.6)),
+            ] else ...[
+              const Text(
+                'No service charge is required for landlord-listed properties. Your application goes directly to the property owner.',
+                style: TextStyle(color: kSlate, fontSize: 12, height: 1.6)),
+            ],
           ]),
         ),
       ),
@@ -1846,9 +1930,15 @@ class _ApplyModal extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
         decoration: BoxDecoration(border: Border(top: BorderSide(color: kBorder))),
         child: Row(children: [
-          Expanded(child: _ModalBtn(label: 'Cancel', onTap: onClose)),
+          Expanded(child: _ModalBtn(label: 'Cancel', onTap: processing ? () {} : onClose)),
           const SizedBox(width: 10),
-          Expanded(child: _ModalBtn(label: 'Proceed to Payment', primary: true, onTap: onProceed)),
+          Expanded(child: _ModalBtn(
+            label: processing
+                ? 'Submitting…'
+                : (requiresFee ? 'Proceed to Payment' : 'Submit Application'),
+            primary: true,
+            onTap: processing ? () {} : onProceed,
+          )),
         ]),
       ),
     ]),
@@ -1991,10 +2081,95 @@ class _PaymentModal extends StatelessWidget {
   }
 }
 
+// ── Pending Payment Modal ────────────────────────────────────
+class _PendingPaymentModal extends StatelessWidget {
+  final String provider;
+  final String orderId;
+  final String message;
+  final VoidCallback onCancel;
+  const _PendingPaymentModal({
+    required this.provider,
+    required this.orderId,
+    this.message = '',
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) => _ModalShell(
+    onClose: () {},
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      _ModalHeader(
+        title: 'Waiting for Payment',
+        subtitle: 'Approve the ${provider.toUpperCase()} prompt on your phone',
+        onClose: () {},
+      ),
+      Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(children: [
+          const SizedBox(
+            width: 36, height: 36,
+            child: CircularProgressIndicator(strokeWidth: 2.5, color: kGold),
+          ),
+          const SizedBox(height: 16),
+          const Text('Check your phone and enter your PIN',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: kCream, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Text('Ref: $orderId',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: kSlate, fontSize: 11)),
+          if (message.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(message, textAlign: TextAlign.center,
+              style: const TextStyle(color: kGold, fontSize: 12)),
+          ],
+        ]),
+      ),
+      Container(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+        decoration: BoxDecoration(border: Border(top: BorderSide(color: kBorder))),
+        child: _ModalBtn(label: 'Cancel and try again', onTap: onCancel),
+      ),
+    ]),
+  );
+}
+
+// ── Payment Failed Modal ─────────────────────────────────────
+class _PaymentFailedModal extends StatelessWidget {
+  final VoidCallback onClose;
+  final VoidCallback onRetry;
+  const _PaymentFailedModal({required this.onClose, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) => _ModalShell(
+    onClose: onClose,
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      _ModalHeader(title: 'Payment Not Completed', subtitle: 'Site visit fee was not received', onClose: onClose),
+      const Padding(
+        padding: EdgeInsets.all(18),
+        child: Text(
+          'Your application was not confirmed because payment was not completed. Try again or choose another provider (including Halopesa).',
+          style: TextStyle(color: kSlate, fontSize: 12, height: 1.6),
+        ),
+      ),
+      Container(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+        decoration: BoxDecoration(border: Border(top: BorderSide(color: kBorder))),
+        child: Row(children: [
+          Expanded(child: _ModalBtn(label: 'Close', onTap: onClose)),
+          const SizedBox(width: 10),
+          Expanded(child: _ModalBtn(label: 'Try Again', primary: true, onTap: onRetry)),
+        ]),
+      ),
+    ]),
+  );
+}
+
 // ── Success Modal ────────────────────────────────────────────
 class _SuccessModal extends StatelessWidget {
+  final bool isSiteVisit;
   final VoidCallback onClose;
-  const _SuccessModal({required this.onClose});
+  const _SuccessModal({required this.isSiteVisit, required this.onClose});
 
   @override
   Widget build(BuildContext context) => _ModalShell(
@@ -2016,13 +2191,15 @@ class _SuccessModal extends StatelessWidget {
                 shape: BoxShape.circle),
               child: const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 26)),
             const SizedBox(height: 14),
-            const Text('Site Visit Booked!',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w300, letterSpacing: -0.01)),
+            Text(isSiteVisit ? 'Site Visit Booked!' : 'Application Submitted!',
+              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w300, letterSpacing: -0.01)),
             const SizedBox(height: 6),
-            const Text(
-              'Payment confirmed. The agent has been notified and will contact you shortly.',
+            Text(
+              isSiteVisit
+                  ? 'Payment confirmed. The agent has been notified and will contact you shortly.'
+                  : 'Your application has been sent to the landlord. You will be notified once they respond.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0x8CFFFFFF), fontSize: 12, height: 1.55)),
+              style: const TextStyle(color: Color(0x8CFFFFFF), fontSize: 12, height: 1.55)),
           ]),
         ),
         Padding(
@@ -2030,13 +2207,21 @@ class _SuccessModal extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: kBg3, border: Border.all(color: kBorder), borderRadius: BorderRadius.circular(12)),
-            child: Column(children: [
-              _SuccessStep(Icons.check_rounded, 'Site visit fee received & confirmed'),
-              Divider(height: 1, color: kBorder),
-              _SuccessStep(Icons.auto_awesome_rounded, 'Agent notified via SMS & email'),
-              Divider(height: 1, color: kBorder),
-              _SuccessStep(Icons.check_circle_outline_rounded, 'Expect a call within 24 hours'),
-            ]),
+            child: Column(children: isSiteVisit
+                ? [
+                    _SuccessStep(Icons.check_rounded, 'Site visit fee received & confirmed'),
+                    Divider(height: 1, color: kBorder),
+                    _SuccessStep(Icons.auto_awesome_rounded, 'Agent notified via SMS & email'),
+                    Divider(height: 1, color: kBorder),
+                    _SuccessStep(Icons.check_circle_outline_rounded, 'Expect a call within 24 hours'),
+                  ]
+                : [
+                    _SuccessStep(Icons.check_rounded, 'Application submitted successfully'),
+                    Divider(height: 1, color: kBorder),
+                    _SuccessStep(Icons.auto_awesome_rounded, 'Landlord notified of your interest'),
+                    Divider(height: 1, color: kBorder),
+                    _SuccessStep(Icons.check_circle_outline_rounded, 'Track status in My Applications'),
+                  ]),
           ),
         ),
         Padding(

@@ -637,6 +637,25 @@ class Api {
     });
   }
 
+  static async initiateSiteVisitPayment(data: {
+    propertyId: number;
+    phoneNumber: string;
+    provider: string;
+  }) {
+    return this.request<any>('tenant/site-visit/pay', {
+      method: 'POST',
+      body: JSON.stringify({
+        property_id: data.propertyId,
+        phone_number: data.phoneNumber,
+        provider: data.provider,
+      }),
+    });
+  }
+
+  static async checkSiteVisitPaymentStatus(orderId: string) {
+    return this.request<any>(`tenant/site-visit/status/${encodeURIComponent(orderId)}`);
+  }
+
   static async notifyAgent(notificationData: any) {
     return this.request<any>('notifications/agent', {
       method: 'POST',

@@ -80,14 +80,26 @@ class ApplicationController extends Controller
         ], 409);
     }
 
+    if ($property->agent_id && $request->payment_status === 'paid') {
+        return response()->json([
+            'message' => 'Site visit payment must be completed through the payment gateway.',
+        ], 422);
+    }
+
     $application = Application::create([
         'user_id'        => $user->id,
         'property_id'    => $property->id,
-        'owner_id'       => $request->owner_id,
-        'message'        => $request->message ?? "Site visit request for {$property->title}",
+        'owner_id'       => $request->owner_id ?? $property->owner_id,
+        'message'        => $request->message ?? (
+            $property->agent_id
+                ? "Site visit request for {$property->title}"
+                : "Rental application for {$property->title}"
+        ),
         'offered_rent'   => $request->offered_rent,
-        'service_fee'    => $request->service_fee,
-        'payment_status' => $request->payment_status,
+        'service_fee'    => $property->agent_id ? $request->service_fee : null,
+        'payment_status' => $property->agent_id
+            ? ($request->payment_status ?? 'pending')
+            : ($request->payment_status ?? 'waived'),
         'payment_method' => $request->payment_method,
         'transaction_id' => $request->transaction_id,
         'applied_at'     => now(),

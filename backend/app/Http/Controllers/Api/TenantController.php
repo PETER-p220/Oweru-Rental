@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use App\Services\SelcomPaymentService;
+use App\Services\SiteVisitPaymentService;
 
 class TenantController extends Controller
 {
@@ -148,14 +149,26 @@ class TenantController extends Controller
             ], 409);
         }
 
+        if ($property->agent_id && $request->payment_status === 'paid') {
+            return response()->json([
+                'message' => 'Site visit payment must be completed through the payment gateway before marking as paid.',
+            ], 422);
+        }
+
         $application = Application::create([
             'user_id'        => $user->id,
             'property_id'    => $property->id,
-            'owner_id'       => $request->owner_id,
-            'message'        => $request->message ?? "Site visit request for {$property->title}",
+            'owner_id'       => $request->owner_id ?? $property->owner_id,
+            'message'        => $request->message ?? (
+                $property->agent_id
+                    ? "Site visit request for {$property->title}"
+                    : "Rental application for {$property->title}"
+            ),
             'proposed_rent'  => $request->proposed_rent,
-            'service_fee'    => $request->service_fee,
-            'payment_status' => $request->payment_status,
+            'service_fee'    => $property->agent_id ? $request->service_fee : null,
+            'payment_status' => $property->agent_id
+                ? ($request->payment_status ?? 'pending')
+                : ($request->payment_status ?? 'waived'),
             'payment_method' => $request->payment_method,
             'transaction_id' => $request->transaction_id,
             'applied_at'     => now(),
@@ -165,6 +178,66 @@ class TenantController extends Controller
             'message' => 'Application submitted successfully',
             'data'    => $application->load('property')
         ], 201);
+    }
+
+    public function initiateSiteVisitPayment(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'property_id'  => 'required|exists:properties,id',
+            'phone_number' => 'required|string|min:10|max:13',
+            'provider'     => 'required|string|in:tigo,mpesa,airtel,halopesa,TIGO,MPESA,AIRTEL,HALOPESA,HALOPES',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $user = Auth::user();
+        $property = Property::findOrFail($request->property_id);
+        $result = app(SiteVisitPaymentService::class)->initiate(
+            $user,
+            $property,
+            $request->phone_number,
+            $request->provider
+        );
+
+        if (! ($result['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Payment initiation failed',
+                'data'    => $result['data'] ?? null,
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+            'data'    => $result['data'],
+        ]);
+    }
+
+    public function checkSiteVisitPaymentStatus(string $orderId): JsonResponse
+    {
+        $result = app(SiteVisitPaymentService::class)->checkStatus($orderId, Auth::user());
+
+        if (! ($result['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Unable to check payment status',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'payment_status' => $result['payment_status'],
+                'application_id' => $result['application_id'],
+                'message' => $result['message'] ?? null,
+            ],
+        ]);
     }
 
     // Contracts

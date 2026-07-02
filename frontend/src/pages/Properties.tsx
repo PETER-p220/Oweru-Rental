@@ -8,7 +8,6 @@ import {
   Bookmark, ChevronLeft, ChevronRight, Building2, Home, Users,
 } from 'lucide-react';
 import Api from '../services/api';
-import SelcomService from '../services/selcom';
 
 /* ─── Types ─── */
 interface Pagination { current_page: number; last_page: number; per_page: number; total: number; }
@@ -130,6 +129,8 @@ const getListingSource = (p: Property): 'agent' | 'landlord' | 'admin' | 'commer
   if (p.owner_id) return 'landlord';
   return 'landlord';
 };
+
+const requiresSiteVisitFee = (p: Property): boolean => Boolean(p.agent_id);
 
 const sourceLabel: Record<string, string> = {
   agent: 'Agent', landlord: 'Landlord', admin: 'Oweru Rental', commercial_admin: 'Commercial',
@@ -830,7 +831,9 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
               <Bookmark size={12} fill={isSaved ? 'currentColor' : 'none'} />
               {isSaved ? 'Saved' : 'Save'}
             </button>
-            <button className="pc-foot-btn apply" onClick={onApply}>Visit site</button>
+            <button className="pc-foot-btn apply" onClick={onApply}>
+              {source === 'agent' ? 'Visit site' : 'Apply'}
+            </button>
           </div>
         </div>
       </div>
@@ -886,14 +889,15 @@ const AuthModal = ({ property, onClose, onLogin, onSignup }: {
 );
 
 /* ─── Apply Modal ─── */
-const ApplyModal = ({ property, onClose, onProceed }: {
-  property: Property; onClose: () => void; onProceed: () => void;
+const ApplyModal = ({ property, requiresFee, processing, onClose, onProceed }: {
+  property: Property; requiresFee: boolean; processing?: boolean;
+  onClose: () => void; onProceed: () => void;
 }) => (
   <Overlay onClose={onClose}>
     <div className="m-head-navy">
       <button className="m-close" onClick={onClose}><X size={15} /></button>
-      <div className="m-head-title">Book Property Site Visit</div>
-      <div className="m-head-sub">Review the details before proceeding</div>
+      <div className="m-head-title">{requiresFee ? 'Book Property Site Visit' : 'Apply for Property'}</div>
+      <div className="m-head-sub">{requiresFee ? 'Review the details before proceeding' : 'Submit your application to the landlord'}</div>
     </div>
     <div className="m-body">
       <div className="prop-info">
@@ -910,17 +914,31 @@ const ApplyModal = ({ property, onClose, onProceed }: {
           </div>
         )}
       </div>
-      <div className="fee-block">
-        <div className="fee-amount">TZS 20,000</div>
-        <div className="fee-label">Site visit fee · non-refundable</div>
-      </div>
-      <p style={{ fontFamily: 'var(--sans)', fontSize: 12, color: 'blue', lineHeight: 1.65 }}>
-        This fee covers the site visit arrangement. Once paid, the agent is notified immediately and will contact you within 24 hours to schedule the visit.
-      </p>
+      {requiresFee ? (
+        <>
+          <div className="fee-block">
+            <div className="fee-amount">TZS 20,000</div>
+            <div className="fee-label">Site visit fee · non-refundable</div>
+          </div>
+          <p style={{ fontFamily: 'var(--sans)', fontSize: 12, color: 'blue', lineHeight: 1.65 }}>
+            This fee covers the site visit arrangement. Once paid, the agent is notified immediately and will contact you within 24 hours to schedule the visit.
+          </p>
+        </>
+      ) : (
+        <p style={{ fontFamily: 'var(--sans)', fontSize: 12, color: 'var(--slate-600)', lineHeight: 1.65 }}>
+          No service charge is required for landlord-listed properties. Your application will be sent directly to the property owner for review.
+        </p>
+      )}
     </div>
     <div className="m-footer">
-      <button className="m-btn" onClick={onClose}>Cancel</button>
-      <button className="m-btn m-btn-navy" onClick={onProceed}>Proceed to Payment <ArrowRight size={14} /></button>
+      <button className="m-btn" onClick={onClose} disabled={processing}>Cancel</button>
+      <button className="m-btn m-btn-navy" onClick={onProceed} disabled={processing}>
+        {processing
+          ? 'Submitting…'
+          : requiresFee
+            ? <>Proceed to Payment <ArrowRight size={14} /></>
+            : <>Submit Application <ArrowRight size={14} /></>}
+      </button>
     </div>
   </Overlay>
 );
@@ -991,21 +1009,80 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
   </Overlay>
 );
 
+/* ─── Pending Payment Modal ─── */
+const PendingPaymentModal = ({
+  provider, orderId, message, onClose,
+}: {
+  provider: string; orderId: string; message?: string; onClose: () => void;
+}) => (
+  <Overlay onClose={() => {}}>
+    <div className="m-head-navy">
+      <div className="m-head-title">Waiting for Payment</div>
+      <div className="m-head-sub">Approve the {provider.toUpperCase()} prompt on your phone</div>
+    </div>
+    <div className="m-body" style={{ textAlign: 'center', padding: '28px 20px' }}>
+      <Loader2 size={36} style={{ color: 'var(--gold)', animation: 'spin .8s linear infinite', margin: '0 auto 16px', display: 'block' }} />
+      <p style={{ fontFamily: 'var(--sans)', fontSize: 14, color: 'var(--slate-900)', marginBottom: 8, fontWeight: 600 }}>
+        Check your phone and enter your PIN
+      </p>
+      <p style={{ fontFamily: 'var(--sans)', fontSize: 12, color: 'var(--slate-600)', lineHeight: 1.6 }}>
+        Do not close this screen until payment is confirmed. Ref: {orderId}
+      </p>
+      {message && (
+        <p style={{ fontFamily: 'var(--sans)', fontSize: 12, color: 'var(--gold)', marginTop: 12 }}>{message}</p>
+      )}
+    </div>
+    <div className="m-footer" style={{ justifyContent: 'center' }}>
+      <button className="m-btn" onClick={onClose} style={{ fontSize: 12 }}>Cancel and try again</button>
+    </div>
+  </Overlay>
+);
+
+/* ─── Payment Failed Modal ─── */
+const PaymentFailedModal = ({ onClose, onRetry }: { onClose: () => void; onRetry: () => void }) => (
+  <Overlay onClose={onClose}>
+    <div className="m-head-navy">
+      <div className="m-head-title">Payment Not Completed</div>
+      <div className="m-head-sub">The site visit fee was not received</div>
+    </div>
+    <div className="m-body">
+      <p style={{ fontFamily: 'var(--sans)', fontSize: 13, color: 'var(--slate-600)', lineHeight: 1.65 }}>
+        Your application was not submitted because payment was not confirmed. You can try again or choose a different mobile money provider (including Halopesa).
+      </p>
+    </div>
+    <div className="m-footer">
+      <button className="m-btn" onClick={onClose}>Close</button>
+      <button className="m-btn m-btn-navy" onClick={onRetry}>Try Again</button>
+    </div>
+  </Overlay>
+);
+
 /* ─── Success Modal ─── */
-const SuccessModal = ({ onClose }: { onClose: () => void }) => (
+const SuccessModal = ({ variant, onClose }: { variant: 'site_visit' | 'application'; onClose: () => void }) => (
   <Overlay onClose={onClose}>
     <div className="succ-hero">
       <div className="succ-icon"><CheckCircle2 size={28} /></div>
-      <div className="succ-title">Site Visit Booked!</div>
-      <div className="succ-sub">Payment confirmed. The agent has been notified and will contact you shortly.</div>
+      <div className="succ-title">{variant === 'site_visit' ? 'Site Visit Booked!' : 'Application Submitted!'}</div>
+      <div className="succ-sub">
+        {variant === 'site_visit'
+          ? 'Payment confirmed. The agent has been notified and will contact you shortly.'
+          : 'Your application has been sent to the landlord. You will be notified once they respond.'}
+      </div>
     </div>
     <div className="m-body" style={{ paddingTop: 20 }}>
       <div className="succ-steps-wrap">
-        {[
-          { label: 'Site visit fee received & confirmed',      icon: <CheckCheck size={14} /> },
-          { label: 'Agent notified instantly via SMS & email', icon: <Sparkles size={14} />   },
-          { label: 'Expect a call or message within 24 hours', icon: <CheckCircle2 size={14} /> },
-        ].map((s, i) => (
+        {(variant === 'site_visit'
+          ? [
+              { label: 'Site visit fee received & confirmed', icon: <CheckCheck size={14} /> },
+              { label: 'Agent notified instantly via SMS & email', icon: <Sparkles size={14} /> },
+              { label: 'Expect a call or message within 24 hours', icon: <CheckCircle2 size={14} /> },
+            ]
+          : [
+              { label: 'Application submitted successfully', icon: <CheckCheck size={14} /> },
+              { label: 'Landlord notified of your interest', icon: <Sparkles size={14} /> },
+              { label: 'You can track status in My Applications', icon: <CheckCircle2 size={14} /> },
+            ]
+        ).map((s, i) => (
           <div key={i} className="succ-step">
             <div className="succ-step-icon">{s.icon}</div>
             {s.label}
@@ -1022,7 +1099,7 @@ const SuccessModal = ({ onClose }: { onClose: () => void }) => (
 );
 
 /* ─── Main Component ─── */
-type ModalStep    = 'none' | 'auth' | 'apply' | 'payment' | 'success';
+type ModalStep    = 'none' | 'auth' | 'apply' | 'payment' | 'pending_payment' | 'payment_failed' | 'success';
 type SourceFilter = 'all'  | 'agent' | 'landlord' | 'admin';
 
 const Properties = () => {
@@ -1045,6 +1122,10 @@ const Properties = () => {
   const [modal,         setModal]        = useState<ModalStep>('none');
   const [selProp,       setSelProp]      = useState<Property | null>(null);
   const [paying,        setPaying]       = useState(false);
+  const [successVariant, setSuccessVariant] = useState<'site_visit' | 'application'>('site_visit');
+  const [pendingOrderId, setPendingOrderId] = useState('');
+  const [pollMessage, setPollMessage] = useState('');
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
   const [phoneNumber,   setPhoneNumber]   = useState('');
   const jumpRef = useRef<HTMLInputElement>(null);
@@ -1107,6 +1188,44 @@ const Properties = () => {
 
   useEffect(() => { loadProperties(currentPage); }, [currentPage, loadProperties]);
 
+  useEffect(() => {
+    if (modal !== 'pending_payment' || !pendingOrderId) return;
+
+    let attempts = 0;
+    const maxAttempts = 40;
+
+    const poll = async () => {
+      attempts += 1;
+      try {
+        const res = await Api.checkSiteVisitPaymentStatus(pendingOrderId);
+        const status = res.data?.payment_status;
+        if (status === 'paid') {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setSuccessVariant('site_visit');
+          setModal('success');
+          addToast({ type: 'success', title: 'Payment confirmed', message: 'Site visit fee received successfully.', duration: 6000 });
+        } else if (status === 'failed') {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setModal('payment_failed');
+        } else if (attempts >= maxAttempts) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setPollMessage('Payment is taking longer than expected. Check My Applications for the latest status.');
+        }
+      } catch {
+        if (attempts >= maxAttempts) {
+          setPollMessage('Unable to verify payment right now. Check My Applications shortly.');
+        }
+      }
+    };
+
+    poll();
+    pollRef.current = setInterval(poll, 3000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [modal, pendingOrderId]);
+
   const totalPages = pagination ? pagination.last_page : 1;
   const pageStart  = pagination ? (pagination.current_page - 1) * pagination.per_page + 1 : 0;
   const pageEnd    = pagination ? Math.min(pagination.current_page * pagination.per_page, pagination.total) : 0;
@@ -1158,6 +1277,34 @@ const Properties = () => {
     navigate(`/register?redirect=/dashboard/tenant/applications?property=${selProp?.id}`);
   };
 
+  const handleProceedApply = async () => {
+    if (!selProp) return;
+    if (requiresSiteVisitFee(selProp)) {
+      setModal('payment');
+      return;
+    }
+    setPaying(true);
+    try {
+      await Api.createApplication({
+        property_id: selProp.id,
+        owner_id: selProp.owner?.id,
+        message: `I am interested in renting ${selProp.title}.`,
+        payment_status: 'waived',
+      });
+      setSuccessVariant('application');
+      setModal('success');
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Application failed',
+        message: err?.response?.data?.message || err?.message || 'Could not submit application.',
+        duration: 7000,
+      });
+    } finally {
+      setPaying(false);
+    }
+  };
+
   const handlePay = async () => {
     if (!selProp) return;
     if (!phoneNumber || phoneNumber.length < 10) {
@@ -1165,52 +1312,25 @@ const Properties = () => {
       return;
     }
     setPaying(true);
+    setPollMessage('');
     try {
-      const userStr  = localStorage.getItem('user');
-      const user     = userStr ? JSON.parse(userStr) : null;
-      const tenantId = user?.id;
-      if (!tenantId) {
-        addToast({ type: 'error', title: 'Not authenticated', message: 'Your session may have expired. Please log in again.' });
-        setPaying(false);
-        return;
-      }
-      const paymentData = {
-        amount: 20000, property_id: selProp.id, tenant_id: tenantId,
-        phone_number: phoneNumber, provider: paymentMethod,
-        customer_email: user?.email,
-        customer_name: user?.first_name && user?.last_name
-          ? `${user.first_name} ${user.last_name}` : user?.first_name || 'Customer',
-        payment_type: 'site_visit',
-      };
-      const paymentResponse = await SelcomService.initiateMobileMoneyPayment(paymentData);
-      if (paymentResponse.success && paymentResponse.data?.transaction_id) {
-        const transactionId = paymentResponse.data.transaction_id;
-        addToast({ type: 'success', title: 'Payment initiated', message: `Check your ${paymentMethod.toUpperCase()} prompt. Ref: ${transactionId}`, duration: 8000 });
-        await Api.createApplication({
-          property_id: selProp.id, owner_id: selProp.owner?.id,
-          service_fee: 20000, payment_status: 'paid',
-          payment_method: paymentMethod, transaction_id: transactionId,
+      const res = await Api.initiateSiteVisitPayment({
+        propertyId: selProp.id,
+        phoneNumber: phoneNumber.trim(),
+        provider: paymentMethod,
+      });
+
+      if (res.data?.order_id) {
+        setPendingOrderId(res.data.order_id);
+        setModal('pending_payment');
+        addToast({
+          type: 'info',
+          title: 'Approve on your phone',
+          message: res.message || `Check your ${paymentMethod.toUpperCase()} prompt and enter your PIN.`,
+          duration: 10000,
         });
-        try {
-          await Api.createContract({
-            property_id: selProp.id, owner_id: selProp.owner?.id, tenant_id: tenantId,
-            start_date: new Date().toISOString().split('T')[0],
-            end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            rent_amount: selProp.price, status: 'pending_signature',
-            payment_status: 'service_fee_paid', service_fee_transaction_id: transactionId,
-          });
-        } catch (contractError) { console.warn('Contract creation failed:', contractError); }
-        if (selProp.agent?.id) {
-          try {
-            await Api.notifyAgent({
-              agent_id: selProp.agent.id, property_id: selProp.id, tenant_id: tenantId,
-              message: `Tenant paid service fee via ${paymentMethod.toUpperCase()} for: ${selProp.title}`,
-            });
-          } catch { /* silent */ }
-        }
-        setModal('success');
       } else {
-        throw new Error(paymentResponse.message || 'Payment initiation failed');
+        throw new Error(res.message || 'Payment initiation failed');
       }
     } catch (err: any) {
       addToast({ type: 'error', title: 'Payment failed', message: err?.message || 'Something went wrong. Please try again.', duration: 7000 });
@@ -1219,7 +1339,21 @@ const Properties = () => {
     }
   };
 
-  const closeModal = () => { if (!paying) { setModal('none'); setSelProp(null); } };
+  const closeModal = () => {
+    if (paying || modal === 'pending_payment') return;
+    if (pollRef.current) clearInterval(pollRef.current);
+    setModal('none');
+    setSelProp(null);
+    setPendingOrderId('');
+    setPollMessage('');
+  };
+
+  const cancelPendingPayment = () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    setPendingOrderId('');
+    setPollMessage('');
+    setModal('payment');
+  };
 
   const clearFilters = () => {
     setSearchTerm(''); setSelectedType(''); setPriceRange('');
@@ -1439,7 +1573,15 @@ const Properties = () => {
 
       {/* ── Modals ── */}
       {modal === 'auth'    && selProp && <AuthModal    property={selProp} onClose={closeModal} onLogin={handleAuthLogin} onSignup={handleAuthSignup} />}
-      {modal === 'apply'   && selProp && <ApplyModal   property={selProp} onClose={closeModal} onProceed={() => setModal('payment')} />}
+      {modal === 'apply'   && selProp && (
+        <ApplyModal
+          property={selProp}
+          requiresFee={requiresSiteVisitFee(selProp)}
+          processing={paying}
+          onClose={closeModal}
+          onProceed={handleProceedApply}
+        />
+      )}
       {modal === 'payment' && selProp && (
         <PaymentModal
           processing={paying} onClose={closeModal} onPay={handlePay}
@@ -1447,8 +1589,25 @@ const Properties = () => {
           paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
         />
       )}
+      {modal === 'pending_payment' && pendingOrderId && (
+        <PendingPaymentModal
+          provider={paymentMethod}
+          orderId={pendingOrderId}
+          message={pollMessage}
+          onClose={cancelPendingPayment}
+        />
+      )}
+      {modal === 'payment_failed' && (
+        <PaymentFailedModal
+          onClose={closeModal}
+          onRetry={() => setModal('payment')}
+        />
+      )}
       {modal === 'success' && (
-        <SuccessModal onClose={() => { closeModal(); navigate('/dashboard/tenant/applications'); }} />
+        <SuccessModal
+          variant={successVariant}
+          onClose={() => { closeModal(); navigate('/dashboard/tenant/applications'); }}
+        />
       )}
     </div>
   );

@@ -817,6 +817,32 @@ class AgentController extends Controller
 
     public function notifyAgent(Request $request): JsonResponse
     {
+        $validator = Validator::make($request->all(), [
+            'agent_id'    => 'required|integer|exists:users,id',
+            'property_id' => 'required|integer|exists:properties,id',
+            'tenant_id'   => 'nullable|integer|exists:users,id',
+            'message'     => 'required|string|max:1000',
+            'title'       => 'nullable|string|max:200',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            Notification::create([
+                'user_id' => $request->agent_id,
+                'title'   => $request->title ?? 'Site Visit Update',
+                'message' => $request->message,
+                'type'    => 'site_visit_paid',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Failed to send notification'], 500);
+        }
+
         return response()->json(['message' => 'Notification sent']);
     }
 

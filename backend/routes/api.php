@@ -123,6 +123,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Applications
         Route::get('/tenant/applications',                                          [TenantController::class, 'getApplications']);
         Route::post('/tenant/applications',                                         [TenantController::class, 'createApplication']);
+        Route::post('/tenant/site-visit/pay',                                      [TenantController::class, 'initiateSiteVisitPayment']);
+        Route::get('/tenant/site-visit/status/{orderId}',                           [TenantController::class, 'checkSiteVisitPaymentStatus']);
         Route::put('/tenant/applications/{application}/payment-status',             [TenantController::class, 'updateApplicationPaymentStatus']);
 
         // Payments (Selcom)

@@ -122,8 +122,29 @@ class SelcomPaymentService
         ])->post($baseUrl . '/wallet-payment', $payPayload);
 
         $payData = $payResponse->json();
+        $payResult = strtoupper((string) ($payData['result'] ?? ''));
+        $payOk = $payResponse->successful()
+            && ! in_array($payResult, ['FAIL', 'FAILED', 'ERROR'], true);
 
-        if (! $payResponse->successful()) {
+        // Halopesa: retry alternate Selcom provider code if first attempt failed
+        if (! $payOk && $selcomProvider === 'HALO-PESA') {
+            Log::info('Retrying Halopesa with HALOPESA provider code');
+            $payPayload['provider'] = 'HALOPESA';
+            $payResponse = Http::withHeaders([
+                'X-App-Key' => $appKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])->post($baseUrl . '/wallet-payment', $payPayload);
+            $payData = $payResponse->json();
+            $payResult = strtoupper((string) ($payData['result'] ?? ''));
+            $payOk = $payResponse->successful()
+                && ! in_array($payResult, ['FAIL', 'FAILED', 'ERROR'], true);
+            if ($payOk) {
+                $selcomProvider = 'HALOPESA';
+            }
+        }
+
+        if (! $payOk) {
             $errorDetail = $payData['detail']
                 ?? $payData['message']
                 ?? $payData['error']
@@ -134,6 +155,7 @@ class SelcomPaymentService
                 'status' => $payResponse->status(),
                 'detail' => $errorDetail,
                 'provider_used' => $selcomProvider,
+                'result' => $payResult,
             ]);
 
             return [
@@ -153,5 +175,65 @@ class SelcomPaymentService
             ],
             'message' => 'Payment request sent. Please check your phone and approve the prompt.',
         ];
+    }
+
+    /**
+     * Poll Oweru checkout order status.
+     *
+     * @return array{success:bool,paid:bool,failed:bool,status?:string,data?:array<string,mixed>}
+     */
+    public function checkOrderStatus(string $orderId): array
+    {
+        $appKey = env('OWERU_APP_KEY');
+        $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
+
+        if (empty($appKey)) {
+            return ['success' => false, 'paid' => false, 'failed' => false];
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'X-App-Key' => $appKey,
+                'Accept' => 'application/json',
+            ])->timeout(20)->get($baseUrl . '/order-status/' . urlencode($orderId));
+
+            if (! $response->successful()) {
+                $response = Http::withHeaders([
+                    'X-App-Key' => $appKey,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])->timeout(20)->post($baseUrl . '/order-status', ['order_id' => $orderId]);
+            }
+
+            $data = $response->json() ?? [];
+            $status = strtoupper((string) (
+                $data['payment_status']
+                ?? $data['status']
+                ?? $data['order_status']
+                ?? $data['result']
+                ?? ''
+            ));
+            $resultCode = (string) ($data['resultcode'] ?? $data['result_code'] ?? '');
+
+            $paid = $resultCode === '000'
+                || in_array($status, ['COMPLETED', 'SUCCESS', 'PAID', 'SUCCESSFUL'], true);
+            $failed = in_array($status, ['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'ERROR'], true)
+                || in_array($resultCode, ['001', '002', '999'], true);
+
+            return [
+                'success' => $response->successful(),
+                'paid' => $paid,
+                'failed' => $failed && ! $paid,
+                'status' => $status ?: null,
+                'data' => $data,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Oweru order status check failed', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['success' => false, 'paid' => false, 'failed' => false];
+        }
     }
 }
