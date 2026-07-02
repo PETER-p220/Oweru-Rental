@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import {
   Building, Plus, Edit2, Trash2, Search, Filter, MapPin, Bed, Bath,
   Square, Eye, Heart, Shield, TrendingUp, DollarSign
@@ -164,8 +163,8 @@ const OweruProperties = () => {
               Manage properties that appear on the homepage
             </p>
           </div>
-          <Link
-            to="/dashboard/admin/add-oweru-property"
+          <button
+            onClick={() => setShowAddModal(true)}
             style={{
               background: 'var(--color-primary)',
               color: 'var(--color-background)',
@@ -183,7 +182,7 @@ const OweruProperties = () => {
           >
             <Plus size={16} />
             Add Oweru Property
-          </Link>
+          </button>
         </div>
 
         {/* Search Bar */}

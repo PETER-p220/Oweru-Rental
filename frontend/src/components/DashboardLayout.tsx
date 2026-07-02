@@ -7,7 +7,7 @@ import {
   ChevronRight, QrCode, Link2, ShieldCheck, CreditCard, Wallet,
   Receipt, MessageSquare, AlertCircle, PieChart,
   RefreshCw, BookOpen, Landmark, Eye,
-  Calendar, Hotel, Briefcase,
+  Calendar, Hotel, Briefcase, Activity,
 } from 'lucide-react';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 
@@ -117,6 +117,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Contracts',            icon: BookOpen,    href: 'contracts'        },
       { name: 'Verification',         icon: ShieldCheck, href: 'verification'     },
       { name: 'Alerts',               icon: AlertCircle, href: 'alerts'           },
+      { name: 'Activity Logs',        icon: Activity,    href: 'activity-logs'    },
       { name: 'Settings',             icon: Settings,    href: 'settings'         },
     ],
     bnb_owner: [
@@ -168,7 +169,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     admin: [
       { label: 'Platform',   items: ['Overview','Users','Properties','Verification','Add Oweru Properties'] },
       { label: 'Operations', items: ['Transactions','Commission','Payments','Contracts','BNB Properties'] },
-      { label: 'Monitoring', items: ['Alerts','Settings'] },
+      { label: 'Monitoring', items: ['Alerts', 'Activity Logs', 'Settings'] },
     ],
     bnb_owner: [
       { label: 'Properties', items: ['Overview','My BNB Properties','Add Property'] },

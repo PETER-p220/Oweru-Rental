@@ -174,25 +174,38 @@ class _PaymentsPageState extends State<PaymentsPage> {
         processing: _processing,
         methods: _methods,
         onMethodChanged: (v) => setState(() => _method = v),
-        onPay: (ctx) => _process(ctx, pay),
+        onPay: (ctx, phone) => _process(ctx, pay, phone),
       ),
     );
   }
 
-  Future<void> _process(BuildContext ctx, Map<String, dynamic> pay) async {
+  Future<void> _process(BuildContext ctx, Map<String, dynamic> pay, String phone) async {
+    if (phone.trim().length < 10) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid phone number')),
+      );
+      return;
+    }
     setState(() => _processing = true);
     final paymentId = (pay['id'] as num?)?.toInt();
-    bool success = false;
+    Map<String, dynamic> result = {'success': false, 'message': 'Invalid payment'};
     if (paymentId != null) {
-      success = await TenantApiService.makePayment(paymentId, paymentMethodId: _method);
+      result = await TenantApiService.makePayment(
+        paymentId,
+        phoneNumber: phone.trim(),
+        provider: _method,
+      );
     }
     if (!mounted) return;
     setState(() => _processing = false);
     Navigator.pop(ctx);
+    final success = result['success'] == true;
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
         content: Text(
-          success ? 'Payment submitted successfully!' : 'Failed to submit payment',
+          success
+              ? (result['message']?.toString() ?? 'Payment submitted successfully!')
+              : (result['message']?.toString() ?? 'Failed to submit payment'),
           style: const TextStyle(color: kBg, fontWeight: FontWeight.w600),
         ),
         backgroundColor: success ? kGold : kDanger,
@@ -218,7 +231,7 @@ class _PaymentModal extends StatefulWidget {
   final bool processing;
   final List<Map<String, dynamic>> methods;
   final ValueChanged<String> onMethodChanged;
-  final Future<void> Function(BuildContext) onPay;
+  final Future<void> Function(BuildContext, String phone) onPay;
   const _PaymentModal({
     required this.payment, required this.method, required this.processing,
     required this.methods, required this.onMethodChanged, required this.onPay});
@@ -357,8 +370,10 @@ class _PaymentModalState extends State<_PaymentModal> {
             const SizedBox(width: 10),
             Expanded(flex: 2, child: GestureDetector(
               onTap: _processing ? null : () async {
+                final phone = _phoneCtrl.text.trim();
+                if (phone.length < 10) return;
                 setState(() => _processing = true);
-                await widget.onPay(context);
+                await widget.onPay(context, phone);
                 if (mounted) setState(() => _processing = false);
               },
               child: Container(

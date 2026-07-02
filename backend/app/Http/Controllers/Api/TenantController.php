@@ -18,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use App\Services\SelcomPaymentService;
 
 class TenantController extends Controller
 {
@@ -225,24 +226,32 @@ class TenantController extends Controller
     {
         $methods = [
             [
-                'id' => 1,
-                'name' => 'M-Pesa',
-                'type' => 'mobile_money',
-                'provider' => 'Vodacom Africa',
-                'is_active' => true,
-                'supported_currencies' => ['TZS'],
-                'fees' => ['percentage' => 1.5, 'fixed' => 500],
-                'limits' => ['min' => 1000, 'max' => 5000000],
-            ],
-            [
-                'id' => 2,
+                'id' => 'tigo',
                 'name' => 'Tigo Pesa',
                 'type' => 'mobile_money',
-                'provider' => 'Tigo Africa',
+                'provider' => 'TIGO',
                 'is_active' => true,
-                'supported_currencies' => ['TZS'],
-                'fees' => ['percentage' => 1.5, 'fixed' => 500],
-                'limits' => ['min' => 1000, 'max' => 4000000],
+            ],
+            [
+                'id' => 'mpesa',
+                'name' => 'M-Pesa',
+                'type' => 'mobile_money',
+                'provider' => 'MPESA',
+                'is_active' => true,
+            ],
+            [
+                'id' => 'airtel',
+                'name' => 'Airtel Money',
+                'type' => 'mobile_money',
+                'provider' => 'AIRTEL',
+                'is_active' => true,
+            ],
+            [
+                'id' => 'halopesa',
+                'name' => 'Halopesa',
+                'type' => 'mobile_money',
+                'provider' => 'HALOPESA',
+                'is_active' => true,
             ],
         ];
 
@@ -284,23 +293,61 @@ class TenantController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        if (! in_array($payment->status, ['pending', 'failed'], true)) {
+            return response()->json(['message' => 'This payment cannot be processed in its current state.'], 422);
+        }
+
         $validator = Validator::make($request->all(), [
-            'payment_method_id' => 'required|integer',
+            'phone_number' => 'required|string|min:10|max:13',
+            'provider' => 'required|string|in:tigo,mpesa,airtel,halopesa,TIGO,MPESA,AIRTEL,HALOPESA,HALOPES',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors'  => $validator->errors()
+                'errors'  => $validator->errors(),
             ], 422);
         }
 
-        $payment->update([
-            'status'            => 'processing',
-            'payment_method_id' => $request->payment_method_id,
+        $provider = strtoupper($request->provider);
+        $orderId = 'RENT-PAY-' . $payment->id . '-' . time();
+
+        $result = app(SelcomPaymentService::class)->initiate([
+            'amount' => $payment->amount,
+            'phone_number' => $request->phone_number,
+            'provider' => $provider,
+            'customer_email' => $user->email,
+            'customer_name' => trim($user->first_name . ' ' . $user->last_name) ?: 'Tenant',
+            'order_id' => $orderId,
+            'payment_type' => $payment->type ?? 'monthly_rent',
+            'property_id' => $payment->property_id ?? 0,
+            'tenant_id' => $user->id,
         ]);
 
-        return response()->json(['message' => 'Payment initiated successfully']);
+        if (! ($result['success'] ?? false)) {
+            return response()->json([
+                'message' => $result['message'] ?? 'Payment initiation failed',
+            ], 422);
+        }
+
+        $transactionId = $result['data']['transaction_id'] ?? $orderId;
+
+        $payment->update([
+            'status' => 'processing',
+            'reference' => $orderId,
+            'metadata' => array_merge($payment->metadata ?? [], [
+                'provider' => $provider,
+                'selcom_provider' => SelcomPaymentService::mapProvider($provider),
+                'phone_number' => $request->phone_number,
+                'transaction_id' => $transactionId,
+                'initiated_at' => now()->toIso8601String(),
+            ]),
+        ]);
+
+        return response()->json([
+            'message' => $result['message'] ?? 'Payment initiated successfully',
+            'data' => $result['data'],
+        ]);
     }
 
     public function getPaymentHistory(): JsonResponse

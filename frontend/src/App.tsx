@@ -54,6 +54,7 @@ import PaymentsManagement from './pages/admin/PaymentsManagement';
 import ContractsManagement from './pages/admin/ContractsManagement';
 import VerificationManagement from './pages/admin/VerificationManagement';
 import AlertsManagement from './pages/admin/AlertsManagement';
+import ActivityLogs from './pages/admin/ActivityLogs';
 import SystemSettings from './pages/admin/SystemSettings';
 
 // BNB Owner pages
@@ -198,6 +199,7 @@ const AdminRoutes = () => (
         <Route path="contracts" element={<ContractsManagement />} />
         <Route path="verification" element={<VerificationManagement />} />
         <Route path="alerts" element={<AlertsManagement />} />
+        <Route path="activity-logs" element={<ActivityLogs />} />
         <Route path="settings" element={<SystemSettings />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

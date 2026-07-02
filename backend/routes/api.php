@@ -53,6 +53,9 @@ Route::post('/public/bnb/properties/{property}/reviews',  [BnbReviewController::
 // Debug route — REMOVE IN PRODUCTION
 Route::get('/debug/properties', [PropertyController::class, 'debugProperties']);
 
+// Payment webhook (public — Selcom/Oweru callbacks cannot send Bearer tokens)
+Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook']);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PROTECTED ROUTES  (auth:sanctum required)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -124,7 +127,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Payments (Selcom)
         Route::post('/payment/selcom/mobile-money', [PaymentController::class, 'initiateMobileMoney']);
-        Route::post('/payment/webhook',             [PaymentController::class, 'handleWebhook']);
 
         // Contracts
         Route::get('/tenant/contract',                             [TenantController::class, 'getMyContract']);
@@ -324,6 +326,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // Users
         Route::get('/admin/users',                 [AdminController::class, 'getUsers']);
         Route::get('/admin/users/stats',           [AdminController::class, 'getUserStats']);
+        Route::get('/admin/users/active-sessions', [AdminController::class, 'getActiveSessions']);
+        Route::get('/admin/users/{user}/activity', [AdminController::class, 'getUserActivity']);
+        Route::get('/admin/activity-logs',        [AdminController::class, 'getActivityLogs']);
         Route::post('/admin/users',                [AdminController::class, 'createUser']);
         Route::put('/admin/users/{user}',          [AdminController::class, 'updateUser']);
         Route::delete('/admin/users/{user}',       [AdminController::class, 'deleteUser']);

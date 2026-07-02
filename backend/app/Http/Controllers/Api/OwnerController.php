@@ -797,7 +797,10 @@ class OwnerController extends Controller
             ->firstOrFail();
 
         if ($contract->status !== 'draft') {
-            return response()->json(['message' => 'Only draft contracts can be sent to tenants'], 422);
+            return response()->json([
+                'message' => 'Only draft contracts can be sent to tenants',
+                'current_status' => $contract->status,
+            ], 422);
         }
 
         $contract->update(['status' => 'pending_signature']);
@@ -842,7 +845,7 @@ class OwnerController extends Controller
             'file_name'   => $request->file_name,
             'file_type'   => $request->file_type,
             'fields'      => $request->fields ?? [],
-            'status'      => $request->status ?? 'pending_signature',
+            'status'      => $request->status ?? 'draft',
             'created_by'  => $user->id,
         ]);
 

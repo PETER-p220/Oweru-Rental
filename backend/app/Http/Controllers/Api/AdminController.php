@@ -8,6 +8,8 @@ use App\Models\Contract;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\User;
+use App\Models\UserActivityLog;
+use App\Models\UserSession;
 use App\Models\BnbProperty;
 use App\Models\BnbBooking;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use App\Services\ActivityLogService;
 
 class AdminController extends Controller
 {
@@ -70,6 +73,130 @@ class AdminController extends Controller
                 'tenants' => User::where('user_type', 'tenant')->count(),
                 'newThisMonth' => User::where('created_at', '>=', now()->startOfMonth())->count(),
                 'activeThisMonth' => User::where('is_active', true)->where('updated_at', '>=', now()->startOfMonth())->count(),
+                'activeSessions' => UserSession::where('is_active', true)->count(),
+            ],
+        ]);
+    }
+
+    public function getActiveSessions(): JsonResponse
+    {
+        $sessions = UserSession::with('user')->where('is_active', true)
+            ->orderByDesc('last_seen_at')
+            ->get()
+            ->map(function (UserSession $session) {
+                return [
+                    'id' => $session->id,
+                    'user_id' => $session->user_id,
+                    'user_name' => $session->user?->first_name . ' ' . $session->user?->last_name,
+                    'email' => $session->user?->email,
+                    'user_type' => $session->user?->user_type,
+                    'ip_address' => $session->ip_address,
+                    'user_agent' => $session->user_agent,
+                    'device_fingerprint' => $session->device_fingerprint,
+                    'last_seen_at' => $session->last_seen_at,
+                    'login_at' => $session->login_at,
+                ];
+            });
+
+        return response()->json(['data' => $sessions]);
+    }
+
+    public function getUserActivity(User $user): JsonResponse
+    {
+        $sessions = $user->sessions()->orderByDesc('last_seen_at')->get()->map(function (UserSession $session) {
+            return [
+                'id' => $session->id,
+                'ip_address' => $session->ip_address,
+                'user_agent' => $session->user_agent,
+                'device_fingerprint' => $session->device_fingerprint,
+                'is_active' => $session->is_active,
+                'login_at' => $session->login_at,
+                'last_seen_at' => $session->last_seen_at,
+                'logout_at' => $session->logout_at,
+            ];
+        });
+
+        $activityLogs = $user->activityLogs()->orderByDesc('created_at')->take(10)->get()->map(function (UserActivityLog $log) {
+            return [
+                'id' => $log->id,
+                'action' => $log->action,
+                'description' => $log->description,
+                'ip_address' => $log->ip_address,
+                'user_agent' => $log->user_agent,
+                'device_fingerprint' => $log->device_fingerprint,
+                'metadata' => $log->metadata,
+                'created_at' => $log->created_at,
+            ];
+        });
+
+        return response()->json([
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'user_type' => $user->user_type,
+                ],
+                'sessions' => $sessions,
+                'activity_logs' => $activityLogs,
+            ],
+        ]);
+    }
+
+    public function getActivityLogs(Request $request): JsonResponse
+    {
+        $perPage = min((int) ($request->per_page ?? 20), 100);
+
+        $query = UserActivityLog::with('user')->orderByDesc('created_at');
+
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                    ->orWhere('action', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $logs = $query->paginate($perPage);
+
+        return response()->json([
+            'data' => collect($logs->items())->map(function (UserActivityLog $log) {
+                return [
+                    'id' => $log->id,
+                    'user_id' => $log->user_id,
+                    'user' => $log->user ? [
+                        'id' => $log->user->id,
+                        'name' => trim($log->user->first_name . ' ' . $log->user->last_name),
+                        'email' => $log->user->email,
+                        'user_type' => $log->user->user_type,
+                    ] : null,
+                    'action' => $log->action,
+                    'description' => $log->description,
+                    'ip_address' => $log->ip_address,
+                    'user_agent' => $log->user_agent,
+                    'metadata' => $log->metadata,
+                    'created_at' => $log->created_at,
+                ];
+            }),
+            'pagination' => [
+                'current_page' => $logs->currentPage(),
+                'last_page' => $logs->lastPage(),
+                'per_page' => $logs->perPage(),
+                'total' => $logs->total(),
             ],
         ]);
     }
@@ -156,7 +283,7 @@ class AdminController extends Controller
         ]);
     }
 
-    public function deleteUser($userId): JsonResponse
+    public function deleteUser(Request $request, $userId): JsonResponse
     {
         $user = User::findOrFail($userId);
 
@@ -164,7 +291,16 @@ class AdminController extends Controller
             return response()->json(['message' => 'Cannot delete the last admin user'], 422);
         }
 
+        $userName = trim($user->first_name . ' ' . $user->last_name) ?: $user->email;
         $user->delete();
+
+        ActivityLogService::log(
+            $request->user()?->id,
+            'admin_user_delete',
+            "Deleted user #{$userId} ({$userName})",
+            $request,
+            ['target_user_id' => (int) $userId]
+        );
 
         return response()->json(['message' => 'User deleted successfully']);
     }
@@ -185,6 +321,14 @@ class AdminController extends Controller
         }
 
         $user->update(['is_active' => $request->status === 'active']);
+
+        ActivityLogService::log(
+            $request->user()?->id,
+            'admin_user_status_update',
+            "Updated user #{$user->id} status to {$request->status}",
+            $request,
+            ['target_user_id' => $user->id, 'status' => $request->status]
+        );
 
         return response()->json([
             'message' => 'User status updated successfully',
@@ -352,9 +496,20 @@ class AdminController extends Controller
         ]);
     }
 
-    public function deleteProperty(Property $property): JsonResponse
+    public function deleteProperty(Request $request, Property $property): JsonResponse
     {
+        $propertyId = $property->id;
+        $title = $property->title;
         $property->delete();
+
+        ActivityLogService::log(
+            $request->user()?->id,
+            'admin_property_delete',
+            "Deleted property #{$propertyId}: {$title}",
+            $request,
+            ['property_id' => $propertyId]
+        );
+
         return response()->json(['message' => 'Property deleted successfully']);
     }
 

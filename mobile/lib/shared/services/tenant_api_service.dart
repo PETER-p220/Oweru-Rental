@@ -171,16 +171,34 @@ class TenantApiService {
     }
   }
 
-  static Future<bool> makePayment(int paymentId, {required String paymentMethodId}) async {
+  static Future<Map<String, dynamic>> makePayment(
+    int paymentId, {
+    required String phoneNumber,
+    required String provider,
+  }) async {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/tenant/payments/$paymentId/pay'),
         headers: _headers,
-        body: jsonEncode({'payment_method_id': paymentMethodId}),
+        body: jsonEncode({
+          'phone_number': phoneNumber,
+          'provider': provider,
+        }),
       );
-      return response.statusCode >= 200 && response.statusCode < 300;
-    } catch (_) {
-      return false;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Payment initiated',
+          'transaction_id': data['data']?['transaction_id'],
+        };
+      }
+      return {
+        'success': false,
+        'message': data['message'] ?? 'Payment failed',
+      };
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
     }
   }
 

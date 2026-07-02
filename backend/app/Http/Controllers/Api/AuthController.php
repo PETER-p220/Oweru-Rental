@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserActivityLog;
+use App\Models\UserSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -80,10 +82,68 @@ class AuthController extends Controller
             return response()->json(['message' => 'Account is inactive'], 401);
         }
 
-        // Revoke previous tokens (single-session) — remove if you want multi-device
+        $deviceFingerprint = $this->buildDeviceFingerprint($request);
+        $ipAddress = $this->resolveIpAddress($request);
+        $userAgent = $request->header('User-Agent', 'unknown');
+
+        $existingSession = UserSession::query()
+            ->where('device_fingerprint', $deviceFingerprint)
+            ->where('is_active', true)
+            ->where('user_id', '!=', $user->id)
+            ->first();
+
+        if ($existingSession) {
+            $existingSession->update(['is_active' => false, 'logout_at' => now()]);
+
+            $existingSession->user?->activityLogs()->create([
+                'action' => 'device_rejected',
+                'description' => 'Blocked a login attempt on a device already linked to another account',
+                'ip_address' => $ipAddress,
+                'user_agent' => $userAgent,
+                'device_fingerprint' => $deviceFingerprint,
+                'metadata' => [
+                    'attempted_user_id' => $user->id,
+                    'attempted_user_email' => $user->email,
+                    'blocked_user_id' => $existingSession->user_id,
+                ],
+            ]);
+
+            return response()->json([
+                'message' => 'This device is already linked to another account. Please log out from the other account first.',
+            ], 403);
+        }
+
         $user->tokens()->delete();
 
         $token = $user->createToken('auth_token')->plainTextToken;
+        $tokenHash = hash('sha256', $token);
+
+        UserSession::where('user_id', $user->id)->where('is_active', true)->update([
+            'is_active' => false,
+            'logout_at' => now(),
+        ]);
+
+        UserSession::create([
+            'user_id' => $user->id,
+            'device_fingerprint' => $deviceFingerprint,
+            'token_hash' => $tokenHash,
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'is_active' => true,
+            'login_at' => now(),
+            'last_seen_at' => now(),
+        ]);
+
+        $user->activityLogs()->create([
+            'action' => 'login',
+            'description' => 'User signed in successfully',
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'device_fingerprint' => $deviceFingerprint,
+            'metadata' => [
+                'user_type' => $user->user_type,
+            ],
+        ]);
 
         return response()->json([
             'message' => 'Login successful',
@@ -96,7 +156,21 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        $user?->currentAccessToken()?->delete();
+
+        $user?->sessions()->where('is_active', true)->update([
+            'is_active' => false,
+            'logout_at' => now(),
+        ]);
+
+        $user?->activityLogs()->create([
+            'action' => 'logout',
+            'description' => 'User signed out successfully',
+            'ip_address' => $this->resolveIpAddress($request),
+            'user_agent' => $request->header('User-Agent', 'unknown'),
+            'device_fingerprint' => $this->buildDeviceFingerprint($request),
+        ]);
 
         return response()->json(['message' => 'Logout successful']);
     }
@@ -128,6 +202,22 @@ class AuthController extends Controller
             'createdAt'        => $user->created_at,
             'updatedAt'        => $user->updated_at,
         ];
+    }
+
+    private function buildDeviceFingerprint(Request $request): string
+    {
+        $ipAddress = $this->resolveIpAddress($request);
+        $userAgent = $request->header('User-Agent', 'unknown');
+
+        return hash('sha256', $ipAddress . '|' . $userAgent);
+    }
+
+    private function resolveIpAddress(Request $request): string
+    {
+        return $request->header('CF-Connecting-IP')
+            ?? $request->header('X-Forwarded-For')
+            ?? $request->header('X-Real-IP')
+            ?? $request->ip();
     }
 
     // ── Google OAuth for Web (Redirect Flow) ─────────────────────────────────────

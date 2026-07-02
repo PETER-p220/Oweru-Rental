@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Property;
 use App\Models\User;
 use App\Services\PaymentProcessingService;
+use App\Services\SelcomPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -45,7 +46,7 @@ class PaymentController extends Controller
             $validated = $request->validate([
                 'amount'         => 'required|numeric|min:100',
                 'phone_number'   => 'required|string|min:10|max:13',
-                'provider'       => 'required|in:TIGO,MPESA,AIRTEL,HALOPESA,HALOPES',
+                'provider'       => 'required|in:TIGO,MPESA,AIRTEL,HALOPESA,HALOPES,tigo,mpesa,airtel,halopesa',
                 'customer_email' => 'required|email',
                 'customer_name'  => 'required|string|max:100',
                 'order_id'       => 'required|string|max:50',
@@ -54,135 +55,21 @@ class PaymentController extends Controller
                 'tenant_id'      => 'required|integer',
             ]);
 
-            $appKey  = env('OWERU_APP_KEY');
-            $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
+            $validated['provider'] = strtoupper($validated['provider']);
 
-            if (empty($appKey)) {
-                Log::error('Missing OWERU_APP_KEY in .env');
+            $result = app(SelcomPaymentService::class)->initiate($validated);
+
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Payment service not configured.',
-                ], 500);
-            }
-
-            $phone   = $this->normalizePhone($validated['phone_number']);
-            $amount  = number_format((int) $validated['amount'], 0, '.', '');
-            $orderId = $validated['order_id'];
-
-            // ── Step 1: Create order ──────────────────────────────────────────────
-            $createPayload = [
-                'order_id'         => $orderId,
-                'buyer_name'       => trim($validated['customer_name']),
-                'buyer_email'      => trim($validated['customer_email']),
-                'buyer_phone'      => $phone,
-                'amount'           => $amount,
-                'currency'         => 'TZS',
-                'buyer_remarks'    => $validated['payment_type'],
-                'merchant_remarks' => 'Oweru Rental - ' . $validated['payment_type'],
-                'no_of_items'      => 1,
-            ];
-
-            Log::info('Oweru create-order-minimal request', [
-                'payload' => $createPayload,
-            ]);
-
-            $createResponse = Http::withHeaders([
-                'X-App-Key'    => $appKey,
-                'Content-Type' => 'application/json',
-                'Accept'       => 'application/json',
-            ])->post($baseUrl . '/create-order-minimal', $createPayload);
-
-            Log::info('Oweru create-order-minimal response', [
-                'status' => $createResponse->status(),
-                'body'   => $createResponse->body(),
-            ]);
-
-            $createData = $createResponse->json();
-
-            if (!$createResponse->successful() || ($createData['result'] ?? '') !== 'SUCCESS') {
-                $errorDetail = $createData['detail']
-                    ?? $createData['message']
-                    ?? $createData['error']
-                    ?? $createResponse->body()
-                    ?: 'Unknown error from Oweru';
-
-                Log::error('Oweru create-order-minimal failed', [
-                    'status' => $createResponse->status(),
-                    'detail' => $errorDetail,
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Could not create payment order: ' . $errorDetail,
+                    'message' => $result['message'] ?? 'Payment initiation failed.',
                 ], 422);
             }
 
-            // ── Step 2: Trigger USSD push ─────────────────────────────────────────
-            // Map provider codes to Selcom expected codes
-            $providerMap = [
-                'TIGO' => 'TIGO',
-                'MPESA' => 'MPESA', 
-                'AIRTEL' => 'AIRTEL',
-                'HALOPESA' => 'HALO-PESA', 
-            ];
-            
-            $selcomProvider = $providerMap[$validated['provider']] ?? $validated['provider'];
-            
-            $payPayload = [
-                'order_id' => $orderId,
-                'transid'  => $orderId,
-                'msisdn'   => $phone,
-                'provider' => $selcomProvider, // Use mapped provider code
-            ];
-
-            Log::info('Oweru wallet-payment request', [
-                'payload' => $payPayload,
-                'provider_debug' => $validated['provider'],
-            ]);
-
-            $payResponse = Http::withHeaders([
-                'X-App-Key'    => $appKey,
-                'Content-Type' => 'application/json',
-                'Accept'       => 'application/json',
-            ])->post($baseUrl . '/wallet-payment', $payPayload);
-
-            Log::info('Oweru wallet-payment response', [
-                'status' => $payResponse->status(),
-                'body'   => $payResponse->body(),
-                'provider_used' => $selcomProvider,
-                'original_provider' => $validated['provider'],
-            ]);
-
-            $payData = $payResponse->json();
-
-            if (!$payResponse->successful()) {
-                $errorDetail = $payData['detail']
-                    ?? $payData['message']
-                    ?? $payData['error']
-                    ?? $payResponse->body()
-                    ?: 'Payment trigger failed';
-
-                Log::error('Oweru wallet-payment failed', [
-                    'status' => $payResponse->status(),
-                    'detail' => $errorDetail,
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Payment request could not be sent: ' . $errorDetail,
-                ], 422);
-            }
-
-            // ── Success ───────────────────────────────────────────────────────────
             return response()->json([
                 'success' => true,
-                'data'    => [
-                    'transaction_id' => $orderId,
-                    'order_id'       => $orderId,
-                    'status'         => 'pending',
-                    'provider'       => $validated['provider'], // Include provider for payment record
-                ],
-                'message' => 'Payment request sent to ' . $validated['phone_number'] . '. Please check your phone and approve the prompt.',
+                'data'    => $result['data'],
+                'message' => $result['message'],
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -360,15 +247,7 @@ class PaymentController extends Controller
         ])->post($baseUrl . '/create-order-minimal', $createPayload);
 
         if ($createResponse->successful()) {
-            // Map provider codes to Selcom expected codes
-            $providerMap = [
-                'TIGO' => 'TIGO',
-                'MPESA' => 'MPESA', 
-                'AIRTEL' => 'AIRTEL',
-                'HALOPESA' => 'HALO-PESA',
-            ];
-            
-            $selcomProvider = $providerMap[$provider] ?? $provider;
+            $selcomProvider = SelcomPaymentService::mapProvider($provider);
             
             // Trigger USSD push for split payment
             $payPayload = [

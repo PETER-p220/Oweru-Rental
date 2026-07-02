@@ -216,6 +216,24 @@ class Api {
     return this.request<any>('admin/users/stats');
   }
 
+  static async getActiveSessions() {
+    return this.request<any[]>('admin/users/active-sessions');
+  }
+
+  static async getUserActivity(userId: number) {
+    return this.request<any>(`admin/users/${userId}/activity`);
+  }
+
+  static async getActivityLogs(params?: { search?: string; action?: string; user_id?: number; per_page?: number }) {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.action) query.set('action', params.action);
+    if (params?.user_id) query.set('user_id', String(params.user_id));
+    if (params?.per_page) query.set('per_page', String(params.per_page));
+    const qs = query.toString();
+    return this.request<any>(`admin/activity-logs${qs ? `?${qs}` : ''}`);
+  }
+
   static async createUser(userData: {
     first_name: string;
     last_name: string;
@@ -637,10 +655,16 @@ class Api {
     });
   }
 
-  static async makePayment(paymentId: number, data: { paymentMethodId: string }) {
+  static async makePayment(
+    paymentId: number,
+    data: { phoneNumber: string; provider: string },
+  ) {
     return this.request(`tenant/payments/${paymentId}/pay`, {
       method: 'POST',
-      body: JSON.stringify({ payment_method_id: data.paymentMethodId }),
+      body: JSON.stringify({
+        phone_number: data.phoneNumber,
+        provider: data.provider,
+      }),
     });
   }
 

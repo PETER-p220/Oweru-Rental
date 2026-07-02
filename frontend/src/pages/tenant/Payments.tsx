@@ -73,7 +73,11 @@ const Payments = () => {
   const [stats, setStats]         = useState<any>({});
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
-  const [selectedMethod, setSelectedMethod] = useState<string>('');
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [paying, setPaying]       = useState(false);
+  const [payMessage, setPayMessage] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
 
   const load = async () => {
     try {
@@ -84,7 +88,9 @@ const Payments = () => {
       setPayments(Array.isArray(paymentsRes.data) ? paymentsRes.data : []);
       setMethods(Array.isArray(methodsRes.data) ? methodsRes.data : []);
       setStats(statsRes.data || {});
-      setSelectedMethod((methodsRes.data?.[0]?.id || '').toString());
+      if (methodsRes.data?.[0]?.id) {
+        setPaymentProvider(methodsRes.data[0].id as typeof paymentProvider);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to load payments.');
     } finally { setLoading(false); }
@@ -93,6 +99,44 @@ const Payments = () => {
   useEffect(() => { load(); }, []);
 
   const nextPending = useMemo(() => payments.find((p) => p.status === 'pending') || null, [payments]);
+
+  const openPayModal = () => {
+    setPayModalOpen(true);
+    setPayMessage('');
+    setPhoneNumber('');
+  };
+
+  const handlePay = async () => {
+    if (!nextPending) return;
+    if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
+      setPayMessage('Please enter a valid phone number (at least 10 digits).');
+      return;
+    }
+    setPaying(true);
+    setPayMessage('');
+    try {
+      await Api.makePayment(nextPending.id, {
+        phoneNumber: phoneNumber.trim(),
+        provider: paymentProvider,
+      });
+      setPayMessage(`Payment request sent! Check your ${paymentProvider.toUpperCase()} prompt.`);
+      await load();
+      setTimeout(() => setPayModalOpen(false), 2000);
+    } catch (err: any) {
+      setPayMessage(err?.response?.data?.message || err?.message || 'Payment failed.');
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const providers = methods.length > 0
+    ? methods
+    : [
+        { id: 'tigo', name: 'Tigo Pesa' },
+        { id: 'mpesa', name: 'M-Pesa' },
+        { id: 'airtel', name: 'Airtel Money' },
+        { id: 'halopesa', name: 'Halopesa' },
+      ];
 
   return (
     <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#F1F5F9', color: '#0F172A', minHeight: '100vh' }}>
@@ -211,24 +255,14 @@ const Payments = () => {
         ) : (
           <>
             {/* Next payment banner */}
-            {nextPending && methods.length > 0 && (
+            {nextPending && (
               <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', padding: '16px 20px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: '#C89128' }} />
                 <CreditCard size={16} style={{ color: '#C89128', flexShrink: 0 }} />
                 <span style={{ fontSize: 14, fontWeight: 500, color: '#0F172A' }}>
                   Next payment due: <span style={{ color: '#C89128', fontWeight: 700 }}>{formatCurrency(nextPending.amount)}</span>
                 </span>
-                <select
-                  className="pay-method-select"
-                  value={selectedMethod}
-                  onChange={(e) => setSelectedMethod(e.target.value)}
-                >
-                  {methods.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-                <button
-                  className="pay-btn-gold"
-                  onClick={() => Api.makePayment(nextPending.id, { paymentMethodId: selectedMethod }).then(load)}
-                >
+                <button className="pay-btn-gold" onClick={openPayModal}>
                   Pay Now
                 </button>
               </div>
@@ -265,6 +299,81 @@ const Payments = () => {
           </>
         )}
       </div>
+
+      {payModalOpen && nextPending && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          onClick={(e) => { if (e.target === e.currentTarget && !paying) setPayModalOpen(false); }}
+        >
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxWidth: 440, width: '100%', padding: 28, position: 'relative' }}>
+            <h3 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Pay Rent</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: '#64748B' }}>
+              Amount: <strong style={{ color: '#C89128' }}>{formatCurrency(nextPending.amount)}</strong>
+            </p>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 10 }}>Mobile Money Provider</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {providers.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPaymentProvider(p.id as typeof paymentProvider)}
+                    style={{
+                      padding: '10px 12px',
+                      border: `1px solid ${paymentProvider === p.id ? '#C89128' : '#E2E8F0'}`,
+                      background: paymentProvider === p.id ? 'rgba(200,145,40,0.10)' : '#FFFFFF',
+                      color: paymentProvider === p.id ? '#C89128' : '#334155',
+                      fontWeight: 600,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 8 }}>Phone Number</label>
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="07XXXXXXXX"
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }}
+              />
+            </div>
+
+            {payMessage && (
+              <div style={{ marginBottom: 14, padding: '10px 12px', fontSize: 13, color: payMessage.includes('sent') ? '#059669' : '#dc2626', background: payMessage.includes('sent') ? 'rgba(5,150,105,0.08)' : 'rgba(220,38,38,0.08)', border: `1px solid ${payMessage.includes('sent') ? 'rgba(5,150,105,0.2)' : 'rgba(220,38,38,0.2)'}` }}>
+                {payMessage}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setPayModalOpen(false)}
+                disabled={paying}
+                style={{ flex: 1, padding: '11px 14px', border: '1px solid #E2E8F0', background: '#FFFFFF', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handlePay}
+                disabled={paying || phoneNumber.length < 10}
+                className="pay-btn-gold"
+                style={{ flex: 2, opacity: paying || phoneNumber.length < 10 ? 0.6 : 1 }}
+              >
+                {paying ? 'Processing…' : 'Confirm Payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

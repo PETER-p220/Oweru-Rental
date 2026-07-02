@@ -38,11 +38,13 @@ const AdminDashboard = () => {
   });
   const [oweruProperties, setOweruProperties] = useState<any[]>([]);
   const [loadingOweru, setLoadingOweru] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [quickForm, setQuickForm] = useState({
-    title: '', location: '', price: '', description: '',
-    bedrooms: '', bathrooms: '', area: ''
+  const [showOweruForm, setShowOweruForm] = useState(false);
+  const [oweruForm, setOweruForm] = useState({
+    title: '', description: '', location: '', address: '',
+    price: '', bedrooms: '', bathrooms: '', area: '',
+    amenities: '', images: [] as string[]
   });
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [recentActivity, setRecentActivity] = useState<Array<{
     id: string; type: string; message: string; time: string; status: string
   }>>([]);
@@ -72,7 +74,18 @@ const AdminDashboard = () => {
       });
       setTransactions(txns);
 
-      const recentUsers = users
+      try {
+        const logsRes = await Api.getActivityLogs({ per_page: 8 });
+        const logs = Array.isArray(logsRes.data) ? logsRes.data : [];
+        setRecentActivity(logs.map((log: any) => ({
+          id: String(log.id),
+          type: (log.action || '').toLowerCase().includes('login') ? 'user' : 'payment',
+          message: log.description || log.action || 'Activity recorded',
+          time: formatTimeAgo(log.created_at),
+          status: (log.action || '').toLowerCase().includes('fail') ? 'error' : 'success',
+        })));
+      } catch {
+        const recentUsers = users
         .filter((u: any) => {
           const d = (Date.now() - new Date(u.created_at || u.createdAt).getTime()) / 86400000;
           return d <= 7;
@@ -113,6 +126,7 @@ const AdminDashboard = () => {
           .sort((a, b) => parseTimeAgo(a.time) - parseTimeAgo(b.time))
           .slice(0, 8)
       );
+      }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
@@ -132,13 +146,76 @@ const AdminDashboard = () => {
     }
   };
 
-  const addOweruProperty = async (data: any) => {
+  const addOweruProperty = async () => {
     try {
-      await Api.createAdminProperty(data);
+      const propertyData = {
+        title: oweruForm.title,
+        description: oweruForm.description,
+        location: oweruForm.location,
+        address: oweruForm.address,
+        price: parseFloat(oweruForm.price),
+        type: 'oweru_rental',
+        bedrooms: parseInt(oweruForm.bedrooms) || 0,
+        bathrooms: parseInt(oweruForm.bathrooms) || 0,
+        area: parseFloat(oweruForm.area) || null,
+        featured: true,
+        available: true,
+        images: oweruForm.images,
+        amenities: oweruForm.amenities,
+        landlord_name: 'Oweru Rental',
+        landlord_phone: '',
+        owner_id: null,
+      };
+      await Api.createAdminProperty(propertyData);
       await loadOweruProperties();
-    } catch {
-      alert('Failed to add property.');
+      setShowOweruForm(false);
+      setOweruForm({
+        title: '', description: '', location: '', address: '',
+        price: '', bedrooms: '', bathrooms: '', area: '',
+        amenities: '', images: [] as string[]
+      });
+      alert('Oweru Special Property added successfully!');
+    } catch (error) {
+      console.error('Failed to add property:', error);
+      alert('Failed to add property. Please try again.');
     }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      setUploadingImages(true);
+      const formData = new FormData();
+      Array.from(files).forEach(file => formData.append('images[]', file));
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/admin/properties/upload-images`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.images) {
+        setOweruForm({ ...oweruForm, images: [...oweruForm.images, ...data.images] });
+      }
+    } catch (error) {
+      console.error('Failed to upload images:', error);
+      alert('Failed to upload images. Please try again.');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setOweruForm({
+      ...oweruForm,
+      images: oweruForm.images.filter((_, i) => i !== index)
+    });
   };
 
   const deleteOweruProperty = async (id: string) => {
@@ -371,6 +448,322 @@ const AdminDashboard = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Oweru Special Package ───────────────────────────────────────── */}
+      <div style={card}>
+        <div className="admin-section-header">
+          <div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 10, fontWeight: 600, letterSpacing: '0.22em',
+              textTransform: 'uppercase', color: t.gold,
+              background: t.goldDim, padding: '3px 10px',
+              border: `1px solid ${t.border}`, marginBottom: 6,
+            }}>
+              Premium
+            </div>
+            <h2 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.cream, margin: 0 }}>
+              Oweru Special Package
+            </h2>
+          </div>
+          <button
+            onClick={() => setShowOweruForm(!showOweruForm)}
+            style={{
+              padding: '8px 16px',
+              background: t.gold,
+              border: 'none',
+              borderRadius: 6,
+              color: t.dark,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: "'Jost', sans-serif",
+            }}
+          >
+            {showOweruForm ? 'Cancel' : '+ Add Property'}
+          </button>
+        </div>
+
+        {showOweruForm && (
+          <div style={{
+            backgroundColor: t.dark3,
+            padding: 20,
+            borderRadius: 8,
+            marginBottom: 20,
+            border: `1px solid ${t.border}`,
+          }}>
+            <h3 style={{ ...serif, fontSize: 16, color: t.cream, margin: '0 0 16px' }}>
+              Add New Oweru Special Property
+            </h3>
+            
+            <div className="admin-form-grid-2">
+              <div>
+                <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                  Property Title *
+                </label>
+                <input
+                  type="text"
+                  value={oweruForm.title}
+                  onChange={(e) => setOweruForm({ ...oweruForm, title: e.target.value })}
+                  style={inputStyle}
+                  placeholder="e.g., Luxury Apartment in Masaki"
+                />
+              </div>
+              <div>
+                <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                  Location *
+                </label>
+                <input
+                  type="text"
+                  value={oweruForm.location}
+                  onChange={(e) => setOweruForm({ ...oweruForm, location: e.target.value })}
+                  style={inputStyle}
+                  placeholder="e.g., Dar es Salaam"
+                />
+              </div>
+            </div>
+
+            <div className="admin-form-grid-2">
+              <div>
+                <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                  Price (TZS) *
+                </label>
+                <input
+                  type="number"
+                  value={oweruForm.price}
+                  onChange={(e) => setOweruForm({ ...oweruForm, price: e.target.value })}
+                  style={inputStyle}
+                  placeholder="e.g., 800000"
+                />
+              </div>
+              <div>
+                <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                  Address
+                </label>
+                <input
+                  type="text"
+                  value={oweruForm.address}
+                  onChange={(e) => setOweruForm({ ...oweruForm, address: e.target.value })}
+                  style={inputStyle}
+                  placeholder="e.g., P.O.BOX 13638"
+                />
+              </div>
+            </div>
+
+            <div className="admin-form-grid-4">
+              <div>
+                <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                  Bedrooms
+                </label>
+                <input
+                  type="number"
+                  value={oweruForm.bedrooms}
+                  onChange={(e) => setOweruForm({ ...oweruForm, bedrooms: e.target.value })}
+                  style={inputStyle}
+                  placeholder="e.g., 3"
+                />
+              </div>
+              <div>
+                <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                  Bathrooms
+                </label>
+                <input
+                  type="number"
+                  value={oweruForm.bathrooms}
+                  onChange={(e) => setOweruForm({ ...oweruForm, bathrooms: e.target.value })}
+                  style={inputStyle}
+                  placeholder="e.g., 2"
+                />
+              </div>
+              <div>
+                <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                  Area (sqm)
+                </label>
+                <input
+                  type="number"
+                  value={oweruForm.area}
+                  onChange={(e) => setOweruForm({ ...oweruForm, area: e.target.value })}
+                  style={inputStyle}
+                  placeholder="e.g., 150"
+                />
+              </div>
+              <div>
+                <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                  Amenities
+                </label>
+                <input
+                  type="text"
+                  value={oweruForm.amenities}
+                  onChange={(e) => setOweruForm({ ...oweruForm, amenities: e.target.value })}
+                  style={inputStyle}
+                  placeholder="e.g., parking, wifi, security"
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                Description *
+              </label>
+              <textarea
+                value={oweruForm.description}
+                onChange={(e) => setOweruForm({ ...oweruForm, description: e.target.value })}
+                style={{
+                  ...inputStyle,
+                  minHeight: 80,
+                  resize: 'vertical',
+                }}
+                placeholder="Describe the property..."
+              />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4, display: 'block' }}>
+                Images
+              </label>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploadingImages}
+                style={{
+                  ...inputStyle,
+                  cursor: uploadingImages ? 'not-allowed' : 'pointer',
+                }}
+              />
+              {uploadingImages && (
+                <div style={{ ...body, fontSize: 12, color: t.gold, marginTop: 4 }}>
+                  Uploading images...
+                </div>
+              )}
+            </div>
+
+            {oweruForm.images.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 8 }}>
+                  Uploaded Images ({oweruForm.images.length})
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {oweruForm.images.map((img, idx) => (
+                    <div key={idx} style={{ position: 'relative', width: 80, height: 80 }}>
+                      <img
+                        src={`/${img}`}
+                        alt={`Property ${idx + 1}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }}
+                      />
+                      <button
+                        onClick={() => removeImage(idx)}
+                        style={{
+                          position: 'absolute',
+                          top: -8,
+                          right: -8,
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: t.red,
+                          border: 'none',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={addOweruProperty}
+              disabled={!oweruForm.title || !oweruForm.location || !oweruForm.price || !oweruForm.description}
+              style={{
+                padding: '10px 20px',
+                background: t.gold,
+                border: 'none',
+                borderRadius: 6,
+                color: t.dark,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: (!oweruForm.title || !oweruForm.location || !oweruForm.price || !oweruForm.description) ? 'not-allowed' : 'pointer',
+                opacity: (!oweruForm.title || !oweruForm.location || !oweruForm.price || !oweruForm.description) ? 0.5 : 1,
+                fontFamily: "'Jost', sans-serif",
+              }}
+            >
+              Add Property
+            </button>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {loadingOweru ? (
+            <div style={{ textAlign: 'center', padding: '32px 20px', color: t.muted }}>
+              <div style={{ fontSize: 14 }}>Loading Oweru properties...</div>
+            </div>
+          ) : oweruProperties.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 20px', color: t.muted }}>
+              <Building size={28} style={{ opacity: 0.3, marginBottom: 12, display: 'block', margin: '0 auto 12px', color: t.gold }} />
+              <div style={{ fontSize: 14 }}>No Oweru Special properties yet</div>
+              <div style={{ fontSize: 12, marginTop: 4 }}>Click "Add Property" to create one</div>
+            </div>
+          ) : (
+            oweruProperties.map((property) => (
+              <div
+                key={property.id}
+                style={{
+                  display: 'flex',
+                  gap: 16,
+                  padding: '16px',
+                  backgroundColor: t.dark3,
+                  borderRadius: 8,
+                  border: `1px solid ${t.border}`,
+                }}
+              >
+                {property.images && property.images.length > 0 && (
+                  <img
+                    src={`/${property.images[0]}`}
+                    alt={property.title}
+                    style={{ width: 100, height: 80, objectFit: 'cover', borderRadius: 6 }}
+                  />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ ...body, fontSize: 14, fontWeight: 600, color: t.cream, marginBottom: 4 }}>
+                    {property.title}
+                  </div>
+                  <div style={{ ...body, fontSize: 12, color: t.muted, marginBottom: 4 }}>
+                    {property.location}
+                  </div>
+                  <div style={{ ...body, fontSize: 14, color: t.gold, fontWeight: 600 }}>
+                    {formatCurrency(property.price)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (confirm('Are you sure you want to delete this property?')) {
+                      deleteOweruProperty(property.id);
+                    }
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    background: 'transparent',
+                    border: `1px solid ${t.red}`,
+                    borderRadius: 6,
+                    color: t.red,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    fontFamily: "'Jost', sans-serif",
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* ── Recent Activity ───────────────────────────────────────────── */}

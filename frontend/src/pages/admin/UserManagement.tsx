@@ -172,6 +172,7 @@ const UserManagement = () => {
   const [formData,     setFormData]     = useState<FormData>(EMPTY_FORM);
   const [formErrors,   setFormErrors]   = useState<Partial<Record<keyof FormData, string>>>({});
   const [expandedRow,  setExpandedRow]  = useState<number | null>(null);
+  const [activityByUser, setActivityByUser] = useState<Record<number, { sessions: any[]; activityLogs: any[] }>>({});
 
   const loadUsers = useCallback(async () => {
     try {
@@ -251,6 +252,31 @@ const UserManagement = () => {
   const handleDelete = async (id: number) => {
     if (!confirm('Delete this user? This cannot be undone.')) return;
     try { await Api.deleteUser(id); loadUsers(); } catch { alert('Delete failed'); }
+  };
+
+  const loadUserActivity = async (userId: number) => {
+    if (activityByUser[userId]) return;
+
+    try {
+      const response = await Api.getUserActivity(userId);
+      setActivityByUser(prev => ({
+        ...prev,
+        [userId]: {
+          sessions: response.data?.sessions || [],
+          activityLogs: response.data?.activity_logs || response.data?.activityLogs || [],
+        },
+      }));
+    } catch {
+      setActivityByUser(prev => ({ ...prev, [userId]: { sessions: [], activityLogs: [] } }));
+    }
+  };
+
+  const toggleRow = (userId: number) => {
+    const nextOpen = expandedRow !== userId;
+    setExpandedRow(nextOpen ? userId : null);
+    if (nextOpen) {
+      loadUserActivity(userId);
+    }
   };
 
   const handleStatus = async (id: number, status: 'active' | 'suspended') => {
@@ -417,10 +443,11 @@ const UserManagement = () => {
                 {users.map(user => {
                   const hue    = avatarHue(user);
                   const isOpen = expandedRow === user.id;
+                  const userActivity = activityByUser[user.id];
 
                   return (
                     <>
-                      <tr key={user.id} className="tbl-row" onClick={() => setExpandedRow(isOpen ? null : user.id)}>
+                      <tr key={user.id} className="tbl-row" onClick={() => toggleRow(user.id)}>
 
                         {/* Avatar */}
                         <td>
@@ -584,6 +611,29 @@ const UserManagement = () => {
                                   )}
                                 </div>
                               </div>
+
+                              {userActivity && (
+                                <div style={{ marginTop: 20, paddingTop: 20, borderTop: `1px solid ${t.goldBorder}` }}>
+                                  <div style={{ ...font, fontSize: 10, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: t.gold, marginBottom: 12 }}>
+                                    Recent Activity Logs
+                                  </div>
+                                  {userActivity.activityLogs.length === 0 ? (
+                                    <div style={{ ...font, fontSize: 12, color: t.creamDim }}>No activity logs for this user.</div>
+                                  ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                      {userActivity.activityLogs.slice(0, 5).map((log: any) => (
+                                        <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, ...font, fontSize: 12, color: t.creamDim, padding: '8px 10px', background: t.navy700, borderRadius: 8 }}>
+                                          <div>
+                                            <span style={{ color: t.gold, fontWeight: 700, marginRight: 8 }}>{log.action}</span>
+                                            {log.description}
+                                          </div>
+                                          <span style={{ whiteSpace: 'nowrap', color: t.creamDim }}>{formatDate(log.created_at)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>
