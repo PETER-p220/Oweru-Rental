@@ -191,6 +191,19 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
               ]),
             ]),
             const SizedBox(height: 10),
+            if ((app['next_step']?.toString() ?? '').isNotEmpty)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: kGold.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: kGoldBorder),
+                ),
+                child: Text(app['next_step'].toString(),
+                  style: const TextStyle(color: kSlate, fontSize: 11, height: 1.5)),
+              ),
             if (needsRent)
               TGoldButton(
                 label: 'Pay Rent Now',

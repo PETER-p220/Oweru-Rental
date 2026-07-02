@@ -656,6 +656,25 @@ class Api {
     return this.request<any>(`tenant/site-visit/status/${encodeURIComponent(orderId)}`);
   }
 
+  static async initiateRentPayment(data: {
+    applicationId: number;
+    phoneNumber: string;
+    provider: string;
+  }) {
+    return this.request<any>('tenant/rent/pay', {
+      method: 'POST',
+      body: JSON.stringify({
+        application_id: data.applicationId,
+        phone_number: data.phoneNumber,
+        provider: data.provider,
+      }),
+    });
+  }
+
+  static async checkRentPaymentStatus(orderId: string) {
+    return this.request<any>(`tenant/rent/status/${encodeURIComponent(orderId)}`);
+  }
+
   static async notifyAgent(notificationData: any) {
     return this.request<any>('notifications/agent', {
       method: 'POST',

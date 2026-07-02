@@ -302,6 +302,7 @@ class PaymentController extends Controller
 
             if ($transid) {
                 app(\App\Services\SiteVisitPaymentService::class)->confirmByOrderId($transid, $request->all());
+                app(\App\Services\RentPaymentService::class)->confirmByOrderId($transid, $request->all());
             }
             
             // Use PaymentProcessingService to handle payment completion
@@ -351,6 +352,10 @@ class PaymentController extends Controller
                     Application::where('transaction_id', $transid)
                         ->where('payment_status', 'pending')
                         ->update(['payment_status' => 'failed']);
+
+                    Application::where('rent_transaction_id', $transid)
+                        ->where('rent_payment_status', 'pending')
+                        ->update(['rent_payment_status' => 'failed']);
                 }
             } catch (\Exception $e) {
                 Log::error('Error marking payment as failed', ['error' => $e->getMessage()]);

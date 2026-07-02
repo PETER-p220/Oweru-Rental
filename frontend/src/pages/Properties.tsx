@@ -1074,13 +1074,13 @@ const SuccessModal = ({ variant, onClose }: { variant: 'site_visit' | 'applicati
         {(variant === 'site_visit'
           ? [
               { label: 'Site visit fee received & confirmed', icon: <CheckCheck size={14} /> },
-              { label: 'Agent notified instantly via SMS & email', icon: <Sparkles size={14} /> },
-              { label: 'Expect a call or message within 24 hours', icon: <CheckCircle2 size={14} /> },
+              { label: 'Agent notified to schedule your visit', icon: <Sparkles size={14} /> },
+              { label: 'After approval, pay rent in My Applications', icon: <CheckCircle2 size={14} /> },
             ]
           : [
               { label: 'Application submitted successfully', icon: <CheckCheck size={14} /> },
-              { label: 'Landlord notified of your interest', icon: <Sparkles size={14} /> },
-              { label: 'You can track status in My Applications', icon: <CheckCircle2 size={14} /> },
+              { label: 'Wait for landlord or agent approval', icon: <Sparkles size={14} /> },
+              { label: 'Then pay rent in My Applications', icon: <CheckCircle2 size={14} /> },
             ]
         ).map((s, i) => (
           <div key={i} className="succ-step">

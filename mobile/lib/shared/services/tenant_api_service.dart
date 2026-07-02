@@ -394,6 +394,50 @@ class TenantApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> initiateRentPayment({
+    required int applicationId,
+    required String phoneNumber,
+    required String provider,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/tenant/rent/pay'),
+        headers: _headers,
+        body: jsonEncode({
+          'application_id': applicationId,
+          'phone_number': phoneNumber,
+          'provider': provider,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return Map<String, dynamic>.from(data is Map ? data : {'success': true});
+      }
+      return {
+        'success': false,
+        'message': data is Map ? (data['message'] ?? 'Rent payment initiation failed') : 'Rent payment initiation failed',
+      };
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkRentPaymentStatus(String orderId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/tenant/rent/status/${Uri.encodeComponent(orderId)}'),
+        headers: _headers,
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return Map<String, dynamic>.from(data is Map ? data : {});
+      }
+      return {'success': false, 'message': 'Unable to check rent payment status'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
   static Future<Map<String, dynamic>> initiateSiteVisitPayment({
     required int propertyId,
     required String phoneNumber,

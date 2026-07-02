@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2, ShieldCheck, ArrowRight, Phone } from 'lucide-react';
+import { Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign, CheckCircle, Loader2, ShieldCheck, ArrowRight, Phone, Info } from 'lucide-react';
 import Api from '../../services/api';
-import SelcomService from '../../services/selcom';
 import { palette, formatCurrency, formatDate, getStatusColor } from './tenantPageStyles';
 
 interface ApplicationItem {
@@ -11,6 +10,9 @@ interface ApplicationItem {
   message?: string;
   created_at?: string;
   rent_paid?: boolean;
+  can_pay_rent?: boolean;
+  site_visit_paid?: boolean;
+  next_step?: string;
   rejection_reason?: string;
   property?: {
     id?: number;
@@ -77,8 +79,10 @@ const ApplicationsPage = () => {
   const [paying, setPaying] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
-  const [payResult, setPayResult] = useState<'success' | 'error' | null>(null);
+  const [payResult, setPayResult] = useState<'success' | 'error' | 'waiting' | null>(null);
   const [payMessage, setPayMessage] = useState('');
+  const [rentOrderId, setRentOrderId] = useState('');
+  const rentPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (propertyId) handleApplyForProperty(propertyId);
@@ -103,6 +107,35 @@ const ApplicationsPage = () => {
     setApplications(Array.isArray(res.data) ? res.data : []);
   };
 
+  useEffect(() => {
+    if (payResult !== 'waiting' || !rentOrderId) return;
+
+    let attempts = 0;
+    const poll = async () => {
+      attempts += 1;
+      try {
+        const res = await Api.checkRentPaymentStatus(rentOrderId);
+        const status = res.data?.rent_payment_status;
+        if (status === 'paid') {
+          if (rentPollRef.current) clearInterval(rentPollRef.current);
+          setPayResult('success');
+          setPayMessage('Rent payment confirmed! You can now proceed with your contract.');
+          await refreshApplications();
+        } else if (status === 'failed') {
+          if (rentPollRef.current) clearInterval(rentPollRef.current);
+          setPayResult('error');
+          setPayMessage('Rent payment was not completed. Please try again.');
+        } else if (attempts >= 40) {
+          setPayMessage('Still waiting for payment confirmation. Keep this screen open or check back shortly.');
+        }
+      } catch { /* ignore transient errors */ }
+    };
+
+    poll();
+    rentPollRef.current = setInterval(poll, 3000);
+    return () => { if (rentPollRef.current) clearInterval(rentPollRef.current); };
+  }, [payResult, rentOrderId]);
+
   const handleApplyForProperty = async (id: string) => {
     try {
       if (!id || isNaN(parseInt(id))) throw new Error('Invalid property ID');
@@ -119,87 +152,54 @@ const ApplicationsPage = () => {
   };
 
   const handlePayRent = async (appId: number) => {
-    // ... (your existing payment logic remains unchanged)
     if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
       setPayResult('error');
       setPayMessage('Please enter a valid phone number (at least 10 digits).');
       return;
     }
 
-    const application = applications.find(app => app.id === appId);
-    const rentAmount = parseRent(application?.property?.price);
-
-    if (!rentAmount) {
-      setPayResult('error');
-      setPayMessage('Unable to determine rent amount for this application.');
-      return;
-    }
-
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const tenantId = user?.id;
-
-    if (!tenantId) {
-      setPayResult('error');
-      setPayMessage('Your session may have expired. Please log in again.');
-      return;
-    }
-
-    const orderId = makeOrderId(appId);
     setPaying(true);
     setPayResult(null);
     setPayMessage('');
 
     try {
-      const paymentResponse = await SelcomService.initiateMobileMoneyPayment({
-        amount: rentAmount,
-        phone_number: phoneNumber,
+      const res = await Api.initiateRentPayment({
+        applicationId: appId,
+        phoneNumber: phoneNumber.trim(),
         provider: paymentProvider,
-        property_id: application?.property?.id ?? appId,
-        tenant_id: tenantId,
-        payment_type: 'rent_payment',
-        customer_email: user?.email ?? '',
-        customer_name: user?.first_name && user?.last_name 
-          ? `${user.first_name} ${user.last_name}` 
-          : user?.first_name ?? 'Tenant',
       });
 
-      if (!paymentResponse.success || !paymentResponse.data?.transaction_id) {
-        throw new Error(paymentResponse.message || 'Payment initiation failed');
+      if (res.data?.order_id) {
+        setRentOrderId(res.data.order_id);
+        setPayResult('waiting');
+        setPayMessage(res.message || `Approve the ${paymentProvider.toUpperCase()} prompt on your phone.`);
+      } else {
+        throw new Error(res.message || 'Payment initiation failed');
       }
-
-      const transactionId = paymentResponse.data.transaction_id;
-
-      await Api.updateApplicationPaymentStatus(appId, {
-        payment_status: 'paid',
-        payment_method: paymentProvider,
-        transaction_id: transactionId,
-        amount_paid: rentAmount,
-      });
-
-      setPayResult('success');
-      setPayMessage(`Payment request sent! Check your ${paymentProvider.toUpperCase()} prompt. Ref: ${transactionId}`);
-      await refreshApplications();
     } catch (err: any) {
       setPayResult('error');
-      setPayMessage(err?.message || 'Failed to process rent payment.');
+      setPayMessage(err?.response?.data?.message || err?.message || 'Failed to process rent payment.');
     } finally {
       setPaying(false);
     }
   };
 
   const openPaymentModal = (appId: number) => {
+    if (rentPollRef.current) clearInterval(rentPollRef.current);
     setPaymentModal(appId);
     setPayResult(null);
     setPayMessage('');
+    setRentOrderId('');
     setPhoneNumber('');
   };
 
   const closePaymentModal = () => {
-    if (paying) return;
+    if (payResult === 'waiting') return;
+    if (rentPollRef.current) clearInterval(rentPollRef.current);
     setPaymentModal(null);
     setPayResult(null);
     setPayMessage('');
+    setRentOrderId('');
     setPhoneNumber('');
   };
 
@@ -375,7 +375,19 @@ const ApplicationsPage = () => {
                 )}
 
                 <div>
-                  {item.status === 'approved' && !item.rent_paid ? (
+                  {item.next_step && (
+                    <div style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 8,
+                      background: 'rgba(200,145,40,0.08)', border: '1px solid rgba(200,145,40,0.2)',
+                      borderRadius: 12, padding: '12px 14px', marginBottom: 12,
+                      fontSize: 13, color: palette.slate600, lineHeight: 1.5,
+                    }}>
+                      <Info size={16} style={{ color: palette.gold, flexShrink: 0, marginTop: 2 }} />
+                      {item.next_step}
+                    </div>
+                  )}
+
+                  {item.can_pay_rent ? (
                     <button 
                       onClick={() => openPaymentModal(item.id)}
                       style={{
@@ -542,11 +554,11 @@ const ApplicationsPage = () => {
                   marginBottom: 20,
                   display: 'flex',
                   gap: 12,
-                  background: payResult === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                  border: `1px solid ${payResult === 'success' ? '#10b98150' : '#ef444450'}`,
-                  color: payResult === 'success' ? '#34d399' : '#f87171'
+                  background: payResult === 'success' ? 'rgba(16,185,129,0.1)' : payResult === 'waiting' ? 'rgba(200,145,40,0.1)' : 'rgba(239,68,68,0.1)',
+                  border: `1px solid ${payResult === 'success' ? '#10b98150' : payResult === 'waiting' ? 'rgba(200,145,40,0.3)' : '#ef444450'}`,
+                  color: payResult === 'success' ? '#34d399' : payResult === 'waiting' ? palette.gold : '#f87171'
                 }}>
-                  {payResult === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+                  {payResult === 'success' ? <CheckCircle size={20} /> : payResult === 'waiting' ? <Loader2 size={20} style={{ animation: 'spin 0.9s linear infinite' }} /> : <AlertCircle size={20} />}
                   <span style={{ fontSize: 13.5, lineHeight: 1.5 }}>{payMessage}</span>
                 </div>
               )}
@@ -555,7 +567,7 @@ const ApplicationsPage = () => {
               <div style={{ display: 'flex', gap: 12 }}>
                 <button 
                   onClick={closePaymentModal} 
-                  disabled={paying}
+                  disabled={paying || payResult === 'waiting'}
                   style={{
                     flex: 1,
                     padding: '14px',
@@ -571,7 +583,7 @@ const ApplicationsPage = () => {
                   {payResult === 'success' ? 'Done' : 'Cancel'}
                 </button>
 
-                {payResult !== 'success' && (
+                {payResult !== 'success' && payResult !== 'waiting' && (
                   <button
                     onClick={() => handlePayRent(paymentModal)}
                     disabled={paying || !phoneNumber || phoneNumber.length < 10}

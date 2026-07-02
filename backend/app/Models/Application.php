@@ -21,12 +21,14 @@ class Application extends Model
         'applied_at',
         'responded_at',
         'owner_id',
-        'service_fee',
         'payment_status',
         'payment_method',
         'transaction_id',
-        'applied_at',
-
+        'rent_payment_status',
+        'rent_payment_method',
+        'rent_transaction_id',
+        'amount_paid',
+        'service_fee',
     ];
 
     protected $casts = [

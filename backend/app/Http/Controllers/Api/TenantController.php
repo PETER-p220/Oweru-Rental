@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use App\Services\SelcomPaymentService;
 use App\Services\SiteVisitPaymentService;
+use App\Services\RentPaymentService;
 
 class TenantController extends Controller
 {
@@ -102,8 +103,10 @@ class TenantController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
+        $items = collect($applications->items())->map(fn (Application $app) => $this->formatApplicationForTenant($app));
+
         return response()->json([
-            'data' => $applications->items(),
+            'data' => $items,
             'pagination' => [
                 'current_page' => $applications->currentPage(),
                 'last_page'    => $applications->lastPage(),
@@ -775,36 +778,95 @@ class TenantController extends Controller
 
     public function updateApplicationPaymentStatus(Request $request, $applicationId): JsonResponse
     {
+        // Legacy endpoint — rent payments must go through initiateRentPayment + confirmation.
+        return response()->json([
+            'success' => false,
+            'message' => 'Use POST /tenant/rent/pay to initiate rent payment. Status updates automatically after confirmation.',
+        ], 422);
+    }
+
+    public function initiateRentPayment(Request $request): JsonResponse
+    {
         $validator = Validator::make($request->all(), [
-            'payment_status' => 'required|string|in:paid,pending,failed',
-            'payment_method' => 'required|string',
-            'transaction_id' => 'required|string',
-            'amount_paid'    => 'required|numeric|min:0',
+            'application_id' => 'required|exists:applications,id',
+            'phone_number'   => 'required|string|min:10|max:13',
+            'provider'       => 'required|string|in:tigo,mpesa,airtel,halopesa,TIGO,MPESA,AIRTEL,HALOPESA,HALOPES',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'success' => false,
-                'error'   => 'VALIDATION_ERROR',
+                'message' => 'Validation failed',
                 'errors'  => $validator->errors(),
             ], 422);
         }
 
         $user = Auth::user();
-        $application = Application::where('user_id', $user->id)
-            ->where('id', $applicationId)
-            ->firstOrFail();
+        $application = Application::findOrFail($request->application_id);
+        $result = app(RentPaymentService::class)->initiate(
+            $user,
+            $application,
+            $request->phone_number,
+            $request->provider
+        );
 
-        $application->update([
-            'payment_status' => $request->payment_status,
-            'payment_method' => $request->payment_method,
-            'transaction_id' => $request->transaction_id,
-        ]);
+        if (! ($result['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Rent payment initiation failed',
+                'data'    => $result['data'] ?? null,
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Application payment status updated successfully',
-            'data'    => $application->fresh()
+            'message' => $result['message'],
+            'data'    => $result['data'],
+        ]);
+    }
+
+    public function checkRentPaymentStatus(string $orderId): JsonResponse
+    {
+        $result = app(RentPaymentService::class)->checkStatus($orderId, Auth::user());
+
+        if (! ($result['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Unable to check rent payment status',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'rent_payment_status' => $result['rent_payment_status'],
+                'rent_paid' => $result['rent_paid'] ?? ($result['rent_payment_status'] === 'paid'),
+                'application_id' => $result['application_id'],
+                'message' => $result['message'] ?? null,
+            ],
+        ]);
+    }
+
+    private function formatApplicationForTenant(Application $application): array
+    {
+        $property = $application->property;
+        $isAgentListed = (bool) $property?->agent_id;
+        $siteVisitPaid = ! $isAgentListed
+            || in_array($application->payment_status, ['paid', 'waived'], true);
+        $rentPaid = $application->rent_payment_status === 'paid';
+        $canPayRent = $application->status === 'approved' && $siteVisitPaid && ! $rentPaid;
+
+        return array_merge($application->toArray(), [
+            'rent_paid' => $rentPaid,
+            'site_visit_paid' => $siteVisitPaid,
+            'can_pay_rent' => $canPayRent,
+            'next_step' => match (true) {
+                $application->status === 'rejected' => 'Application was rejected.',
+                $application->status === 'pending' && $isAgentListed && ! $siteVisitPaid => 'Complete the site visit fee payment.',
+                $application->status === 'pending' => 'Waiting for landlord or agent approval.',
+                $canPayRent => 'Pay your first month rent to secure the property.',
+                $rentPaid => 'Rent paid. Check Digital Contracts for signing.',
+                default => 'Track your application status here.',
+            },
         ]);
     }
 

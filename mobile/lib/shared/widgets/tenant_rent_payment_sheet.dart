@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
 import '../services/tenant_api_service.dart';
 import '../../features/tenant/presentation/pages/tenant_theme.dart';
 
@@ -29,8 +29,11 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
   final _phoneCtrl = TextEditingController();
   String _provider = 'tigo';
   bool _paying = false;
-  String? _result; // success | error
+  String? _result; // success | error | waiting
   String _message = '';
+  String _rentOrderId = '';
+  Timer? _pollTimer;
+  int _pollAttempts = 0;
 
   Map<String, dynamic>? get _property =>
       widget.application['property'] as Map<String, dynamic>?;
@@ -45,8 +48,45 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _phoneCtrl.dispose();
     super.dispose();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollAttempts = 0;
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _pollStatus());
+    _pollStatus();
+  }
+
+  Future<void> _pollStatus() async {
+    if (_rentOrderId.isEmpty) return;
+    _pollAttempts += 1;
+    final res = await TenantApiService.checkRentPaymentStatus(_rentOrderId);
+    final status = res['data']?['rent_payment_status']?.toString();
+    if (!mounted) return;
+
+    if (status == 'paid') {
+      _pollTimer?.cancel();
+      setState(() {
+        _result = 'success';
+        _message = 'Rent payment confirmed!';
+        _paying = false;
+      });
+      widget.onPaid();
+    } else if (status == 'failed') {
+      _pollTimer?.cancel();
+      setState(() {
+        _result = 'error';
+        _message = 'Rent payment was not completed. Please try again.';
+        _paying = false;
+      });
+    } else if (_pollAttempts >= 40) {
+      setState(() {
+        _message = 'Still waiting for confirmation. Keep this screen open or check My Applications.';
+      });
+    }
   }
 
   Future<void> _payRent() async {
@@ -67,7 +107,6 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
     }
 
     final appId = (widget.application['id'] as num).toInt();
-    final propertyId = (_property?['id'] as num?)?.toInt() ?? appId;
 
     setState(() {
       _paying = true;
@@ -76,65 +115,24 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
     });
 
     try {
-      final userMap = await AuthService.getCurrentUser();
-      final tenantId = (userMap?['id'] as num?)?.toInt();
-      if (tenantId == null) {
-        throw Exception('Your session may have expired. Please log in again.');
-      }
-
-      final firstName =
-          userMap?['first_name']?.toString() ?? userMap?['firstName']?.toString() ?? '';
-      final lastName =
-          userMap?['last_name']?.toString() ?? userMap?['lastName']?.toString() ?? '';
-      final customerName = (firstName.isNotEmpty && lastName.isNotEmpty)
-          ? '$firstName $lastName'
-          : (firstName.isNotEmpty ? firstName : 'Tenant');
-
-      final paymentResponse = await TenantApiService.initiateSelcomPayment(
-        amount: _rentAmount,
+      final result = await TenantApiService.initiateRentPayment(
+        applicationId: appId,
         phoneNumber: phone,
         provider: _provider,
-        propertyId: propertyId,
-        tenantId: tenantId,
-        paymentType: 'rent_payment',
-        customerEmail: userMap?['email']?.toString(),
-        customerName: customerName,
       );
 
-      if (paymentResponse['success'] != true) {
-        throw Exception(
-          paymentResponse['message']?.toString() ?? 'Payment initiation failed',
-        );
+      final orderId = result['data']?['order_id']?.toString();
+      if (result['success'] == true && orderId != null && orderId.isNotEmpty) {
+        setState(() {
+          _rentOrderId = orderId;
+          _result = 'waiting';
+          _message = result['message']?.toString() ??
+              'Approve the ${_provider.toUpperCase()} prompt on your phone.';
+        });
+        _startPolling();
+      } else {
+        throw Exception(result['message']?.toString() ?? 'Payment initiation failed');
       }
-
-      final data = paymentResponse['data'];
-      final transactionId = (data is Map ? data['transaction_id'] : null)?.toString() ??
-          paymentResponse['transaction_id']?.toString();
-
-      if (transactionId == null || transactionId.isEmpty) {
-        throw Exception('Payment initiation failed — no transaction reference.');
-      }
-
-      final update = await TenantApiService.updateApplicationPaymentStatus(
-        applicationId: appId,
-        paymentStatus: 'paid',
-        paymentMethod: _provider,
-        transactionId: transactionId,
-        amountPaid: _rentAmount,
-      );
-
-      if (update['success'] != true) {
-        throw Exception(update['message']?.toString() ?? 'Failed to record payment');
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _result = 'success';
-        _message =
-            'Payment request sent! Check your ${_provider.toUpperCase()} prompt. Ref: $transactionId';
-        _paying = false;
-      });
-      widget.onPaid();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -344,10 +342,12 @@ bool tenantApplicationRentPaid(Map<String, dynamic> app, {Set<int>? locallyPaidI
     return true;
   }
   if (app['rent_paid'] == true) return true;
+  if ((app['rent_payment_status']?.toString() ?? '') == 'paid') return true;
   return false;
 }
 
 bool tenantApplicationNeedsRentPayment(Map<String, dynamic> app, {Set<int>? locallyPaidIds}) {
+  if (app['can_pay_rent'] == true) return true;
   final status = (app['status']?.toString() ?? '').toLowerCase();
   return status == 'approved' && !tenantApplicationRentPaid(app, locallyPaidIds: locallyPaidIds);
 }
