@@ -286,8 +286,11 @@ class TenantController extends Controller
         $user = Auth::user();
         $this->syncTenantApplicationPayments($user);
 
+        $rentTypes = ['first_month_rent', 'monthly_rent', 'rent', 'rent_payment'];
+
         $payments = Payment::with('property')
             ->where('user_id', $user->id)
+            ->whereIn('type', $rentTypes)
             ->orderByRaw("CASE WHEN paid_at IS NULL THEN created_at ELSE paid_at END DESC")
             ->paginate(20);
 
@@ -351,12 +354,18 @@ class TenantController extends Controller
         $user = Auth::user();
         $this->syncTenantApplicationPayments($user);
 
+        $rentTypes = ['first_month_rent', 'monthly_rent', 'rent', 'rent_payment'];
+
         $completed = Payment::where('user_id', $user->id)
+            ->whereIn('type', $rentTypes)
             ->whereIn('status', ['completed', 'paid']);
 
         $stats = [
             'total_paid'       => (clone $completed)->sum('amount'),
-            'pending_payments' => Payment::where('user_id', $user->id)->whereIn('status', ['pending', 'processing'])->count(),
+            'pending_payments' => Payment::where('user_id', $user->id)
+                ->whereIn('type', $rentTypes)
+                ->whereIn('status', ['pending', 'processing'])
+                ->count(),
             'this_month'       => (clone $completed)
                 ->where(function ($q) {
                     $q->whereMonth('paid_at', now()->month)->whereYear('paid_at', now()->year)

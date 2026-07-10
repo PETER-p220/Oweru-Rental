@@ -299,17 +299,31 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
   const activeSections   = FIELD_SECTIONS.filter(s => getSectionFields(s).length > 0);
 
   const renderInput = (field: ContractField) => {
-    const val    = fieldValues[field.id] ?? '';
+    const val = fieldValues[field.id] ?? '';
     const shared = { disabled: isReadOnly, required: field.required };
+    const fieldCss: React.CSSProperties = {
+      width: '100%',
+      background: isReadOnly ? '#F1F5F9' : '#FFFFFF',
+      border: '1px solid #CBD5E1',
+      color: '#0F172A',
+      padding: '12px',
+      borderRadius: 8,
+      outline: 'none',
+      fontSize: 14,
+      fontFamily: "'DM Sans', sans-serif",
+      boxSizing: 'border-box',
+      opacity: isReadOnly ? 0.9 : 1,
+      cursor: isReadOnly ? 'default' : 'text',
+    };
     switch (field.type) {
       case 'text':
-        return <input style={{ width: '100%', background: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '12px', borderRadius: 8, outline: 'none' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <input style={fieldCss} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       case 'date':
-        return <input type="date" style={{ width: '100%', background: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '12px', borderRadius: 8, outline: 'none' }} value={val} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <input type="date" style={fieldCss} value={val} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       case 'number':
-        return <input type="number" style={{ width: '100%', background: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '12px', borderRadius: 8, outline: 'none' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <input type="number" style={fieldCss} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       case 'textarea':
-        return <textarea style={{ width: '100%', minHeight: 80, background: '#0F172A', border: '1px solid rgba(255,255,255,0.1)', color: '#0F172A', padding: '12px', borderRadius: 8, outline: 'none', resize: 'vertical' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
+        return <textarea style={{ ...fieldCss, minHeight: 80, resize: 'vertical' }} value={val} placeholder={field.placeholder} onChange={e => setVal(field.id, e.target.value)} {...shared} />;
       default:
         return null;
     }
@@ -433,14 +447,14 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
 
                 return (
                   <div key={section.title} style={{
-                    border: `1px solid ${isOpen ? 'rgba(200,145,40,0.19)' : 'rgba(255,255,255,0.07)'}`,
+                    border: `1px solid ${isOpen ? 'rgba(200,145,40,0.35)' : '#E2E8F0'}`,
                     borderRadius: 12, overflow: 'hidden', marginBottom: 4, transition: 'border-color 0.2s',
                   }}>
                     <button
                       style={{
                         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '14px 18px', border: 'none', cursor: 'pointer', color: '#0F172A',
-                        background: isOpen ? 'rgba(200,145,40,0.10)' : 'rgba(255,255,255,0.02)',
+                        background: isOpen ? 'rgba(200,145,40,0.10)' : '#F8FAFC',
                       }}
                       onClick={() => setActiveSection(isOpen ? null : section.title)}
                     >
@@ -479,7 +493,7 @@ const ContractSigningModal = ({ contract, onClose, onSubmit, onDownload, submitt
 
               {/* Ungrouped fields */}
               {ungroupedFields.length > 0 && (
-                <div style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 4 }}>
+                <div style={{ border: '1px solid #E2E8F0', borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 4 }}>
                   <div style={{ fontWeight: 600, fontSize: 14, color: '#0F172A' }}>Sehemu Nyingine</div>
                   {ungroupedFields.map(field => (
                     <div key={field.id}>

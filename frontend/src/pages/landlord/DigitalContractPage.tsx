@@ -35,7 +35,7 @@ const C = {
 interface ContractField {
   id: string; label: string;
   type: 'text' | 'date' | 'number' | 'textarea' | 'signature';
-  required: boolean; value?: string; placeholder?: string; landlordOnly?: boolean;
+  required: boolean; value?: string; tenant_value?: string; placeholder?: string; landlordOnly?: boolean;
 }
 interface DigitalContract {
   id: number; title: string; property_id: number; tenant_id: number;
@@ -44,11 +44,14 @@ interface DigitalContract {
   landlord_signature?: string; tenant_signature?: string;
   created_at?: string; updated_at?: string;
   property?: { id: number; title?: string; location?: string; price?: number };
-  tenant?: { id: number; user?: { first_name?: string; last_name?: string; email?: string } };
+  tenant?: {
+    id: number;
+    user?: { first_name?: string; last_name?: string; email?: string; phone?: string };
+  };
 }
 interface PropertyOption { id: number; title?: string; location?: string; price?: number; }
-interface TenantOption   { id: number; user_id?: number; property_id?: number; status?: string; user?: { first_name?: string; last_name?: string; email?: string }; }
-interface ApprovedApplicant { id: number; status: string; user_id: number; property_id: number; user?: { first_name?: string; last_name?: string; email?: string }; }
+interface TenantOption   { id: number; user_id?: number; property_id?: number; status?: string; user?: { first_name?: string; last_name?: string; email?: string; phone?: string }; }
+interface ApprovedApplicant { id: number; status: string; user_id: number; property_id: number; user?: { first_name?: string; last_name?: string; email?: string; phone?: string }; }
 interface ContractFormData  { title: string; contract_type: 'chumba' | 'nyumba' | 'custom'; property_id: string; tenant_id: string; file: File | null; file_url: string; file_name: string; file_type: string; }
 
 // ── Contract field definitions ─────────────────────────────────────────────────
@@ -123,11 +126,29 @@ interface PreviewModalProps {
 const ContractPreviewModal = ({ contract, tenants, onClose, onDownload, onSend, onApprove }: PreviewModalProps) => {
   const sm = getStatusMeta(contract.status);
   const tenantName = resolveContractTenant(contract, tenants);
-  const [showFields, setShowFields] = useState(false);
+  const tenantUser = contract.tenant?.user
+    ?? tenants.find(t => t.id === contract.tenant_id || t.user_id === contract.tenant_id)?.user;
+  const [showFields, setShowFields] = useState(
+    ['pending_review', 'approved', 'pending_signature'].includes(contract.status),
+  );
+
+  const fieldValue = (f: ContractField) =>
+    (f.tenant_value ?? f.value ?? '').toString().trim();
+
+  const filledFields = Array.isArray(contract.fields)
+    ? contract.fields.filter(f => f.type !== 'signature' && fieldValue(f))
+    : [];
+  const allDataFields = Array.isArray(contract.fields)
+    ? contract.fields.filter(f => f.type !== 'signature')
+    : [];
+
+  const tenantPhoneFromFields = fieldValue(
+    allDataFields.find(f => f.id === 'tenant_phone') ?? { id: 'tenant_phone', label: '', type: 'text', required: false },
+  );
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px', backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '16px', maxWidth: 680, width: '100%', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(15,23,42,0.20)', padding: '28px' }}>
+      <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '16px', maxWidth: 720, width: '100%', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(15,23,42,0.20)', padding: '28px' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
@@ -143,16 +164,35 @@ const ContractPreviewModal = ({ contract, tenants, onClose, onDownload, onSend, 
         {/* Status badge */}
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '8px', background: sm.bg, border: `1px solid ${sm.color}30`, color: sm.color, fontSize: '13px', fontWeight: 700, marginBottom: '20px' }}>
           {sm.label}
-          {contract.tenant?.user?.email && <span style={{ marginLeft: '8px', fontSize: '12px', color: C.textMuted, fontWeight: 400 }}>{contract.tenant.user.email}</span>}
+        </div>
+
+        {/* Tenant profile */}
+        <div style={{ background: C.slate100, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '16px 18px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.gold, fontWeight: 700, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <User size={14} /> Taarifa za Mpangaji
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {[
+              { label: 'Jina', value: tenantName },
+              { label: 'Barua pepe', value: tenantUser?.email || '—' },
+              { label: 'Simu', value: tenantUser?.phone || tenantPhoneFromFields || '—' },
+              { label: 'Mali', value: contract.property?.title ?? `Property #${contract.property_id}` },
+            ].map(item => (
+              <div key={item.label}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{item.label}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: C.text, wordBreak: 'break-word' }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Info grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
           {[
-            { label: 'Mpangaji',       value: tenantName,                                                           icon: <User size={13} /> },
-            { label: 'Mali / Nyumba',  value: contract.property?.title ?? `Property #${contract.property_id}`,     icon: <MapPin size={13} /> },
-            { label: 'Tarehe',         value: formatDate(contract.created_at),                                      icon: <Clock size={13} /> },
-            { label: 'Kodi',           value: contract.property?.price ? formatCurrency(contract.property.price) : '—', icon: <FileCheck size={13} /> },
+            { label: 'Tarehe', value: formatDate(contract.created_at), icon: <Clock size={13} /> },
+            { label: 'Kodi', value: contract.property?.price ? formatCurrency(contract.property.price) : '—', icon: <FileCheck size={13} /> },
+            { label: 'Eneo', value: contract.property?.location || '—', icon: <MapPin size={13} /> },
+            { label: 'Sehemu zilizojazwa', value: `${filledFields.length}/${allDataFields.length}`, icon: <Shield size={13} /> },
           ].map(item => (
             <div key={item.label} style={{ background: C.slate100, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '12px 14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: C.textMuted, fontSize: '11px', marginBottom: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{item.icon} {item.label}</div>
@@ -189,22 +229,27 @@ const ContractPreviewModal = ({ contract, tenants, onClose, onDownload, onSend, 
           </div>
         )}
 
-        {/* Fields toggle */}
-        {Array.isArray(contract.fields) && contract.fields.length > 0 && (
+        {/* All tenant-submitted contract fields */}
+        {allDataFields.length > 0 && (
           <div style={{ marginBottom: '16px' }}>
             <button onClick={() => setShowFields(v => !v)}
               style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', cursor: 'pointer', color: C.gold, fontSize: '13px', fontWeight: 700, padding: 0 }}>
               {showFields ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              {showFields ? 'Ficha' : 'Ona'} sehemu ({contract.fields.filter(f => f.value).length}/{contract.fields.length})
+              {showFields ? 'Ficha' : 'Ona'} taarifa zote za mkataba ({filledFields.length}/{allDataFields.length})
             </button>
             {showFields && (
-              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px', background: C.slate100, borderRadius: '10px', padding: '14px 16px', border: `1px solid ${C.border}` }}>
-                {contract.fields.filter(f => f.type !== 'signature' && f.value).map(f => (
-                  <div key={f.id} style={{ display: 'flex', gap: '12px', fontSize: '13px' }}>
-                    <span style={{ color: C.textMuted, minWidth: 180, fontWeight: 600 }}>{f.label}:</span>
-                    <span style={{ color: C.text }}>{f.value}</span>
-                  </div>
-                ))}
+              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px', background: C.slate100, borderRadius: '10px', padding: '14px 16px', border: `1px solid ${C.border}` }}>
+                {allDataFields.map(f => {
+                  const val = fieldValue(f);
+                  return (
+                    <div key={f.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 200px) 1fr', gap: '12px', fontSize: '13px', paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>
+                      <span style={{ color: C.textMuted, fontWeight: 600 }}>{f.label}</span>
+                      <span style={{ color: val ? C.text : C.textMuted, fontWeight: val ? 600 : 400, wordBreak: 'break-word' }}>
+                        {val || '— Haijajazwa'}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

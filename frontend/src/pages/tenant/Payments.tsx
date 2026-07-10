@@ -89,7 +89,10 @@ const Payments = () => {
       const [paymentsRes, methodsRes, statsRes] = await Promise.all([
         Api.getMyPayments(), Api.getPaymentMethods(), Api.getPaymentStats(),
       ]);
-      setPayments(Array.isArray(paymentsRes.data) ? paymentsRes.data : []);
+      setPayments(
+        (Array.isArray(paymentsRes.data) ? paymentsRes.data : [])
+          .filter((p: any) => p.type !== 'site_visit'),
+      );
       setMethods(Array.isArray(methodsRes.data) ? methodsRes.data : []);
       setStats(statsRes.data || {});
       if (methodsRes.data?.[0]?.id) {
