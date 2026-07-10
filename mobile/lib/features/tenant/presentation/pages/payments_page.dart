@@ -3,6 +3,7 @@
 // ============================================================
 import 'package:flutter/material.dart';
 import '../../../../shared/services/tenant_api_service.dart';
+import '../../../../shared/utils/payment_status_utils.dart';
 import 'tenant_theme.dart';
 
 class PaymentsPage extends StatefulWidget {
@@ -197,23 +198,58 @@ class _PaymentsPageState extends State<PaymentsPage> {
       );
     }
     if (!mounted) return;
+
+    if (result['success'] != true) {
+      setState(() => _processing = false);
+      Navigator.pop(ctx);
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(
+          content: Text(result['message']?.toString() ?? 'Failed to submit payment'),
+          backgroundColor: kDanger,
+        ),
+      );
+      return;
+    }
+
+    final pollId = (result['payment_id'] as num?)?.toInt() ?? paymentId;
+    String finalMessage = result['message']?.toString() ?? 'Waiting for payment confirmation...';
+    var paid = false;
+
+    if (pollId != null) {
+      for (var attempt = 0; attempt < 40; attempt++) {
+        await Future.delayed(const Duration(seconds: 3));
+        final statusRes = await TenantApiService.checkMonthlyPaymentStatus(pollId);
+        final status = parsePaymentStatus(statusRes);
+        if (status == 'paid') {
+          paid = true;
+          finalMessage = paymentConfirmationMessage('monthly', 'paid');
+          break;
+        }
+        if (status == 'failed') {
+          finalMessage = paymentConfirmationMessage('monthly', 'failed');
+          break;
+        }
+      }
+      if (!paid && !finalMessage.contains('not completed')) {
+        finalMessage = 'Payment submitted. Confirmation may take a moment — pull to refresh.';
+      }
+    }
+
+    if (!mounted) return;
     setState(() => _processing = false);
     Navigator.pop(ctx);
-    final success = result['success'] == true;
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
         content: Text(
-          success
-              ? (result['message']?.toString() ?? 'Payment submitted successfully!')
-              : (result['message']?.toString() ?? 'Failed to submit payment'),
+          finalMessage,
           style: const TextStyle(color: kBg, fontWeight: FontWeight.w600),
         ),
-        backgroundColor: success ? kGold : kDanger,
+        backgroundColor: paid ? kGold : kWarning,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
-    if (success) {
+    if (paid) {
       await _load();
     }
   }

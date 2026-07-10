@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, MapPin, Bed, Bath, Square, Share2,
@@ -8,6 +8,10 @@ import {
   Bookmark, ChevronLeft, ChevronRight, Building2, Home, Users,
 } from 'lucide-react';
 import Api from '../services/api';
+import { usePaymentPolling } from '../hooks/usePaymentPolling';
+import { paymentConfirmationMessage } from '../utils/paymentStatus';
+import PropertyThumbnail from '../components/PropertyThumbnail';
+import { getStorageOrigin } from '../utils/propertyImages';
 
 /* ─── Types ─── */
 interface Pagination { current_page: number; last_page: number; per_page: number; total: number; }
@@ -22,6 +26,7 @@ interface Property {
   dalali?: string;
   owner_id?: number;
   agent_id?: number;
+  thumbnail?: string;
 }
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -33,7 +38,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return d;
 }
 
-const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
+
 const ITEMS_PER_PAGE = 12;
 
 const formatPrice = (p: number | null | undefined): string => {
@@ -53,71 +58,6 @@ const typeLabel: Record<string, string> = {
   studio: 'Studio',
   commercial: 'Commercial',
   oweru_rental: 'Oweru Rental',
-};
-
-const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='450' viewBox='0 0 600 450'%3E%3Crect width='600' height='450' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
-
-// ── Universal image resolver ─────────────────────────────────────────────────
-// Tries every shape the backend may return:
-//   1. property_images[] snake_case  (public API after fix)
-//   2. propertyImages[]  camelCase   (commercial API)
-//   3. images[]          JSON column (agent-created properties)
-const getImage = (property: any): string => {
-  const si = property?.property_images;
-  if (Array.isArray(si) && si.length > 0) {
-    const p = si.find((i: any) => i.is_primary) ?? si[0];
-    const path = p?.image_path ?? p?.url ?? '';
-    if (path) return resolveUrl(path);
-  }
-  const ci = property?.propertyImages;
-  if (Array.isArray(ci) && ci.length > 0) {
-    const p = ci.find((i: any) => i.is_primary) ?? ci[0];
-    const path = p?.image_path ?? p?.url ?? '';
-    if (path) return resolveUrl(path);
-  }
-  const imgs = property?.images;
-  if (Array.isArray(imgs) && imgs.length > 0) {
-    const first = imgs[0];
-    const path = typeof first === 'string' ? first : (first?.image_path ?? first?.url ?? '');
-    if (path) return resolveUrl(path);
-  }
-  return PLACEHOLDER;
-};
-
-const resolveUrl = (path: string): string => {
-  if (!path || !path.trim()) return PLACEHOLDER;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  if (path.startsWith('/storage/'))  return `${VITE_STORAGE}${path}`;
-  if (path.startsWith('storage/'))   return `${VITE_STORAGE}/${path}`;
-  if (path.startsWith('/'))          return `${VITE_STORAGE}${path}`;
-  return `${VITE_STORAGE}/storage/${path}`;
-};
-
-const getImageSrcSet = (property: any): string => {
-  const getImagePath = (): string => {
-    const si = property?.property_images;
-    if (Array.isArray(si) && si.length > 0) {
-      const p = si.find((i: any) => i.is_primary) ?? si[0];
-      return p?.image_path ?? p?.url ?? '';
-    }
-    const ci = property?.propertyImages;
-    if (Array.isArray(ci) && ci.length > 0) {
-      const p = ci.find((i: any) => i.is_primary) ?? ci[0];
-      return p?.image_path ?? p?.url ?? '';
-    }
-    const imgs = property?.images;
-    if (Array.isArray(imgs) && imgs.length > 0) {
-      const first = imgs[0];
-      return typeof first === 'string' ? first : (first?.image_path ?? first?.url ?? '');
-    }
-    return '';
-  };
-  
-  const path = getImagePath();
-  if (!path) return '';
-  
-  const base = resolveUrl(path);
-  return `${base}?w=400 400w, ${base}?w=800 800w, ${base}?w=1200 1200w`;
 };
 
 const COMMERCIAL_TYPES = ['office', 'retail', 'warehouse', 'commercial', 'industrial'];
@@ -309,10 +249,17 @@ const CSS = `
 }
 .pc:hover{box-shadow:0 12px 40px rgba(0,0,0,.12);transform:translateY(-4px);border-color:var(--gold-border);}
 .pr-grid.list .pc{flex-direction:row;}
-.pc-img-wrap{position:relative;overflow:hidden;aspect-ratio:4/3;flex-shrink:0;}
+.pc-img-wrap{position:relative;overflow:hidden;aspect-ratio:4/3;flex-shrink:0;background:var(--slate-100);}
 .pr-grid.list .pc-img-wrap{width:240px;aspect-ratio:auto;}
-.pc-img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;background:var(--slate-100);}
-.pc:hover .pc-img{transform:scale(1.04);}
+.pc-img-skeleton{
+  position:absolute;inset:0;z-index:0;
+  background:linear-gradient(90deg,var(--slate-100) 0%,var(--slate-200) 45%,var(--slate-100) 90%);
+  background-size:200% 100%;
+  animation:img-shimmer 1.1s ease-in-out infinite;
+}
+.pc-img{width:100%;height:100%;object-fit:cover;transition:opacity .28s ease,transform .4s ease;background:var(--slate-100);opacity:0;position:relative;z-index:1;}
+.pc-img.is-loaded{opacity:1;}
+.pc:hover .pc-img.is-loaded{transform:scale(1.04);}
 .pc-img-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(15,23,42,.7) 0%,transparent 55%);}
 .pc-badge-featured{
   position:absolute;top:12px;left:12px;
@@ -654,6 +601,8 @@ const CSS = `
 }
 
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes img-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.pc{content-visibility:auto;contain-intrinsic-size:360px 420px;}
 
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
@@ -760,8 +709,8 @@ const SkeletonCard = () => (
 );
 
 /* ─── Property Card ─── */
-const PropertyCard = ({ property, isSaved, onSave, onApply }: {
-  property: Property; isSaved: boolean;
+const PropertyCard = memo(({ property, isSaved, onSave, onApply, imagePriority = false }: {
+  property: Property; isSaved: boolean; imagePriority?: boolean;
   onSave: (e: React.MouseEvent) => void; onApply: (e: React.MouseEvent) => void;
 }) => {
   const loc    = property.location || property.address;
@@ -771,19 +720,11 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
   return (
     <Link to={`/property/${property.id}`} className="pc">
       <div className="pc-img-wrap">
-        <img 
-  src={getImage(property)} 
-  srcSet={getImageSrcSet(property)}
-  sizes="(max-width: 768px) 100vw, (max-width: 1100px) 50vw, 33vw"
-  width="600" 
-  height="450"
-  alt={property.title} 
-  className="pc-img" 
-  loading="lazy" 
-  decoding="async"
-  fetchPriority="auto"
-  style={{ objectFit: 'cover', backgroundColor: 'var(--navy-700)' }}
-/>
+        <PropertyThumbnail
+          property={property as unknown as Record<string, unknown>}
+          alt={property.title || 'Property'}
+          priority={imagePriority}
+        />
         <div className="pc-img-overlay" />
         {property.featured && <div className="pc-badge-featured">Featured</div>}
         {property.type && (
@@ -839,9 +780,7 @@ const PropertyCard = ({ property, isSaved, onSave, onApply }: {
       </div>
     </Link>
   );
-};
-
-/* ─── Modal wrapper ─── */
+});
 const Overlay = ({ onClose, children }: { onClose: () => void; children: React.ReactNode }) => (
   <div className="m-overlay" onClick={onClose}>
     <div className="m-box" onClick={e => e.stopPropagation()}>{children}</div>
@@ -1125,7 +1064,6 @@ const Properties = () => {
   const [successVariant, setSuccessVariant] = useState<'site_visit' | 'application'>('site_visit');
   const [pendingOrderId, setPendingOrderId] = useState('');
   const [pollMessage, setPollMessage] = useState('');
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
   const [phoneNumber,   setPhoneNumber]   = useState('');
   const jumpRef = useRef<HTMLInputElement>(null);
@@ -1189,42 +1127,39 @@ const Properties = () => {
   useEffect(() => { loadProperties(currentPage); }, [currentPage, loadProperties]);
 
   useEffect(() => {
-    if (modal !== 'pending_payment' || !pendingOrderId) return;
+    const origin = getStorageOrigin();
+    if (!origin) return;
+    const link = document.createElement('link');
+    link.rel = 'preconnect';
+    link.href = origin;
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, []);
 
-    let attempts = 0;
-    const maxAttempts = 40;
+  const pollSiteVisit = useCallback(
+    () => Api.checkSiteVisitPaymentStatus(pendingOrderId),
+    [pendingOrderId],
+  );
 
-    const poll = async () => {
-      attempts += 1;
-      try {
-        const res = await Api.checkSiteVisitPaymentStatus(pendingOrderId);
-        const status = res.data?.payment_status;
-        if (status === 'paid') {
-          if (pollRef.current) clearInterval(pollRef.current);
-          setSuccessVariant('site_visit');
-          setModal('success');
-          addToast({ type: 'success', title: 'Payment confirmed', message: 'Site visit fee received successfully.', duration: 6000 });
-        } else if (status === 'failed') {
-          if (pollRef.current) clearInterval(pollRef.current);
-          setModal('payment_failed');
-        } else if (attempts >= maxAttempts) {
-          if (pollRef.current) clearInterval(pollRef.current);
-          setPollMessage('Payment is taking longer than expected. Check My Applications for the latest status.');
-        }
-      } catch {
-        if (attempts >= maxAttempts) {
-          setPollMessage('Unable to verify payment right now. Check My Applications shortly.');
-        }
-      }
-    };
-
-    poll();
-    pollRef.current = setInterval(poll, 3000);
-
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [modal, pendingOrderId]);
+  usePaymentPolling(
+    modal === 'pending_payment' && !!pendingOrderId,
+    pendingOrderId,
+    pollSiteVisit,
+    {
+      onPaid: (message) => {
+        setSuccessVariant('site_visit');
+        setModal('success');
+        addToast({
+          type: 'success',
+          title: 'Payment confirmed',
+          message: message || paymentConfirmationMessage('site_visit', 'paid'),
+          duration: 6000,
+        });
+      },
+      onFailed: () => setModal('payment_failed'),
+      onTimeout: (msg) => setPollMessage(msg),
+    },
+  );
 
   const totalPages = pagination ? pagination.last_page : 1;
   const pageStart  = pagination ? (pagination.current_page - 1) * pagination.per_page + 1 : 0;
@@ -1341,7 +1276,6 @@ const Properties = () => {
 
   const closeModal = () => {
     if (paying || modal === 'pending_payment') return;
-    if (pollRef.current) clearInterval(pollRef.current);
     setModal('none');
     setSelProp(null);
     setPendingOrderId('');
@@ -1349,7 +1283,6 @@ const Properties = () => {
   };
 
   const cancelPendingPayment = () => {
-    if (pollRef.current) clearInterval(pollRef.current);
     setPendingOrderId('');
     setPollMessage('');
     setModal('payment');
@@ -1506,10 +1439,11 @@ const Properties = () => {
           </div>
         ) : properties.length > 0 ? (
           <div className={`pr-grid${viewMode === 'list' ? ' list' : ''}`}>
-            {properties.map(p => (
+            {properties.map((p, index) => (
               <PropertyCard
                 key={p.id}
                 property={p}
+                imagePriority={index < 3}
                 isSaved={savedIds.has(p.id)}
                 onSave={e => toggleSave(p.id, e)}
                 onApply={e => handleApply(p, e)}

@@ -236,6 +236,7 @@ class TenantController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
+                'status' => $result['payment_status'],
                 'payment_status' => $result['payment_status'],
                 'application_id' => $result['application_id'],
                 'message' => $result['message'] ?? null,
@@ -416,13 +417,128 @@ class TenantController extends Controller
                 'selcom_provider' => SelcomPaymentService::mapProvider($provider),
                 'phone_number' => $request->phone_number,
                 'transaction_id' => $transactionId,
+                'order_id' => $orderId,
                 'initiated_at' => now()->toIso8601String(),
             ]),
         ]);
 
         return response()->json([
             'message' => $result['message'] ?? 'Payment initiated successfully',
-            'data' => $result['data'],
+            'data' => array_merge($result['data'] ?? [], [
+                'order_id' => $orderId,
+                'payment_id' => $payment->id,
+            ]),
+        ]);
+    }
+
+    public function checkPaymentStatus(Payment $payment): JsonResponse
+    {
+        if (! $this->paymentsTableAvailable()) {
+            return response()->json(['message' => 'Payments are unavailable'], 503);
+        }
+
+        $user = Auth::user();
+
+        if ($payment->user_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (in_array($payment->status, ['completed', 'paid'], true)) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'status' => 'paid',
+                    'payment_status' => 'paid',
+                    'payment_id' => $payment->id,
+                    'message' => 'Payment confirmed.',
+                ],
+            ]);
+        }
+
+        if ($payment->status === 'failed') {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'status' => 'failed',
+                    'payment_status' => 'failed',
+                    'payment_id' => $payment->id,
+                    'message' => 'Payment was not completed.',
+                ],
+            ]);
+        }
+
+        $orderId = $payment->reference
+            ?? ($payment->metadata['order_id'] ?? null)
+            ?? ($payment->metadata['transaction_id'] ?? null);
+
+        if (! $orderId) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'status' => 'pending',
+                    'payment_status' => 'pending',
+                    'payment_id' => $payment->id,
+                    'message' => 'Waiting for payment approval on your phone.',
+                ],
+            ]);
+        }
+
+        $remote = app(SelcomPaymentService::class)->checkOrderStatus((string) $orderId);
+
+        if ($remote['paid'] ?? false) {
+            $payment->update([
+                'status' => 'completed',
+                'paid_at' => now(),
+                'metadata' => array_merge($payment->metadata ?? [], [
+                    'confirmed_at' => now()->toIso8601String(),
+                    'gateway_response' => $remote['data'] ?? [],
+                ]),
+            ]);
+
+            try {
+                Notification::create([
+                    'user_id' => $user->id,
+                    'title' => 'Payment Confirmed',
+                    'message' => 'Your rent payment of TZS ' . number_format((float) $payment->amount) . ' was received successfully.',
+                    'type' => 'payment_confirmed',
+                ]);
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'status' => 'paid',
+                    'payment_status' => 'paid',
+                    'payment_id' => $payment->id,
+                    'message' => 'Payment confirmed.',
+                ],
+            ]);
+        }
+
+        if ($remote['failed'] ?? false) {
+            $payment->update(['status' => 'failed']);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'status' => 'failed',
+                    'payment_status' => 'failed',
+                    'payment_id' => $payment->id,
+                    'message' => 'Payment was not completed.',
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'status' => 'pending',
+                'payment_status' => 'pending',
+                'payment_id' => $payment->id,
+                'message' => 'Waiting for payment approval on your phone.',
+            ],
         ]);
     }
 
@@ -838,6 +954,7 @@ class TenantController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
+                'status' => $result['rent_payment_status'],
                 'rent_payment_status' => $result['rent_payment_status'],
                 'rent_paid' => $result['rent_paid'] ?? ($result['rent_payment_status'] === 'paid'),
                 'application_id' => $result['application_id'],

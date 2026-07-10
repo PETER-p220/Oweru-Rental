@@ -190,7 +190,9 @@ class TenantApiService {
         return {
           'success': true,
           'message': data['message'] ?? 'Payment initiated',
+          'data': data['data'],
           'transaction_id': data['data']?['transaction_id'],
+          'payment_id': data['data']?['payment_id'] ?? paymentId,
         };
       }
       return {
@@ -470,6 +472,22 @@ class TenantApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/tenant/site-visit/status/${Uri.encodeComponent(orderId)}'),
+        headers: _headers,
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return Map<String, dynamic>.from(data is Map ? data : {});
+      }
+      return {'success': false, 'message': 'Unable to check payment status'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkMonthlyPaymentStatus(int paymentId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/tenant/payments/$paymentId/status'),
         headers: _headers,
       );
       final data = jsonDecode(response.body);

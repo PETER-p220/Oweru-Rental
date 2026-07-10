@@ -178,57 +178,36 @@ class SelcomPaymentService
     }
 
     /**
-     * Poll Oweru checkout order status.
+     * Poll payment order status (Oweru checkout first — orders are created there).
      *
      * @return array{success:bool,paid:bool,failed:bool,status?:string,data?:array<string,mixed>}
      */
     public function checkOrderStatus(string $orderId): array
     {
-        // 1) Preferred: Selcom transaction status (uses SELCOM_API_KEY + vendor_id)
-        try {
-            $apiKey   = config('services.selcom.api_key');
-            $vendorId = config('services.selcom.vendor_id');
-            $baseUrl  = config('services.selcom.base_url');
-
-            if ($apiKey && $vendorId && $baseUrl) {
-                $response = Http::withHeaders([
-                    'Accept' => 'application/json',
-                    'X-API-Key' => $apiKey,
-                ])->timeout(30)->get($baseUrl . '/transaction/status', [
-                    'vendor_id' => $vendorId,
-                    'merchant_transaction_id' => $orderId,
-                ]);
-
-                if ($response->successful()) {
-                    $data = $response->json() ?? [];
-                    $status = strtoupper((string) ($data['status'] ?? $data['payment_status'] ?? ''));
-                    $resultCode = (string) ($data['resultcode'] ?? $data['result_code'] ?? '');
-
-                    $paid = $status === 'COMPLETED'
-                        || $status === 'SUCCESS'
-                        || $status === 'PAID'
-                        || $resultCode === '000';
-
-                    $failed = in_array($status, ['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'ERROR'], true)
-                        || in_array($resultCode, ['001', '002', '999'], true);
-
-                    return [
-                        'success' => true,
-                        'paid' => $paid,
-                        'failed' => $failed && ! $paid,
-                        'status' => $status ?: null,
-                        'data' => $data,
-                    ];
-                }
-            }
-        } catch (\Throwable $e) {
-            Log::warning('Selcom transaction/status check failed (will fallback)', [
-                'order_id' => $orderId,
-                'error' => $e->getMessage(),
-            ]);
+        // 1) Oweru checkout — same gateway used to initiate wallet-payment
+        $oweru = $this->checkOweruOrderStatus($orderId);
+        if ($oweru['paid'] || $oweru['failed']) {
+            return $oweru;
         }
 
-        // 2) Fallback: Oweru checkout order-status (uses OWERU_APP_KEY)
+        // 2) Selcom direct API — only when configured and Oweru did not resolve
+        $selcom = $this->checkSelcomTransactionStatus($orderId);
+        if ($selcom['paid'] || $selcom['failed']) {
+            return $selcom;
+        }
+
+        return $oweru['success'] ? $oweru : ($selcom['success'] ? $selcom : [
+            'success' => false,
+            'paid' => false,
+            'failed' => false,
+        ]);
+    }
+
+    /**
+     * @return array{success:bool,paid:bool,failed:bool,status?:string,data?:array<string,mixed>}
+     */
+    private function checkOweruOrderStatus(string $orderId): array
+    {
         try {
             $appKey = env('OWERU_APP_KEY');
             $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
@@ -251,36 +230,119 @@ class SelcomPaymentService
             }
 
             $data = $response->json() ?? [];
+            $parsed = $this->parseGatewayResponse($data);
 
-            $status = strtoupper((string) (
-                $data['payment_status']
-                ?? $data['status']
-                ?? $data['order_status']
-                ?? $data['result']
-                ?? ''
-            ));
-            $resultCode = (string) ($data['resultcode'] ?? $data['result_code'] ?? '');
-
-            $paid = $resultCode === '000'
-                || in_array($status, ['COMPLETED', 'SUCCESS', 'PAID', 'SUCCESSFUL'], true);
-
-            $failed = in_array($status, ['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'ERROR'], true)
-                || in_array($resultCode, ['001', '002', '999'], true);
+            Log::info('Oweru order-status response', [
+                'order_id' => $orderId,
+                'http_status' => $response->status(),
+                'paid' => $parsed['paid'],
+                'failed' => $parsed['failed'],
+                'payment_status' => $parsed['payment_status'],
+                'result' => $parsed['result'],
+                'resultcode' => $parsed['resultcode'],
+            ]);
 
             return [
                 'success' => $response->successful(),
-                'paid' => $paid,
-                'failed' => $failed && ! $paid,
-                'status' => $status ?: null,
+                'paid' => $parsed['paid'],
+                'failed' => $parsed['failed'],
+                'status' => $parsed['payment_status'] ?: $parsed['result'] ?: null,
                 'data' => $data,
             ];
         } catch (\Throwable $e) {
-            Log::warning('Selcom order-status check failed', [
+            Log::warning('Oweru order-status check failed', [
                 'order_id' => $orderId,
                 'error' => $e->getMessage(),
             ]);
 
             return ['success' => false, 'paid' => false, 'failed' => false];
         }
+    }
+
+    /**
+     * @return array{success:bool,paid:bool,failed:bool,status?:string,data?:array<string,mixed>}
+     */
+    private function checkSelcomTransactionStatus(string $orderId): array
+    {
+        try {
+            $apiKey   = config('services.selcom.api_key');
+            $vendorId = config('services.selcom.vendor_id');
+            $baseUrl  = config('services.selcom.base_url');
+
+            if (! $apiKey || ! $vendorId || ! $baseUrl) {
+                return ['success' => false, 'paid' => false, 'failed' => false];
+            }
+
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+                'X-API-Key' => $apiKey,
+            ])->timeout(30)->get($baseUrl . '/transaction/status', [
+                'vendor_id' => $vendorId,
+                'merchant_transaction_id' => $orderId,
+            ]);
+
+            if (! $response->successful()) {
+                return ['success' => false, 'paid' => false, 'failed' => false];
+            }
+
+            $data = $response->json() ?? [];
+            $parsed = $this->parseGatewayResponse($data);
+
+            return [
+                'success' => true,
+                'paid' => $parsed['paid'],
+                'failed' => $parsed['failed'],
+                'status' => $parsed['payment_status'] ?: $parsed['result'] ?: null,
+                'data' => $data,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Selcom transaction/status check failed', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['success' => false, 'paid' => false, 'failed' => false];
+        }
+    }
+
+    /**
+     * Parse Selcom / Oweru gateway JSON. "SUCCESS" on result alone means USSD sent — not paid.
+     *
+     * @param  array<string,mixed>  $data
+     * @return array{paid:bool,failed:bool,payment_status:string,result:string,resultcode:string}
+     */
+    private function parseGatewayResponse(array $data): array
+    {
+        $payload = $data;
+        if (isset($data['data']) && is_array($data['data']) && ! isset($data['data'][0])) {
+            $payload = array_merge($data, $data['data']);
+        } elseif (isset($data['data'][0]) && is_array($data['data'][0])) {
+            $payload = array_merge($data, $data['data'][0]);
+        }
+
+        $paymentStatus = strtoupper((string) (
+            $payload['payment_status']
+            ?? $payload['order_status']
+            ?? $payload['status']
+            ?? ''
+        ));
+        $result = strtoupper((string) ($payload['result'] ?? ''));
+        $resultCode = (string) ($payload['resultcode'] ?? $payload['result_code'] ?? '');
+
+        // Paid only when payment_status is definitively completed (not wallet-push SUCCESS)
+        $paid = in_array($paymentStatus, ['COMPLETED', 'COMPLETE', 'PAID', 'SUCCESSFUL'], true)
+            || ($resultCode === '000' && $paymentStatus === 'COMPLETED');
+
+        $failed = in_array($paymentStatus, ['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'ERROR', 'DECLINED'], true)
+            || ($result === 'FAIL' || $result === 'FAILED')
+            || in_array($resultCode, ['001', '002', '403'], true);
+
+        return [
+            'paid' => $paid,
+            'failed' => $failed && ! $paid,
+            'payment_status' => $paymentStatus,
+            'result' => $result,
+            'resultcode' => $resultCode,
+        ];
     }
 }

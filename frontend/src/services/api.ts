@@ -675,6 +675,10 @@ class Api {
     return this.request<any>(`tenant/rent/status/${encodeURIComponent(orderId)}`);
   }
 
+  static async checkMonthlyPaymentStatus(paymentId: number) {
+    return this.request<any>(`tenant/payments/${paymentId}/status`);
+  }
+
   static async notifyAgent(notificationData: any) {
     return this.request<any>('notifications/agent', {
       method: 'POST',

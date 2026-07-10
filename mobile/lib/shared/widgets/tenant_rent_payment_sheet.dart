@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/tenant_api_service.dart';
-import '../../features/tenant/presentation/pages/tenant_theme.dart';
+import '../utils/payment_status_utils.dart';
 
 /// Selcom rent payment after application approval — mirrors web `ApplicationsPage` modal.
 class TenantRentPaymentSheet extends StatefulWidget {
@@ -64,14 +64,14 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
     if (_rentOrderId.isEmpty) return;
     _pollAttempts += 1;
     final res = await TenantApiService.checkRentPaymentStatus(_rentOrderId);
-    final status = res['data']?['rent_payment_status']?.toString();
+    final status = parsePaymentStatus(res);
     if (!mounted) return;
 
     if (status == 'paid') {
       _pollTimer?.cancel();
       setState(() {
         _result = 'success';
-        _message = 'Rent payment confirmed!';
+        _message = paymentConfirmationMessage('rent', 'paid');
         _paying = false;
       });
       widget.onPaid();

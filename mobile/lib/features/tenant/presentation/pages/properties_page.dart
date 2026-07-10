@@ -7,6 +7,7 @@ import 'tenant_theme.dart';
 import 'property_detail_page.dart';
 import '../../../../shared/services/tenant_api_service.dart';
 import '../../../../shared/services/user_service.dart';
+import '../../../../shared/utils/payment_status_utils.dart';
 
 const String kApiBase = 'https://rental.oweru.com/api';
 const int kItemsPerPage = 12;
@@ -375,7 +376,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
     if (_pendingOrderId.isEmpty) return;
     _pollAttempts += 1;
     final res = await TenantApiService.checkSiteVisitPaymentStatus(_pendingOrderId);
-    final status = res['data']?['payment_status']?.toString();
+    final status = parsePaymentStatus(res);
     if (!mounted) return;
 
     if (status == 'paid') {
@@ -385,7 +386,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
         _modal = ModalStep.success;
       });
       _addToast(ToastType.success, 'Payment confirmed',
-          message: 'Site visit fee received successfully.', durationMs: 6000);
+          message: paymentConfirmationMessage('site_visit', 'paid'), durationMs: 6000);
     } else if (status == 'failed') {
       _stopPolling();
       setState(() => _modal = ModalStep.paymentFailed);

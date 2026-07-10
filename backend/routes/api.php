@@ -147,6 +147,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/tenant/payment-methods',                    [TenantController::class, 'getPaymentMethods']);
         Route::get('/tenant/payment-stats',                      [TenantController::class, 'getPaymentStats']);
         Route::post('/tenant/payments/{payment}/pay',            [TenantController::class, 'makePayment']);
+        Route::get('/tenant/payments/{payment}/status',          [TenantController::class, 'checkPaymentStatus']);
         Route::get('/tenant/payment-history',                    [TenantController::class, 'getPaymentHistory']);
         Route::get('/tenant/payment-summary',                    [TenantController::class, 'getPaymentSummary']);
         Route::get('/tenant/payments/{payment}/receipt',         [TenantController::class, 'downloadReceipt']);

@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState, useRef, useCallback, memo } from 'react';
+import { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Search, MapPin, AlertCircle, ClipboardList, Clock, DollarSign,
   CheckCircle, Loader2, ShieldCheck, Phone, Info, X,
 } from 'lucide-react';
 import Api from '../../services/api';
+import { usePaymentPolling } from '../../hooks/usePaymentPolling';
+import { paymentConfirmationMessage } from '../../utils/paymentStatus';
 
 interface ApplicationItem {
   id: number;
@@ -468,7 +470,6 @@ const ApplicationsPage = () => {
   const [payResult, setPayResult] = useState<'success' | 'error' | 'waiting' | null>(null);
   const [payMessage, setPayMessage] = useState('');
   const [rentOrderId, setRentOrderId] = useState('');
-  const rentPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refreshApplications = useCallback(async () => {
     const res = await Api.getTenantApplications();
@@ -509,34 +510,28 @@ const ApplicationsPage = () => {
     fetchApplications();
   }, []);
 
-  useEffect(() => {
-    if (payResult !== 'waiting' || !rentOrderId) return;
+  const pollRent = useCallback(
+    () => Api.checkRentPaymentStatus(rentOrderId),
+    [rentOrderId],
+  );
 
-    let attempts = 0;
-    const poll = async () => {
-      attempts += 1;
-      try {
-        const res = await Api.checkRentPaymentStatus(rentOrderId);
-        const status = res.data?.rent_payment_status;
-        if (status === 'paid') {
-          if (rentPollRef.current) clearInterval(rentPollRef.current);
-          setPayResult('success');
-          setPayMessage('Rent payment confirmed! You can now proceed with your contract.');
-          await refreshApplications();
-        } else if (status === 'failed') {
-          if (rentPollRef.current) clearInterval(rentPollRef.current);
-          setPayResult('error');
-          setPayMessage('Rent payment was not completed. Please try again.');
-        } else if (attempts >= 40) {
-          setPayMessage('Still waiting for payment confirmation. Keep this screen open or check back shortly.');
-        }
-      } catch { /* ignore transient errors */ }
-    };
-
-    poll();
-    rentPollRef.current = setInterval(poll, 3000);
-    return () => { if (rentPollRef.current) clearInterval(rentPollRef.current); };
-  }, [payResult, rentOrderId, refreshApplications]);
+  usePaymentPolling(
+    payResult === 'waiting' && !!rentOrderId,
+    rentOrderId,
+    pollRent,
+    {
+      onPaid: async (message) => {
+        setPayResult('success');
+        setPayMessage(message || paymentConfirmationMessage('rent', 'paid'));
+        await refreshApplications();
+      },
+      onFailed: (message) => {
+        setPayResult('error');
+        setPayMessage(message || paymentConfirmationMessage('rent', 'failed'));
+      },
+      onTimeout: (msg) => setPayMessage(msg),
+    },
+  );
 
   const handlePayRent = useCallback(async (appId: number) => {
     if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
@@ -572,7 +567,6 @@ const ApplicationsPage = () => {
   }, [phoneNumber, paymentProvider]);
 
   const openPaymentModal = useCallback((appId: number) => {
-    if (rentPollRef.current) clearInterval(rentPollRef.current);
     setPaymentModal(appId);
     setPayResult(null);
     setPayMessage('');
@@ -582,7 +576,6 @@ const ApplicationsPage = () => {
 
   const closePaymentModal = useCallback(() => {
     if (payResult === 'waiting') return;
-    if (rentPollRef.current) clearInterval(rentPollRef.current);
     setPaymentModal(null);
     setPayResult(null);
     setPayMessage('');

@@ -166,11 +166,38 @@ class RentPaymentService
         ]);
 
         $this->notifyParties($application);
+        $this->notifyTenant($application);
 
         Log::info('Rent payment confirmed', [
             'application_id' => $application->id,
             'order_id' => $application->rent_transaction_id,
         ]);
+    }
+
+    private function notifyTenant(Application $application): void
+    {
+        $userId = $application->user_id;
+        if (! $userId) {
+            return;
+        }
+
+        $property = $application->property;
+        $title = $property?->title ?? 'your property';
+        $amount = number_format((float) ($application->amount_paid ?? $property?->price ?? 0));
+
+        try {
+            Notification::create([
+                'user_id' => $userId,
+                'title' => 'Rent Payment Confirmed',
+                'message' => "Your TZS {$amount} rent payment for {$title} was received successfully. Check Digital Contracts for next steps.",
+                'type' => 'rent_paid',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to create tenant rent notification', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function notifyParties(Application $application): void

@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { CreditCard, Clock, Calendar, AlertCircle, TrendingUp } from 'lucide-react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { CreditCard, Clock, Calendar, AlertCircle, TrendingUp, Loader2, CheckCircle } from 'lucide-react';
 import Api from '../../services/api';
 import { formatCurrency, formatDate } from './tenantPageStyles';
+import { usePaymentPolling } from '../../hooks/usePaymentPolling';
+import { paymentConfirmationMessage } from '../../utils/paymentStatus';
 
 /* ─── Stat card ─── */
 const StatCard = ({ label, value, icon: Icon, accent = false }: {
@@ -76,6 +78,8 @@ const Payments = () => {
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [paying, setPaying]       = useState(false);
   const [payMessage, setPayMessage] = useState('');
+  const [payResult, setPayResult] = useState<'idle' | 'waiting' | 'success' | 'error'>('idle');
+  const [pendingPaymentId, setPendingPaymentId] = useState<number | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
 
@@ -103,8 +107,33 @@ const Payments = () => {
   const openPayModal = () => {
     setPayModalOpen(true);
     setPayMessage('');
+    setPayResult('idle');
+    setPendingPaymentId(null);
     setPhoneNumber('');
   };
+
+  const pollMonthly = useCallback(
+    () => Api.checkMonthlyPaymentStatus(pendingPaymentId!),
+    [pendingPaymentId],
+  );
+
+  usePaymentPolling(
+    payResult === 'waiting' && pendingPaymentId != null,
+    String(pendingPaymentId ?? ''),
+    pollMonthly,
+    {
+      onPaid: async (message) => {
+        setPayResult('success');
+        setPayMessage(message || paymentConfirmationMessage('monthly', 'paid'));
+        await load();
+      },
+      onFailed: (message) => {
+        setPayResult('error');
+        setPayMessage(message || paymentConfirmationMessage('monthly', 'failed'));
+      },
+      onTimeout: (msg) => setPayMessage(msg),
+    },
+  );
 
   const handlePay = async () => {
     if (!nextPending) return;
@@ -114,19 +143,29 @@ const Payments = () => {
     }
     setPaying(true);
     setPayMessage('');
+    setPayResult('idle');
     try {
-      await Api.makePayment(nextPending.id, {
+      const res = await Api.makePayment(nextPending.id, {
         phoneNumber: phoneNumber.trim(),
         provider: paymentProvider,
       });
-      setPayMessage(`Payment request sent! Check your ${paymentProvider.toUpperCase()} prompt.`);
-      await load();
-      setTimeout(() => setPayModalOpen(false), 2000);
+      const paymentId = res.data?.payment_id ?? nextPending.id;
+      setPendingPaymentId(paymentId);
+      setPayResult('waiting');
+      setPayMessage(res.message || `USSD prompt sent. Approve on your ${paymentProvider.toUpperCase()} phone.`);
     } catch (err: any) {
+      setPayResult('error');
       setPayMessage(err?.response?.data?.message || err?.message || 'Payment failed.');
     } finally {
       setPaying(false);
     }
+  };
+
+  const closePayModal = () => {
+    if (payResult === 'waiting') return;
+    setPayModalOpen(false);
+    setPayResult('idle');
+    setPendingPaymentId(null);
   };
 
   const providers = methods.length > 0
@@ -303,7 +342,7 @@ const Payments = () => {
       {payModalOpen && nextPending && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
-          onClick={(e) => { if (e.target === e.currentTarget && !paying) setPayModalOpen(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget && payResult !== 'waiting') closePayModal(); }}
         >
           <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxWidth: 440, width: '100%', padding: 28, position: 'relative' }}>
             <h3 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Pay Rent</h3>
@@ -311,65 +350,81 @@ const Payments = () => {
               Amount: <strong style={{ color: '#C89128' }}>{formatCurrency(nextPending.amount)}</strong>
             </p>
 
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 10 }}>Mobile Money Provider</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {providers.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setPaymentProvider(p.id as typeof paymentProvider)}
-                    style={{
-                      padding: '10px 12px',
-                      border: `1px solid ${paymentProvider === p.id ? '#C89128' : '#E2E8F0'}`,
-                      background: paymentProvider === p.id ? 'rgba(200,145,40,0.10)' : '#FFFFFF',
-                      color: paymentProvider === p.id ? '#C89128' : '#334155',
-                      fontWeight: 600,
-                      fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {payResult !== 'success' && (
+              <>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 10 }}>Mobile Money Provider</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    {providers.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        disabled={payResult === 'waiting'}
+                        onClick={() => setPaymentProvider(p.id as typeof paymentProvider)}
+                        style={{
+                          padding: '10px 12px',
+                          border: `1px solid ${paymentProvider === p.id ? '#C89128' : '#E2E8F0'}`,
+                          background: paymentProvider === p.id ? 'rgba(200,145,40,0.10)' : '#FFFFFF',
+                          color: paymentProvider === p.id ? '#C89128' : '#334155',
+                          fontWeight: 600,
+                          fontSize: 12,
+                          cursor: payResult === 'waiting' ? 'not-allowed' : 'pointer',
+                          opacity: payResult === 'waiting' ? 0.6 : 1,
+                        }}
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 8 }}>Phone Number</label>
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="07XXXXXXXX"
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }}
-              />
-            </div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 8 }}>Phone Number</label>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    disabled={payResult === 'waiting'}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="07XXXXXXXX"
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }}
+                  />
+                </div>
+              </>
+            )}
 
             {payMessage && (
-              <div style={{ marginBottom: 14, padding: '10px 12px', fontSize: 13, color: payMessage.includes('sent') ? '#059669' : '#dc2626', background: payMessage.includes('sent') ? 'rgba(5,150,105,0.08)' : 'rgba(220,38,38,0.08)', border: `1px solid ${payMessage.includes('sent') ? 'rgba(5,150,105,0.2)' : 'rgba(220,38,38,0.2)'}` }}>
-                {payMessage}
+              <div style={{
+                marginBottom: 14, padding: '10px 12px', fontSize: 13, display: 'flex', alignItems: 'flex-start', gap: 8,
+                color: payResult === 'success' ? '#059669' : payResult === 'error' ? '#dc2626' : '#C89128',
+                background: payResult === 'success' ? 'rgba(5,150,105,0.08)' : payResult === 'error' ? 'rgba(220,38,38,0.08)' : 'rgba(200,145,40,0.08)',
+                border: `1px solid ${payResult === 'success' ? 'rgba(5,150,105,0.2)' : payResult === 'error' ? 'rgba(220,38,38,0.2)' : 'rgba(200,145,40,0.2)'}`,
+              }}>
+                {payResult === 'waiting' && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', flexShrink: 0, marginTop: 2 }} />}
+                {payResult === 'success' && <CheckCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />}
+                <span>{payMessage}</span>
               </div>
             )}
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 type="button"
-                onClick={() => setPayModalOpen(false)}
-                disabled={paying}
-                style={{ flex: 1, padding: '11px 14px', border: '1px solid #E2E8F0', background: '#FFFFFF', cursor: 'pointer', fontWeight: 600 }}
+                onClick={closePayModal}
+                disabled={paying || payResult === 'waiting'}
+                style={{ flex: 1, padding: '11px 14px', border: '1px solid #E2E8F0', background: '#FFFFFF', cursor: payResult === 'waiting' ? 'not-allowed' : 'pointer', fontWeight: 600 }}
               >
-                Cancel
+                {payResult === 'success' ? 'Done' : 'Cancel'}
               </button>
-              <button
-                type="button"
-                onClick={handlePay}
-                disabled={paying || phoneNumber.length < 10}
-                className="pay-btn-gold"
-                style={{ flex: 2, opacity: paying || phoneNumber.length < 10 ? 0.6 : 1 }}
-              >
-                {paying ? 'Processing…' : 'Confirm Payment'}
-              </button>
+              {payResult !== 'success' && payResult !== 'waiting' && (
+                <button
+                  type="button"
+                  onClick={handlePay}
+                  disabled={paying || phoneNumber.length < 10}
+                  className="pay-btn-gold"
+                  style={{ flex: 2, opacity: paying || phoneNumber.length < 10 ? 0.6 : 1 }}
+                >
+                  {paying ? 'Processing…' : 'Confirm Payment'}
+                </button>
+              )}
             </div>
           </div>
         </div>

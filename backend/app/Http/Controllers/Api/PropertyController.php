@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use App\Models\BnbProperty;
 
 class PropertyController extends Controller
@@ -47,7 +48,11 @@ class PropertyController extends Controller
      */
     public function publicIndex(Request $request): JsonResponse
     {
-        $query = Property::with(['owner', 'agent', 'propertyImages'])
+        $query = Property::with([
+            'owner:id,first_name,last_name,user_type',
+            'agent:id,first_name,last_name',
+            'propertyImages' => fn ($q) => $q->orderByDesc('is_primary')->limit(1),
+        ])
             ->where('available', true);
 
         if ($request->filled('search')) {
@@ -108,8 +113,12 @@ class PropertyController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
+        $items = collect($properties->items())->map(
+            fn (Property $property) => $this->formatPropertyListItem($property)
+        )->values();
+
         return response()->json([
-            'data' => $properties->items(),
+            'data' => $items,
             'pagination' => [
                 'current_page' => $properties->currentPage(),
                 'last_page'    => $properties->lastPage(),
@@ -117,6 +126,43 @@ class PropertyController extends Controller
                 'total'        => $properties->total(),
             ],
         ]);
+    }
+
+    /**
+     * Lightweight shape for property listing cards (smaller payload, single thumbnail).
+     *
+     * @return array<string, mixed>
+     */
+    private function formatPropertyListItem(Property $property): array
+    {
+        $data = $property->toArray();
+        $data['thumbnail'] = $this->resolvePropertyThumbnail($property);
+        unset($data['property_images'], $data['images']);
+
+        if (! empty($data['description'])) {
+            $data['description'] = Str::limit(strip_tags((string) $data['description']), 160);
+        }
+
+        return $data;
+    }
+
+    private function resolvePropertyThumbnail(Property $property): ?string
+    {
+        $relationImage = $property->propertyImages->first();
+        if ($relationImage?->image_path) {
+            return $relationImage->image_path;
+        }
+
+        $images = $property->images ?? [];
+        if (is_array($images) && count($images) > 0) {
+            $first = $images[0];
+
+            return is_string($first)
+                ? $first
+                : ($first['image_path'] ?? $first['url'] ?? null);
+        }
+
+        return null;
     }
 
     /**

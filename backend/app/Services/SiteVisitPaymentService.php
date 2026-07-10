@@ -167,11 +167,38 @@ class SiteVisitPaymentService
             $this->notifyAgent($property, $application, $meta);
         }
 
+        $this->notifyTenant($application, $property);
+
         Log::info('Site visit payment confirmed', [
             'application_id' => $application->id,
             'order_id' => $application->transaction_id,
             'property_id' => $application->property_id,
         ]);
+    }
+
+    private function notifyTenant(Application $application, ?Property $property): void
+    {
+        $userId = $application->user_id;
+        if (! $userId) {
+            return;
+        }
+
+        $title = $property?->title ?? 'your selected property';
+
+        try {
+            Notification::create([
+                'user_id' => $userId,
+                'title' => 'Site Visit Fee Confirmed',
+                'message' => "Your TZS " . number_format(self::SERVICE_FEE) .
+                    " site visit payment for {$title} was received. The agent will contact you to schedule a visit.",
+                'type' => 'site_visit_paid',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to create tenant site visit notification', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function notifyAgent(Property $property, Application $application, array $meta = []): void

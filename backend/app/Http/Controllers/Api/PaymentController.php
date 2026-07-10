@@ -288,11 +288,16 @@ class PaymentController extends Controller
 
         $resultCode = $request->input('resultcode');
         $status     = strtoupper($request->input('status') ?? '');
-        $transid    = $request->input('transid') ?? $request->input('order_id');
+        $transid    = $request->input('transid')
+            ?? $request->input('order_id')
+            ?? $request->input('merchant_transaction_id');
         $reference  = $request->input('reference') ?? $request->input('transaction_id');
+        $paymentStatus = strtoupper($request->input('payment_status') ?? '');
 
-        $isPaid = $resultCode === '000'
-            || in_array($status, ['COMPLETED', 'SUCCESS', 'PAID']);
+        $isPaid = $paymentStatus === 'COMPLETED'
+            || $paymentStatus === 'PAID'
+            || ($resultCode === '000' && $paymentStatus === 'COMPLETED')
+            || ($resultCode === '000' && in_array($status, ['COMPLETED', 'SUCCESS', 'PAID'], true) && $paymentStatus !== 'PENDING');
 
         if ($isPaid) {
             Log::info('Selcom payment confirmed via webhook', [
