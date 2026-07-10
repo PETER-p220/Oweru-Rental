@@ -3,15 +3,14 @@
 namespace App\Services;
 
 use App\Models\Application;
-use App\Models\Notification;
-use App\Models\Property;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 class RentPaymentService
 {
     public function __construct(
-        private SelcomPaymentService $selcom
+        private SelcomPaymentService $selcom,
+        private PaymentAlertService $alerts,
     ) {}
 
     /**
@@ -167,65 +166,12 @@ class RentPaymentService
             'amount_paid' => $rentAmount > 0 ? $rentAmount : $application->amount_paid,
         ]);
 
-        $this->notifyParties($application);
-        $this->notifyTenant($application);
+        $this->alerts->handleRentPaid($application->fresh(['property', 'user']));
 
         Log::info('Rent payment confirmed', [
             'application_id' => $application->id,
             'order_id' => $application->rent_transaction_id,
         ]);
-    }
-
-    private function notifyTenant(Application $application): void
-    {
-        $userId = $application->user_id;
-        if (! $userId) {
-            return;
-        }
-
-        $property = $application->property;
-        $title = $property?->title ?? 'your property';
-        $amount = number_format((float) ($application->amount_paid ?? $property?->price ?? 0));
-
-        try {
-            Notification::create([
-                'user_id' => $userId,
-                'title' => 'Rent Payment Confirmed',
-                'message' => "Your TZS {$amount} rent payment for {$title} was received successfully. Check Digital Contracts for next steps.",
-                'type' => 'rent_paid',
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('Failed to create tenant rent notification', [
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    private function notifyParties(Application $application): void
-    {
-        $property = $application->property;
-        $tenantName = trim(($application->user->first_name ?? '') . ' ' . ($application->user->last_name ?? ''))
-            ?: ($application->user->email ?? 'Tenant');
-        $amount = number_format((float) ($application->amount_paid ?? $property?->price ?? 0));
-
-        $recipients = array_filter([
-            $property?->owner_id,
-            $property?->agent_id,
-        ]);
-
-        foreach (array_unique($recipients) as $userId) {
-            try {
-                Notification::create([
-                    'user_id' => $userId,
-                    'title' => 'Rent Payment Received',
-                    'message' => "{$tenantName} paid TZS {$amount} rent for {$property?->title}.",
-                    'type' => 'rent_paid',
-                ]);
-            } catch (\Throwable $e) {
-                Log::error('Failed to notify rent payment', ['user_id' => $userId, 'error' => $e->getMessage()]);
-            }
-        }
     }
 
     private function statusResponse(Application $application, string $status): array

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Application;
-use App\Models\Notification;
 use App\Models\Property;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +12,8 @@ class SiteVisitPaymentService
     public const SERVICE_FEE = 20000;
 
     public function __construct(
-        private SelcomPaymentService $selcom
+        private SelcomPaymentService $selcom,
+        private PaymentAlertService $alerts,
     ) {}
 
     /**
@@ -162,72 +162,13 @@ class SiteVisitPaymentService
             'service_fee' => self::SERVICE_FEE,
         ]);
 
-        $application->loadMissing('property', 'user');
-        $property = $application->property;
-
-        if ($property?->agent_id) {
-            $this->notifyAgent($property, $application, $meta);
-        }
-
-        $this->notifyTenant($application, $property);
+        $this->alerts->handleSiteVisitPaid($application->fresh(['property', 'user']));
 
         Log::info('Site visit payment confirmed', [
             'application_id' => $application->id,
             'order_id' => $application->transaction_id,
             'property_id' => $application->property_id,
         ]);
-    }
-
-    private function notifyTenant(Application $application, ?Property $property): void
-    {
-        $userId = $application->user_id;
-        if (! $userId) {
-            return;
-        }
-
-        $title = $property?->title ?? 'your selected property';
-
-        try {
-            Notification::create([
-                'user_id' => $userId,
-                'title' => 'Site Visit Fee Confirmed',
-                'message' => "Your TZS " . number_format(self::SERVICE_FEE) .
-                    " site visit payment for {$title} was received. The agent will contact you to schedule a visit.",
-                'type' => 'site_visit_paid',
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('Failed to create tenant site visit notification', [
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    private function notifyAgent(Property $property, Application $application, array $meta = []): void
-    {
-        $agentId = $property->agent_id;
-        if (! $agentId) {
-            return;
-        }
-
-        $tenantName = trim(($application->user->first_name ?? '') . ' ' . ($application->user->last_name ?? ''))
-            ?: ($application->user->email ?? 'A tenant');
-        $provider = strtoupper($application->payment_method ?? ($meta['provider'] ?? 'MOBILE MONEY'));
-
-        try {
-            Notification::create([
-                'user_id' => $agentId,
-                'title' => 'Site Visit Fee Paid',
-                'message' => "{$tenantName} paid the TZS " . number_format(self::SERVICE_FEE) .
-                    " site visit fee via {$provider} for {$property->title}. Please contact them to schedule a visit.",
-                'type' => 'site_visit_paid',
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('Failed to create agent site visit notification', [
-                'agent_id' => $agentId,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 
     /**

@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Services\SelcomPaymentService;
 use App\Services\SiteVisitPaymentService;
 use App\Services\RentPaymentService;
+use App\Services\PaymentAlertService;
 
 class TenantController extends Controller
 {
@@ -283,19 +284,21 @@ class TenantController extends Controller
         }
 
         $user = Auth::user();
+        $this->syncTenantApplicationPayments($user);
+
         $payments = Payment::with('property')
             ->where('user_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->orderByRaw("CASE WHEN paid_at IS NULL THEN created_at ELSE paid_at END DESC")
+            ->paginate(20);
 
         return response()->json([
-            'data' => $payments->items(),
+            'data' => collect($payments->items())->map(fn (Payment $p) => $this->formatPaymentForTenant($p))->values(),
             'pagination' => [
                 'current_page' => $payments->currentPage(),
                 'last_page'    => $payments->lastPage(),
                 'per_page'     => $payments->perPage(),
                 'total'        => $payments->total(),
-            ]
+            ],
         ]);
     }
 
@@ -346,12 +349,23 @@ class TenantController extends Controller
         }
 
         $user = Auth::user();
+        $this->syncTenantApplicationPayments($user);
+
+        $completed = Payment::where('user_id', $user->id)
+            ->whereIn('status', ['completed', 'paid']);
+
         $stats = [
-            'total_paid'       => Payment::where('user_id', $user->id)->where('status', 'completed')->sum('amount'),
-            'pending_payments' => Payment::where('user_id', $user->id)->where('status', 'pending')->count(),
-            'this_month'       => Payment::where('user_id', $user->id)
-                ->where('status', 'completed')
-                ->whereMonth('created_at', now()->month)
+            'total_paid'       => (clone $completed)->sum('amount'),
+            'pending_payments' => Payment::where('user_id', $user->id)->whereIn('status', ['pending', 'processing'])->count(),
+            'this_month'       => (clone $completed)
+                ->where(function ($q) {
+                    $q->whereMonth('paid_at', now()->month)->whereYear('paid_at', now()->year)
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('paid_at')
+                                ->whereMonth('created_at', now()->month)
+                                ->whereYear('created_at', now()->year);
+                        });
+                })
                 ->sum('amount'),
         ];
 
@@ -495,16 +509,7 @@ class TenantController extends Controller
                 ]),
             ]);
 
-            try {
-                Notification::create([
-                    'user_id' => $user->id,
-                    'title' => 'Payment Confirmed',
-                    'message' => 'Your rent payment of TZS ' . number_format((float) $payment->amount) . ' was received successfully.',
-                    'type' => 'payment_confirmed',
-                ]);
-            } catch (\Throwable $e) {
-                // non-blocking
-            }
+            app(PaymentAlertService::class)->handleMonthlyPaymentCompleted($payment->fresh(['property', 'user']));
 
             return response()->json([
                 'success' => true,
@@ -544,7 +549,22 @@ class TenantController extends Controller
 
     public function getPaymentHistory(): JsonResponse
     {
-        return $this->getMyPayments();
+        if (! $this->paymentsTableAvailable()) {
+            return response()->json(['data' => []]);
+        }
+
+        $user = Auth::user();
+        $this->syncTenantApplicationPayments($user);
+
+        $payments = Payment::with('property')
+            ->where('user_id', $user->id)
+            ->orderByRaw("CASE WHEN paid_at IS NULL THEN created_at ELSE paid_at END DESC")
+            ->limit(100)
+            ->get()
+            ->map(fn (Payment $p) => $this->formatPaymentForTenant($p))
+            ->values();
+
+        return response()->json(['data' => $payments]);
     }
 
     public function getPaymentSummary(): JsonResponse
@@ -1106,6 +1126,100 @@ class TenantController extends Controller
     private function paymentsTableAvailable(): bool
     {
         return Schema::hasTable('payments');
+    }
+
+    /**
+     * Backfill payments rows from application site-visit / rent confirmations
+     * so tenant history includes all rental payments.
+     */
+    private function syncTenantApplicationPayments(User $user): void
+    {
+        if (! $this->paymentsTableAvailable() || ! Schema::hasTable('applications')) {
+            return;
+        }
+
+        $alerts = app(PaymentAlertService::class);
+
+        $applications = Application::with('property')
+            ->where('user_id', $user->id)
+            ->where(function ($q) {
+                $q->where('payment_status', 'paid')
+                    ->orWhere('rent_payment_status', 'paid');
+            })
+            ->get();
+
+        foreach ($applications as $application) {
+            $property = $application->property;
+            if (! $property) {
+                continue;
+            }
+
+            if ($application->payment_status === 'paid' && $application->transaction_id) {
+                $alerts->recordCompletedPayment(
+                    $user,
+                    $property,
+                    (float) ($application->service_fee ?: SiteVisitPaymentService::SERVICE_FEE),
+                    'site_visit',
+                    (string) $application->transaction_id,
+                    'Site visit fee — ' . ($property->title ?? 'Property'),
+                    [
+                        'application_id' => $application->id,
+                        'payment_method' => $application->payment_method,
+                        'source' => 'application_backfill',
+                    ],
+                );
+            }
+
+            if ($application->rent_payment_status === 'paid' && $application->rent_transaction_id) {
+                $amount = (float) ($application->amount_paid ?? $application->offered_rent ?? $property->price ?? 0);
+                $alerts->recordCompletedPayment(
+                    $user,
+                    $property,
+                    $amount,
+                    'first_month_rent',
+                    (string) $application->rent_transaction_id,
+                    'First month rent — ' . ($property->title ?? 'Property'),
+                    [
+                        'application_id' => $application->id,
+                        'payment_method' => $application->rent_payment_method,
+                        'source' => 'application_backfill',
+                    ],
+                );
+            }
+        }
+    }
+
+    private function formatPaymentForTenant(Payment $payment): array
+    {
+        $status = $payment->status;
+        if ($status === 'completed') {
+            $status = 'paid';
+        }
+
+        $typeLabels = [
+            'first_month_rent' => 'First month rent',
+            'monthly_rent' => 'Monthly rent',
+            'site_visit' => 'Site visit fee',
+            'rent' => 'Rent',
+        ];
+
+        return [
+            'id' => $payment->id,
+            'type' => $payment->type,
+            'description' => $payment->description
+                ?: ($typeLabels[$payment->type] ?? ucfirst(str_replace('_', ' ', (string) $payment->type))),
+            'amount' => (float) $payment->amount,
+            'status' => $status,
+            'reference' => $payment->reference,
+            'due_date' => optional($payment->due_date)?->toDateString(),
+            'paid_at' => optional($payment->paid_at)?->toIso8601String(),
+            'created_at' => optional($payment->created_at)?->toIso8601String(),
+            'property' => $payment->property ? [
+                'id' => $payment->property->id,
+                'title' => $payment->property->title,
+                'location' => $payment->property->location ?? null,
+            ] : null,
+        ];
     }
 
     private function notificationsTableAvailable(): bool

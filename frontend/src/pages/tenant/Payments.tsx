@@ -311,7 +311,7 @@ const Payments = () => {
               <div className="pay-empty">
                 <CreditCard size={40} style={{ color: '#C89128', opacity: 0.3, margin: '0 auto 14px', display: 'block' }} />
                 <div style={{ fontSize: 16, fontWeight: 500, color: '#0F172A', marginBottom: 6 }}>No payments yet</div>
-                <div style={{ fontSize: 13, fontWeight: 300 }}>Browse properties and set up your payment method.</div>
+                <div style={{ fontSize: 13, fontWeight: 300 }}>Site visit fees, first-month rent, and monthly rent will appear here after you pay.</div>
               </div>
             ) : (
               <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0' }}>
@@ -324,9 +324,16 @@ const Payments = () => {
                   <tbody>
                     {payments.map((item) => (
                       <tr key={item.id}>
-                        <td><div style={{ fontWeight: 500 }}>{item.description || item.type || 'Payment'}</div></td>
+                        <td>
+                          <div style={{ fontWeight: 500 }}>{item.description || item.type || 'Payment'}</div>
+                          {item.reference && (
+                            <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 3, fontFamily: 'ui-monospace, monospace' }}>
+                              {item.reference}
+                            </div>
+                          )}
+                        </td>
                         <td><div style={{ fontWeight: 700, color: '#C89128' }}>{formatCurrency(item.amount)}</div></td>
-                        <td><div style={{ fontSize: 13, fontWeight: 300, color: '#64748B' }}>{formatDate(item.due_date || item.created_at)}</div></td>
+                        <td><div style={{ fontSize: 13, fontWeight: 300, color: '#64748B' }}>{formatDate(item.paid_at || item.due_date || item.created_at)}</div></td>
                         <td><div style={{ fontSize: 13, color: '#64748B' }}>{item.property?.title || '—'}</div></td>
                         <td><StatusBadge status={item.status || 'unknown'} /></td>
                       </tr>

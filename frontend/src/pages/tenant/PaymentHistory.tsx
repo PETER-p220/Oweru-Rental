@@ -187,7 +187,7 @@ const PaymentHistory = () => {
             <table className="ph-table">
               <thead>
                 <tr>
-                  {['Date', 'Description', 'Amount', 'Status', 'Receipt'].map(h => <th key={h}>{h}</th>)}
+                  {['Date', 'Description', 'Reference', 'Amount', 'Status', 'Receipt'].map(h => <th key={h}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -195,7 +195,7 @@ const PaymentHistory = () => {
                   <tr key={item.id}>
                     <td>
                       <div style={{ fontSize: 13, fontWeight: 300, color: '#64748B' }}>
-                        {formatDate(item.due_date || item.created_at)}
+                        {formatDate(item.paid_at || item.due_date || item.created_at)}
                       </div>
                     </td>
                     <td>
@@ -203,6 +203,11 @@ const PaymentHistory = () => {
                       {item.property?.title && (
                         <div style={{ fontSize: 12, fontWeight: 300, color: '#64748B', marginTop: 3 }}>{item.property.title}</div>
                       )}
+                    </td>
+                    <td>
+                      <div style={{ fontSize: 12, color: '#64748B', fontFamily: 'ui-monospace, monospace' }}>
+                        {item.reference || '—'}
+                      </div>
                     </td>
                     <td>
                       <div style={{ fontWeight: 700, color: '#C89128', letterSpacing: '-0.02em' }}>

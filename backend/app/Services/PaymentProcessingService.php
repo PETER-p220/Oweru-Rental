@@ -171,6 +171,10 @@ class PaymentProcessingService
      */
     private function completePayment(Payment $payment, array $paymentData): void
     {
+        if (in_array($payment->status, ['completed', 'paid'], true) && $payment->paid_at) {
+            return;
+        }
+
         DB::transaction(function () use ($payment, $paymentData) {
             // Update payment status
             $payment->update([
@@ -202,9 +206,7 @@ class PaymentProcessingService
                 }
             }
 
-            // Send payment confirmation notification
-            $notification_service = app(NotificationService::class);
-            $notification_service->sendPaymentConfirmation($payment);
+            app(PaymentAlertService::class)->handleMonthlyPaymentCompleted($payment->fresh(['property', 'user']));
 
             // Trigger payment splitting for first month rent
             if ($payment->type === 'first_month_rent') {
