@@ -4,15 +4,19 @@ export type PaymentPollStatus = 'paid' | 'failed' | 'pending';
 export function parsePaymentStatus(data: Record<string, unknown> | null | undefined): PaymentPollStatus {
   if (!data) return 'pending';
 
+  if (data.rent_paid === true || data.site_visit_paid === true) {
+    return 'paid';
+  }
+
   const raw =
     data.status ??
     data.payment_status ??
     data.rent_payment_status ??
-  '';
+    '';
 
   const normalized = String(raw).toLowerCase();
 
-  if (['paid', 'completed', 'success', 'successful'].includes(normalized)) {
+  if (['paid', 'completed', 'successful'].includes(normalized)) {
     return 'paid';
   }
   if (['failed', 'cancelled', 'canceled', 'error', 'declined'].includes(normalized)) {

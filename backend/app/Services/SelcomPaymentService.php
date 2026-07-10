@@ -228,39 +228,68 @@ class SelcomPaymentService
                 return ['success' => false, 'paid' => false, 'failed' => false];
             }
 
-            $response = Http::withHeaders([
+            $headers = [
                 'X-App-Key' => $appKey,
                 'Accept' => 'application/json',
-            ])->timeout(20)->get($baseUrl . '/order-status/' . urlencode($orderId));
+            ];
 
-            if (! $response->successful()) {
-                $response = Http::withHeaders([
-                    'X-App-Key' => $appKey,
+            $attempts = [
+                fn () => Http::withHeaders($headers)->timeout(20)
+                    ->get($baseUrl . '/order-status/' . urlencode($orderId)),
+                fn () => Http::withHeaders(array_merge($headers, [
                     'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                ])->timeout(20)->post($baseUrl . '/order-status', ['order_id' => $orderId]);
+                ]))->timeout(20)->post($baseUrl . '/order-status', [
+                    'order_id' => $orderId,
+                    'transid' => $orderId,
+                ]),
+                fn () => Http::withHeaders(array_merge($headers, [
+                    'Content-Type' => 'application/json',
+                ]))->timeout(20)->post($baseUrl . '/order-status', [
+                    'order_id' => $orderId,
+                ]),
+                fn () => Http::withHeaders($headers)->timeout(20)
+                    ->get($baseUrl . '/order-status', ['order_id' => $orderId]),
+                fn () => Http::withHeaders($headers)->timeout(20)
+                    ->get($baseUrl . '/get-order-minimal/' . urlencode($orderId)),
+                fn () => Http::withHeaders(array_merge($headers, [
+                    'Content-Type' => 'application/json',
+                ]))->timeout(20)->post($baseUrl . '/get-order-minimal', [
+                    'order_id' => $orderId,
+                ]),
+            ];
+
+            $last = ['success' => false, 'paid' => false, 'failed' => false];
+
+            foreach ($attempts as $index => $attempt) {
+                $response = $attempt();
+                $data = $response->json() ?? [];
+                $parsed = $this->parseGatewayResponse($data);
+
+                Log::info('Oweru order-status attempt', [
+                    'order_id' => $orderId,
+                    'attempt' => $index + 1,
+                    'http_status' => $response->status(),
+                    'paid' => $parsed['paid'],
+                    'failed' => $parsed['failed'],
+                    'payment_status' => $parsed['payment_status'],
+                    'result' => $parsed['result'],
+                    'resultcode' => $parsed['resultcode'],
+                ]);
+
+                $last = [
+                    'success' => $response->successful(),
+                    'paid' => $parsed['paid'],
+                    'failed' => $parsed['failed'],
+                    'status' => $parsed['payment_status'] ?: $parsed['result'] ?: null,
+                    'data' => $data,
+                ];
+
+                if ($parsed['paid'] || $parsed['failed']) {
+                    return $last;
+                }
             }
 
-            $data = $response->json() ?? [];
-            $parsed = $this->parseGatewayResponse($data);
-
-            Log::info('Oweru order-status response', [
-                'order_id' => $orderId,
-                'http_status' => $response->status(),
-                'paid' => $parsed['paid'],
-                'failed' => $parsed['failed'],
-                'payment_status' => $parsed['payment_status'],
-                'result' => $parsed['result'],
-                'resultcode' => $parsed['resultcode'],
-            ]);
-
-            return [
-                'success' => $response->successful(),
-                'paid' => $parsed['paid'],
-                'failed' => $parsed['failed'],
-                'status' => $parsed['payment_status'] ?: $parsed['result'] ?: null,
-                'data' => $data,
-            ];
+            return $last;
         } catch (\Throwable $e) {
             Log::warning('Oweru order-status check failed', [
                 'order_id' => $orderId,
@@ -325,25 +354,45 @@ class SelcomPaymentService
      */
     private function parseGatewayResponse(array $data): array
     {
-        $payload = $data;
-        if (isset($data['data']) && is_array($data['data']) && ! isset($data['data'][0])) {
-            $payload = array_merge($data, $data['data']);
-        } elseif (isset($data['data'][0]) && is_array($data['data'][0])) {
-            $payload = array_merge($data, $data['data'][0]);
+        $paymentStatus = '';
+        $result = '';
+        $resultCode = '';
+
+        foreach ($this->collectPayloadLayers($data) as $layer) {
+            if (($layer['paid'] ?? false) === true || ($layer['is_paid'] ?? false) === true) {
+                return [
+                    'paid' => true,
+                    'failed' => false,
+                    'payment_status' => 'PAID',
+                    'result' => $result,
+                    'resultcode' => $resultCode,
+                ];
+            }
+
+            if ($paymentStatus === '') {
+                $paymentStatus = strtoupper((string) (
+                    $layer['payment_status']
+                    ?? $layer['order_status']
+                    ?? $layer['status']
+                    ?? ''
+                ));
+            }
+            if ($result === '') {
+                $result = strtoupper((string) ($layer['result'] ?? ''));
+            }
+            if ($resultCode === '') {
+                $resultCode = (string) ($layer['resultcode'] ?? $layer['result_code'] ?? '');
+            }
         }
 
-        $paymentStatus = strtoupper((string) (
-            $payload['payment_status']
-            ?? $payload['order_status']
-            ?? $payload['status']
-            ?? ''
-        ));
-        $result = strtoupper((string) ($payload['result'] ?? ''));
-        $resultCode = (string) ($payload['resultcode'] ?? $payload['result_code'] ?? '');
+        $pendingStatuses = ['', 'PENDING', 'INPROGRESS', 'IN_PROGRESS', 'PROCESSING', 'INITIATED', 'REQUESTED', 'AWAITING'];
 
-        // Paid only when payment_status is definitively completed (not wallet-push SUCCESS)
         $paid = in_array($paymentStatus, ['COMPLETED', 'COMPLETE', 'PAID', 'SUCCESSFUL'], true)
-            || ($resultCode === '000' && $paymentStatus === 'COMPLETED');
+            || (
+                $resultCode === '000'
+                && $result === 'SUCCESS'
+                && ! in_array($paymentStatus, $pendingStatuses, true)
+            );
 
         $failed = in_array($paymentStatus, ['FAILED', 'CANCELLED', 'CANCELED', 'EXPIRED', 'ERROR', 'DECLINED'], true)
             || ($result === 'FAIL' || $result === 'FAILED')
@@ -356,5 +405,33 @@ class SelcomPaymentService
             'result' => $result,
             'resultcode' => $resultCode,
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function collectPayloadLayers(array $data): array
+    {
+        $layers = [$data];
+
+        if (isset($data['data']) && is_array($data['data'])) {
+            if (array_is_list($data['data'])) {
+                foreach ($data['data'] as $item) {
+                    if (is_array($item)) {
+                        $layers[] = $item;
+                    }
+                }
+            } else {
+                $layers[] = $data['data'];
+            }
+        }
+
+        foreach (['order', 'payment', 'transaction'] as $key) {
+            if (isset($data[$key]) && is_array($data[$key])) {
+                $layers[] = $data[$key];
+            }
+        }
+
+        return $layers;
     }
 }

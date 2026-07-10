@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import Api from '../../services/api';
 import { usePaymentPolling } from '../../hooks/usePaymentPolling';
-import { paymentConfirmationMessage } from '../../utils/paymentStatus';
+import { paymentConfirmationMessage, parsePaymentStatus } from '../../utils/paymentStatus';
 
 interface ApplicationItem {
   id: number;
@@ -470,6 +470,7 @@ const ApplicationsPage = () => {
   const [payResult, setPayResult] = useState<'success' | 'error' | 'waiting' | null>(null);
   const [payMessage, setPayMessage] = useState('');
   const [rentOrderId, setRentOrderId] = useState('');
+  const [rentApplicationId, setRentApplicationId] = useState<number | null>(null);
 
   const refreshApplications = useCallback(async () => {
     const res = await Api.getTenantApplications();
@@ -510,10 +511,29 @@ const ApplicationsPage = () => {
     fetchApplications();
   }, []);
 
-  const pollRent = useCallback(
-    () => Api.checkRentPaymentStatus(rentOrderId),
-    [rentOrderId],
-  );
+  const pollRent = useCallback(async () => {
+    const res = await Api.checkRentPaymentStatus(rentOrderId);
+    if (parsePaymentStatus(res.data) === 'paid') {
+      return res;
+    }
+    if (rentApplicationId) {
+      const appsRes = await Api.getTenantApplications();
+      const apps = Array.isArray(appsRes.data) ? appsRes.data : [];
+      const app = apps.find((a: ApplicationItem) => a.id === rentApplicationId);
+      if (app?.rent_paid || (app as any)?.rent_payment_status === 'paid') {
+        return {
+          data: {
+            status: 'paid',
+            rent_payment_status: 'paid',
+            rent_paid: true,
+            message: 'Rent payment confirmed.',
+          },
+          message: 'Rent payment confirmed.',
+        };
+      }
+    }
+    return res;
+  }, [rentOrderId, rentApplicationId]);
 
   usePaymentPolling(
     payResult === 'waiting' && !!rentOrderId,
@@ -553,6 +573,7 @@ const ApplicationsPage = () => {
 
       if (res.data?.order_id) {
         setRentOrderId(res.data.order_id);
+        setRentApplicationId(appId);
         setPayResult('waiting');
         setPayMessage('USSD prompt sent. Waiting for confirmation...');
       } else {
@@ -571,17 +592,18 @@ const ApplicationsPage = () => {
     setPayResult(null);
     setPayMessage('');
     setRentOrderId('');
+    setRentApplicationId(null);
     setPhoneNumber('');
   }, []);
 
   const closePaymentModal = useCallback(() => {
-    if (payResult === 'waiting') return;
     setPaymentModal(null);
     setPayResult(null);
     setPayMessage('');
     setRentOrderId('');
+    setRentApplicationId(null);
     setPhoneNumber('');
-  }, [payResult]);
+  }, []);
 
   const filtered = useMemo(() =>
     applications.filter(item => {
@@ -746,14 +768,34 @@ const ApplicationsPage = () => {
                 </div>
               )}
 
+              {payResult === 'waiting' && (
+                <button
+                  type="button"
+                  className="ap-btn-cancel"
+                  style={{ width: '100%', marginBottom: 12 }}
+                  onClick={async () => {
+                    const res = await pollRent();
+                    if (parsePaymentStatus(res.data) === 'paid') {
+                      setPayResult('success');
+                      setPayMessage(res.data?.message as string || paymentConfirmationMessage('rent', 'paid'));
+                      await refreshApplications();
+                    } else {
+                      setPayMessage('Still checking… If you approved on your phone, wait a few seconds and tap again.');
+                    }
+                  }}
+                >
+                  I completed payment — check again
+                </button>
+              )}
+
               {/* Buttons */}
               <div className="ap-modal-actions">
                 <button
                   className="ap-btn-cancel"
                   onClick={closePaymentModal}
-                  disabled={paying || payResult === 'waiting'}
+                  disabled={paying}
                 >
-                  {payResult === 'success' ? 'Done' : 'Cancel'}
+                  {payResult === 'success' ? 'Done' : payResult === 'waiting' ? 'Close (payment may still complete)' : 'Cancel'}
                 </button>
 
                 {payResult !== 'success' && payResult !== 'waiting' && (

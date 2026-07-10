@@ -27,8 +27,8 @@ export function usePaymentPolling(
   useEffect(() => {
     if (!active || !orderId) return;
 
-    const intervalMs = options?.intervalMs ?? 3000;
-    const maxAttempts = options?.maxAttempts ?? 40;
+    const intervalMs = options?.intervalMs ?? 2000;
+    const maxAttempts = options?.maxAttempts ?? 90;
     let attempts = 0;
     let settled = false;
 

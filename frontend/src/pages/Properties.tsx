@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import Api from '../services/api';
 import { usePaymentPolling } from '../hooks/usePaymentPolling';
-import { paymentConfirmationMessage } from '../utils/paymentStatus';
+import { paymentConfirmationMessage, parsePaymentStatus } from '../utils/paymentStatus';
 import PropertyThumbnail from '../components/PropertyThumbnail';
 import { getStorageOrigin } from '../utils/propertyImages';
 
@@ -1063,6 +1063,7 @@ const Properties = () => {
   const [paying,        setPaying]       = useState(false);
   const [successVariant, setSuccessVariant] = useState<'site_visit' | 'application'>('site_visit');
   const [pendingOrderId, setPendingOrderId] = useState('');
+  const [pendingPropertyId, setPendingPropertyId] = useState<number | null>(null);
   const [pollMessage, setPollMessage] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
   const [phoneNumber,   setPhoneNumber]   = useState('');
@@ -1136,10 +1137,26 @@ const Properties = () => {
     return () => { document.head.removeChild(link); };
   }, []);
 
-  const pollSiteVisit = useCallback(
-    () => Api.checkSiteVisitPaymentStatus(pendingOrderId),
-    [pendingOrderId],
-  );
+  const pollSiteVisit = useCallback(async () => {
+    const res = await Api.checkSiteVisitPaymentStatus(pendingOrderId);
+    if (parsePaymentStatus(res.data) === 'paid') {
+      return res;
+    }
+    if (pendingPropertyId) {
+      const appsRes = await Api.getTenantApplications();
+      const apps = Array.isArray(appsRes.data) ? appsRes.data : [];
+      const app = apps.find((a: any) =>
+        a.property_id === pendingPropertyId || a.property?.id === pendingPropertyId
+      );
+      if (app?.site_visit_paid || app?.payment_status === 'paid') {
+        return {
+          data: { status: 'paid', payment_status: 'paid', message: 'Payment confirmed.' },
+          message: 'Payment confirmed.',
+        };
+      }
+    }
+    return res;
+  }, [pendingOrderId, pendingPropertyId]);
 
   usePaymentPolling(
     modal === 'pending_payment' && !!pendingOrderId,
@@ -1257,6 +1274,7 @@ const Properties = () => {
 
       if (res.data?.order_id) {
         setPendingOrderId(res.data.order_id);
+        setPendingPropertyId(selProp.id);
         setModal('pending_payment');
         addToast({
           type: 'info',
@@ -1279,11 +1297,13 @@ const Properties = () => {
     setModal('none');
     setSelProp(null);
     setPendingOrderId('');
+    setPendingPropertyId(null);
     setPollMessage('');
   };
 
   const cancelPendingPayment = () => {
     setPendingOrderId('');
+    setPendingPropertyId(null);
     setPollMessage('');
     setModal('payment');
   };

@@ -111,6 +111,8 @@ class RentPaymentService
             return ['success' => false, 'message' => 'Unauthorized'];
         }
 
+        $application->refresh();
+
         if ($application->rent_payment_status === 'paid') {
             return $this->statusResponse($application, 'paid');
         }

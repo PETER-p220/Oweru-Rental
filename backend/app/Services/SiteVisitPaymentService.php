@@ -109,6 +109,8 @@ class SiteVisitPaymentService
             return ['success' => false, 'message' => 'Unauthorized'];
         }
 
+        $application->refresh();
+
         if ($application->payment_status === 'paid') {
             return $this->statusResponse($application, 'paid');
         }
