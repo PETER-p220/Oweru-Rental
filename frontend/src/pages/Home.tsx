@@ -7,84 +7,12 @@ import {
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import Api from '../services/api';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
+import { getPropertyThumbnail, PROPERTY_IMAGE_PLACEHOLDER, normalizeBnbProperty } from '../utils/propertyImages';
 
-// Strip /api suffix to get storage base, e.g. https://api.oweru.com/api → https://api.oweru.com
 const _rawBase     = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const API_BASE     = _rawBase.endsWith('/') ? _rawBase.slice(0, -1) : _rawBase;
-const VITE_STORAGE = API_BASE.endsWith('/api') ? API_BASE.slice(0, -4) : API_BASE;
 
-const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
 const COMMERCIAL_TYPES = ['office', 'retail', 'warehouse', 'commercial', 'industrial'];
-
-// ── Image URL builder ────────────────────────────────────────────────────────
-// Laravel stores files with Storage::disk('public')->store('properties', ...)
-// which produces paths like "properties/abc123.jpg" (no leading slash).
-// The public disk is symlinked to /storage, so the final URL is:
-//   https://yourapi.com/storage/properties/abc123.jpg
-//
-// VITE_STORAGE = VITE_API_URL with "/api" stripped, e.g. "https://yourapi.com"
-
-const resolveStoragePath = (path: string): string => {
-  if (!path?.trim()) return PLACEHOLDER;
-  // Already a full URL — return as-is
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  // Strip any accidental leading slashes so we can reason about the path cleanly
-  const clean = path.replace(/^\/+/, '');
-  // Path already includes "storage/" prefix (e.g. from an old full URL fragment)
-  if (clean.startsWith('storage/')) return `${VITE_STORAGE}/${clean}`;
-  // Normal case: path = "properties/abc.jpg" → /storage/properties/abc.jpg
-  return `${VITE_STORAGE}/storage/${clean}`;
-};
-
-// ── Image extractor — handles ALL storage shapes used across the app ─────────
-//
-// Shape A — publicIndex / store (residential/landlord):
-//   property.images = ["properties/abc.jpg"]          (plain string array)
-//
-// Shape B — storeCommercial:
-//   property.images = [{"path":"properties/abc.jpg","is_primary":true}]
-//
-// Shape C — Commercial PropertyController (propertyImages relation):
-//   property.propertyImages = [{"image_path":"properties/abc.jpg","is_primary":1}]
-//   (also serialised as property_images by Laravel's snake_case JSON)
-//
-// BnB: images[] already contains full https:// URLs — resolveStoragePath passes through.
-
-const getImage = (property: any): string => {
-  // ── Shape C: separate PropertyImage relation rows ──────────────────────
-  // Camelcase (commercial controller with->with('propertyImages'))
-  const ci: any[] = property?.propertyImages;
-  if (Array.isArray(ci) && ci.length > 0) {
-    const img = ci.find(i => i.is_primary == 1 || i.is_primary === true) ?? ci[0];
-    const p = img?.image_path ?? img?.path ?? '';
-    if (p) return resolveStoragePath(p);
-  }
-  // Snake_case (Laravel auto-serialisation of same relation)
-  const si: any[] = property?.property_images;
-  if (Array.isArray(si) && si.length > 0) {
-    const img = si.find(i => i.is_primary == 1 || i.is_primary === true) ?? si[0];
-    const p = img?.image_path ?? img?.path ?? '';
-    if (p) return resolveStoragePath(p);
-  }
-
-  // ── Shapes A & B: images JSON column on the Property row ──────────────
-  let imgs = property?.images;
-  // If the backend returned it as a JSON string (some Laravel versions do this
-  // when the cast is missing), parse it first.
-  if (typeof imgs === 'string') {
-    try { imgs = JSON.parse(imgs); } catch { imgs = null; }
-  }
-  if (Array.isArray(imgs) && imgs.length > 0) {
-    const first = imgs[0];
-    // Shape A: plain string  →  "properties/abc.jpg"
-    if (typeof first === 'string' && first.trim()) return resolveStoragePath(first);
-    // Shape B: object with 'path' key  →  { path: "properties/abc.jpg", is_primary: true }
-    const p = first?.path ?? first?.image_path ?? first?.url ?? first?.src ?? '';
-    if (p) return resolveStoragePath(p);
-  }
-
-  return PLACEHOLDER;
-};
 
 const fmtPrice = (price: number) =>
   new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(price);
@@ -105,21 +33,34 @@ const LazyImg = memo(({ src, alt, height }: { src: string; alt: string; height: 
   }, [src]);
 
   return (
-    <img
-      ref={imgRef}
-      className="prop-img"
-      src={src}
-      alt={alt}
-      style={{ height, opacity: visible ? 1 : 0, transition: 'opacity 0.3s ease' }}
-      loading="lazy"
-      decoding="async"
-      onLoad={() => setVisible(true)}
-      onError={e => {
-        const el = e.currentTarget as HTMLImageElement;
-        if (el.src !== PLACEHOLDER) el.src = PLACEHOLDER;
-        setVisible(true);
-      }}
-    />
+    <div style={{ position: 'relative', background: '#E2E8F0', minHeight: height }}>
+      {!visible && (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(90deg,#E2E8F0 0%,#CBD5E1 50%,#E2E8F0 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'img-shimmer 1.1s ease-in-out infinite',
+          }}
+        />
+      )}
+      <img
+        ref={imgRef}
+        className="prop-img"
+        src={src}
+        alt={alt}
+        style={{ height, width: '100%', objectFit: 'cover', opacity: visible ? 1 : 0, transition: 'opacity 0.3s ease', position: 'relative', zIndex: 1 }}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setVisible(true)}
+        onError={e => {
+          const el = e.currentTarget as HTMLImageElement;
+          if (el.src !== PROPERTY_IMAGE_PLACEHOLDER) el.src = PROPERTY_IMAGE_PLACEHOLDER;
+          setVisible(true);
+        }}
+      />
+    </div>
   );
 });
 
@@ -238,6 +179,39 @@ const Home = () => {
   // ── Optimized: fetch residential first, then defer secondary sections ─────
   useEffect(() => { loadInitialData(); }, []);
 
+  const loadBnbProperties = useCallback(async (): Promise<any[]> => {
+    const parseList = (payload: unknown): any[] => {
+      if (Array.isArray(payload)) return payload;
+      if (payload && typeof payload === 'object') {
+        const row = payload as Record<string, unknown>;
+        if (Array.isArray(row.data)) return row.data as any[];
+        if (Array.isArray(row.value)) return row.value as any[];
+      }
+      return [];
+    };
+
+    try {
+      const primary = await fetch(`${API_BASE}/api/public/bnb`, { headers: { Accept: 'application/json' } });
+      if (primary.ok) {
+        const list = parseList(await primary.json())
+          .filter((p) => p?.id !== 999)
+          .map((p) => normalizeBnbProperty(p));
+        if (list.length > 0) return list;
+      }
+
+      const fallback = await fetch(`${API_BASE}/api/public/bnb/search`, { headers: { Accept: 'application/json' } });
+      if (fallback.ok) {
+        return parseList(await fallback.json())
+          .filter((p) => p?.id !== 999)
+          .map((p) => normalizeBnbProperty(p));
+      }
+    } catch (err) {
+      console.error('BnB load error:', err);
+    }
+
+    return [];
+  }, []);
+
   const loadInitialData = async () => {
     // 1. Residential first — hero content, highest priority
     setLoading(true);
@@ -253,12 +227,11 @@ const Home = () => {
 
     // 2. BnB + Oweru + Commercial in parallel (deferred)
     Promise.all([
-      fetch(`${API_BASE}/api/public/bnb`,                    { headers: { Accept: 'application/json' } }),
+      loadBnbProperties(),
       fetch(`${API_BASE}/api/public/properties?type=oweru_rental&per_page=8`, { headers: { Accept: 'application/json' } }),
       fetch(`${API_BASE}/api/public/properties?per_page=12`, { headers: { Accept: 'application/json' } }),
-    ]).then(async ([r2, r3, r4]) => {
-      // publicBnbIndex returns a plain array (not wrapped in {data:[]})
-      if (r2.ok) { const d = await r2.json(); setBnbProperties(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : [])); }
+    ]).then(async ([bnbList, r3, r4]) => {
+      setBnbProperties(bnbList);
       setBnbLoading(false);
 
       if (r3.ok) { const d = await r3.json(); setOweruProperties(Array.isArray(d?.data) ? d.data : (d?.data?.data ?? [])); }
@@ -336,7 +309,7 @@ const Home = () => {
   const PropCard = memo(({ p, suffix = '/mo', showSave = true }: { p: any; suffix?: string; showSave?: boolean }) => (
     <div className="prop-card" onClick={() => navigate(`/property/${p.id}`)}>
       <div className="prop-img-wrap">
-        <LazyImg src={getImage(p)} alt={p.title} height={200} />
+        <LazyImg src={getPropertyThumbnail(p)} alt={p.title} height={200} />
         <div className="prop-img-overlay" />
         {p.featured && <div className="badge-gold" style={{ position: 'absolute', top: 12, left: 12 }}>Featured</div>}
       </div>
@@ -357,7 +330,7 @@ const Home = () => {
 
   // ── Commercial card — mirrors Properties.tsx image logic exactly ──────────
   const CommCard = memo(({ p }: { p: any }) => {
-    const imgSrc = getImage(p);
+    const imgSrc = getPropertyThumbnail(p);
     const sc: Record<string, { bg: string; color: string; dot: string }> = {
       active:   { bg: 'rgba(16,185,129,0.85)',  color: '#fff', dot: '#10B981' },
       pending:  { bg: 'rgba(245,158,11,0.85)',  color: '#fff', dot: '#F59E0B' },
@@ -497,6 +470,7 @@ const Home = () => {
         .bnb-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
         .skeleton { background:var(--bg3); border:1px solid var(--border); border-radius:var(--r); animation:shimmer 1.5s ease-in-out infinite; }
         @keyframes shimmer { 0%{opacity:0.5} 50%{opacity:0.9} 100%{opacity:0.5} }
+        @keyframes img-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
         @media(max-width:900px) {
           .hero-body { grid-template-columns:1fr; gap:36px; padding:64px 20px 0; }
           .section { padding:56px 20px; }
@@ -692,7 +666,7 @@ const Home = () => {
                 {bnbProperties.map((p: any) => (
                   <div key={p.id} className="prop-card">
                     <div className="prop-img-wrap">
-                      <LazyImg src={getImage(p)} alt={p.title} height={220} />
+                      <LazyImg src={getPropertyThumbnail(p)} alt={p.title} height={220} />
                       <div className="prop-img-overlay" />
                     </div>
                     <div className="prop-body">
@@ -725,7 +699,7 @@ const Home = () => {
                 {oweruProperties.map((p: any) => (
                   <div key={p.id} className="prop-card" onClick={() => navigate(`/property/${p.id}`)}>
                     <div className="prop-img-wrap">
-                      <LazyImg src={getImage(p)} alt={p.title} height={210} />
+                      <LazyImg src={getPropertyThumbnail(p)} alt={p.title} height={210} />
                       <div className="prop-img-overlay" />
                       <div className="badge-gold" style={{ position: 'absolute', top: 12, right: 12 }}>OWERU</div>
                     </div>

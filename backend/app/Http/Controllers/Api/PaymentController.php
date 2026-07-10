@@ -110,7 +110,7 @@ class PaymentController extends Controller
         }
 
         try {
-            $adminPhone = env('OWERU_ADMIN_PHONE');
+            $adminPhone = config('services.oweru.admin_phone');
             $property = Property::find($payment->property_id);
             
             if (!$property) {
@@ -158,11 +158,11 @@ class PaymentController extends Controller
             $adminAmount = $totalAmount * 0.30; // 30%
             $recipientAmount = $totalAmount * 0.70; // 70%
 
-            $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
-            $appKey = env('OWERU_APP_KEY');
+            $baseUrl = rtrim((string) config('services.oweru.checkout_url', 'https://api.selcom.oweru.com/api/checkout'), '/');
+            $appKey = config('services.oweru.app_key');
 
-            if (!$appKey) {
-                Log::error('Missing OWERU_APP_KEY for payment splitting');
+            if (! $appKey) {
+                Log::error('Missing payment app key for payment splitting — set OWERU_APP_KEY and refresh config cache');
                 return;
             }
 

@@ -15,36 +15,87 @@ export function resolvePropertyImageUrl(path: string | null | undefined): string
   return `${STORAGE_BASE}/storage/${p}`;
 }
 
-/** Best thumbnail for list cards — prefers API `thumbnail`, then primary relation image. */
+function parseImagesField(images: unknown): unknown[] {
+  if (!images) return [];
+  if (typeof images === 'string') {
+    try {
+      const parsed = JSON.parse(images);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return images.trim() ? [images] : [];
+    }
+  }
+  return Array.isArray(images) ? images : [];
+}
+
+function pathFromImageEntry(entry: unknown): string {
+  if (!entry) return '';
+  if (typeof entry === 'string') return entry.trim();
+  if (typeof entry === 'object') {
+    const row = entry as Record<string, unknown>;
+    const path = row.image_path ?? row.path ?? row.url ?? row.src ?? row.image ?? '';
+    return String(path).trim();
+  }
+  return '';
+}
+
+/** Best thumbnail for list cards — supports residential, commercial, and BnB shapes. */
 export function getPropertyThumbnail(property: Record<string, unknown> | null | undefined): string {
   if (!property) return PROPERTY_IMAGE_PLACEHOLDER;
 
-  if (property.thumbnail) {
-    return resolvePropertyImageUrl(String(property.thumbnail));
-  }
+  const direct =
+    property.thumbnail ??
+    property.cover_image ??
+    property.image ??
+    property.main_image;
+  if (direct) return resolvePropertyImageUrl(String(direct));
 
   const si = property.property_images;
   if (Array.isArray(si) && si.length > 0) {
     const row = (si as Array<Record<string, unknown>>).find((i) => i.is_primary) ?? si[0];
-    const path = (row as Record<string, unknown>)?.image_path ?? (row as Record<string, unknown>)?.url;
-    if (path) return resolvePropertyImageUrl(String(path));
+    const path = pathFromImageEntry(row);
+    if (path) return resolvePropertyImageUrl(path);
   }
 
   const ci = property.propertyImages;
   if (Array.isArray(ci) && ci.length > 0) {
     const row = (ci as Array<Record<string, unknown>>).find((i) => i.is_primary) ?? ci[0];
-    const path = (row as Record<string, unknown>)?.image_path ?? (row as Record<string, unknown>)?.url;
-    if (path) return resolvePropertyImageUrl(String(path));
+    const path = pathFromImageEntry(row);
+    if (path) return resolvePropertyImageUrl(path);
   }
 
-  const imgs = property.images;
-  if (Array.isArray(imgs) && imgs.length > 0) {
-    const first = imgs[0];
-    const path = typeof first === 'string' ? first : (first as Record<string, unknown>)?.image_path ?? (first as Record<string, unknown>)?.url;
-    if (path) return resolvePropertyImageUrl(String(path));
+  const imgs = parseImagesField(property.images);
+  if (imgs.length > 0) {
+    const primary = imgs.find((entry) => {
+      if (entry && typeof entry === 'object') {
+        return (entry as Record<string, unknown>).is_primary === true
+          || (entry as Record<string, unknown>).is_primary === 1;
+      }
+      return false;
+    }) ?? imgs[0];
+    const path = pathFromImageEntry(primary);
+    if (path) return resolvePropertyImageUrl(path);
   }
 
   return PROPERTY_IMAGE_PLACEHOLDER;
+}
+
+/** Normalize a BnB property row from any public API shape. */
+export function normalizeBnbProperty(raw: Record<string, unknown>): Record<string, unknown> {
+  const images = parseImagesField(raw.images).map((entry) => {
+    const path = pathFromImageEntry(entry);
+    return path ? resolvePropertyImageUrl(path) : '';
+  }).filter(Boolean);
+
+  const thumbnail = raw.thumbnail
+    ? resolvePropertyImageUrl(String(raw.thumbnail))
+    : (images[0] || getPropertyThumbnail(raw));
+
+  return {
+    ...raw,
+    images: images.length > 0 ? images : parseImagesField(raw.images),
+    thumbnail,
+  };
 }
 
 export function getStorageOrigin(): string {

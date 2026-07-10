@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -80,6 +81,75 @@ class BnbProperty extends Model
     {
         return $this->hasMany(BnbBooking::class, 'property_id')
             ->where('status', 'confirmed');
+    }
+
+    public function scopePubliclyVisible(Builder $query): Builder
+    {
+        return $query->whereNotIn('status', ['inactive', 'suspended', 'pending']);
+    }
+
+    /**
+     * Shape for homepage / public search cards (real DB data only).
+     *
+     * @return array<string, mixed>
+     */
+    public function toPublicListingArray(): array
+    {
+        $storageBase = rtrim((string) config('app.url'), '/');
+        $images = $this->resolvePublicImageUrls($storageBase);
+        $thumbnail = $images[0] ?? null;
+
+        return [
+            'id'             => $this->id,
+            'title'          => $this->title,
+            'description'    => $this->description,
+            'price'          => $this->price,
+            'location'       => $this->location,
+            'address'        => $this->address,
+            'type'           => $this->type,
+            'bedrooms'       => $this->bedrooms,
+            'bathrooms'      => $this->bathrooms,
+            'max_guests'     => $this->max_guests,
+            'thumbnail'      => $thumbnail,
+            'images'         => $images,
+            'average_rating' => round((float) ($this->average_rating ?? 0), 1) ?: null,
+            'status'         => $this->status,
+            'created_at'     => $this->created_at?->toIso8601String(),
+            'updated_at'     => $this->updated_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolvePublicImageUrls(string $storageBase): array
+    {
+        $raw = $this->images;
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : [];
+        }
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $urls = [];
+        foreach ($raw as $img) {
+            if (is_array($img)) {
+                $img = $img['image_path'] ?? $img['path'] ?? $img['url'] ?? '';
+            }
+            if (! is_string($img) || trim($img) === '') {
+                continue;
+            }
+            $img = trim($img);
+            if (str_starts_with($img, 'http://') || str_starts_with($img, 'https://')) {
+                $urls[] = $img;
+                continue;
+            }
+            $urls[] = $storageBase . '/storage/' . ltrim($img, '/');
+        }
+
+        return array_values(array_unique($urls));
     }
 
     // Scopes

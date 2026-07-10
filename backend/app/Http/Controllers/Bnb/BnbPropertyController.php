@@ -294,11 +294,9 @@ class BnbPropertyController extends Controller
      */
     public function search(Request $request): JsonResponse
     {
-        $query = BnbProperty::with(['owner'])
-            ->where('status', 'available')
-            ->orderBy('created_at', 'desc');
+        $query = BnbProperty::publiclyVisible()
+            ->orderByDesc('created_at');
 
-        // Apply filters if provided
         if ($request->has('location')) {
             $query->where('location', 'like', '%' . $request->location . '%');
         }
@@ -319,12 +317,11 @@ class BnbPropertyController extends Controller
             $query->where('max_guests', '>=', $request->max_guests);
         }
 
-        $properties = $query->get();
-        
-        // Debug logging
-        \Log::info('BNB Search Query Count: ' . $properties->count());
-        \Log::info('BNB Search Results: ' . json_encode($properties));
+        $items = $query->limit(8)->get()
+            ->map(fn (BnbProperty $property) => $property->toPublicListingArray())
+            ->values()
+            ->all();
 
-        return response()->json($properties);
+        return response()->json($items);
     }
 }

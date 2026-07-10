@@ -36,7 +36,9 @@ return [
     ],
 
     'oweru' => [
-        'app_key' => env('OWERU_APP_KEY'),
+        'app_key' => env('OWERU_APP_KEY') ?: env('SELCOM_APP_KEY'),
+        'checkout_url' => env('OWERU_CHECKOUT_URL', 'https://api.selcom.oweru.com/api/checkout'),
+        'admin_phone' => env('OWERU_ADMIN_PHONE'),
     ],
 
     'selcom' => [

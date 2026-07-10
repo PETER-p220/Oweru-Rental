@@ -7,6 +7,18 @@ use Illuminate\Support\Facades\Log;
 
 class SelcomPaymentService
 {
+    private function appKey(): ?string
+    {
+        $key = config('services.oweru.app_key');
+
+        return is_string($key) && trim($key) !== '' ? trim($key) : null;
+    }
+
+    private function checkoutBaseUrl(): string
+    {
+        return rtrim((string) config('services.oweru.checkout_url', 'https://api.selcom.oweru.com/api/checkout'), '/');
+    }
+
     /**
      * Map client/provider codes to Selcom wallet-payment codes.
      */
@@ -45,11 +57,11 @@ class SelcomPaymentService
      */
     public function initiate(array $data): array
     {
-        $appKey = env('OWERU_APP_KEY');
-        $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
+        $appKey = $this->appKey();
+        $baseUrl = $this->checkoutBaseUrl();
 
-        if (empty($appKey)) {
-            Log::error('Missing OWERU_APP_KEY in .env');
+        if (! $appKey) {
+            Log::error('Missing payment app key — set OWERU_APP_KEY in .env and run php artisan config:cache');
 
             return [
                 'success' => false,
@@ -209,10 +221,10 @@ class SelcomPaymentService
     private function checkOweruOrderStatus(string $orderId): array
     {
         try {
-            $appKey = env('OWERU_APP_KEY');
-            $baseUrl = 'https://api.selcom.oweru.com/api/checkout';
+            $appKey = $this->appKey();
+            $baseUrl = $this->checkoutBaseUrl();
 
-            if (empty($appKey)) {
+            if (! $appKey) {
                 return ['success' => false, 'paid' => false, 'failed' => false];
             }
 

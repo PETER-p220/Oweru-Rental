@@ -8,6 +8,7 @@ use App\Models\SavedProperty;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Models\BnbProperty;
@@ -190,72 +191,21 @@ class PropertyController extends Controller
     public function publicBnbIndex(Request $request): JsonResponse
     {
         try {
-            $properties = BnbProperty::limit(8)->get();
+            $properties = BnbProperty::publiclyVisible()
+                ->orderByDesc('created_at')
+                ->limit(8)
+                ->get();
 
-            $transformedProperties = $properties->map(function ($property) {
-                $images = ['https://picsum.photos/seed/bnb' . $property->id . '/800/600.jpg'];
+            $items = $properties
+                ->map(fn (BnbProperty $property) => $property->toPublicListingArray())
+                ->values()
+                ->all();
 
-                if ($property->images) {
-                    $propertyImages = [];
-                    if (is_string($property->images)) {
-                        $decoded = json_decode($property->images, true);
-                        if (is_array($decoded)) {
-                            $propertyImages = $decoded;
-                        }
-                    } elseif (is_array($property->images)) {
-                        $propertyImages = $property->images;
-                    }
-
-                    if (!empty($propertyImages)) {
-                        $images = array_map(function ($img) {
-                            if (str_starts_with($img, 'http')) {
-                                return $img;
-                            }
-                            return 'https://rental.oweru.com/storage/' . ltrim($img, '/');
-                        }, $propertyImages);
-                    }
-                }
-
-                return [
-                    'id'             => $property->id,
-                    'title'          => $property->title ?? 'Property ' . $property->id,
-                    'description'    => $property->description ?? 'Beautiful property',
-                    'price'          => $property->price ?? 100000,
-                    'location'       => $property->location ?? 'Africa',
-                    'type'           => $property->type ?? 'apartment',
-                    'bedrooms'       => $property->bedrooms ?? 2,
-                    'bathrooms'      => $property->bathrooms ?? 1,
-                    'max_guests'     => $property->max_guests ?? 4,
-                    'images'         => $images,
-                    'average_rating' => 4.5,
-                    'status'         => 'available',
-                    'created_at'     => $property->created_at?->toISOString() ?? now()->toISOString(),
-                    'updated_at'     => $property->updated_at?->toISOString() ?? now()->toISOString(),
-                ];
-            })->toArray();
-
-            return response()->json($transformedProperties);
-
+            return response()->json($items);
         } catch (\Exception $e) {
-            // Return minimal fallback in case of unexpected error
-            return response()->json([
-                [
-                    'id'             => 999,
-                    'title'          => 'Sample Property',
-                    'description'    => 'This is a sample property',
-                    'price'          => 150000,
-                    'location'       => 'Dar es Salaam',
-                    'type'           => 'apartment',
-                    'bedrooms'       => 2,
-                    'bathrooms'      => 1,
-                    'max_guests'     => 4,
-                    'images'         => ['https://picsum.photos/seed/sample/800/600.jpg'],
-                    'average_rating' => 4.5,
-                    'status'         => 'available',
-                    'created_at'     => now()->toISOString(),
-                    'updated_at'     => now()->toISOString(),
-                ],
-            ]);
+            Log::warning('publicBnbIndex failed', ['error' => $e->getMessage()]);
+
+            return response()->json([]);
         }
     }
 
