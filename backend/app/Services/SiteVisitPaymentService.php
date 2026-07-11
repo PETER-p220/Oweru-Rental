@@ -28,6 +28,13 @@ class SiteVisitPaymentService
             ];
         }
 
+        if ($property->available === false) {
+            return [
+                'success' => false,
+                'message' => 'This property is no longer available.',
+            ];
+        }
+
         $existing = Application::where('user_id', $user->id)
             ->where('property_id', $property->id)
             ->whereNotIn('status', ['withdrawn', 'rejected'])

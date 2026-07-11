@@ -141,6 +141,27 @@ class TenantController extends Controller
         $user = Auth::user();
         $property = Property::findOrFail($request->property_id);
 
+        if ($property->available === false) {
+            return response()->json([
+                'message' => 'This property is no longer available for applications.',
+            ], 422);
+        }
+
+        // Another tenant already paid rent for this listing.
+        $alreadyRented = Application::where('property_id', $property->id)
+            ->where('rent_payment_status', 'paid')
+            ->exists();
+
+        if ($alreadyRented) {
+            if ($property->available !== false) {
+                $property->update(['available' => false]);
+            }
+
+            return response()->json([
+                'message' => 'This property has already been rented.',
+            ], 422);
+        }
+
         $existing = Application::where('user_id', $user->id)
             ->where('property_id', $property->id)
             ->whereNotIn('status', ['withdrawn', 'rejected'])

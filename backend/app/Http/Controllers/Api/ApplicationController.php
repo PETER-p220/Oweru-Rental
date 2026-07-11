@@ -67,6 +67,22 @@ class ApplicationController extends Controller
     $user     = Auth::user();
     $property = Property::findOrFail($request->property_id);
 
+    if ($property->available === false) {
+        return response()->json([
+            'message' => 'This property is no longer available for applications.',
+        ], 422);
+    }
+
+    if (Application::where('property_id', $property->id)->where('rent_payment_status', 'paid')->exists()) {
+        if ($property->available !== false) {
+            $property->update(['available' => false]);
+        }
+
+        return response()->json([
+            'message' => 'This property has already been rented.',
+        ], 422);
+    }
+
     // Check for duplicate — but allow re-apply if previous was withdrawn
     $existingApplication = Application::where('user_id', $user->id)
         ->where('property_id', $property->id)

@@ -54,7 +54,10 @@ class PropertyController extends Controller
             'agent:id,first_name,last_name',
             'propertyImages' => fn ($q) => $q->orderByDesc('is_primary')->limit(1),
         ])
-            ->where('available', true);
+            ->where('available', true)
+            ->whereDoesntHave('applications', function ($q) {
+                $q->where('rent_payment_status', 'paid');
+            });
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -215,7 +218,10 @@ class PropertyController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Property::with(['owner', 'agent'])
-            ->where('available', true);
+            ->where('available', true)
+            ->whereDoesntHave('applications', function ($q) {
+                $q->where('rent_payment_status', 'paid');
+            });
 
         if ($request->filled('search')) {
             $search = $request->search;

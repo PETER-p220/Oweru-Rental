@@ -36,6 +36,13 @@ class RentPaymentService
             return ['success' => false, 'message' => 'Property not found for this application.'];
         }
 
+        if ($property->available === false) {
+            return [
+                'success' => false,
+                'message' => 'This property is no longer available for rent.',
+            ];
+        }
+
         if ($property->agent_id && $application->payment_status !== 'paid') {
             return [
                 'success' => false,
@@ -166,11 +173,31 @@ class RentPaymentService
             'amount_paid' => $rentAmount > 0 ? $rentAmount : $application->amount_paid,
         ]);
 
+        // Take the listing offline so other tenants cannot apply or pay for it.
+        $property = $application->property;
+        if ($property && $property->available !== false) {
+            $property->update(['available' => false]);
+        }
+
+        // Close competing open applications for the same property.
+        if ($property) {
+            Application::where('property_id', $property->id)
+                ->where('id', '!=', $application->id)
+                ->whereNotIn('status', ['withdrawn', 'rejected', 'contract_active'])
+                ->where(function ($q) {
+                    $q->whereNull('rent_payment_status')
+                        ->orWhere('rent_payment_status', '!=', 'paid');
+                })
+                ->update(['status' => 'rejected']);
+        }
+
         $this->alerts->handleRentPaid($application->fresh(['property', 'user']));
 
         Log::info('Rent payment confirmed', [
             'application_id' => $application->id,
             'order_id' => $application->rent_transaction_id,
+            'property_id' => $property?->id,
+            'property_available' => false,
         ]);
     }
 
