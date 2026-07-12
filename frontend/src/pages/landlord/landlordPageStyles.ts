@@ -290,7 +290,7 @@ export const statusPillStyle = (color: string): CSSProperties => ({
 
 export const getStatusColor = (status?: string | null): string => {
   switch ((status || '').toLowerCase()) {
-    case 'approved': case 'active': case 'available': case 'completed':
+    case 'approved': case 'active': case 'available': case 'completed': case 'paid':
       return palette.green;
     case 'pending': case 'processing':
       return palette.amber;

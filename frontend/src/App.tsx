@@ -75,6 +75,7 @@ import ShareAndTrack from './pages/agent/ShareAndTrack';
 import PayoutHistory from './pages/agent/PayoutHistory';
 import LeadsAndVisitors from './pages/agent/LeadsAndVisitors';
 import MyCommissions from './pages/agent/MyCommissions';
+import AgentRentPayments from './pages/agent/RentPayments';
 import AgentApplicationsPage from './pages/agent/ApplicationsPage';
 import AgentAnalyticsPage from './pages/agent/AnalyticsPage';
 import AgentMessagesPage from './pages/agent/MessagesPage';
@@ -180,6 +181,7 @@ const AgentRoutes = () => (
         <Route path="payouts" element={<PayoutHistory />} />
         <Route path="leads" element={<LeadsAndVisitors />} />
         <Route path="commissions" element={<MyCommissions />} />
+        <Route path="rent-payments" element={<AgentRentPayments />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </DashboardLayout>

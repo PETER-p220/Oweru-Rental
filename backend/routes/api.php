@@ -126,6 +126,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/tenant/site-visit/pay',                                      [TenantController::class, 'initiateSiteVisitPayment']);
         Route::get('/tenant/site-visit/status/{orderId}',                           [TenantController::class, 'checkSiteVisitPaymentStatus']);
         Route::post('/tenant/rent/pay',                                             [TenantController::class, 'initiateRentPayment']);
+        Route::post('/tenant/rent/additional-months',                               [TenantController::class, 'createAdditionalMonthsPayment']);
+        Route::get('/tenant/rent/properties',                                       [TenantController::class, 'getRentableProperties']);
         Route::get('/tenant/rent/status/{orderId}',                                  [TenantController::class, 'checkRentPaymentStatus']);
         Route::put('/tenant/applications/{application}/payment-status',             [TenantController::class, 'updateApplicationPaymentStatus']);
 
@@ -217,6 +219,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/agent/my-commissions',   [AgentController::class, 'getMyCommissions']);
         Route::get('/agent/commission-stats', [AgentController::class, 'getCommissionStats']);
         Route::get('/agent/payouts',          [AgentController::class, 'getPayoutHistory']);
+
+        // Rent payments on agent-linked properties
+        Route::get('/agent/rent-payments',       [AgentController::class, 'getRentPayments']);
+        Route::get('/agent/rent-payment-stats',  [AgentController::class, 'getRentPaymentStats']);
 
         // Analytics
         Route::get('/agent/analytics', [AgentController::class, 'getAnalytics']);

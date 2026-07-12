@@ -80,21 +80,27 @@ const Payments = () => {
   const [payMessage, setPayMessage] = useState('');
   const [payResult, setPayResult] = useState<'idle' | 'waiting' | 'success' | 'error'>('idle');
   const [pendingPaymentId, setPendingPaymentId] = useState<number | null>(null);
+  const [activePayment, setActivePayment] = useState<any | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [paymentProvider, setPaymentProvider] = useState<'tigo' | 'mpesa' | 'airtel' | 'halopesa'>('tigo');
+  const [rentableProps, setRentableProps] = useState<any[]>([]);
+  const [extraPropertyId, setExtraPropertyId] = useState('');
+  const [extraMonths, setExtraMonths] = useState(1);
+  const [creatingExtra, setCreatingExtra] = useState(false);
 
   const load = async () => {
     try {
       setLoading(true);
-      const [paymentsRes, methodsRes, statsRes] = await Promise.all([
-        Api.getMyPayments(), Api.getPaymentMethods(), Api.getPaymentStats(),
+      const [paymentsRes, methodsRes, statsRes, propsRes] = await Promise.all([
+        Api.getMyPayments(), Api.getPaymentMethods(), Api.getPaymentStats(), Api.getRentableProperties(),
       ]);
-      setPayments(
-        (Array.isArray(paymentsRes.data) ? paymentsRes.data : [])
-          .filter((p: any) => p.type !== 'site_visit'),
-      );
+      const list = Array.isArray(paymentsRes.data) ? paymentsRes.data : [];
+      setPayments(list.filter((p: any) => p.type !== 'site_visit'));
       setMethods(Array.isArray(methodsRes.data) ? methodsRes.data : []);
       setStats(statsRes.data || {});
+      const props = Array.isArray(propsRes.data) ? propsRes.data : [];
+      setRentableProps(props);
+      if (props[0]?.id && !extraPropertyId) setExtraPropertyId(String(props[0].id));
       if (methodsRes.data?.[0]?.id) {
         setPaymentProvider(methodsRes.data[0].id as typeof paymentProvider);
       }
@@ -105,14 +111,38 @@ const Payments = () => {
 
   useEffect(() => { load(); }, []);
 
-  const nextPending = useMemo(() => payments.find((p) => p.status === 'pending') || null, [payments]);
+  const nextPending = useMemo(() => payments.find((p) => p.status === 'pending' || p.status === 'failed') || null, [payments]);
+  const selectedExtraProp = useMemo(
+    () => rentableProps.find((p) => String(p.id) === String(extraPropertyId)),
+    [rentableProps, extraPropertyId],
+  );
+  const extraTotal = (selectedExtraProp?.monthly_rent || 0) * extraMonths;
 
-  const openPayModal = () => {
+  const openPayModal = (payment?: any) => {
+    setActivePayment(payment || nextPending);
     setPayModalOpen(true);
     setPayMessage('');
     setPayResult('idle');
     setPendingPaymentId(null);
     setPhoneNumber('');
+  };
+
+  const handleCreateAdditionalMonths = async () => {
+    if (!extraPropertyId) return;
+    setCreatingExtra(true);
+    setError('');
+    try {
+      const res = await Api.createAdditionalMonthsPayment(Number(extraPropertyId), extraMonths);
+      const payment = res.data;
+      await load();
+      if (payment?.id) {
+        openPayModal(payment);
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Unable to create additional months payment.');
+    } finally {
+      setCreatingExtra(false);
+    }
   };
 
   const pollMonthly = useCallback(
@@ -139,7 +169,8 @@ const Payments = () => {
   );
 
   const handlePay = async () => {
-    if (!nextPending) return;
+    const target = activePayment || nextPending;
+    if (!target) return;
     if (!phoneNumber.trim() || phoneNumber.trim().length < 10) {
       setPayMessage('Please enter a valid phone number (at least 10 digits).');
       return;
@@ -148,11 +179,11 @@ const Payments = () => {
     setPayMessage('');
     setPayResult('idle');
     try {
-      const res = await Api.makePayment(nextPending.id, {
+      const res = await Api.makePayment(target.id, {
         phoneNumber: phoneNumber.trim(),
         provider: paymentProvider,
       });
-      const paymentId = res.data?.payment_id ?? nextPending.id;
+      const paymentId = res.data?.payment_id ?? target.id;
       setPendingPaymentId(paymentId);
       setPayResult('waiting');
       setPayMessage(res.message || `USSD prompt sent. Approve on your ${paymentProvider.toUpperCase()} phone.`);
@@ -264,7 +295,7 @@ const Payments = () => {
               Tenant Workspace
             </div>
             <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 'clamp(20px,3.5vw,28px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>Rent Payments</h1>
-            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>Current payment obligations and available payment methods.</p>
+            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>Pay upcoming months and review your rent history.</p>
           </div>
         </div>
       </div>
@@ -275,6 +306,59 @@ const Payments = () => {
         <StatCard label="Pending"     value={stats.pending_payments ?? 0}         icon={Clock} />
         <StatCard label="This Month"  value={formatCurrency(stats.this_month)}    icon={Calendar} />
       </div>
+
+      {/* ── Pay additional months ── */}
+      {rentableProps.length > 0 && (
+        <div className="pay-panel" style={{ maxWidth: '1280px', margin: '24px auto 0' }}>
+          <div className="pay-tag">Continue Lease</div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', margin: '0 0 8px', letterSpacing: '-0.01em' }}>
+            Pay additional months
+          </h2>
+          <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 18px' }}>
+            After your first month is paid, choose how many more months to cover. The property owner (landlord, commercial, agent, or Oweru) will see the payment immediately.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'end' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 8 }}>Property</label>
+              <select
+                className="pay-method-select"
+                style={{ maxWidth: '100%', width: '100%' }}
+                value={extraPropertyId}
+                onChange={(e) => setExtraPropertyId(e.target.value)}
+              >
+                {rentableProps.map((p) => (
+                  <option key={p.id} value={p.id}>{p.title}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 8 }}>Months</label>
+              <select
+                className="pay-method-select"
+                style={{ maxWidth: '100%', width: '100%' }}
+                value={extraMonths}
+                onChange={(e) => setExtraMonths(Number(e.target.value))}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={m}>{m} month{m > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 8 }}>Total</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#C89128' }}>{formatCurrency(extraTotal)}</div>
+            </div>
+            <button
+              className="pay-btn-gold"
+              disabled={creatingExtra || !extraPropertyId || extraTotal <= 0}
+              onClick={handleCreateAdditionalMonths}
+              style={{ opacity: creatingExtra || !extraPropertyId || extraTotal <= 0 ? 0.6 : 1, justifyContent: 'center' }}
+            >
+              {creatingExtra ? 'Preparing…' : 'Continue to Pay'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Payments Panel ── */}
       <div className="pay-panel" style={{ maxWidth: '1280px', margin: '24px auto 0' }}>
@@ -304,7 +388,7 @@ const Payments = () => {
                 <span style={{ fontSize: 14, fontWeight: 500, color: '#0F172A' }}>
                   Next payment due: <span style={{ color: '#C89128', fontWeight: 700 }}>{formatCurrency(nextPending.amount)}</span>
                 </span>
-                <button className="pay-btn-gold" onClick={openPayModal}>
+                <button className="pay-btn-gold" onClick={() => openPayModal(nextPending)}>
                   Pay Now
                 </button>
               </div>
@@ -349,7 +433,7 @@ const Payments = () => {
         )}
       </div>
 
-      {payModalOpen && nextPending && (
+      {payModalOpen && (activePayment || nextPending) && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
           onClick={(e) => { if (e.target === e.currentTarget && payResult !== 'waiting') closePayModal(); }}
@@ -357,7 +441,8 @@ const Payments = () => {
           <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxWidth: 440, width: '100%', padding: 28, position: 'relative' }}>
             <h3 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Pay Rent</h3>
             <p style={{ margin: '0 0 20px', fontSize: 13, color: '#64748B' }}>
-              Amount: <strong style={{ color: '#C89128' }}>{formatCurrency(nextPending.amount)}</strong>
+              {(activePayment || nextPending)?.description || 'Rent payment'} —{' '}
+              <strong style={{ color: '#C89128' }}>{formatCurrency((activePayment || nextPending)?.amount)}</strong>
             </p>
 
             {payResult !== 'success' && (

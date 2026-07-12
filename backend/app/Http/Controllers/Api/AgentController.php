@@ -16,6 +16,7 @@ use App\Models\BnbProperty;
 use App\Models\BnbBooking;
 use App\Models\BnbReview;
 use App\Models\Lead;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -671,6 +672,101 @@ class AgentController extends Controller
                 'total'        => $payouts->total(),
             ],
         ]);
+    }
+
+    public function getRentPayments(): JsonResponse
+    {
+        if (! Schema::hasTable('payments')) {
+            return $this->emptyPaginatedResponse();
+        }
+
+        $user = Auth::user();
+        $types = ['rent', 'first_month_rent', 'monthly_rent', 'rent_payment'];
+
+        $payments = Payment::with(['user', 'property'])
+            ->where(function ($q) use ($user) {
+                $q->where('agent_id', $user->id)
+                    ->orWhereHas('property', fn ($pq) => $pq->where('agent_id', $user->id));
+            })
+            ->whereIn('type', $types)
+            ->orderByRaw('COALESCE(paid_at, created_at) DESC')
+            ->paginate(20);
+
+        return response()->json([
+            'data' => collect($payments->items())->map(function (Payment $payment) {
+                $payer = $payment->user;
+                $name = trim(($payer->first_name ?? '') . ' ' . ($payer->last_name ?? ''));
+
+                return [
+                    'id' => $payment->id,
+                    'amount' => (float) $payment->amount,
+                    'status' => $payment->status === 'completed' ? 'paid' : $payment->status,
+                    'type' => $payment->type,
+                    'description' => $payment->description,
+                    'reference' => $payment->reference,
+                    'due_date' => optional($payment->due_date)?->toDateString(),
+                    'paid_at' => optional($payment->paid_at)?->toIso8601String(),
+                    'created_at' => optional($payment->created_at)?->toIso8601String(),
+                    'property' => $payment->property ? [
+                        'id' => $payment->property->id,
+                        'title' => $payment->property->title,
+                        'location' => $payment->property->location,
+                    ] : null,
+                    'tenant' => [
+                        'user' => [
+                            'first_name' => $payer->first_name ?? '',
+                            'last_name' => $payer->last_name ?? '',
+                            'email' => $payer->email ?? '',
+                        ],
+                    ],
+                    'tenant_name' => $name !== '' ? $name : ($payer->email ?? 'Tenant'),
+                ];
+            })->values(),
+            'pagination' => [
+                'current_page' => $payments->currentPage(),
+                'last_page' => $payments->lastPage(),
+                'per_page' => $payments->perPage(),
+                'total' => $payments->total(),
+            ],
+        ]);
+    }
+
+    public function getRentPaymentStats(): JsonResponse
+    {
+        if (! Schema::hasTable('payments')) {
+            return response()->json(['data' => [
+                'total_collected' => 0,
+                'this_month' => 0,
+                'pending_payments' => 0,
+                'collection_rate' => 0,
+            ]]);
+        }
+
+        $user = Auth::user();
+        $types = ['rent', 'first_month_rent', 'monthly_rent', 'rent_payment'];
+        $base = Payment::where(function ($q) use ($user) {
+            $q->where('agent_id', $user->id)
+                ->orWhereHas('property', fn ($pq) => $pq->where('agent_id', $user->id));
+        })->whereIn('type', $types);
+
+        $total = (clone $base)->count();
+        $paid = (clone $base)->whereIn('status', ['completed', 'paid'])->count();
+
+        return response()->json(['data' => [
+            'total_collected' => (float) (clone $base)->whereIn('status', ['completed', 'paid'])->sum('amount'),
+            'this_month' => (float) (clone $base)->whereIn('status', ['completed', 'paid'])
+                ->where(function ($q) {
+                    $q->whereMonth('paid_at', now()->month)->whereYear('paid_at', now()->year)
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('paid_at')
+                                ->whereMonth('created_at', now()->month)
+                                ->whereYear('created_at', now()->year);
+                        });
+                })
+                ->sum('amount'),
+            'pending_payments' => (clone $base)->whereIn('status', ['pending', 'processing'])->count(),
+            'collection_rate' => $total > 0 ? round(($paid / $total) * 100, 2) : 0,
+        ]]);
     }
 
     public function getAnalytics(): JsonResponse

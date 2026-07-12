@@ -22,6 +22,7 @@ use App\Services\SelcomPaymentService;
 use App\Services\SiteVisitPaymentService;
 use App\Services\RentPaymentService;
 use App\Services\PaymentAlertService;
+use App\Services\MonthlyRentService;
 
 class TenantController extends Controller
 {
@@ -325,6 +326,7 @@ class TenantController extends Controller
 
         $user = Auth::user();
         $this->syncTenantApplicationPayments($user);
+        app(MonthlyRentService::class)->ensureUpcomingForUser($user);
 
         $rentTypes = ['first_month_rent', 'monthly_rent', 'rent', 'rent_payment'];
 
@@ -393,6 +395,7 @@ class TenantController extends Controller
 
         $user = Auth::user();
         $this->syncTenantApplicationPayments($user);
+        app(MonthlyRentService::class)->ensureUpcomingForUser($user);
 
         $rentTypes = ['first_month_rent', 'monthly_rent', 'rent', 'rent_payment'];
 
@@ -1007,6 +1010,92 @@ class TenantController extends Controller
             'message' => $result['message'],
             'data'    => $result['data'],
         ]);
+    }
+
+    /**
+     * Create a pending payment for 1–12 additional months on an already-rented property.
+     */
+    public function createAdditionalMonthsPayment(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'property_id' => 'required|integer|exists:properties,id',
+            'months' => 'required|integer|min:1|max:12',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $result = app(MonthlyRentService::class)->createAdditionalMonthsPayment(
+            Auth::user(),
+            (int) $request->property_id,
+            (int) $request->months,
+        );
+
+        if (! ($result['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Unable to create payment',
+            ], 422);
+        }
+
+        /** @var Payment $payment */
+        $payment = $result['payment'];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment ready. Approve on your phone after you start payment.',
+            'data' => $this->formatPaymentForTenant($payment),
+        ], 201);
+    }
+
+    /**
+     * Properties the tenant can pay additional months for.
+     */
+    public function getRentableProperties(): JsonResponse
+    {
+        $user = Auth::user();
+        $this->syncTenantApplicationPayments($user);
+
+        $fromPayments = Payment::where('user_id', $user->id)
+            ->whereIn('type', ['first_month_rent', 'monthly_rent', 'rent', 'rent_payment'])
+            ->whereIn('status', ['completed', 'paid'])
+            ->pluck('property_id');
+
+        $fromApps = Application::where('user_id', $user->id)
+            ->where('rent_payment_status', 'paid')
+            ->pluck('property_id');
+
+        $ids = $fromPayments->merge($fromApps)->unique()->filter()->values();
+        $properties = Property::whereIn('id', $ids)->get(['id', 'title', 'location', 'price']);
+
+        $items = $properties->map(function (Property $property) use ($user) {
+            $last = Payment::where('user_id', $user->id)
+                ->where('property_id', $property->id)
+                ->whereIn('type', ['first_month_rent', 'monthly_rent', 'rent', 'rent_payment'])
+                ->whereIn('status', ['completed', 'paid'])
+                ->orderByRaw('COALESCE(paid_at, created_at) DESC')
+                ->first();
+
+            $monthly = (float) ($last?->metadata['rent_amount']
+                ?? (($last && (int) ($last->metadata['months'] ?? 1) > 1)
+                    ? ((float) $last->amount / max(1, (int) $last->metadata['months']))
+                    : null)
+                ?? $property->price
+                ?? 0);
+
+            return [
+                'id' => $property->id,
+                'title' => $property->title,
+                'location' => $property->location,
+                'monthly_rent' => $monthly,
+            ];
+        })->values();
+
+        return response()->json(['data' => $items]);
     }
 
     public function checkRentPaymentStatus(string $orderId): JsonResponse

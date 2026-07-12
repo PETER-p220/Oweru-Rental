@@ -188,10 +188,19 @@ class PaymentAlertService
                 'tenant_title' => 'Rent Payment Confirmed',
                 'tenant_message' => 'Your TZS ' . number_format($amount) .
                     ' rent payment for ' . ($property->title ?? 'your property') .
-                    ' was received successfully. Check Digital Contracts for next steps.',
+                    ' was received successfully. Check Rent Payments to pay additional months, and Digital Contracts for next steps.',
                 'tenant_type' => 'rent_paid',
             ],
         );
+
+        try {
+            app(MonthlyRentService::class)->scheduleAfterApplicationRent($application);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to schedule next monthly rent after first-month payment', [
+                'application_id' => $application->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -264,10 +273,19 @@ class PaymentAlertService
                 'notify_tenant' => true,
                 'tenant_title' => 'Payment Confirmed',
                 'tenant_message' => 'Your rent payment of TZS ' . number_format((float) $payment->amount) .
-                    ' was received successfully.',
+                    ' was received successfully. Your next month will appear under Rent Payments when due.',
                 'tenant_type' => 'payment_confirmed',
             ],
         );
+
+        try {
+            app(MonthlyRentService::class)->scheduleNextAfterPayment($payment);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to schedule next monthly rent after payment', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

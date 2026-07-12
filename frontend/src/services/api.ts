@@ -710,6 +710,25 @@ class Api {
     });
   }
 
+  static async getRentableProperties() {
+    return this.request<any>('tenant/rent/properties');
+  }
+
+  static async createAdditionalMonthsPayment(propertyId: number, months: number) {
+    return this.request<any>('tenant/rent/additional-months', {
+      method: 'POST',
+      body: JSON.stringify({ property_id: propertyId, months }),
+    });
+  }
+
+  static async getAgentRentPayments() {
+    return this.request<any>('agent/rent-payments');
+  }
+
+  static async getAgentRentPaymentStats() {
+    return this.request<any>('agent/rent-payment-stats');
+  }
+
   static async downloadReceipt(paymentId: number) {
     return this.request(`tenant/payments/${paymentId}/receipt`, {
       headers: { 'Accept': 'application/pdf' },

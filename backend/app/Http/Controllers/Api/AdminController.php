@@ -580,6 +580,78 @@ class AdminController extends Controller
         return response()->json(['data' => $filtered]);
     }
 
+    public function getAdminPayments(Request $request): JsonResponse
+    {
+        if (! $this->hasTables(['payments'])) {
+            return response()->json(['data' => []]);
+        }
+
+        $query = Payment::with(['user', 'property', 'agent'])->latest();
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $status = $request->status === 'paid' ? ['paid', 'completed'] : [$request->status];
+            $query->whereIn('status', $status);
+        }
+
+        if ($request->filled('type') && $request->type !== 'all') {
+            $type = $request->type;
+            if ($type === 'rent') {
+                $query->whereIn('type', ['rent', 'first_month_rent', 'monthly_rent', 'rent_payment']);
+            } else {
+                $query->where('type', $type);
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($uq) use ($search) {
+                        $uq->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('property', fn ($pq) => $pq->where('title', 'like', "%{$search}%"));
+            });
+        }
+
+        $payments = $query->limit(200)->get()->map(function (Payment $payment) {
+            $user = $payment->user;
+            $name = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''));
+
+            return [
+                'id' => $payment->id,
+                'tenant_id' => $payment->tenant_id,
+                'property_id' => $payment->property_id,
+                'amount' => (float) $payment->amount,
+                'type' => $payment->type,
+                'status' => $payment->status === 'completed' ? 'completed' : $payment->status,
+                'method' => $payment->metadata['provider'] ?? $payment->metadata['payment_method'] ?? 'mobile_money',
+                'transaction_id' => $payment->reference,
+                'due_date' => optional($payment->due_date)?->toDateString(),
+                'paid_date' => optional($payment->paid_at)?->toDateString(),
+                'created_at' => optional($payment->created_at)?->toIso8601String(),
+                'updated_at' => optional($payment->updated_at)?->toIso8601String(),
+                'tenant' => [
+                    'name' => $name !== '' ? $name : ($user->email ?? 'Tenant'),
+                    'email' => $user->email ?? '',
+                ],
+                'property' => $payment->property ? [
+                    'title' => $payment->property->title,
+                    'address' => $payment->property->location ?? $payment->property->address ?? '',
+                ] : null,
+            ];
+        })->values();
+
+        return response()->json(['data' => $payments]);
+    }
+
+    public function getAdminPaymentStats(): JsonResponse
+    {
+        return $this->getTransactionStats();
+    }
+
     public function getTransactionStats(): JsonResponse
     {
         if (! $this->hasTables(['payments'])) {

@@ -177,7 +177,9 @@ const RentCollectionPage = () => {
                       >
                         <td style={tdStyle}>
                           <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>
-                            {payment.tenant?.user?.first_name} {payment.tenant?.user?.last_name}
+                            {(payment as any).tenant_name
+                              || `${payment.tenant?.user?.first_name || ''} ${payment.tenant?.user?.last_name || ''}`.trim()
+                              || 'Tenant'}
                           </div>
                           <div style={{ color: C.textMuted, marginTop: 3, fontSize: 12 }}>
                             {payment.tenant?.user?.email || 'No email'}

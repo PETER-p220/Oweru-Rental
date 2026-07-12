@@ -101,6 +101,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Leads & Visitors', icon: Eye,           href: 'leads'         },
       { name: 'Applications',     icon: FileText,      href: 'applications'  },
       { name: 'My Commissions',   icon: DollarSign,    href: 'commissions'   },
+      { name: 'Rent Payments',    icon: Wallet,        href: 'rent-payments' },
       { name: 'Payout History',   icon: Receipt,       href: 'payouts'       },
       { name: 'Analytics',        icon: TrendingUp,    href: 'analytics'     },
       { name: 'Messages',         icon: MessageSquare, href: 'messages'      },
@@ -165,7 +166,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     agent: [
       { label: 'Listings', items: ['Overview','My Listings','Add Listing','Linked Owners'] },
       { label: 'Tracking', items: ['Share & Track','QR Codes','Leads & Visitors','Applications'] },
-      { label: 'Finance',  items: ['My Commissions','Payout History'] },
+      { label: 'Finance',  items: ['My Commissions','Rent Payments','Payout History'] },
       { label: 'Insights', items: ['Analytics','Messages'] },
     ],
     admin: [

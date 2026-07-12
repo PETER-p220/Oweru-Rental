@@ -474,6 +474,11 @@ class OwnerController extends Controller
     }
 
     // Rent Collection
+    private function rentPaymentTypes(): array
+    {
+        return ['rent', 'first_month_rent', 'monthly_rent', 'rent_payment'];
+    }
+
     public function getRentCollection(): JsonResponse
     {
         if (! $this->paymentsTableAvailable()) {
@@ -481,14 +486,14 @@ class OwnerController extends Controller
         }
 
         $user = Auth::user();
-        $payments = Payment::with(['tenant.user', 'property'])
+        $payments = Payment::with(['tenant.user', 'user', 'property'])
             ->whereHas('property', fn($q) => $q->where('owner_id', $user->id))
-            ->where('type', 'rent')
-            ->orderBy('created_at', 'desc')
+            ->whereIn('type', $this->rentPaymentTypes())
+            ->orderByRaw('COALESCE(paid_at, created_at) DESC')
             ->paginate(20);
 
         return response()->json([
-            'data' => $payments->items(),
+            'data' => collect($payments->items())->map(fn (Payment $p) => $this->formatOwnerPayment($p))->values(),
             'pagination' => [
                 'current_page' => $payments->currentPage(),
                 'last_page'    => $payments->lastPage(),
@@ -510,13 +515,22 @@ class OwnerController extends Controller
         }
 
         $user = Auth::user();
+        $base = Payment::whereHas('property', fn($q) => $q->where('owner_id', $user->id))
+            ->whereIn('type', $this->rentPaymentTypes());
+
         $stats = [
-            'total_collected'  => Payment::whereHas('property', fn($q) => $q->where('owner_id', $user->id))
-                ->where('type', 'rent')->sum('amount'),
-            'this_month'       => Payment::whereHas('property', fn($q) => $q->where('owner_id', $user->id))
-                ->where('type', 'rent')->whereMonth('created_at', now()->month)->sum('amount'),
-            'pending_payments' => Payment::whereHas('property', fn($q) => $q->where('owner_id', $user->id))
-                ->where('type', 'rent')->where('status', 'pending')->count(),
+            'total_collected'  => (clone $base)->whereIn('status', ['completed', 'paid'])->sum('amount'),
+            'this_month'       => (clone $base)->whereIn('status', ['completed', 'paid'])
+                ->where(function ($q) {
+                    $q->whereMonth('paid_at', now()->month)->whereYear('paid_at', now()->year)
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('paid_at')
+                                ->whereMonth('created_at', now()->month)
+                                ->whereYear('created_at', now()->year);
+                        });
+                })
+                ->sum('amount'),
+            'pending_payments' => (clone $base)->whereIn('status', ['pending', 'processing'])->count(),
             'collection_rate'  => $this->calculateCollectionRate($user),
         ];
 
@@ -1003,11 +1017,44 @@ class OwnerController extends Controller
         if (! $this->paymentsTableAvailable()) return 0;
 
         $total = Payment::whereHas('property', fn($q) => $q->where('owner_id', $user->id))
-            ->where('type', 'rent')->count();
+            ->whereIn('type', $this->rentPaymentTypes())->count();
         $paid = Payment::whereHas('property', fn($q) => $q->where('owner_id', $user->id))
-            ->where('type', 'rent')->where('status', 'completed')->count();
+            ->whereIn('type', $this->rentPaymentTypes())
+            ->whereIn('status', ['completed', 'paid'])->count();
 
         return $total > 0 ? round(($paid / $total) * 100, 2) : 0;
+    }
+
+    private function formatOwnerPayment(Payment $payment): array
+    {
+        $payer = $payment->tenant?->user ?? $payment->user;
+        $name = trim(($payer->first_name ?? '') . ' ' . ($payer->last_name ?? ''));
+        $status = $payment->status === 'completed' ? 'paid' : $payment->status;
+
+        return [
+            'id' => $payment->id,
+            'amount' => (float) $payment->amount,
+            'status' => $status,
+            'type' => $payment->type,
+            'description' => $payment->description,
+            'reference' => $payment->reference,
+            'due_date' => optional($payment->due_date)?->toDateString(),
+            'paid_at' => optional($payment->paid_at)?->toIso8601String(),
+            'created_at' => optional($payment->created_at)?->toIso8601String(),
+            'property' => $payment->property ? [
+                'id' => $payment->property->id,
+                'title' => $payment->property->title,
+                'location' => $payment->property->location,
+            ] : null,
+            'tenant' => [
+                'user' => [
+                    'first_name' => $payer->first_name ?? '',
+                    'last_name' => $payer->last_name ?? '',
+                    'email' => $payer->email ?? '',
+                ],
+            ],
+            'tenant_name' => $name !== '' ? $name : ($payer->email ?? 'Tenant'),
+        ];
     }
 
     private function emptyPaginatedResponse(): JsonResponse
