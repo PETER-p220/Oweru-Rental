@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class BnbBooking extends Model
 {
@@ -51,7 +52,7 @@ class BnbBooking extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
-    public function review(): BelongsTo
+    public function review(): HasOne
     {
         return $this->hasOne(BnbReview::class, 'booking_id');
     }

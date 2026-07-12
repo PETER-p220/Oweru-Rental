@@ -88,9 +88,23 @@ const AgentRentPayments = () => {
 
   return (
     <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .agent-pay-desktop { display: block; }
+        .agent-pay-mobile { display: none; }
+        .agent-pay-card {
+          background: ${C.cardBg}; border: 1px solid ${C.border}; border-radius: 12px;
+          padding: 14px; margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+          .agent-pay-desktop { display: none; }
+          .agent-pay-mobile { display: block; }
+          .agent-pay-header { padding: 20px 16px 22px !important; }
+          .agent-pay-body { padding: 16px 14px !important; }
+        }
+      `}</style>
 
-      <div style={{ background: C.headerBg, padding: '24px 24px 28px' }}>
+      <div className="agent-pay-header" style={{ background: C.headerBg, padding: '24px 24px 28px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             <div>
@@ -104,7 +118,7 @@ const AgentRentPayments = () => {
                 First-month and monthly rent on your linked listings
               </p>
             </div>
-            <button onClick={() => loadData(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={() => loadData(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', minHeight: 44, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
               <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
               Refresh
             </button>
@@ -124,7 +138,7 @@ const AgentRentPayments = () => {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
+      <div className="agent-pay-body" style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
         {error && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: C.redBg, border: '1px solid rgba(220,38,38,0.22)', borderRadius: 10, padding: '13px 16px', marginBottom: 18, color: C.red, fontSize: 13 }}>
             <AlertCircle size={15} /> {error}
@@ -136,76 +150,101 @@ const AgentRentPayments = () => {
             <div style={{ width: 36, height: 36, border: `3px solid ${C.border}`, borderTop: `3px solid ${C.slate800}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
           </div>
         ) : payments.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '64px 24px', background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 14 }}>
+          <div style={{ textAlign: 'center', padding: '48px 20px', background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 14 }}>
             <Wallet size={26} style={{ color: C.textMuted, marginBottom: 14 }} />
             <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>No rent payments yet</div>
             <div style={{ fontSize: 13, color: C.textMuted }}>When tenants pay first-month or additional months on your listings, records appear here.</div>
           </div>
         ) : (
-          <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ ...tableStyle, minWidth: 720 }}>
-                <thead>
-                  <tr>
-                    {['Tenant', 'Property', 'Type', 'Amount', 'Due', 'Status'].map((h) => (
-                      <th key={h} style={thStyle}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((payment) => {
-                    const sc = getStatusColor(payment.status);
-                    const tenantName = payment.tenant_name
-                      || `${payment.tenant?.user?.first_name || ''} ${payment.tenant?.user?.last_name || ''}`.trim()
-                      || 'Tenant';
-                    return (
-                      <tr key={payment.id}>
-                        <td style={tdStyle}>
-                          <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{tenantName}</div>
-                          <div style={{ color: C.textMuted, marginTop: 3, fontSize: 12 }}>{payment.tenant?.user?.email || '—'}</div>
-                        </td>
-                        <td style={tdStyle}>
-                          <div style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{payment.property?.title || 'Property'}</div>
-                          {payment.property?.location && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                              <MapPin size={10} style={{ color: C.textMuted }} />
-                              <span style={{ color: C.textMuted, fontSize: 11 }}>{payment.property.location}</span>
-                            </div>
-                          )}
-                        </td>
-                        <td style={tdStyle}>
-                          <span style={{ fontSize: 12, color: C.slate500, textTransform: 'capitalize' }}>
-                            {(payment.type || 'rent').replace(/_/g, ' ')}
-                          </span>
-                        </td>
-                        <td style={tdStyle}>
-                          <span style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{formatCurrency(payment.amount)}</span>
-                        </td>
-                        <td style={tdStyle}>
-                          <span style={{ fontSize: 12, color: C.textMuted }}>{formatDate(payment.due_date || payment.created_at)}</span>
-                        </td>
-                        <td style={tdStyle}>
-                          <span style={{
-                            display: 'inline-flex',
-                            padding: '3px 10px',
-                            borderRadius: 999,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            background: `${sc}18`,
-                            border: `1px solid ${sc}35`,
-                            color: sc,
-                          }}>
-                            {payment.status}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          <>
+            <div className="agent-pay-desktop" style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ ...tableStyle, minWidth: 720 }}>
+                  <thead>
+                    <tr>
+                      {['Tenant', 'Property', 'Type', 'Amount', 'Due', 'Status'].map((h) => (
+                        <th key={h} style={thStyle}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((payment) => {
+                      const sc = getStatusColor(payment.status);
+                      const tenantName = payment.tenant_name
+                        || `${payment.tenant?.user?.first_name || ''} ${payment.tenant?.user?.last_name || ''}`.trim()
+                        || 'Tenant';
+                      return (
+                        <tr key={payment.id}>
+                          <td style={tdStyle}>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{tenantName}</div>
+                            <div style={{ color: C.textMuted, marginTop: 3, fontSize: 12 }}>{payment.tenant?.user?.email || '—'}</div>
+                          </td>
+                          <td style={tdStyle}>
+                            <div style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>{payment.property?.title || 'Property'}</div>
+                            {payment.property?.location && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                                <MapPin size={10} style={{ color: C.textMuted }} />
+                                <span style={{ color: C.textMuted, fontSize: 11 }}>{payment.property.location}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td style={tdStyle}>
+                            <span style={{ fontSize: 12, color: C.slate500, textTransform: 'capitalize' }}>
+                              {(payment.type || 'rent').replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td style={tdStyle}>
+                            <span style={{ fontWeight: 700, color: '#C89128', fontSize: 13 }}>{formatCurrency(payment.amount)}</span>
+                          </td>
+                          <td style={tdStyle}>
+                            <span style={{ fontSize: 12, color: C.textMuted }}>{formatDate(payment.due_date || payment.created_at)}</span>
+                          </td>
+                          <td style={tdStyle}>
+                            <span style={{
+                              display: 'inline-flex',
+                              padding: '3px 10px',
+                              borderRadius: 999,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              background: `${sc}18`,
+                              border: `1px solid ${sc}35`,
+                              color: sc,
+                            }}>
+                              {payment.status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            <div className="agent-pay-mobile">
+              {payments.map((payment) => {
+                const sc = getStatusColor(payment.status);
+                const tenantName = payment.tenant_name
+                  || `${payment.tenant?.user?.first_name || ''} ${payment.tenant?.user?.last_name || ''}`.trim()
+                  || 'Tenant';
+                return (
+                  <div key={payment.id} className="agent-pay-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{tenantName}</div>
+                      <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: 999, background: `${sc}18`, color: sc }}>{payment.status}</span>
+                    </div>
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, marginBottom: 4 }}>{payment.property?.title || 'Property'}</div>
+                    <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8, textTransform: 'capitalize' }}>{(payment.type || 'rent').replace(/_/g, ' ')}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 800, color: '#C89128', fontSize: 16 }}>{formatCurrency(payment.amount)}</span>
+                      <span style={{ fontSize: 12, color: C.textMuted }}>{formatDate(payment.due_date || payment.created_at)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>

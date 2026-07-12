@@ -515,10 +515,42 @@ class Api {
     });
   }
 
-  static async submitBnbReview(propertyId: number, data: any) {
-    return this.request<any>(`public/bnb/properties/${propertyId}/reviews`, {
+  static async getMyBnbBookings(filters?: { status?: string }) {
+    const params = new URLSearchParams(filters as any).toString();
+    return this.request<any>(`my/bnb/bookings${params ? `?${params}` : ''}`);
+  }
+
+  static async cancelMyBnbBooking(bookingId: number, reason?: string) {
+    return this.request<any>(`my/bnb/bookings/${bookingId}/cancel`, {
+      method: 'PATCH',
+      body: JSON.stringify({ cancellation_reason: reason || 'Cancelled by guest' }),
+    });
+  }
+
+  static async submitMyBnbReview(data: {
+    property_id: number;
+    booking_id: number;
+    rating: number;
+    comment: string;
+    private_feedback?: string;
+  }) {
+    return this.request<any>('my/bnb/reviews', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  static async submitBnbReview(propertyId: number, data: any) {
+    return this.request<any>('my/bnb/reviews', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, property_id: propertyId }),
+    });
+  }
+
+  static async respondToBnbReview(reviewId: number, response: string) {
+    return this.request<any>(`bnb/reviews/${reviewId}/respond`, {
+      method: 'POST',
+      body: JSON.stringify({ response }),
     });
   }
 

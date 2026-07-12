@@ -44,6 +44,24 @@ const MyListings = () => {
       minHeight: '100vh', 
       padding: '0' 
     }}>
+      {/* Responsive helpers */}
+      <style>{`
+        .ml-stat-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+        @media (max-width: 700px) {
+          .ml-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        }
+        .ml-desktop-table { display: block; }
+        .ml-mobile-cards { display: none; }
+        @media (max-width: 768px) {
+          .ml-desktop-table { display: none !important; }
+          .ml-mobile-cards { display: block !important; }
+        }
+      `}</style>
+
       {/* Header */}
       <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
         <div style={{ 
@@ -96,34 +114,30 @@ const MyListings = () => {
       </div>
 
       {/* Stats */}
-      <div style={{ 
-        maxWidth: '1280px', 
-        margin: '24px auto 0', 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-        gap: 16 
-      }}>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#38bdf8' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Total</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {listings.length}
+      <div style={{ maxWidth: '1280px', margin: '24px auto 0', padding: '0 20px' }}>
+        <div className="ml-stat-grid">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#38bdf8' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Total</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {listings.length}
+            </div>
           </div>
-        </div>
 
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#22c55e' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Available</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {listings.filter((item) => item.available).length}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#22c55e' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Available</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {listings.filter((item) => item.available).length}
+            </div>
           </div>
-        </div>
 
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#f59e0b' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>With Owners</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {listings.filter((item) => item.owner).length}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#f59e0b' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>With Owners</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {listings.filter((item) => item.owner).length}
+            </div>
           </div>
         </div>
       </div>
@@ -131,7 +145,7 @@ const MyListings = () => {
       {/* Main Content */}
       <div style={{ 
         maxWidth: '1280px', 
-        margin: '24px auto 0', 
+        margin: '24px auto 40px', 
         background: '#FFFFFF', 
         border: '1px solid #E2E8F0', 
         borderRadius: '12px', 
@@ -187,7 +201,8 @@ const MyListings = () => {
             </div>
           )}
 
-          <div style={{ overflowX: 'auto' }}>
+          {/* Desktop table */}
+          <div className="ml-desktop-table" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
@@ -228,6 +243,48 @@ const MyListings = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="ml-mobile-cards">
+            {loading ? (
+              <div style={{ padding: '32px 0', textAlign: 'center', color: '#64748B' }}>Loading listings...</div>
+            ) : filtered.length === 0 ? (
+              <div style={{ padding: '32px 0', textAlign: 'center', color: '#64748B' }}>No listings found.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {filtered.map((item) => (
+                  <div key={item.id} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '14px', color: '#0F172A' }}>{item.title}</div>
+                        <div style={{ color: '#94A3B8', marginTop: '2px', fontSize: '12px' }}>{item.location}</div>
+                      </div>
+                      <span style={{
+                        color: item.available ? '#16a34a' : '#dc2626',
+                        fontWeight: 600,
+                        fontSize: '11px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {item.available ? 'Available' : 'Occupied'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, color: '#94A3B8', marginBottom: '4px' }}>Owner</div>
+                        <div style={{ fontSize: '13px', color: '#0F172A' }}>{item.owner?.first_name} {item.owner?.last_name}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, color: '#94A3B8', marginBottom: '4px' }}>Price</div>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>{formatCurrency(item.price)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

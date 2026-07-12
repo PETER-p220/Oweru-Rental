@@ -267,22 +267,29 @@ const Payments = () => {
         .pay-method-select:focus { border-color: #94A3B8; }
 
         .pay-btn-primary {
-          display: inline-flex; align-items: center; gap: 6px;
-          background: #0F172A; color: #FFFFFF;
-          padding: 10px 20px;
+          display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+          background: #C89128; color: #0F172A;
+          padding: 12px 20px; min-height: 44px;
           border-radius: 8px;
-          font-family: 'Inter', sans-serif;
+          font-family: 'DM Sans', sans-serif;
           font-size: 12px; font-weight: 700;
           letter-spacing: 0.08em; text-transform: uppercase;
           border: none; cursor: pointer;
           transition: background 0.2s;
         }
-        .pay-btn-primary:hover { background: #1E293B; }
+        .pay-btn-primary:hover { background: #D4A84B; }
 
         .pay-empty {
           text-align: center;
           padding: 60px 24px;
           color: #64748B;
+        }
+
+        .pay-desktop-table { display: block; }
+        .pay-mobile-cards { display: none; }
+        .pay-m-card {
+          background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
+          padding: 14px; margin-bottom: 10px;
         }
 
         @media (max-width: 900px) {
@@ -291,25 +298,24 @@ const Payments = () => {
           .pay-panel { margin-left: 24px; margin-right: 24px; width: auto; }
         }
 
+        @media (max-width: 768px) {
+          .pay-desktop-table { display: none; }
+          .pay-mobile-cards { display: block; }
+          .extra-months-grid { grid-template-columns: 1fr !important; }
+        }
+
         @media (max-width: 640px) {
           .pay-header-inner { padding: 22px 16px 18px; }
           .pay-heading { font-size: 21px; }
           .pay-tagline { font-size: 12.5px; }
 
-          /* Force a single, compact row of stat cards on mobile */
           .stats-row { padding: 16px 12px 0; gap: 8px; }
-          .stat-card { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 10px; border-radius: 10px; }
-          .stat-card-icon { width: 26px; height: 26px; border-radius: 7px; }
-          .stat-card-icon svg { width: 13px; height: 13px; }
-          .stat-card-label { font-size: 8.5px; letter-spacing: 0.06em; margin-bottom: 2px; }
-          .stat-card-value { font-size: 15px; }
+          .stat-card { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 12px; border-radius: 10px; }
+          .stat-card-icon { width: 32px; height: 32px; border-radius: 8px; }
+          .stat-card-label { font-size: 10px; letter-spacing: 0.06em; margin-bottom: 2px; }
+          .stat-card-value { font-size: 16px; }
 
-          .pay-panel { margin-left: 12px; margin-right: 12px; padding: 18px; border-radius: 12px; }
-        }
-
-        @media (max-width: 380px) {
-          .stat-card-value { font-size: 13px; }
-          .stat-card-label { font-size: 8px; }
+          .pay-panel { margin-left: 12px; margin-right: 12px; padding: 16px; border-radius: 12px; }
         }
       `}</style>
 
@@ -341,7 +347,7 @@ const Payments = () => {
           <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 18px' }}>
             After your first month is paid, choose how many more months to cover. The property owner (landlord, commercial, agent, or Oweru) will see the payment immediately.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'end' }}>
+          <div className="extra-months-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'end' }}>
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 8 }}>Property</label>
               <select
@@ -370,7 +376,7 @@ const Payments = () => {
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 8 }}>Total</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#0F172A' }}>{formatCurrency(extraTotal)}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#C89128' }}>{formatCurrency(extraTotal)}</div>
             </div>
             <button
               className="pay-btn-primary"
@@ -424,33 +430,50 @@ const Payments = () => {
                 <div style={{ fontSize: 13, fontWeight: 400 }}>Site visit fees, first-month rent, and monthly rent will appear here after you pay.</div>
               </div>
             ) : (
-              <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: 10 }}>
-                <table className="pay-table">
-                  <thead>
-                    <tr>
-                      {['Description', 'Amount', 'Due Date', 'Property', 'Status'].map(h => <th key={h}>{h}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payments.map((item) => (
-                      <tr key={item.id}>
-                        <td>
-                          <div style={{ fontWeight: 500 }}>{item.description || item.type || 'Payment'}</div>
-                          {item.reference && (
-                            <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 3, fontFamily: 'ui-monospace, monospace' }}>
-                              {item.reference}
-                            </div>
-                          )}
-                        </td>
-                        <td><div style={{ fontWeight: 700, color: '#0F172A' }}>{formatCurrency(item.amount)}</div></td>
-                        <td><div style={{ fontSize: 13, fontWeight: 400, color: '#64748B' }}>{formatDate(item.paid_at || item.due_date || item.created_at)}</div></td>
-                        <td><div style={{ fontSize: 13, color: '#64748B' }}>{item.property?.title || '—'}</div></td>
-                        <td><StatusBadge status={item.status || 'unknown'} /></td>
+              <>
+                <div className="pay-desktop-table" style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: 10 }}>
+                  <table className="pay-table">
+                    <thead>
+                      <tr>
+                        {['Description', 'Amount', 'Due Date', 'Property', 'Status'].map(h => <th key={h}>{h}</th>)}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {payments.map((item) => (
+                        <tr key={item.id}>
+                          <td>
+                            <div style={{ fontWeight: 500 }}>{item.description || item.type || 'Payment'}</div>
+                            {item.reference && (
+                              <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 3, fontFamily: 'ui-monospace, monospace' }}>
+                                {item.reference}
+                              </div>
+                            )}
+                          </td>
+                          <td><div style={{ fontWeight: 700, color: '#C89128' }}>{formatCurrency(item.amount)}</div></td>
+                          <td><div style={{ fontSize: 13, fontWeight: 400, color: '#64748B' }}>{formatDate(item.paid_at || item.due_date || item.created_at)}</div></td>
+                          <td><div style={{ fontSize: 13, color: '#64748B' }}>{item.property?.title || '—'}</div></td>
+                          <td><StatusBadge status={item.status || 'unknown'} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="pay-mobile-cards">
+                  {payments.map((item) => (
+                    <div key={item.id} className="pay-m-card">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 8, alignItems: 'flex-start' }}>
+                        <div style={{ fontWeight: 700, color: '#0F172A', fontSize: 14, minWidth: 0 }}>{item.description || item.type || 'Payment'}</div>
+                        <StatusBadge status={item.status || 'unknown'} />
+                      </div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#C89128', marginBottom: 8 }}>{formatCurrency(item.amount)}</div>
+                      <div style={{ fontSize: 12, color: '#64748B', marginBottom: 4 }}>{item.property?.title || '—'}</div>
+                      <div style={{ fontSize: 12, color: '#94A3B8' }}>{formatDate(item.paid_at || item.due_date || item.created_at)}</div>
+                      {item.reference && <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 6, fontFamily: 'ui-monospace, monospace' }}>{item.reference}</div>}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </>
         )}

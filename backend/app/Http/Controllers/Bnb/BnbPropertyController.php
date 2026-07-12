@@ -157,27 +157,92 @@ class BnbPropertyController extends Controller
     }
 
     /**
-     * Display the specified BNB property.
+     * Owner view of a BNB property.
      */
-    public function show(BnbProperty $bnbProperty): JsonResponse
+    public function show(BnbProperty $property): JsonResponse
     {
-        if ($bnbProperty->owner_id !== Auth::id()) {
+        if ($property->owner_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $property = $bnbProperty->load(['owner', 'bookings', 'reviews']);
+        return response()->json([
+            'data' => $property->load(['owner', 'bookings', 'reviews.guest']),
+        ]);
+    }
+
+    /**
+     * Public property detail for customers (no auth).
+     */
+    public function publicShow(BnbProperty $property): JsonResponse
+    {
+        if (($property->status ?? '') === 'maintenance') {
+            return response()->json(['message' => 'Property is temporarily unavailable'], 404);
+        }
+
+        $reviews = $property->reviews()
+            ->with('guest:id,first_name,last_name')
+            ->whereNotNull('comment')
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get()
+            ->map(function ($review) {
+                $guest = $review->guest;
+                $name = $guest
+                    ? (trim(($guest->first_name ?? '') . ' ' . ($guest->last_name ?? '')) ?: 'Guest')
+                    : 'Guest';
+
+                return [
+                    'id' => $review->id,
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                    'response' => $review->response,
+                    'guest_name' => $name,
+                    'created_at' => optional($review->created_at)?->toDateString(),
+                    'verified' => (bool) $review->verified,
+                ];
+            });
+
+        $avg = round((float) $property->reviews()->avg('rating'), 1);
+        $count = (int) $property->reviews()->count();
 
         return response()->json([
-            'data' => $property,
+            'data' => [
+                'id' => $property->id,
+                'title' => $property->title,
+                'description' => $property->description,
+                'price' => (float) $property->price,
+                'location' => $property->location,
+                'address' => $property->address,
+                'type' => $property->type,
+                'bedrooms' => $property->bedrooms,
+                'bathrooms' => $property->bathrooms,
+                'max_guests' => $property->max_guests,
+                'min_stay' => $property->min_stay,
+                'instant_book' => (bool) $property->instant_book,
+                'cancellation_policy' => $property->cancellation_policy,
+                'house_rules' => $property->house_rules,
+                'check_in_time' => $property->check_in_time,
+                'check_out_time' => $property->check_out_time,
+                'cleaning_fee' => (float) ($property->cleaning_fee ?? 0),
+                'service_fee' => (float) ($property->service_fee ?? 0),
+                'amenities' => $property->amenities,
+                'amenities_bnb' => $property->amenities_bnb,
+                'images' => $property->images ?? [],
+                'main_image' => $property->main_image,
+                'status' => $property->status,
+                'rating_avg' => $avg,
+                'rating_count' => $count,
+                'reviews' => $reviews,
+            ],
         ]);
     }
 
     /**
      * Update the specified BNB property.
      */
-    public function update(Request $request, BnbProperty $bnbProperty): JsonResponse
+    public function update(Request $request, BnbProperty $property): JsonResponse
     {
-        if ($bnbProperty->owner_id !== Auth::id()) {
+        if ($property->owner_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -220,31 +285,30 @@ class BnbPropertyController extends Controller
             ], 422);
         }
 
-        $bnbProperty->update($request->all());
+        $property->update($request->all());
 
         return response()->json([
             'message' => 'Property updated successfully',
-            'data' => $bnbProperty->load('owner'),
+            'data' => $property->load('owner'),
         ]);
     }
 
     /**
      * Remove the specified BNB property.
      */
-    public function destroy(BnbProperty $bnbProperty): JsonResponse
+    public function destroy(BnbProperty $property): JsonResponse
     {
-        if ($bnbProperty->owner_id !== Auth::id()) {
+        if ($property->owner_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Check if property has active bookings
-        if ($bnbProperty->bookings()->where('status', 'confirmed')->exists()) {
+        if ($property->bookings()->where('status', 'confirmed')->exists()) {
             return response()->json([
                 'message' => 'Cannot delete property with active bookings',
             ], 422);
         }
 
-        $bnbProperty->delete();
+        $property->delete();
 
         return response()->json([
             'message' => 'Property deleted successfully',

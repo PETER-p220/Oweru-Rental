@@ -45,10 +45,10 @@ Route::post('/public/properties/{property}/leads', [AgentController::class, 'cre
 
 // Public BNB routes — MUST be outside auth middleware
 Route::get('/public/bnb/search',                          [BnbPropertyController::class, 'search']);
-Route::get('/public/bnb/properties/{property}',           [BnbPropertyController::class, 'show']);
+Route::get('/public/bnb/properties/{property}',           [BnbPropertyController::class, 'publicShow']);
+Route::get('/public/bnb/properties/{property}/reviews',   [BnbReviewController::class, 'propertyReviews']);
 Route::post('/public/bnb/bookings',                       [BnbBookingController::class, 'store']);
 Route::post('/public/bnb/book',                           [BnbBookingController::class, 'store']);
-Route::post('/public/bnb/properties/{property}/reviews',  [BnbReviewController::class, 'store']);
 
 // Debug route — REMOVE IN PRODUCTION
 Route::get('/debug/properties', [PropertyController::class, 'debugProperties']);
@@ -67,6 +67,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ── Dashboard ────────────────────────────────────────────────────────────
     Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    // ── Guest BNB stays (any logged-in user: tenant or normal account) ───────
+    Route::get('/my/bnb/bookings',                      [BnbBookingController::class, 'myBookings']);
+    Route::get('/my/bnb/bookings/{booking}',             [BnbBookingController::class, 'show']);
+    Route::patch('/my/bnb/bookings/{booking}/cancel',    [BnbBookingController::class, 'cancelMine']);
+    Route::get('/my/bnb/reviews',                       [BnbReviewController::class, 'myReviews']);
+    Route::post('/my/bnb/reviews',                      [BnbReviewController::class, 'store']);
 
     // ── Messaging (all authenticated users) ──────────────────────────────────
     Route::prefix('messages')->group(function () {

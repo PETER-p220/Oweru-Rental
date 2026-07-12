@@ -10,14 +10,14 @@ import Api from '../../services/api';
 
 /* ─── TOKENS ─────────────────────────────────────────── */
 const t = {
-  gold:   '#c9a84c',
-  goldLt: '#e8c97a',
+  gold:   '#C89128',
+  goldLt: '#D4A843',
   dark:   '#080808',
   dark2:  '#0e0e0e',
   dark3:  '#141414',
   cream:  '#e8e4dc',
   muted:  '#7a7060',
-  border: 'rgba(201,168,76,0.12)',
+  border: 'rgba(200,145,40,0.12)',
   green:  '#10b981',
   red:    '#ef4444',
   blue:   '#38bdf8',
@@ -32,7 +32,7 @@ const btn: React.CSSProperties    = { ...body, display: 'flex', alignItems: 'cen
 const BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace('/api', '');
 
 /* ─── IMAGE UTILITIES ───────────────────────────────── */
-const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Crect width='600' height='400' fill='%23141414'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='DM Sans' font-size='18' fill='%23c9a84c'%3ENo Image%3C/text%3E%3C/svg%3E`;
+const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Crect width='600' height='400' fill='%23141414'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='DM Sans' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
 function resolveUrl(path: string): string {
   if (!path?.trim()) return PLACEHOLDER;
@@ -296,7 +296,7 @@ export default function BnbProperties() {
       </div>
 
       {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 22 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: 22 }}>
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
         ) : properties.length === 0 ? (
@@ -455,7 +455,7 @@ function DetailModal({ property: p, onClose }: { property: any; onClose: () => v
           )}
 
           {/* Info grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: 16, marginBottom: 20 }}>
             {[
               { label: 'Price', value: `${fmt(p.price)}/night` },
               { label: 'Status', value: <span style={{ color: statusColor(p.status), display: 'flex', alignItems: 'center', gap: 5 }}><StatusIcon s={p.status}/>{p.status}</span> },
@@ -644,7 +644,7 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
             <div style={{ color: t.muted, fontSize: 11, marginTop: 2 }}>JPG, PNG, GIF — max 5MB each</div>
           </label>
           {previews.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 8, marginTop: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 72px), 1fr))', gap: 8, marginTop: 10 }}>
               {previews.map((src, i) => (
                 <div key={i} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', height: 70 }}>
                   <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>

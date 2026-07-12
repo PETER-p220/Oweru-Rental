@@ -36,31 +36,7 @@ const BnbReviews = () => {
       setReviews(response.data || []);
     } catch (error) {
       console.error('Failed to load reviews:', error);
-      // Fallback to mock data if API fails
-      const mockReviews: Review[] = [
-        {
-          id: 1,
-          property_id: 1,
-          property_title: 'Luxury Beach Villa',
-          guest_name: 'John Doe',
-          rating: 5,
-          comment: 'Amazing place! Beautiful views and excellent service.',
-          created_at: '2026-03-15',
-          booking_id: 1,
-        },
-        {
-          id: 2,
-          property_id: 2,
-          property_title: 'City Center Apartment',
-          guest_name: 'Jane Smith',
-          rating: 4,
-          comment: 'Great location, very clean and comfortable.',
-          response: 'Thank you for your feedback! We appreciate your stay.',
-          created_at: '2026-03-14',
-          booking_id: 2,
-        },
-      ];
-      setReviews(mockReviews);
+      setReviews([]);
     } finally {
       setLoading(false);
     }
@@ -73,8 +49,8 @@ const BnbReviews = () => {
           <Star
             key={star}
             size={14}
-            fill={star <= rating ? '#f59e0b' : 'none'}
-            color={star <= rating ? '#f59e0b' : '#4b5563'}
+            fill={star <= rating ? '#C89128' : 'none'}
+            color={star <= rating ? '#C89128' : '#4b5563'}
           />
         ))}
       </div>
@@ -117,37 +93,47 @@ const BnbReviews = () => {
           flex-wrap: wrap;
         }
         .search-input {
-          padding: 10px 14px;
+          padding: 12px 14px;
           border: 1px solid rgba(255,255,255,0.1);
           border-radius: 8px;
           background: rgba(255,255,255,0.05);
           color: #e8e4dc;
           font-size: 14px;
-          min-width: 250px;
+          min-width: 0;
+          width: min(100%, 280px);
+          flex: 1 1 200px;
+          min-height: 44px;
         }
         .rating-select {
-          padding: 10px 14px;
+          padding: 12px 14px;
           border: 1px solid rgba(255,255,255,0.1);
           border-radius: 8px;
           background: rgba(255,255,255,0.05);
           color: #e8e4dc;
           font-size: 14px;
+          min-height: 44px;
         }
         .reviews-grid {
           display: grid;
           gap: 16px;
-          grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
         }
         .review-card {
           background: rgba(255,255,255,0.05);
           border: 1px solid rgba(255,255,255,0.1);
           border-radius: 12px;
-          padding: 20px;
+          padding: 16px;
           transition: all 0.2s ease;
+          color: #e8e4dc;
         }
         .review-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(37,99,235,0.15);
+          box-shadow: 0 4px 12px rgba(200,145,40,0.12);
+          border-color: rgba(200,145,40,0.25);
+        }
+        @media (max-width: 640px) {
+          .reviews-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+          .reviews-title { font-size: 20px; }
         }
         .review-header {
           display: flex;
@@ -255,7 +241,17 @@ const BnbReviews = () => {
                 <span>{formatDate(review.created_at)}</span>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const response = prompt('Write your reply (min 10 characters):');
+                      if (!response || response.trim().length < 10) return;
+                      try {
+                        await Api.respondToBnbReview(review.id, response.trim());
+                        await loadReviews();
+                      } catch (err: any) {
+                        alert(err?.response?.data?.message || 'Could not send reply');
+                      }
+                    }}
                     style={{
                       background: 'none',
                       border: 'none',

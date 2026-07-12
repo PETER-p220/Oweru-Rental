@@ -117,6 +117,11 @@ const Payments: React.FC = () => {
           .stats-grid { grid-template-columns: 1fr 1fr !important; }
           .filter-grid { grid-template-columns: 1fr !important; }
           .hide-sm { display: none !important; }
+          .pay-row { align-items: flex-start; padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
+          .pay-row > div:last-child { margin-left: auto; }
+        }
+        @media (max-width: 400px) {
+          .stats-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
 

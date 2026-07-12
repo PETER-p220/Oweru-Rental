@@ -133,6 +133,8 @@ const Notifications: React.FC = () => {
         .n-row:hover { background: rgba(212,175,55,0.025); }
         @media (max-width: 640px) {
           .stats-row { flex-direction: column; align-items: stretch !important; }
+          .n-row { padding: 14px 16px; }
+          .n-actions { flex-wrap: wrap; }
         }
       `}</style>
 
@@ -143,16 +145,16 @@ const Notifications: React.FC = () => {
             <h1 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 4 }}>Notifications</h1>
             <p style={{ color: '#4A5568', fontSize: 13 }}>Applications, payments, contracts, and other updates for your commercial account</p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
               onClick={load}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: '#94A3B8', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 14px', minHeight: 44, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: '#94A3B8', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
               <RefreshCw size={14} /> Refresh
             </button>
             <button
               onClick={markAllRead}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.18)', borderRadius: 12, color: '#D4AF37', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 14px', minHeight: 44, background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.18)', borderRadius: 12, color: '#D4AF37', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
             >
               <CheckCheck size={14} /> Mark all read
             </button>

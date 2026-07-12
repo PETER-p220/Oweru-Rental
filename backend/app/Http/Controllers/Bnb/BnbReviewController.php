@@ -15,14 +15,15 @@ use Illuminate\Support\Facades\Validator;
 class BnbReviewController extends Controller
 {
     /**
-     * Display a listing of the BNB reviews.
+     * Display a listing of the BNB reviews (owner sees reviews on their properties).
      */
     public function index(Request $request): JsonResponse
     {
-        $query = BnbReview::with(['property', 'guest', 'booking'])
-            ->where('guest_id', Auth::id());
+        $user = Auth::user();
 
-        // Apply filters
+        $query = BnbReview::with(['property', 'guest', 'booking'])
+            ->whereHas('property', fn ($q) => $q->where('owner_id', $user->id));
+
         if ($request->property_id) {
             $query->where('property_id', $request->property_id);
         }
@@ -31,19 +32,49 @@ class BnbReviewController extends Controller
             $query->where('rating', $request->rating);
         }
 
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('comment', 'like', "%{$search}%")
+                    ->orWhereHas('guest', function ($gq) use ($search) {
+                        $gq->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('property', fn ($pq) => $pq->where('title', 'like', "%{$search}%"));
+            });
+        }
+
         if ($request->verified) {
             $query->where('verified', true);
         }
 
-        // Apply sorting
         $sortBy = $request->sort_by ?? 'created_at';
         $sortOrder = $request->sort_order ?? 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
-        $reviews = $query->paginate($request->per_page ?? 10);
+        $reviews = $query->paginate($request->per_page ?? 20);
 
         return response()->json([
-            'data' => $reviews->items(),
+            'data' => collect($reviews->items())->map(function (BnbReview $review) {
+                $guest = $review->guest;
+                $name = $guest
+                    ? (trim(($guest->first_name ?? '') . ' ' . ($guest->last_name ?? '')) ?: $guest->email)
+                    : 'Guest';
+
+                return [
+                    'id' => $review->id,
+                    'property_id' => $review->property_id,
+                    'property_title' => $review->property->title ?? 'Property',
+                    'guest_name' => $name,
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                    'response' => $review->response,
+                    'created_at' => optional($review->created_at)?->toDateString(),
+                    'booking_id' => $review->booking_id,
+                    'verified' => (bool) $review->verified,
+                ];
+            })->values(),
             'meta' => [
                 'current_page' => $reviews->currentPage(),
                 'last_page' => $reviews->lastPage(),
@@ -54,10 +85,14 @@ class BnbReviewController extends Controller
     }
 
     /**
-     * Store a newly created BNB review.
+     * Guest submits a review for a completed stay (auth required).
      */
     public function store(Request $request): JsonResponse
     {
+        if (! Auth::id()) {
+            return response()->json(['message' => 'Please log in to leave a review.'], 401);
+        }
+
         $validator = Validator::make($request->all(), [
             'property_id' => 'required|exists:bnb_properties,id',
             'booking_id' => 'required|exists:bnb_bookings,id',
@@ -73,41 +108,41 @@ class BnbReviewController extends Controller
             ], 422);
         }
 
-        // Verify that the user actually stayed at the property
         $booking = BnbBooking::where('id', $request->booking_id)
             ->where('guest_id', Auth::id())
             ->where('status', 'completed')
-            ->where('check_out', '<', now())
+            ->whereDate('check_out', '<=', now()->toDateString())
             ->first();
 
-        if (!$booking) {
+        if (! $booking) {
             return response()->json([
-                'message' => 'You can only review properties you have actually stayed at',
+                'message' => 'You can only review properties after a completed stay linked to your account.',
             ], 422);
         }
 
-        // Check if review already exists
+        if ((int) $booking->property_id !== (int) $request->property_id) {
+            return response()->json(['message' => 'Booking does not match this property.'], 422);
+        }
+
         $existingReview = BnbReview::where('booking_id', $request->booking_id)
             ->where('guest_id', Auth::id())
             ->first();
 
         if ($existingReview) {
             return response()->json([
-                'message' => 'You have already reviewed this property',
+                'message' => 'You have already reviewed this stay.',
             ], 422);
         }
 
-        $review = new BnbReview([
+        $review = BnbReview::create([
             'property_id' => $request->property_id,
             'booking_id' => $request->booking_id,
             'guest_id' => Auth::id(),
             'rating' => $request->rating,
             'comment' => $request->comment,
             'private_feedback' => $request->private_feedback,
-            'verified' => true, // Auto-verify for completed bookings
+            'verified' => true,
         ]);
-
-        $review->save();
 
         return response()->json([
             'message' => 'Review submitted successfully',
@@ -115,28 +150,31 @@ class BnbReviewController extends Controller
         ], 201);
     }
 
-    /**
-     * Display the specified BNB review.
-     */
-    public function show(BnbReview $bnbReview): JsonResponse
+    public function myReviews(Request $request): JsonResponse
     {
-        if ($bnbReview->guest_id !== Auth::id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $review = $bnbReview->load(['property', 'guest', 'booking']);
+        $reviews = BnbReview::with(['property', 'booking'])
+            ->where('guest_id', Auth::id())
+            ->orderByDesc('created_at')
+            ->paginate($request->per_page ?? 20);
 
         return response()->json([
-            'data' => $review,
+            'data' => $reviews->items(),
+            'meta' => [
+                'current_page' => $reviews->currentPage(),
+                'last_page' => $reviews->lastPage(),
+                'per_page' => $reviews->perPage(),
+                'total' => $reviews->total(),
+            ],
         ]);
     }
 
     /**
-     * Respond to a BNB review.
+     * Display the specified BNB review.
      */
-    public function respond(Request $request, BnbReview $bnbReview): JsonResponse
+    public function respond(Request $request, BnbReview $review): JsonResponse
     {
-        if ($bnbReview->property->owner_id !== Auth::id()) {
+        $review->loadMissing('property');
+        if ($review->property->owner_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -151,26 +189,38 @@ class BnbReviewController extends Controller
             ], 422);
         }
 
-        $bnbReview->response = $request->response;
-        $bnbReview->response_date = now();
-        $bnbReview->save();
+        $review->response = $request->response;
+        $review->response_date = now();
+        $review->save();
 
         return response()->json([
             'message' => 'Response added successfully',
-            'data' => $bnbReview->load(['property', 'guest']),
+            'data' => $review->load(['property', 'guest']),
         ]);
     }
 
-    /**
-     * Mark a review as helpful.
-     */
-    public function markHelpful(BnbReview $bnbReview): JsonResponse
+    public function markHelpful(BnbReview $review): JsonResponse
     {
-        $bnbReview->increment('helpful_count');
+        $review->increment('helpful_count');
 
         return response()->json([
             'message' => 'Review marked as helpful',
-            'data' => $bnbReview->fresh(),
+            'data' => $review->fresh(),
+        ]);
+    }
+
+    public function show(BnbReview $review): JsonResponse
+    {
+        $user = Auth::user();
+        $isGuest = (int) $review->guest_id === (int) $user->id;
+        $isOwner = (int) ($review->property?->owner_id) === (int) $user->id;
+
+        if (! $isGuest && ! $isOwner) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'data' => $review->load(['property', 'guest', 'booking']),
         ]);
     }
 

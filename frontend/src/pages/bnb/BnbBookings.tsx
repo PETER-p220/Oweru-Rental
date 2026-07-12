@@ -67,7 +67,7 @@ const STATUS_CONFIG = {
   pending:   { label: 'Pending',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  icon: Clock       },
   confirmed: { label: 'Confirmed', color: '#10b981', bg: 'rgba(16,185,129,0.12)',  icon: CheckCircle },
   cancelled: { label: 'Cancelled', color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   icon: XCircle     },
-  completed: { label: 'Completed', color: '#6366f1', bg: 'rgba(99,102,241,0.12)',  icon: CheckCircle },
+  completed: { label: 'Completed', color: '#C89128', bg: 'rgba(200,145,40,0.12)',  icon: CheckCircle },
 } as const;
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -265,7 +265,7 @@ const DetailModal = ({
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#c9a84c', marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#C89128', marginBottom: 4 }}>
               Booking #{booking.id}
             </div>
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#e8e4dc' }}>
@@ -290,8 +290,8 @@ const DetailModal = ({
         <div>
           {row('Property',   booking.property?.title || `#${booking.property_id}`, <Home size={12} />)}
           {row('Guest',      guest.name,  <Users size={12} />)}
-          {guest.email && row('Email',    <a href={`mailto:${guest.email}`} style={{ color: '#c9a84c', textDecoration: 'none' }}>{guest.email}</a>, <Mail size={12} />)}
-          {guest.phone && row('Phone',    <a href={`tel:${guest.phone}`}   style={{ color: '#c9a84c', textDecoration: 'none' }}>{guest.phone}</a>, <Phone size={12} />)}
+          {guest.email && row('Email',    <a href={`mailto:${guest.email}`} style={{ color: '#C89128', textDecoration: 'none' }}>{guest.email}</a>, <Mail size={12} />)}
+          {guest.phone && row('Phone',    <a href={`tel:${guest.phone}`}   style={{ color: '#C89128', textDecoration: 'none' }}>{guest.phone}</a>, <Phone size={12} />)}
           {row('Check-in',   new Date(booking.check_in).toLocaleDateString('en-TZ', { year: 'numeric', month: 'long', day: 'numeric' }), <Calendar size={12} />)}
           {row('Check-out',  new Date(booking.check_out).toLocaleDateString('en-TZ', { year: 'numeric', month: 'long', day: 'numeric' }), <Calendar size={12} />)}
           {row('Duration',   `${nights} night${nights !== 1 ? 's' : ''}`)}
@@ -482,7 +482,7 @@ const BnbBookings = () => {
 
       {/* Content */}
       {loading ? (
-        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
+        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
           {[0,1,2,3,4,5].map((i) => (
             <div key={i} style={{ height: 180, borderRadius: 14, background: 'rgba(255,255,255,0.03)', animation: 'fadeIn 0.3s ease both', animationDelay: `${i * 0.05}s` }} />
           ))}
@@ -494,7 +494,7 @@ const BnbBookings = () => {
           <div style={{ fontSize: 14 }}>Bookings will appear here once guests submit requests.</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
+        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
           {bookings.map((booking, idx) => {
             const guest  = getGuestInfo(booking);
             const nights = getNights(booking.check_in, booking.check_out);
@@ -509,7 +509,7 @@ const BnbBookings = () => {
                 {/* Card Top */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: '#c9a84c', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: '#C89128', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {booking.property?.title || `Property #${booking.property_id}`}
                     </div>
                     <div style={{ fontSize: 13, color: '#9ca3af', display: 'flex', alignItems: 'center', gap: 5 }}>

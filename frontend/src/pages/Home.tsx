@@ -79,8 +79,8 @@ const SaveButton = memo(({ saved, onClick }: { saved: boolean; onClick: (e: any)
 ));
 
 /* ── Booking Form ── */
-const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose: () => void; onSuccess: () => void }) => {
-  const [fd, setFd] = useState({ guest_name: '', guest_email: '', guest_phone: '', check_in: '', check_out: '', special_requests: '' });
+const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose: () => void; onSuccess: (data?: any) => void }) => {
+  const [fd, setFd] = useState({ guest_name: '', guest_email: '', guest_phone: '', check_in: '', check_out: '', guest_count: 1, special_requests: '' });
   const [loading, setLoading] = useState(false);
   const nights = () => {
     if (!fd.check_in || !fd.check_out) return 0;
@@ -89,11 +89,28 @@ const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true);
     try {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
       const res = await fetch(`${API_BASE}/api/public/bnb/book`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ property_id: property.id, customer_name: fd.guest_name, customer_email: fd.guest_email, customer_phone: fd.guest_phone, check_in: fd.check_in, check_out: fd.check_out, special_requests: fd.special_requests, total_amount: nights() * (property.price || 0), status: 'pending' }),
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          property_id: property.id,
+          property_title: property.title,
+          customer_name: fd.guest_name,
+          customer_email: fd.guest_email,
+          customer_phone: fd.guest_phone,
+          check_in: fd.check_in,
+          check_out: fd.check_out,
+          guest_count: fd.guest_count || 1,
+          special_requests: fd.special_requests,
+          total_amount: Math.max(0, nights()) * (property.price || 0),
+          status: 'pending',
+        }),
       });
-      if (res.ok) onSuccess(); else { const d = await res.json(); alert(d.message || 'Failed'); }
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) onSuccess(d); else alert(d.message || 'Failed');
     } catch { alert('Network error.'); } finally { setLoading(false); }
   };
   const inp: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#0F172A', borderRadius: 8, fontSize: 13, marginBottom: 10, outline: 'none', fontFamily: 'inherit' };
@@ -102,7 +119,8 @@ const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose:
       <button onClick={onClose} style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 8 }}><X size={20} /></button>
       <form onSubmit={handleSubmit}>
         <h2 style={{ color: '#0F172A', marginBottom: 4, fontSize: 20, fontWeight: 700, fontFamily: 'inherit' }}>Book {property.title}</h2>
-        <p style={{ color: '#64748B', fontSize: 13, marginBottom: 18 }}>{property.location}</p>
+        <p style={{ color: '#64748B', fontSize: 13, marginBottom: 12 }}>{property.location}</p>
+        <p style={{ color: '#94A3B8', fontSize: 12, marginBottom: 14 }}>Guests can book without an account. Log in to track the stay and leave a review later.</p>
         <input required style={inp} placeholder="Your name" value={fd.guest_name} onChange={e => setFd(p => ({ ...p, guest_name: e.target.value }))} />
         <input required type="email" style={inp} placeholder="Email" value={fd.guest_email} onChange={e => setFd(p => ({ ...p, guest_email: e.target.value }))} />
         <input required style={inp} placeholder="Phone" value={fd.guest_phone} onChange={e => setFd(p => ({ ...p, guest_phone: e.target.value }))} />
@@ -110,6 +128,7 @@ const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose:
           <input required type="date" style={inp} value={fd.check_in} onChange={e => setFd(p => ({ ...p, check_in: e.target.value }))} />
           <input required type="date" style={inp} value={fd.check_out} onChange={e => setFd(p => ({ ...p, check_out: e.target.value }))} />
         </div>
+        <input required type="number" min={1} max={20} style={inp} placeholder="Guests" value={fd.guest_count} onChange={e => setFd(p => ({ ...p, guest_count: Number(e.target.value) }))} />
         <textarea style={{ ...inp, resize: 'vertical', minHeight: 70 }} placeholder="Special requests (optional)" value={fd.special_requests} onChange={e => setFd(p => ({ ...p, special_requests: e.target.value }))} />
         {nights() > 0 && (
           <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: 14, display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -123,6 +142,9 @@ const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose:
             {loading ? 'Submitting…' : 'Book Now'}
           </button>
         </div>
+        <button type="button" onClick={() => { onClose(); window.location.href = `/bnb/${property.id}`; }} style={{ width: '100%', marginTop: 10, padding: 10, background: 'transparent', border: 'none', color: '#64748B', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
+          View full details & reviews
+        </button>
       </form>
     </div>
   );
@@ -672,6 +694,9 @@ const Home = () => {
                       <div className="prop-loc"><MapPin size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />{p.location}</div>
                       <div><span className="prop-price">{fmtPrice(p.price)}</span><span className="prop-price-sfx">/night</span></div>
                       <button className="view-btn" onClick={() => { setSelectedProperty(p); setShowBookingModal(true); }}>Book Now</button>
+                      <button type="button" onClick={() => navigate(`/bnb/${p.id}`)} style={{ marginTop: 8, width: '100%', padding: '8px 0', background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
+                        Details & reviews
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -751,7 +776,7 @@ const Home = () => {
       {!searchActive && (
         <section style={{ background: 'var(--ink)', borderTop: '1px solid var(--border)' }}>
           <div className="section">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 'clamp(24px, 5vw, 80px)', alignItems: 'center' }}>
               <div>
                 <div className="section-tag" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.7)' }}>Get Started</div>
                 <h2 style={{fontSize: 'clamp(26px,3.2vw,42px)', fontWeight: 700, color: '#FFFFFF', marginBottom: 16, lineHeight: 1.15, letterSpacing: '-0.02em' }}>
@@ -776,9 +801,9 @@ const Home = () => {
       {showBookingModal && selectedProperty && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
           onClick={() => setShowBookingModal(false)}>
-          <div style={{ background: '#FFFFFF', border: '1px solid var(--border)', padding: 36, maxWidth: 560, width: '100%', maxHeight: '90vh', overflowY: 'auto', borderRadius: 20, boxShadow: '0 30px 70px rgba(15,23,42,0.3)' }}
+          <div style={{ background: '#FFFFFF', border: '1px solid var(--border)', padding: 'clamp(20px, 4vw, 36px)', maxWidth: 560, width: '100%', maxHeight: '90vh', overflowY: 'auto', borderRadius: 20, boxShadow: '0 30px 70px rgba(15,23,42,0.3)' }}
             onClick={e => e.stopPropagation()}>
-            <BookingForm property={selectedProperty} onClose={() => setShowBookingModal(false)} onSuccess={() => { setShowBookingModal(false); alert('Booking submitted! The owner will contact you soon.'); }} />
+            <BookingForm property={selectedProperty} onClose={() => setShowBookingModal(false)} onSuccess={() => { setShowBookingModal(false); alert('Booking submitted! Track it under My Stays if you were logged in.'); }} />
           </div>
         </div>
       )}

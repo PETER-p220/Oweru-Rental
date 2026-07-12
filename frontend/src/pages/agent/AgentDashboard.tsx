@@ -37,30 +37,28 @@ const AgentDashboard = () => {
           grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
           gap: 20px;
         }
-
         .agent-stat-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 16px;
         }
+        .agent-pad { padding-left: 40px; padding-right: 40px; }
 
         @media (max-width: 900px) {
-          .agent-two-col {
-            grid-template-columns: 1fr;
-          }
+          .agent-two-col { grid-template-columns: 1fr; }
+          .agent-pad { padding-left: 20px; padding-right: 20px; }
         }
 
         @media (max-width: 640px) {
-          .agent-stat-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-          }
+          .agent-stat-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+          .agent-pad { padding-left: 14px; padding-right: 14px; }
+          .agent-header-inner { padding: 28px 14px 24px !important; }
         }
       `}</style>
 
       {/* Header */}
       <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+        <div className="agent-header-inner" style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
               Agent Workspace
@@ -74,7 +72,7 @@ const AgentDashboard = () => {
       </div>
 
       {/* Stats */}
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 40px 0' }}>
+      <div className="agent-pad" style={{ maxWidth: '1280px', margin: '0 auto', paddingTop: 24 }}>
         <div className="agent-stat-grid">
           <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#2563eb' }} />
@@ -92,7 +90,7 @@ const AgentDashboard = () => {
             <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.total_leads || 0}</div>
           </div>
           <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#7c3aed' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#C89128' }} />
             <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Commissions</div>
             <div style={{ fontSize: 'clamp(16px,3vw,28px)', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : formatCurrency(stats?.total_commissions)}</div>
           </div>
@@ -101,7 +99,7 @@ const AgentDashboard = () => {
 
       {/* Error Message */}
       {error && (
-        <div style={{ maxWidth: '1280px', margin: '24px auto 0', padding: '0 40px' }}>
+        <div style={{ maxWidth: '1280px', margin: '24px auto 0' }} className="agent-pad">
           <div style={{ padding: '12px 16px', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: '8px', color: '#dc2626', fontSize: '14px' }}>
             {error}
           </div>

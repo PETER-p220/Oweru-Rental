@@ -75,6 +75,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Digital Contracts', icon: FileText,      href: 'digital-contracts'            },
       { name: 'Rent Payments',     icon: CreditCard,    href: 'payments'                     },
       { name: 'Payment History',   icon: Receipt,       href: 'payment-history'              },
+      { name: 'My Stays',          icon: Hotel,         href: 'bnb-stays'                    },
       { name: 'Messages',          icon: MessageSquare, href: 'messages'                     },
       { name: 'Notifications',     icon: Bell,          href: 'notifications'                },
     ],
@@ -155,6 +156,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     tenant: [
       { label: 'Explore',   items: ['Overview','Browse Properties','Saved Properties'] },
       { label: 'My Rental', items: ['My Applications','Digital Contracts','Rent Payments','Payment History'] },
+      { label: 'Stays',     items: ['My Stays'] },
       { label: 'Connect',   items: ['Messages','Notifications'] },
     ],
     landlord: [
@@ -420,22 +422,25 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           }
           .dl-sidebar.open { transform: translateX(0); }
           .dl-close-btn  { display: flex; }
-          .dl-menu-toggle { display: flex; }
-          .dl-topbar { padding: 0 18px; }
+          .dl-menu-toggle { display: flex; min-width: 40px; min-height: 40px; }
+          .dl-topbar { padding: 0 18px; height: 56px; }
           .dl-content { padding: 22px 18px; }
           .dl-topbar-role { display: none; }
+          .dl-topbar-btn { width: 40px; height: 40px; }
         }
         @media (max-width: 768px) {
           .dl-sidebar { width: min(256px, 84vw); }
-          .dl-topbar { padding: 0 14px; height: 50px; }
+          .dl-topbar { padding: 0 12px; height: 56px; }
           .dl-content { padding: 16px 14px; }
           .dl-topbar-divider { display: none; }
           .dl-bc-current { display: none; }
+          .dl-topbar-btn { width: 44px; height: 44px; }
+          .dl-menu-toggle { min-width: 44px; min-height: 44px; }
         }
         @media (max-width: 480px) {
-          .dl-topbar { padding: 0 10px; height: 46px; }
+          .dl-topbar { padding: 0 10px; height: 52px; }
           .dl-content { padding: 12px 10px; }
-          .dl-topbar-btn { width: 30px; height: 30px; }
+          .dl-topbar-btn { width: 44px; height: 44px; }
         }
       `}</style>
 

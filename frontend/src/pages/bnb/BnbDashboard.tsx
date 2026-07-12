@@ -24,7 +24,7 @@ const B = {
 } as const;
 
 const panel: React.CSSProperties = { backgroundColor: B.navy800, border: `1px solid ${B.border}`, padding: '24px', position: 'relative', overflow: 'hidden' };
-const iconBox = (color: string): React.CSSProperties => ({ width: 44, height: 44, background: `${color}18`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color });
+const iconBox = (color: string): React.CSSProperties => ({ background: `${color}18`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color });
 const tag: React.CSSProperties = { fontFamily: "'Jost', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.24em', textTransform: 'uppercase', color: B.gold, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 };
 
 const BnbDashboard = () => {
@@ -82,6 +82,10 @@ const BnbDashboard = () => {
         .bnb-btn-ghost { display: inline-flex; align-items: center; gap: 6px; background: ${B.goldDim}; color: ${B.gold}; padding: 7px 14px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid ${B.border}; cursor: pointer; font-family: 'Jost', sans-serif; transition: all 0.2s; white-space: nowrap; }
         .bnb-btn-ghost:hover { background: rgba(200,145,40,0.2); border-color: rgba(200,145,40,0.4); }
 
+        /* Icon boxes - shrink gracefully instead of crowding narrow rows */
+        .bnb-icon-box { width: 44px; height: 44px; }
+        .bnb-thumb-box { width: 56px; height: 56px; }
+
         /* Stats grid */
         .bnb-stats-grid {
           display: grid;
@@ -136,6 +140,14 @@ const BnbDashboard = () => {
         .bnb-booking-price { font-size: 15px; font-weight: 700; color: ${B.gold}; margin-bottom: 4px; }
         .bnb-booking-status { display: flex; align-items: center; gap: 5px; justify-content: flex-end; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
 
+        .bnb-prop-price-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
         /* Responsive */
         @media (max-width: 1100px) {
           .bnb-stats-grid {
@@ -159,9 +171,18 @@ const BnbDashboard = () => {
           }
           .bnb-booking-row {
             padding: 10px 12px;
+            gap: 8px;
           }
           .bnb-booking-sub {
             display: none;
+          }
+          .bnb-icon-box {
+            width: 34px;
+            height: 34px;
+          }
+          .bnb-thumb-box {
+            width: 44px;
+            height: 44px;
           }
         }
       `}</style>
@@ -182,12 +203,12 @@ const BnbDashboard = () => {
           { label: 'Total Properties', value: stats.totalProperties,           icon: Home,        color: B.gold    },
           { label: 'Total Bookings',   value: stats.totalBookings,             icon: Calendar,    color: B.sky     },
           { label: 'Total Revenue',    value: fmtCurrency(stats.totalRevenue), icon: DollarSign,  color: '#10b981' },
-          { label: 'Occupancy Rate',   value: `${stats.occupancyRate}%`,       icon: TrendingUp,  color: '#a78bfa' },
+          { label: 'Occupancy Rate',   value: `${stats.occupancyRate}%`,       icon: TrendingUp,  color: '#C89128' },
           { label: 'Average Rating',   value: stats.averageRating.toFixed(1),  icon: Star,        color: B.amber   },
           { label: 'Active Listings',  value: stats.activeListings,            icon: CheckCircle, color: '#10b981' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bnb-stat-card" style={{ backgroundColor: B.navy800, border: `1px solid ${B.border}`, padding: '18px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={iconBox(color)}><Icon size={18} /></div>
+            <div className="bnb-icon-box" style={iconBox(color)}><Icon size={18} /></div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: B.slate, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
               <div style={{ fontSize: 'clamp(16px, 2.5vw, 22px)', fontWeight: 700, color: B.cream, letterSpacing: '-0.02em' }}>{value}</div>
@@ -221,7 +242,7 @@ const BnbDashboard = () => {
               return (
                 <div key={b.id} className="bnb-booking-row">
                   <div className="bnb-booking-left">
-                    <div style={iconBox(B.gold)}><Calendar size={16} /></div>
+                    <div className="bnb-icon-box" style={iconBox(B.gold)}><Calendar size={16} /></div>
                     <div className="bnb-booking-info">
                       <div className="bnb-booking-title">{b.property?.title || `Property #${b.property_id}`}</div>
                       <div className="bnb-booking-sub">{guest?.name || 'Guest'} · {fmtDate(b.check_in)} → {fmtDate(b.check_out)}</div>
@@ -258,9 +279,9 @@ const BnbDashboard = () => {
               <div key={p.id} className="bnb-prop-card" style={{ background: B.navy900, border: `1px solid ${B.borderFaint}`, padding: 16 }}>
                 <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                   {p.images?.[0] ? (
-                    <img src={p.images[0]} alt={p.title} style={{ width: 56, height: 56, objectFit: 'cover', flexShrink: 0, border: `1px solid ${B.border}` }} />
+                    <img src={p.images[0]} alt={p.title} className="bnb-thumb-box" style={{ objectFit: 'cover', flexShrink: 0, border: `1px solid ${B.border}` }} />
                   ) : (
-                    <div style={{ width: 56, height: 56, background: B.navy700, border: `1px solid ${B.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div className="bnb-thumb-box" style={{ background: B.navy700, border: `1px solid ${B.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Home size={18} style={{ color: B.gold, opacity: 0.4 }} />
                     </div>
                   )}
@@ -274,7 +295,7 @@ const BnbDashboard = () => {
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: p.amenities ? 10 : 0 }}>
+                <div className="bnb-prop-price-row" style={{ marginBottom: p.amenities ? 10 : 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: B.gold }}>{fmtCurrency(p.price)}<span style={{ fontSize: 11, fontWeight: 400, color: B.slate }}>/night</span></div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#10b981' }}><Star size={11} fill="currentColor" />{p.average_rating || '4.5'} ({p.reviews_count || 0})</div>
                 </div>

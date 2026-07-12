@@ -192,7 +192,7 @@ const LinkedOwners = () => {
             </div>
           </div>
           <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#a78bfa' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#C89128' }} />
             <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Showing</div>
             <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
               {filteredRows.length}

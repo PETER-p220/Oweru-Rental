@@ -28,6 +28,8 @@ import SavedProperties from './pages/tenant/SavedProperties';
 import TenantApplicationsPage from './pages/tenant/ApplicationsPage';
 import ApplicationStatus from './pages/tenant/ApplicationStatus';
 import TenantDigitalContractPage from './pages/tenant/DigitalContractPage';
+import MyBnbStays from './pages/tenant/MyBnbStays';
+import BnbPropertyDetail from './pages/bnb/BnbPropertyDetail';
 import TenantAnalyticsPage from './pages/tenant/AnalyticsPage';
 
 // Landlord pages
@@ -103,6 +105,7 @@ const PublicRoutes = () => (
         <Route path="/" element={<Home />} />
         <Route path="/properties" element={<Properties />} />
         <Route path="/property/:id" element={<PropertyDetail />} />
+        <Route path="/bnb/:id" element={<BnbPropertyDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
@@ -130,6 +133,7 @@ const TenantRoutes = () => (
         <Route path="settings" element={<SettingsPage />} />
         <Route path="payments" element={<Payments />} />
         <Route path="payment-history" element={<PaymentHistory />} />
+        <Route path="bnb-stays" element={<MyBnbStays />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="messages" element={<Messages />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

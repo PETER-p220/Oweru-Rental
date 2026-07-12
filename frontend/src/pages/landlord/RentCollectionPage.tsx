@@ -5,9 +5,7 @@ import {
   formatCurrency,
   formatDate,
   getStatusColor,
-  statusPillStyle,
   tableStyle,
-  tableWrapStyle,
   tdStyle,
   thStyle,
   palette,
@@ -87,10 +85,25 @@ const RentCollectionPage = () => {
 
   return (
     <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } } select option { background:#fff; color:#0F172A; }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        select option { background:#fff; color:#0F172A; }
+        .rc-desktop { display: block; }
+        .rc-mobile { display: none; }
+        .rc-card {
+          background: ${C.cardBg}; border: 1px solid ${C.border}; border-radius: 12px;
+          padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+        }
+        @media (max-width: 768px) {
+          .rc-desktop { display: none; }
+          .rc-mobile { display: block; }
+          .rc-header { padding: 20px 16px 22px !important; }
+          .rc-body { padding: 16px 14px !important; }
+        }
+      `}</style>
 
       {/* ══ Slate-800 header — matches _slateHeader() in Dart ══ */}
-      <div style={{ background: C.headerBg, padding: '24px 24px 28px' }}>
+      <div className="rc-header" style={{ background: C.headerBg, padding: '24px 24px 28px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
           {/* Title row */}
@@ -106,7 +119,7 @@ const RentCollectionPage = () => {
                 Track live payment records and collection stats
               </p>
             </div>
-            <button onClick={() => loadData(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={() => loadData(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 18px', minHeight: 44, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
               <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
               Refresh
             </button>
@@ -129,7 +142,7 @@ const RentCollectionPage = () => {
       </div>
 
       {/* ══ Page body — slate-100 bg ══ */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
+      <div className="rc-body" style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
 
         {/* Error banner */}
         {error && (
@@ -154,77 +167,117 @@ const RentCollectionPage = () => {
           </div>
 
         ) : (
-          /* ══ White card wrapping the table — matches kCardBg ══ */
-          <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15,23,42,0.05)' }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ ...tableStyle, minWidth: 720 }}>
-                <thead>
-                  <tr>
-                    {['Tenant', 'Property', 'Amount', 'Due', 'Recorded', 'Status'].map(h => (
-                      <th key={h} style={thStyle}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map(payment => {
-                    const sc = getStatusColor(payment.status);
-                    return (
-                      <tr
-                        key={payment.id}
-                        onMouseEnter={e => rowHover(e.currentTarget, true)}
-                        onMouseLeave={e => rowHover(e.currentTarget, false)}
-                        style={{ transition: 'background 0.12s' }}
-                      >
-                        <td style={tdStyle}>
-                          <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>
-                            {(payment as any).tenant_name
-                              || `${payment.tenant?.user?.first_name || ''} ${payment.tenant?.user?.last_name || ''}`.trim()
-                              || 'Tenant'}
-                          </div>
-                          <div style={{ color: C.textMuted, marginTop: 3, fontSize: 12 }}>
-                            {payment.tenant?.user?.email || 'No email'}
-                          </div>
-                        </td>
-                        <td style={tdStyle}>
-                          <div style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>
-                            {payment.property?.title || 'Untitled property'}
-                          </div>
-                          {payment.property?.location && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                              <MapPin size={10} style={{ color: C.textMuted, flexShrink: 0 }} />
-                              <span style={{ color: C.textMuted, fontSize: 11 }}>{payment.property.location}</span>
+          <>
+            {/* Desktop table */}
+            <div className="rc-desktop" style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(15,23,42,0.05)' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ ...tableStyle, minWidth: 720 }}>
+                  <thead>
+                    <tr>
+                      {['Tenant', 'Property', 'Amount', 'Due', 'Recorded', 'Status'].map(h => (
+                        <th key={h} style={thStyle}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map(payment => {
+                      const sc = getStatusColor(payment.status);
+                      const tenantName = (payment as any).tenant_name
+                        || `${payment.tenant?.user?.first_name || ''} ${payment.tenant?.user?.last_name || ''}`.trim()
+                        || 'Tenant';
+                      return (
+                        <tr
+                          key={payment.id}
+                          onMouseEnter={e => rowHover(e.currentTarget, true)}
+                          onMouseLeave={e => rowHover(e.currentTarget, false)}
+                          style={{ transition: 'background 0.12s' }}
+                        >
+                          <td style={tdStyle}>
+                            <div style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{tenantName}</div>
+                            <div style={{ color: C.textMuted, marginTop: 3, fontSize: 12 }}>
+                              {payment.tenant?.user?.email || 'No email'}
                             </div>
-                          )}
-                        </td>
-                        <td style={tdStyle}>
-                          <span style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>
-                            {formatCurrency(payment.amount)}
-                          </span>
-                        </td>
-                        <td style={{ ...tdStyle, color: C.textSub, fontSize: 13 }}>
-                          {formatDate(payment.due_date)}
-                        </td>
-                        <td style={{ ...tdStyle, color: C.textSub, fontSize: 13 }}>
-                          {formatDate(payment.created_at)}
-                        </td>
-                        <td style={tdStyle}>
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center',
-                            padding: '3px 10px', borderRadius: 999,
-                            background: `${sc}18`, border: `1px solid ${sc}35`,
-                            color: sc, fontSize: 11, fontWeight: 700,
-                            textTransform: 'uppercase', letterSpacing: '0.06em',
-                          }}>
-                            {payment.status || 'unknown'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td style={tdStyle}>
+                            <div style={{ fontWeight: 600, color: C.text, fontSize: 13 }}>
+                              {payment.property?.title || 'Untitled property'}
+                            </div>
+                            {payment.property?.location && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                                <MapPin size={10} style={{ color: C.textMuted, flexShrink: 0 }} />
+                                <span style={{ color: C.textMuted, fontSize: 11 }}>{payment.property.location}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td style={tdStyle}>
+                            <span style={{ fontWeight: 700, color: palette.gold, fontSize: 13 }}>
+                              {formatCurrency(payment.amount)}
+                            </span>
+                          </td>
+                          <td style={{ ...tdStyle, color: C.textSub, fontSize: 13 }}>
+                            {formatDate(payment.due_date)}
+                          </td>
+                          <td style={{ ...tdStyle, color: C.textSub, fontSize: 13 }}>
+                            {formatDate(payment.created_at)}
+                          </td>
+                          <td style={tdStyle}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center',
+                              padding: '3px 10px', borderRadius: 999,
+                              background: `${sc}18`, border: `1px solid ${sc}35`,
+                              color: sc, fontSize: 11, fontWeight: 700,
+                              textTransform: 'uppercase', letterSpacing: '0.06em',
+                            }}>
+                              {payment.status || 'unknown'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            {/* Mobile cards */}
+            <div className="rc-mobile">
+              {payments.map(payment => {
+                const sc = getStatusColor(payment.status);
+                const tenantName = (payment as any).tenant_name
+                  || `${payment.tenant?.user?.first_name || ''} ${payment.tenant?.user?.last_name || ''}`.trim()
+                  || 'Tenant';
+                return (
+                  <div key={payment.id} className="rc-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                      <div style={{ fontWeight: 700, color: C.text, fontSize: 14 }}>{tenantName}</div>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+                        padding: '3px 8px', borderRadius: 999, background: `${sc}18`, color: sc, flexShrink: 0,
+                      }}>
+                        {payment.status || 'unknown'}
+                      </span>
+                    </div>
+                    <div style={{ fontWeight: 600, color: C.text, fontSize: 13, marginBottom: 4 }}>
+                      {payment.property?.title || 'Untitled property'}
+                    </div>
+                    {payment.property?.location && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10 }}>
+                        <MapPin size={11} style={{ color: C.textMuted, flexShrink: 0 }} />
+                        <span style={{ color: C.textMuted, fontSize: 12 }}>{payment.property.location}</span>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                      <span style={{ fontWeight: 800, color: palette.gold, fontSize: 16 }}>{formatCurrency(payment.amount)}</span>
+                      <div style={{ fontSize: 12, color: C.textMuted, textAlign: 'right' }}>
+                        <div>Due {formatDate(payment.due_date)}</div>
+                        <div>Recorded {formatDate(payment.created_at)}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
