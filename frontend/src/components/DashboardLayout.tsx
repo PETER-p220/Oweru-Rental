@@ -135,8 +135,10 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'My Properties', icon: Building,      href: 'my-properties'  },
       { name: 'Add Property',  icon: Plus,          href: 'properties/add' },
       { name: 'Applications',  icon: FileText,      href: 'applications'   },
+      { name: 'Payments',      icon: CreditCard,    href: 'payments'       },
       { name: 'Analytics',     icon: BarChart3,     href: 'analytics'      },
       { name: 'Reports',       icon: PieChart,      href: 'reports'        },
+      { name: 'Notifications', icon: Bell,          href: 'notifications'  },
       { name: 'Profile',       icon: Briefcase,     href: 'profile'        },
       { name: 'Settings',      icon: Settings,      href: 'settings'       },
     ],
@@ -178,8 +180,8 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     ],
     commercial: [
       { label: 'Properties', items: ['Overview','My Properties','Add Property'] },
-      { label: 'Business',   items: ['Applications','Analytics','Reports'] },
-      { label: 'Account',    items: ['Profile','Settings'] },
+      { label: 'Business',   items: ['Applications','Payments','Analytics','Reports'] },
+      { label: 'Account',    items: ['Notifications','Profile','Settings'] },
     ],
   };
 

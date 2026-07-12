@@ -296,22 +296,6 @@ class ApplicationController extends Controller
         return response()->json(['message' => 'Application rejected successfully']);
     }
 
-    public function getCommercialReports(): JsonResponse
-    {
-        return response()->json([
-            'data' => [],
-            'message' => 'No reports generated yet.',
-        ]);
-    }
-
-    public function generateCommercialReport(Request $request): JsonResponse
-    {
-        return response()->json([
-            'message' => 'Report generation is not available yet.',
-            'data' => null,
-        ], 501);
-    }
-
     private function ownsApplication(int $userId, Application $application): bool
     {
         if ((int) $application->owner_id === $userId) {

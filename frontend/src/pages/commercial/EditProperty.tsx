@@ -47,34 +47,85 @@ const EditProperty: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/api/commercial/properties/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       });
-      if (response.ok) {
-        const data = await response.json();
-        setProperty(data);
-        setFormData({
-          title: data.title, description: data.description, type: data.type,
-          location: data.location, address: data.address, price: data.price,
-          price_type: data.price_type, area: data.area, bedrooms: data.bedrooms || 0,
-          bathrooms: data.bathrooms || 0, parking_spaces: data.parking_spaces || 0,
-          furnished: data.furnished, available_from: data.available_from,
-          contact_phone: data.contact_phone, contact_email: data.contact_email,
-          latitude: data.latitude || 0, longitude: data.longitude || 0,
-          amenities: data.amenities.map((a: any) => a.id)
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setErrors({
+          submit: body.message || `Could not load property (${response.status}).`,
         });
-      } else { navigate('/dashboard/commercial/my-properties'); }
-    } catch { navigate('/dashboard/commercial/my-properties'); }
-    finally { setFetchLoading(false); }
+        setFetchLoading(false);
+        return;
+      }
+
+      const payload = await response.json();
+      // API may return the model directly or wrapped in { data / property }
+      const data = payload?.property ?? payload?.data ?? payload;
+
+      const amenityList = Array.isArray(data.property_amenities)
+        ? data.property_amenities
+        : Array.isArray(data.amenities)
+          ? data.amenities
+          : [];
+
+      const imageList = Array.isArray(data.property_images)
+        ? data.property_images
+        : Array.isArray(data.images)
+          ? data.images
+          : [];
+
+      const availableFrom = data.available_from
+        ? String(data.available_from).slice(0, 10)
+        : '';
+
+      setProperty({
+        ...data,
+        amenities: amenityList,
+        images: imageList,
+      });
+
+      setFormData({
+        title: data.title || '',
+        description: data.description || '',
+        type: data.type || 'commercial',
+        location: data.location || '',
+        address: data.address || '',
+        price: Number(data.price) || 0,
+        price_type: data.price_type || 'monthly',
+        area: Number(data.area) || 0,
+        bedrooms: Number(data.bedrooms) || 0,
+        bathrooms: Number(data.bathrooms) || 0,
+        parking_spaces: Number(data.parking_spaces) || 0,
+        furnished: Boolean(data.furnished),
+        available_from: availableFrom,
+        contact_phone: data.contact_phone || '',
+        contact_email: data.contact_email || '',
+        latitude: Number(data.latitude) || 0,
+        longitude: Number(data.longitude) || 0,
+        amenities: amenityList.map((a: any) => Number(a.id)).filter(Boolean),
+      });
+    } catch (e) {
+      console.error('Failed to load property for edit:', e);
+      setErrors({ submit: 'Network error while loading property.' });
+    } finally {
+      setFetchLoading(false);
+    }
   };
 
   const fetchAmenities = async () => {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/api/commercial/amenities`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       });
-      if (res.ok) setAmenities(await res.json());
-    } catch (e) { console.error(e); }
+      if (!res.ok) return;
+      const body = await res.json();
+      const list = Array.isArray(body) ? body : Array.isArray(body.data) ? body.data : [];
+      setAmenities(list);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -103,7 +154,12 @@ const EditProperty: React.FC = () => {
   };
 
   const removeExistingImage = (imageId: number) => setDeletedImages(p => [...p, imageId]);
-  const getExistingImages = () => property?.images.filter(img => !deletedImages.includes(img.id)) || [];
+  const getExistingImages = () => {
+    const imgs = property?.images
+      || (property as any)?.property_images
+      || [];
+    return imgs.filter((img: { id: number }) => !deletedImages.includes(img.id));
+  };
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
@@ -143,9 +199,16 @@ const EditProperty: React.FC = () => {
       if (res.ok) {
         navigate('/dashboard/commercial/my-properties', { state: { message: 'Property updated successfully and is pending approval' } });
       } else {
-        const err = await res.json();
-        if (err.errors) setErrors(err.errors);
-        else setErrors({ submit: err.message || 'Failed to update property' });
+        const err = await res.json().catch(() => ({}));
+        if (err.errors) {
+          const mapped: Record<string, string> = {};
+          for (const [key, msgs] of Object.entries(err.errors)) {
+            mapped[key] = Array.isArray(msgs) ? String((msgs as string[])[0]) : String(msgs);
+          }
+          setErrors(mapped);
+        } else {
+          setErrors({ submit: err.message || 'Failed to update property' });
+        }
       }
     } catch { setErrors({ submit: 'Network error. Please try again.' }); }
     finally { setLoading(false); }
@@ -168,6 +231,23 @@ const EditProperty: React.FC = () => {
       </div>
     </div>
   );
+
+  if (!property && errors.submit) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#080E1A', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ maxWidth: 420, textAlign: 'center' }}>
+          <p style={{ color: '#FCA5A5', marginBottom: 16 }}>{errors.submit}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/commercial/my-properties')}
+            style={{ background: '#D4AF37', color: '#080E1A', border: 'none', borderRadius: 10, padding: '10px 18px', fontWeight: 700, cursor: 'pointer' }}
+          >
+            Back to properties
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#080E1A', fontFamily: "'DM Sans', sans-serif" }}>

@@ -37,6 +37,8 @@ const Reports: React.FC = () => {
   const [selType, setSelType] = useState('');
   const [selPeriod, setSelPeriod] = useState('');
   const [selProperty, setSelProperty] = useState('');
+  const [liveSummary, setLiveSummary] = useState<any>(null);
+  const [genError, setGenError] = useState('');
 
   useEffect(() => { fetchReports(); fetchProperties(); }, []);
 
@@ -46,7 +48,11 @@ const Reports: React.FC = () => {
       const res = await fetch(`${API_BASE}/api/commercial/reports`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-      if (res.ok) setReports(await res.json());
+      if (res.ok) {
+        const d = await res.json();
+        setReports(Array.isArray(d.data) ? d.data : Array.isArray(d) ? d : []);
+        setLiveSummary(d.live_summary || null);
+      }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -57,22 +63,40 @@ const Reports: React.FC = () => {
       const res = await fetch(`${API_BASE}/api/commercial/properties?per_page=100`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
-      if (res.ok) { const d = await res.json(); setProperties(d.data); }
+      if (res.ok) { const d = await res.json(); setProperties(Array.isArray(d.data) ? d.data : []); }
     } catch (e) { console.error(e); }
   };
 
   const generateReport = async (type: string, period: string, propertyId?: number) => {
     if (!type || !period) return;
     setGenerating(true);
+    setGenError('');
     try {
       const token = localStorage.getItem('token');
-      const params = new URLSearchParams({ type, period, ...(propertyId && { property_id: propertyId.toString() }) });
-      const res = await fetch(`${API_BASE}/api/commercial/reports/generate?${params}`, {
+      const res = await fetch(`${API_BASE}/api/commercial/reports`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type,
+          period,
+          ...(propertyId ? { property_id: propertyId } : {}),
+        }),
       });
-      if (res.ok) { const nr = await res.json(); setReports(p => [nr, ...p]); }
-    } catch (e) { console.error(e); }
+      const nr = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setGenError(nr.message || 'Could not generate report');
+        return;
+      }
+      setReports(p => [nr, ...p]);
+      if (nr.data) setLiveSummary(nr.data);
+    } catch (e) {
+      console.error(e);
+      setGenError('Could not generate report');
+    }
     finally { setGenerating(false); }
   };
 
@@ -84,12 +108,14 @@ const Reports: React.FC = () => {
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `report-${id}.pdf`;
+        a.href = url; a.download = `commercial-report-${id}.json`;
         document.body.appendChild(a); a.click();
         window.URL.revokeObjectURL(url); document.body.removeChild(a);
       }
     } catch (e) { console.error(e); }
   };
+
+  const fmt = (n: number) => new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
 
   const formatDate = (s: string) => new Date(s).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -178,13 +204,36 @@ const Reports: React.FC = () => {
           <div>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Business</span>
             <h1 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 4 }}>Reports</h1>
-            <p style={{ color: '#4A5568', fontSize: 13 }}>Generate and download business reports</p>
+            <p style={{ color: '#4A5568', fontSize: 13 }}>Live commercial performance plus downloadable snapshots</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)', borderRadius: 12 }}>
             <FileText size={14} color="#D4AF37" />
             <span style={{ fontSize: 12, fontWeight: 600, color: '#D4AF37' }}>{reports.length} total</span>
           </div>
         </div>
+
+        {liveSummary && (
+          <div className="card-panel" style={{ padding: '18px 22px' }}>
+            <p className="section-label" style={{ marginBottom: 14 }}>{liveSummary.period_label || 'This month'} snapshot</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+              {[
+                { label: 'Revenue', value: fmt(liveSummary.revenue) },
+                { label: 'Payments', value: String(liveSummary.payments_count ?? 0) },
+                { label: 'Applications', value: String(liveSummary.applications_count ?? 0) },
+                { label: 'Approved', value: String(liveSummary.approved_applications ?? 0) },
+              ].map((s) => (
+                <div key={s.label} style={{ padding: 14, borderRadius: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <p style={{ fontSize: 10, color: '#4A5568', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>{s.label}</p>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: '#F1EDD8' }}>{s.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {genError && (
+          <div className="card-panel" style={{ padding: 14, color: '#FCA5A5', fontSize: 13 }}>{genError}</div>
+        )}
 
         {/* Quick Generate */}
         <div className="card-panel">

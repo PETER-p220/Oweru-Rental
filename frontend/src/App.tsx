@@ -88,6 +88,8 @@ import CommercialApplications from './pages/commercial/Applications';
 import CommercialAnalytics from './pages/commercial/Analytics';
 import CommercialReports from './pages/commercial/Reports';
 import CommercialProfile from './pages/commercial/Profile';
+import CommercialPayments from './pages/commercial/Payments';
+import CommercialNotifications from './pages/commercial/Notifications';
 
 // ─────────────────────────────────────────────
 // Public routes  (Header + Footer)
@@ -237,8 +239,10 @@ const CommercialRoutes = () => (
         <Route path="properties/add" element={<CommercialAddProperty />} />
         <Route path="properties/:id/edit" element={<CommercialEditProperty />} />
         <Route path="applications" element={<CommercialApplications />} />
+        <Route path="payments" element={<CommercialPayments />} />
         <Route path="analytics" element={<CommercialAnalytics />} />
         <Route path="reports" element={<CommercialReports />} />
+        <Route path="notifications" element={<CommercialNotifications />} />
         <Route path="profile" element={<CommercialProfile />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/dashboard/commercial" replace />} />

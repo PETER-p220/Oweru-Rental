@@ -16,14 +16,22 @@ class Property extends Model
         'title',
         'description',
         'price',
+        'price_type',
         'location',
         'address',
         'type',
         'bedrooms',
         'bathrooms',
+        'parking_spaces',
         'area',
+        'furnished',
+        'available_from',
+        'contact_phone',
+        'contact_email',
         'featured',
         'available',
+        'status',
+        'views',
         'latitude',
         'longitude',
         'owner_id',
@@ -33,19 +41,21 @@ class Property extends Model
         'landlord_phone',
         'clicks',
         'shares',
-        'images',      // ← ADDED
-        'amenities',   // ← ADDED
+        'images',
+        'amenities',
     ];
 
     protected $casts = [
-        'price'     => 'decimal:2',
-        'area'      => 'decimal:2',
-        'latitude'  => 'decimal:8',
-        'longitude' => 'decimal:8',
-        'featured'  => 'boolean',
-        'available' => 'boolean',
-        'images'    => 'array',   // ← ADDED: auto JSON encode/decode
-        'amenities' => 'array',   // ← ADDED: auto JSON encode/decode
+        'price'           => 'decimal:2',
+        'area'            => 'decimal:2',
+        'latitude'        => 'decimal:8',
+        'longitude'       => 'decimal:8',
+        'featured'        => 'boolean',
+        'available'       => 'boolean',
+        'furnished'       => 'boolean',
+        'available_from'  => 'date',
+        'images'          => 'array',
+        'amenities'       => 'array',
     ];
 
     // ── Relationships ─────────────────────────────────────────────────────────

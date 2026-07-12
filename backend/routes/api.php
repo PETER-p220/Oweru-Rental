@@ -258,10 +258,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/commercial/applications/{application}/approve', [ApplicationController::class, 'approveCommercialApplication']);
         Route::patch('/commercial/applications/{application}/reject', [ApplicationController::class, 'rejectCommercialApplication']);
         
-        // Analytics, Reports, Profile, Settings
-        Route::get('/commercial/analytics', [CommercialController::class, 'propertyAnalytics']);
-        Route::get('/commercial/reports', [ApplicationController::class, 'getCommercialReports']);
-        Route::post('/commercial/reports', [ApplicationController::class, 'generateCommercialReport']);
+        // Payments, Analytics, Reports, Notifications, Profile, Settings
+        Route::get('/commercial/payments', [CommercialController::class, 'payments']);
+        Route::get('/commercial/analytics', [CommercialController::class, 'analytics']);
+        Route::get('/commercial/reports', [CommercialController::class, 'reports']);
+        Route::post('/commercial/reports', [CommercialController::class, 'generateReport']);
+        Route::post('/commercial/reports/generate', [CommercialController::class, 'generateReport']);
+        Route::get('/commercial/reports/{id}/download', [CommercialController::class, 'downloadReport']);
+
+        Route::get('/commercial/notifications', [CommercialController::class, 'notifications']);
+        Route::get('/commercial/notification-stats', [CommercialController::class, 'notificationStats']);
+        Route::patch('/commercial/notifications/read-all', [CommercialController::class, 'markAllNotificationsRead']);
+        Route::patch('/commercial/notifications/{notification}/read', [CommercialController::class, 'markNotificationRead']);
+
         Route::get('/commercial/profile', [CommercialController::class, 'profile']);
         Route::put('/commercial/profile', [CommercialController::class, 'updateProfile']);
         Route::get('/commercial/settings', [DashboardController::class, 'getCommercialSettings']);

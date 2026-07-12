@@ -41,9 +41,9 @@ const Analytics: React.FC = () => {
 
   const metrics = [
     { label: 'Total Revenue', value: fmt(data?.total_revenue || 0), icon: <DollarSign size={18} />, change: 23.5, up: true },
-    { label: 'Total Bookings', value: String(data?.total_bookings || 0), icon: <Users size={18} />, change: 15.2, up: true },
+    { label: 'Applications', value: String(data?.total_bookings || 0), icon: <Users size={18} />, change: 15.2, up: true },
     { label: 'Occupancy Rate', value: fmtPct(data?.occupancy_rate || 0), icon: <Activity size={18} />, change: 5.8, up: true },
-    { label: 'Avg. Rating', value: (data?.average_rating || 0).toFixed(1), icon: <TrendingUp size={18} />, change: 2.1, up: true },
+    { label: 'Payments', value: String((data as any)?.total_payments || 0), icon: <TrendingUp size={18} />, change: 2.1, up: true },
   ];
 
   const maxRev = Math.max(...(data?.monthly_revenue?.map(m => m.revenue) || [1]), 1);
@@ -187,7 +187,7 @@ const Analytics: React.FC = () => {
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <p style={{ color: '#D4AF37', fontSize: 13, fontWeight: 700 }}>{fmt(p.revenue)}</p>
-                    <p style={{ color: '#4A5568', fontSize: 10, marginTop: 2 }}>{p.bookings} bookings</p>
+                    <p style={{ color: '#4A5568', fontSize: 10, marginTop: 2 }}>{p.bookings} applications</p>
                   </div>
                 </div>
               ))}
@@ -206,7 +206,7 @@ const Analytics: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div className="gold-dot" />
               <Calendar size={14} color="#D4AF37" />
-              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Booking Trends</span>
+              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Application Trends</span>
             </div>
           </div>
           <div style={{ padding: '22px' }}>
@@ -214,7 +214,7 @@ const Analytics: React.FC = () => {
 
               {/* Bar chart */}
               <div>
-                <p style={{ fontSize: 12, fontWeight: 600, color: '#E2D5B0', marginBottom: 16, letterSpacing: '0.5px' }}>Monthly Bookings</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#E2D5B0', marginBottom: 16, letterSpacing: '0.5px' }}>Monthly Applications</p>
                 <div style={{ height: 160, display: 'flex', alignItems: 'flex-end', gap: 8 }}>
                   {(data?.booking_trends || []).map((t, i) => {
                     const pct = Math.max((t.bookings / maxBook) * 100, 4);

@@ -12,7 +12,7 @@ interface Property {
   id: number; title: string; type: string; location: string; price: number; status: string; views: number; image?: string;
 }
 interface Booking {
-  id: number; property: Property; customer_name: string; total_amount: number; status: string; created_at: string;
+  id: number; property?: Property; property_title?: string; customer_name?: string; tenant_name?: string; total_amount: number; status: string; created_at?: string; paid_at?: string;
 }
 interface MonthlyRevenue { month: string; revenue: number; }
 interface CommercialUser { name: string; email: string; company_name: string; business_license: string; verified: boolean; }
@@ -30,13 +30,16 @@ const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/api/dashboard/commercial`, {
+      const response = await fetch(`${API_BASE}/api/commercial/dashboard`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
       });
       if (response.ok) {
         const data = await response.json();
-        setStats(data.stats); setRecentBookings(data.recent_bookings);
-        setPopularProperties(data.popular_properties); setMonthlyRevenue(data.monthly_revenue); setUser(data.user);
+        setStats(data.stats);
+        setRecentBookings(data.recent_payments || data.recent_bookings || []);
+        setPopularProperties(data.popular_properties || []);
+        setMonthlyRevenue(data.monthly_revenue || []);
+        setUser(data.user);
       }
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
@@ -48,15 +51,17 @@ const Dashboard: React.FC = () => {
     active:    { label: 'Active',    dot: '#10B981', text: '#10B981' },
     pending:   { label: 'Pending',   dot: '#F59E0B', text: '#F59E0B' },
     confirmed: { label: 'Confirmed', dot: '#3B82F6', text: '#3B82F6' },
+    paid:      { label: 'Paid',      dot: '#10B981', text: '#10B981' },
+    completed: { label: 'Paid',      dot: '#10B981', text: '#10B981' },
     inactive:  { label: 'Inactive',  dot: '#64748B', text: '#64748B' },
   };
 
   const statCards = [
     { title: 'Total Properties', value: stats?.total_properties ?? 0, icon: Building2,  change: 12, up: true,  fmt: (v: number) => v.toString() },
     { title: 'Active Listings',  value: stats?.active_properties ?? 0, icon: TrendingUp, change: 8,  up: true,  fmt: (v: number) => v.toString() },
-    { title: 'Total Bookings',   value: stats?.total_bookings ?? 0,    icon: Users,      change: 15, up: true,  fmt: (v: number) => v.toString() },
+    { title: 'Approved Apps',    value: stats?.total_bookings ?? 0,    icon: Users,      change: 15, up: true,  fmt: (v: number) => v.toString() },
     { title: 'Total Revenue',    value: stats?.total_revenue ?? 0,     icon: DollarSign, change: 23, up: true,  fmt: fmt },
-    { title: 'Average Rating',   value: stats?.average_rating ?? 0,    icon: Star,       change: 5,  up: true,  fmt: (v: number) => `${v.toFixed(1)} ★` },
+    { title: 'Payments',         value: (stats as any)?.total_payments ?? 0, icon: Star, change: 5,  up: true,  fmt: (v: number) => v.toString() },
     { title: 'Occupancy Rate',   value: stats?.occupancy_rate ?? 0,    icon: Eye,        change: 3,  up: false, fmt: (v: number) => `${v}%` },
   ];
 
@@ -160,14 +165,14 @@ const Dashboard: React.FC = () => {
             <div className="panel-header">
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <div className="gold-dot" />
-                <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Recent Bookings</span>
+                <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Recent Payments</span>
               </div>
               <span style={{ color: '#2D3748', fontSize: 11, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>{recentBookings.length} total</span>
             </div>
             {recentBookings.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon"><Calendar size={22} color="#2D3748" /></div>
-                <p style={{ color: '#2D3748', fontSize: 13 }}>No recent bookings yet</p>
+                <p style={{ color: '#2D3748', fontSize: 13 }}>No payments recorded yet</p>
               </div>
             ) : recentBookings.map(b => {
               const s = statusMap[b.status] || statusMap.inactive;
@@ -177,8 +182,8 @@ const Dashboard: React.FC = () => {
                     <Building2 size={15} color="#D4AF37" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ color: '#E2D5B0', fontSize: 13, fontWeight: 600, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.property.title}</p>
-                    <p style={{ color: '#4A5568', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customer_name} · {fmtDate(b.created_at)}</p>
+                    <p style={{ color: '#E2D5B0', fontSize: 13, fontWeight: 600, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.property?.title || (b as any).property_title || 'Property'}</p>
+                    <p style={{ color: '#4A5568', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customer_name || (b as any).tenant_name} · {fmtDate(b.created_at || (b as any).paid_at)}</p>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <p style={{ color: '#D4AF37', fontSize: 13, fontWeight: 700 }}>{fmt(b.total_amount)}</p>
