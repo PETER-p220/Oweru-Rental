@@ -127,6 +127,7 @@ class PropertyController extends Controller
             'latitude'       => $request->latitude  ?? null,
             'longitude'      => $request->longitude ?? null,
             'status'         => 'pending',  // requires admin approval
+            'available'      => true,
             'featured'       => false,
             'views'          => 0,
         ]);

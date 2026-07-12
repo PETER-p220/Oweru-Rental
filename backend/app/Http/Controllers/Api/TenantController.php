@@ -190,6 +190,7 @@ class TenantController extends Controller
                     : "Rental application for {$property->title}"
             ),
             'proposed_rent'  => $request->proposed_rent,
+            'offered_rent'   => $request->proposed_rent ?? $request->offered_rent,
             'service_fee'    => $property->agent_id ? $request->service_fee : null,
             'payment_status' => $property->agent_id
                 ? ($request->payment_status ?? 'pending')
@@ -197,7 +198,25 @@ class TenantController extends Controller
             'payment_method' => $request->payment_method,
             'transaction_id' => $request->transaction_id,
             'applied_at'     => now(),
+            'status'         => 'pending',
         ]);
+
+        // Notify landlord / commercial / agent owner so they can review the application.
+        $ownerId = $application->owner_id ?: $property->owner_id;
+        if ($ownerId && $this->notificationsTableAvailable()) {
+            try {
+                $tenantName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))
+                    ?: ($user->email ?? 'A tenant');
+                Notification::create([
+                    'user_id' => $ownerId,
+                    'title'   => 'New Application',
+                    'message' => "{$tenantName} applied for {$property->title}. Review it in Applications.",
+                    'type'    => 'new_application',
+                ]);
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+        }
 
         return response()->json([
             'message' => 'Application submitted successfully',

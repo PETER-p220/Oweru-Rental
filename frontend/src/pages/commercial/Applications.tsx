@@ -105,9 +105,9 @@ const CommercialApplications: React.FC = () => {
 
   const filtered = applications.filter(app => {
     const matchSearch = search === '' ||
-      app.property_title.toLowerCase().includes(search.toLowerCase()) ||
-      app.applicant_name.toLowerCase().includes(search.toLowerCase()) ||
-      app.applicant_email.toLowerCase().includes(search.toLowerCase());
+      (app.property_title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (app.applicant_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (app.applicant_email || '').toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || app.status === statusFilter;
     return matchSearch && matchStatus;
   });

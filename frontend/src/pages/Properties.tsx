@@ -21,7 +21,7 @@ interface Property {
   type?: string; featured?: boolean; furnished?: boolean; description?: string;
   images?: string[];
   property_images?: { image_path: string; is_primary?: boolean }[];
-  owner?: { id?: number; name?: string; first_name?: string; last_name?: string };
+  owner?: { id?: number; name?: string; first_name?: string; last_name?: string; user_type?: string };
   agent?: { id?: number; name?: string; code?: string };
   dalali?: string;
   owner_id?: number;
@@ -65,6 +65,7 @@ const COMMERCIAL_TYPES = ['office', 'retail', 'warehouse', 'commercial', 'indust
 const getListingSource = (p: Property): 'agent' | 'landlord' | 'admin' | 'commercial_admin' => {
   if (p.agent_id) return 'agent';
   if (p.type === 'oweru_rental') return 'admin';
+  if (p.owner?.user_type === 'commercial') return 'commercial_admin';
   if (p.type && COMMERCIAL_TYPES.includes(p.type.toLowerCase())) return 'commercial_admin';
   if (p.owner_id) return 'landlord';
   return 'landlord';
@@ -1239,7 +1240,7 @@ const Properties = () => {
     try {
       await Api.createApplication({
         property_id: selProp.id,
-        owner_id: selProp.owner?.id,
+        owner_id: selProp.owner?.id ?? selProp.owner_id,
         message: `I am interested in renting ${selProp.title}.`,
         payment_status: 'waived',
       });
