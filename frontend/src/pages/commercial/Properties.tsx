@@ -276,7 +276,7 @@ const Properties: React.FC = () => {
             <h1 style={{ fontSize: 'clamp(24px,5vw,34px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 6 }}>My Properties</h1>
             <p style={{ color: '#4A5568', fontSize: 13 }}>Manage your commercial listings</p>
           </div>
-          <Link to="/commercial/properties/add" className="add-btn">
+          <Link to="/dashboard/commercial/properties/add" className="add-btn">
             <Plus size={15} /> Add Property
           </Link>
         </div>
@@ -338,7 +338,7 @@ const Properties: React.FC = () => {
             </div>
             <h3 style={{ color: '#E2D5B0', fontWeight: 700, fontSize: 18, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>No properties found</h3>
             <p style={{ color: '#4A5568', fontSize: 13, marginBottom: 24 }}>Get started by adding your first listing</p>
-            <Link to="/commercial/properties/add" className="add-btn"><Plus size={14} /> Add First Property</Link>
+            <Link to="/dashboard/commercial/properties/add" className="add-btn"><Plus size={14} /> Add First Property</Link>
           </div>
         ) : (
           <div className="props-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
@@ -403,7 +403,7 @@ const Properties: React.FC = () => {
 
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <Link to={`/commercial/properties/${p.id}/edit`} className="action-btn action-edit">
+                      <Link to={`/dashboard/commercial/properties/${p.id}/edit`} className="action-btn action-edit">
                         <Edit size={12} /> Edit
                       </Link>
                       {canToggle && (

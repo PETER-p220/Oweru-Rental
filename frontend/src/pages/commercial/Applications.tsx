@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Eye, Check, X, Clock, User, Building2, Search, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { FileText, Eye, Check, X, Clock, Building2, Search, ChevronLeft, ChevronRight, Plus, AlertCircle } from 'lucide-react';
+import { TOKEN_KEY } from '../../services/api';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -22,70 +23,128 @@ interface Application {
 const CommercialApplications: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, per_page: 10, total: 0 });
 
-  useEffect(() => { fetchApplications(); }, [search, statusFilter, pagination.current_page]);
-
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        setError('Please log in again to view applications.');
+        setApplications([]);
+        return;
+      }
+
       const params = new URLSearchParams({
-        page: pagination.current_page.toString(),
-        per_page: pagination.per_page.toString()
+        page: String(page),
+        per_page: '10',
       });
-      if (search) params.append('search', search);
+      if (search.trim()) params.append('search', search.trim());
       if (statusFilter !== 'all') params.append('status', statusFilter);
 
       const res = await fetch(`${API_BASE}/api/commercial/applications?${params}`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setApplications(data.data || []);
-        setPagination({
-          current_page: data.current_page || 1,
-          last_page: data.last_page || 1,
-          per_page: data.per_page || 10,
-          total: data.total || 0
-        });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setApplications([]);
+        setError(
+          data.message
+            || (res.status === 403
+              ? 'You do not have permission to view commercial applications.'
+              : res.status === 404 || res.status === 500
+                ? 'Applications API is not available on the server yet. Deploy the latest backend and try again.'
+                : `Failed to load applications (${res.status}).`),
+        );
+        return;
       }
+
+      const list = Array.isArray(data.data)
+        ? data.data
+        : Array.isArray(data.data?.data)
+          ? data.data.data
+          : [];
+
+      setApplications(list);
+      setPagination({
+        current_page: data.current_page ?? data.pagination?.current_page ?? page,
+        last_page: data.last_page ?? data.pagination?.last_page ?? 1,
+        per_page: data.per_page ?? data.pagination?.per_page ?? 10,
+        total: data.total ?? data.pagination?.total ?? list.length,
+      });
     } catch (e) {
       console.error('Error fetching applications:', e);
+      setApplications([]);
+      setError('Network error while loading applications.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, statusFilter]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => { fetchApplications(); }, search ? 300 : 0);
+    return () => window.clearTimeout(t);
+  }, [fetchApplications, search]);
 
   const handleApprove = async (id: number) => {
     if (!confirm('Approve this application?')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(TOKEN_KEY);
       const res = await fetch(`${API_BASE}/api/commercial/applications/${id}/approve`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       });
-      if (res.ok) fetchApplications();
-    } catch (e) { console.error(e); }
+      if (res.ok) {
+        fetchApplications();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        alert(body.message || 'Failed to approve application.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to approve application.');
+    }
   };
 
   const handleReject = async (id: number) => {
     if (!confirm('Reject this application?')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(TOKEN_KEY);
       const res = await fetch(`${API_BASE}/api/commercial/applications/${id}/reject`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rejection_reason: 'Application rejected by property owner.' }),
       });
-      if (res.ok) fetchApplications();
-    } catch (e) { console.error(e); }
+      if (res.ok) {
+        fetchApplications();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        alert(body.message || 'Failed to reject application.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to reject application.');
+    }
   };
 
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('en-TZ', {
       day: 'numeric', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+      hour: '2-digit', minute: '2-digit',
     });
 
   const statusConfig: Record<string, { pill: string; icon: React.ReactNode }> = {
@@ -103,23 +162,17 @@ const CommercialApplications: React.FC = () => {
     },
   };
 
-  const filtered = applications.filter(app => {
-    const matchSearch = search === '' ||
-      (app.property_title || '').toLowerCase().includes(search.toLowerCase()) ||
-      (app.applicant_name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (app.applicant_email || '').toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'all' || app.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
-
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#080E1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div className="spinner" />
-        <p style={{ color: '#64748B', fontSize: 13, marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>Loading applications…</p>
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#080E1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="spinner" />
+          <p style={{ color: '#64748B', fontSize: 13, marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>Loading applications…</p>
+        </div>
+        <style>{`.spinner { width: 36px; height: 36px; border: 2px solid rgba(212,175,55,0.15); border-top-color: #D4AF37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#080E1A', fontFamily: "'DM Sans', sans-serif" }}>
@@ -136,7 +189,7 @@ const CommercialApplications: React.FC = () => {
         .app-row:hover { background: rgba(212,175,55,0.025); }
         .prop-icon { width: 44px; height: 44px; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.12); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #D4AF37; }
         .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
-        .action-icon-btn { padding: 8px; background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.12); border-radius: 10px; color: #D4AF37; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; }
+        .action-icon-btn { padding: 8px; background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.12); border-radius: 10px; color: #D4AF37; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; text-decoration: none; }
         .action-icon-btn:hover { background: rgba(212,175,55,0.15); }
         .approve-btn { background: rgba(16,185,129,0.1) !important; border-color: rgba(16,185,129,0.2) !important; color: #10B981 !important; }
         .approve-btn:hover { background: rgba(16,185,129,0.2) !important; }
@@ -152,15 +205,9 @@ const CommercialApplications: React.FC = () => {
         .pager-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .pager-btn:not(:disabled):hover { border-color: rgba(212,175,55,0.3); }
         .empty-icon { width: 56px; height: 56px; background: rgba(255,255,255,0.03); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
-        @media (max-width: 640px) {
-          .app-row { padding: 16px; }
-          .panel-header { padding: 14px 16px; }
-        }
       `}</style>
 
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '28px 20px' }}>
-
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: 6 }}>Applications</p>
@@ -169,12 +216,21 @@ const CommercialApplications: React.FC = () => {
             </h1>
             <p style={{ color: '#4A5568', fontSize: 13 }}>Manage rental applications for your properties</p>
           </div>
-          <Link to="/commercial/properties/add" className="add-btn">
+          <Link to="/dashboard/commercial/properties/add" className="add-btn">
             <Plus size={14} /> Add Property
           </Link>
         </div>
 
-        {/* Filters */}
+        {error && (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 14, padding: '14px 16px', marginBottom: 16, color: '#FCA5A5', fontSize: 13 }}>
+            <AlertCircle size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Could not load applications</div>
+              <div>{error}</div>
+            </div>
+          </div>
+        )}
+
         <div style={{ background: '#0F1829', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, padding: '16px 20px', marginBottom: 20 }}>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 220px', position: 'relative' }}>
@@ -183,13 +239,13 @@ const CommercialApplications: React.FC = () => {
                 type="text"
                 placeholder="Search applications…"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={e => { setSearch(e.target.value); setPage(1); }}
                 className="filter-input"
               />
             </div>
             <select
               value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
+              onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
               className="filter-select"
             >
               <option value="all">All Status</option>
@@ -200,8 +256,7 @@ const CommercialApplications: React.FC = () => {
           </div>
         </div>
 
-        {/* Applications */}
-        {filtered.length === 0 ? (
+        {applications.length === 0 ? (
           <div className="card-panel" style={{ padding: '56px 20px', textAlign: 'center' }}>
             <div className="empty-icon">
               <FileText size={22} color="#2D3748" />
@@ -210,7 +265,7 @@ const CommercialApplications: React.FC = () => {
             <p style={{ color: '#4A5568', fontSize: 13 }}>
               {search || statusFilter !== 'all'
                 ? 'Try adjusting your filters'
-                : 'Applications will appear here when tenants apply for your properties'}
+                : 'Applications will appear here when tenants apply for your commercial properties'}
             </p>
           </div>
         ) : (
@@ -223,8 +278,8 @@ const CommercialApplications: React.FC = () => {
               <span style={{ color: '#2D3748', fontSize: 11, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>{pagination.total} total</span>
             </div>
 
-            {filtered.map(app => {
-              const cfg = statusConfig[app.status];
+            {applications.map(app => {
+              const cfg = statusConfig[app.status] || statusConfig.pending;
               return (
                 <div key={app.id} className="app-row">
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
@@ -236,7 +291,7 @@ const CommercialApplications: React.FC = () => {
                         <span style={{ color: '#F1EDD8', fontWeight: 600, fontSize: 15 }}>{app.property_title}</span>
                         <span className={`status-pill ${cfg.pill}`}>
                           {cfg.icon}
-                          {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                          {(app.status || 'pending').charAt(0).toUpperCase() + (app.status || 'pending').slice(1)}
                         </span>
                       </div>
                       <p style={{ color: '#4A5568', fontSize: 12, marginBottom: 2 }}>{app.property_type} · {app.property_location}</p>
@@ -250,18 +305,18 @@ const CommercialApplications: React.FC = () => {
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <Link
-                          to={`/dashboard/commercial/properties/${app.property_id}`}
+                          to={`/dashboard/commercial/my-properties`}
                           className="action-icon-btn"
-                          title="View Property"
+                          title="View Properties"
                         >
                           <Eye size={14} />
                         </Link>
                         {app.status === 'pending' && (
                           <>
-                            <button onClick={() => handleApprove(app.id)} className="action-icon-btn approve-btn" title="Approve">
+                            <button type="button" onClick={() => handleApprove(app.id)} className="action-icon-btn approve-btn" title="Approve">
                               <Check size={14} />
                             </button>
-                            <button onClick={() => handleReject(app.id)} className="action-icon-btn reject-btn" title="Reject">
+                            <button type="button" onClick={() => handleReject(app.id)} className="action-icon-btn reject-btn" title="Reject">
                               <X size={14} />
                             </button>
                           </>
@@ -282,7 +337,6 @@ const CommercialApplications: React.FC = () => {
           </div>
         )}
 
-        {/* Pagination */}
         {pagination.last_page > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 }}>
             <span style={{ color: '#4A5568', fontSize: 12 }}>
@@ -290,8 +344,9 @@ const CommercialApplications: React.FC = () => {
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
+                type="button"
                 className="pager-btn"
-                onClick={() => setPagination(p => ({ ...p, current_page: Math.max(1, p.current_page - 1) }))}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={pagination.current_page === 1}
               >
                 <ChevronLeft size={14} />
@@ -300,8 +355,9 @@ const CommercialApplications: React.FC = () => {
                 Page {pagination.current_page} of {pagination.last_page}
               </span>
               <button
+                type="button"
                 className="pager-btn"
-                onClick={() => setPagination(p => ({ ...p, current_page: Math.min(p.last_page, p.current_page + 1) }))}
+                onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
                 disabled={pagination.current_page === pagination.last_page}
               >
                 <ChevronRight size={14} />

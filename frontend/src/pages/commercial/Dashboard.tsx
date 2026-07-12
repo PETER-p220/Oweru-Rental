@@ -126,7 +126,7 @@ const Dashboard: React.FC = () => {
               {user?.verified && <span className="verified-badge">✓ Verified Business</span>}
             </div>
           </div>
-          <Link to="/commercial/properties/add" className="add-btn">
+          <Link to="/dashboard/commercial/properties/add" className="add-btn">
             <Plus size={15} />Add Property
           </Link>
         </div>

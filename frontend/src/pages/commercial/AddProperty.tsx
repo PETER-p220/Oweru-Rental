@@ -151,7 +151,7 @@ const AddProperty: React.FC = () => {
 
       if (res.ok) {
         const body = await res.json();
-        navigate('/commercial/properties', {
+        navigate('/dashboard/commercial/my-properties', {
           state: {
             message:  body.message || '🎉 Property created successfully!',
             property: body.property ?? body,
@@ -253,7 +253,7 @@ const AddProperty: React.FC = () => {
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-            <span style={{ color: '#4A5568', fontSize: 12, cursor: 'pointer' }} onClick={() => navigate('/commercial/properties')}>Properties</span>
+            <span style={{ color: '#4A5568', fontSize: 12, cursor: 'pointer' }} onClick={() => navigate('/dashboard/commercial/my-properties')}>Properties</span>
             <ChevronRight size={12} color="#2D3748" />
             <span style={{ color: '#94A3B8', fontSize: 12 }}>Add New</span>
           </div>
@@ -469,7 +469,7 @@ const AddProperty: React.FC = () => {
 
           {/* Actions */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 8 }}>
-            <button type="button" className="btn-cancel" onClick={() => navigate('/commercial/properties')}>Cancel</button>
+            <button type="button" className="btn-cancel" onClick={() => navigate('/dashboard/commercial/my-properties')}>Cancel</button>
             <button type="submit" className="btn-submit" disabled={loading}>
               {loading ? <><div className="spinner" /> Creating…</> : <><Save size={15} /> Create Property</>}
             </button>

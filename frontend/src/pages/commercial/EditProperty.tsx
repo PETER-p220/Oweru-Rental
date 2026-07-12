@@ -62,8 +62,8 @@ const EditProperty: React.FC = () => {
           latitude: data.latitude || 0, longitude: data.longitude || 0,
           amenities: data.amenities.map((a: any) => a.id)
         });
-      } else { navigate('/commercial/properties'); }
-    } catch { navigate('/commercial/properties'); }
+      } else { navigate('/dashboard/commercial/my-properties'); }
+    } catch { navigate('/dashboard/commercial/my-properties'); }
     finally { setFetchLoading(false); }
   };
 
@@ -141,7 +141,7 @@ const EditProperty: React.FC = () => {
         body: fd
       });
       if (res.ok) {
-        navigate('/commercial/properties', { state: { message: 'Property updated successfully and is pending approval' } });
+        navigate('/dashboard/commercial/my-properties', { state: { message: 'Property updated successfully and is pending approval' } });
       } else {
         const err = await res.json();
         if (err.errors) setErrors(err.errors);
@@ -230,7 +230,7 @@ const EditProperty: React.FC = () => {
 
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <button onClick={() => navigate('/commercial/properties')} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#4A5568', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 16, fontFamily: "'DM Sans', sans-serif", transition: 'color 0.2s' }}
+          <button onClick={() => navigate('/dashboard/commercial/my-properties')} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#4A5568', fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 16, fontFamily: "'DM Sans', sans-serif", transition: 'color 0.2s' }}
             onMouseEnter={e => (e.currentTarget.style.color = '#E2D5B0')} onMouseLeave={e => (e.currentTarget.style.color = '#4A5568')}>
             <ArrowLeft size={16} /> Back to Properties
           </button>
@@ -477,7 +477,7 @@ const EditProperty: React.FC = () => {
 
           {/* Actions */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 8 }}>
-            <button type="button" className="btn-cancel" onClick={() => navigate('/commercial/properties')}>Cancel</button>
+            <button type="button" className="btn-cancel" onClick={() => navigate('/dashboard/commercial/my-properties')}>Cancel</button>
             <button type="submit" className="btn-submit" disabled={loading}>
               {loading ? <><div className="spinner" />Updating…</> : <><Save size={15} />Update Property</>}
             </button>

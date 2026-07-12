@@ -83,6 +83,7 @@ import AgentMessagesPage from './pages/agent/MessagesPage';
 import CommercialDashboard from './pages/commercial/Dashboard';
 import CommercialProperties from './pages/commercial/Properties';
 import CommercialAddProperty from './pages/commercial/AddProperty';
+import CommercialEditProperty from './pages/commercial/EditProperty';
 import CommercialApplications from './pages/commercial/Applications';
 import CommercialAnalytics from './pages/commercial/Analytics';
 import CommercialReports from './pages/commercial/Reports';
@@ -234,6 +235,7 @@ const CommercialRoutes = () => (
         <Route path="" element={<CommercialDashboard />} />
         <Route path="my-properties" element={<CommercialProperties />} />
         <Route path="properties/add" element={<CommercialAddProperty />} />
+        <Route path="properties/:id/edit" element={<CommercialEditProperty />} />
         <Route path="applications" element={<CommercialApplications />} />
         <Route path="analytics" element={<CommercialAnalytics />} />
         <Route path="reports" element={<CommercialReports />} />
