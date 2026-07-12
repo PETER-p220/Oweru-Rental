@@ -148,42 +148,38 @@ const LeadsAndVisitors = () => {
       </div>
 
       {/* Stats Cards */}
-      <div style={{ 
-        maxWidth: '1280px', 
-        margin: '24px auto 0', 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-        gap: 16 
-      }}>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#38bdf8' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Total Leads</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {stats?.total_leads || 0}
+      <div style={{ maxWidth: '1280px', margin: '24px auto 0', padding: '0 20px' }}>
+        <div className="lv-stat-grid">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#38bdf8' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Total Leads</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {stats?.total_leads || 0}
+            </div>
           </div>
-        </div>
 
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#22c55e' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>New Today</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {stats?.new_leads || 0}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#22c55e' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>New Today</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {stats?.new_leads || 0}
+            </div>
           </div>
-        </div>
 
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#f59e0b' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Converted</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {stats?.converted_leads || 0}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#f59e0b' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Converted</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {stats?.converted_leads || 0}
+            </div>
           </div>
-        </div>
 
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#fb7185' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Conversion Rate</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {Number(stats?.conversion_rate || 0).toFixed(1)}%
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#fb7185' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Conversion Rate</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {Number(stats?.conversion_rate || 0).toFixed(1)}%
+            </div>
           </div>
         </div>
       </div>
@@ -191,7 +187,7 @@ const LeadsAndVisitors = () => {
       {/* Main Content */}
       <div style={{ 
         maxWidth: '1280px', 
-        margin: '24px auto 0', 
+        margin: '24px auto 40px', 
         background: '#FFFFFF', 
         border: '1px solid #E2E8F0', 
         borderRadius: '12px', 
@@ -287,7 +283,7 @@ const LeadsAndVisitors = () => {
           </div>
 
           {/* Mobile Cards */}
-          <div style={{ display: 'none' }} className="mobile-cards">
+          <div className="mobile-cards" style={{ display: 'none' }}>
             {loading ? (
               <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#64748B' }}>Loading leads...</div>
             ) : filtered.length === 0 ? (
@@ -296,7 +292,6 @@ const LeadsAndVisitors = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {filtered.map((item) => (
                   <div key={item.id} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
-                    {/* Mobile card content remains the same as your original */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                       <div>
                         <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#0F172A', margin: '0 0 4px' }}>
@@ -364,6 +359,14 @@ const LeadsAndVisitors = () => {
 
       {/* Responsive CSS */}
       <style>{`
+        .lv-stat-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+        }
+        @media (max-width: 900px) {
+          .lv-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        }
         @media (max-width: 768px) {
           .desktop-table {
             display: none !important;

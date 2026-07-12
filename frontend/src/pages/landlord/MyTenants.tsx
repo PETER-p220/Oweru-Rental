@@ -176,39 +176,7 @@ const MyTenants = () => {
             </div>
 
             {/* Action buttons */}
-            <div className="tenants-header-actions">
-              {/* Gold CTA — primary action */}
-              <button
-                onClick={handleCreateFromApproved}
-                disabled={creatingTenants}
-                style={{
-                  ...buttonStyle('primary'),
-                  opacity: creatingTenants ? 0.7 : 1,
-                  cursor: creatingTenants ? 'not-allowed' : 'pointer',
-                }}
-              >
-                <UserPlus size={14} />
-                {creatingTenants ? 'Creating…' : 'Sync from Approved Apps'}
-              </button>
-
-              {/* Secondary — white bg on dark panel becomes a light slate outline */}
-              <button
-                onClick={() => loadData(true)}
-                disabled={refreshing}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  padding: '10px 18px', borderRadius: '8px',
-                  background: 'rgba(255,255,255,0.10)',
-                  border: '1px solid rgba(255,255,255,0.20)',
-                  color: '#fff', fontSize: '13px', fontWeight: 700,
-                  cursor: refreshing ? 'not-allowed' : 'pointer',
-                  letterSpacing: '0.02em',
-                }}
-              >
-                <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
-                {refreshing ? 'Refreshing…' : 'Refresh'}
-              </button>
-            </div>
+           
           </div>
 
           {/* Stats + search row */}

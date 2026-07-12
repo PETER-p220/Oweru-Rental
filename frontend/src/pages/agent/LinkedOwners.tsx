@@ -105,6 +105,24 @@ const LinkedOwners = () => {
       minHeight: '100vh', 
       padding: '0' 
     }}>
+      {/* Responsive helpers */}
+      <style>{`
+        .lo-stat-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+        @media (max-width: 700px) {
+          .lo-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        }
+        .lo-desktop-table { display: block; }
+        .lo-mobile-cards { display: none; }
+        @media (max-width: 768px) {
+          .lo-desktop-table { display: none !important; }
+          .lo-mobile-cards { display: block !important; }
+        }
+      `}</style>
+
       {/* Header */}
       <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
         <div style={{ 
@@ -157,32 +175,28 @@ const LinkedOwners = () => {
       </div>
 
       {/* Stats */}
-      <div style={{ 
-        maxWidth: '1280px', 
-        margin: '24px auto 0', 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', 
-        gap: 16 
-      }}>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#38bdf8' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Owners</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {totalWithInfo}
+      <div style={{ maxWidth: '1280px', margin: '24px auto 0', padding: '0 20px' }}>
+        <div className="lo-stat-grid">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#38bdf8' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Owners</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {totalWithInfo}
+            </div>
           </div>
-        </div>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#22c55e' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Properties with Info</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {totalProps}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#22c55e' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Properties with Info</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {totalProps}
+            </div>
           </div>
-        </div>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#a78bfa' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Showing</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-            {filteredRows.length}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#a78bfa' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px' }}>Showing</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              {filteredRows.length}
+            </div>
           </div>
         </div>
       </div>
@@ -190,7 +204,7 @@ const LinkedOwners = () => {
       {/* Main Content */}
       <div style={{ 
         maxWidth: '1280px', 
-        margin: '24px auto 0', 
+        margin: '24px auto 40px', 
         background: '#FFFFFF', 
         border: '1px solid #E2E8F0', 
         borderRadius: '12px', 
@@ -228,7 +242,8 @@ const LinkedOwners = () => {
             </div>
           )}
 
-          <div style={{ overflowX: 'auto' }}>
+          {/* Desktop table */}
+          <div className="lo-desktop-table" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
@@ -348,6 +363,103 @@ const LinkedOwners = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="lo-mobile-cards">
+            {loading ? (
+              <div style={{ padding: '32px 0', textAlign: 'center', color: '#64748B' }}>Loading...</div>
+            ) : filteredRows.length === 0 ? (
+              <div style={{ padding: '32px 0', textAlign: 'center', color: '#64748B' }}>No properties with landlord info found.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {filteredRows.map(({ prop }) => (
+                  <div key={prop.id} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '14px 16px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A', marginBottom: '4px' }}>{prop.title}</div>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '12px',
+                      color: '#94A3B8',
+                      marginBottom: '10px',
+                    }}>
+                      <PinIcon />
+                      {prop.location || '—'}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                      <div>
+                        <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, color: '#94A3B8', marginBottom: '4px' }}>Landlord</div>
+                        {prop.landlord_name ? (
+                          <span style={{ fontSize: '13px' }}>{prop.landlord_name}</span>
+                        ) : (
+                          <NoBadge />
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, color: '#94A3B8', marginBottom: '4px' }}>Phone</div>
+                        {prop.landlord_phone ? (
+                          <a href={`tel:${prop.landlord_phone}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '13px', color: '#2563eb', textDecoration: 'none' }}>
+                            <PhoneIcon />
+                            {prop.landlord_phone}
+                          </a>
+                        ) : (
+                          <NoBadge />
+                        )}
+                      </div>
+                    </div>
+
+                    {prop.landlord_phone && (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <a
+                          href={`tel:${prop.landlord_phone}`}
+                          style={{
+                            flex: 1,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: '#16a34a',
+                            background: 'rgba(22,163,74,0.08)',
+                            border: '1px solid rgba(22,163,74,0.2)',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <PhoneIcon /> Call
+                        </a>
+                        <a
+                          href={`https://wa.me/${prop.landlord_phone.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            flex: 1,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: '#25d366',
+                            background: 'rgba(37,211,102,0.08)',
+                            border: '1px solid rgba(37,211,102,0.2)',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          <WaIcon /> WhatsApp
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

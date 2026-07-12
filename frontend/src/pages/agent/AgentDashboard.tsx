@@ -56,12 +56,6 @@ const AgentDashboard = () => {
             gap: 12px;
           }
         }
-
-        @media (max-width: 400px) {
-          .agent-stat-grid {
-            grid-template-columns: 1fr;
-          }
-        }
       `}</style>
 
       {/* Header */}
@@ -80,93 +74,99 @@ const AgentDashboard = () => {
       </div>
 
       {/* Stats */}
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 40px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#2563eb' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Listings</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.total_listings || 0}</div>
-        </div>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#16a34a' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Active Listings</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.active_listings || 0}</div>
-        </div>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#d97706' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Leads</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.total_leads || 0}</div>
-        </div>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#7c3aed' }} />
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Commissions</div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : formatCurrency(stats?.total_commissions)}</div>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 40px 0' }}>
+        <div className="agent-stat-grid">
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#2563eb' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Listings</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.total_listings || 0}</div>
+          </div>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#16a34a' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Active Listings</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.active_listings || 0}</div>
+          </div>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#d97706' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Leads</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.total_leads || 0}</div>
+          </div>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#7c3aed' }} />
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Commissions</div>
+            <div style={{ fontSize: 'clamp(16px,3vw,28px)', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : formatCurrency(stats?.total_commissions)}</div>
+          </div>
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div style={{ maxWidth: '1280px', margin: '24px auto 0', padding: '12px 16px', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: '8px', color: '#dc2626', fontSize: '14px' }}>
-          {error}
+        <div style={{ maxWidth: '1280px', margin: '24px auto 0', padding: '0 40px' }}>
+          <div style={{ padding: '12px 16px', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: '8px', color: '#dc2626', fontSize: '14px' }}>
+            {error}
+          </div>
         </div>
       )}
 
       {/* Listings + Leads */}
-      <div style={{ maxWidth: '1280px', margin: '24px auto 0', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: '20px' }}>
-        {/* Recent Listings */}
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
-          <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Recent Listings</h2>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={tableStyle}>
-              <thead><tr><th style={thStyle}>Property</th><th style={thStyle}>Owner</th><th style={thStyle}>Price</th></tr></thead>
-              <tbody>
-                {listings.length === 0 ? (
-                  <tr><td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>No listings yet.</td></tr>
-                ) : listings.map((item) => (
-                  <tr key={item.id}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <td style={tdStyle}>
-                      <div style={{ fontWeight: 500, color: '#1e293b' }}>{item.title}</div>
-                      <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.location}</div>
-                    </td>
-                    <td style={tdStyle}><div style={{ color: '#475569' }}>{item.owner?.first_name} {item.owner?.last_name}</div></td>
-                    <td style={{ ...tdStyle, fontWeight: 600, color: '#2563eb' }}>{formatCurrency(item.price)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div style={{ maxWidth: '1280px', margin: '24px auto 40px', padding: '0 20px' }}>
+        <div className="agent-two-col">
+          {/* Recent Listings */}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
+            <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Recent Listings</h2>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={tableStyle}>
+                <thead><tr><th style={thStyle}>Property</th><th style={thStyle}>Owner</th><th style={thStyle}>Price</th></tr></thead>
+                <tbody>
+                  {listings.length === 0 ? (
+                    <tr><td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>No listings yet.</td></tr>
+                  ) : listings.map((item) => (
+                    <tr key={item.id}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: 500, color: '#1e293b' }}>{item.title}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.location}</div>
+                      </td>
+                      <td style={tdStyle}><div style={{ color: '#475569' }}>{item.owner?.first_name} {item.owner?.last_name}</div></td>
+                      <td style={{ ...tdStyle, fontWeight: 600, color: '#2563eb' }}>{formatCurrency(item.price)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+              <Link to="/dashboard/agent/my-listings" style={{ color: '#2563eb', textDecoration: 'none', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View all listings →</Link>
+            </div>
           </div>
-          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
-            <Link to="/dashboard/agent/my-listings" style={{ color: '#2563eb', textDecoration: 'none', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View all listings →</Link>
-          </div>
-        </div>
 
-        {/* Recent Leads */}
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
-          <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Recent Leads</h2>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={tableStyle}>
-              <thead><tr><th style={thStyle}>Lead</th><th style={thStyle}>Source</th><th style={thStyle}>Status</th></tr></thead>
-              <tbody>
-                {leads.length === 0 ? (
-                  <tr><td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>No leads yet.</td></tr>
-                ) : leads.map((item) => (
-                  <tr key={item.id}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <td style={tdStyle}>
-                      <div style={{ fontWeight: 500, color: '#1e293b' }}>{item.name || item.user?.first_name || 'Lead'}</div>
-                      <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.email}</div>
-                    </td>
-                    <td style={{ ...tdStyle, color: '#475569', textTransform: 'capitalize' }}>{item.source || 'website'}</td>
-                    <td style={tdStyle}><StatusBadge status={item.status || 'new'} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
-            <Link to="/dashboard/agent/leads" style={{ color: '#2563eb', textDecoration: 'none', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View all leads →</Link>
+          {/* Recent Leads */}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
+            <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Recent Leads</h2>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={tableStyle}>
+                <thead><tr><th style={thStyle}>Lead</th><th style={thStyle}>Source</th><th style={thStyle}>Status</th></tr></thead>
+                <tbody>
+                  {leads.length === 0 ? (
+                    <tr><td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>No leads yet.</td></tr>
+                  ) : leads.map((item) => (
+                    <tr key={item.id}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <td style={tdStyle}>
+                        <div style={{ fontWeight: 500, color: '#1e293b' }}>{item.name || item.user?.first_name || 'Lead'}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.email}</div>
+                      </td>
+                      <td style={{ ...tdStyle, color: '#475569', textTransform: 'capitalize' }}>{item.source || 'website'}</td>
+                      <td style={tdStyle}><StatusBadge status={item.status || 'new'} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+              <Link to="/dashboard/agent/leads" style={{ color: '#2563eb', textDecoration: 'none', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View all leads →</Link>
+            </div>
           </div>
         </div>
       </div>
