@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle, XCircle, Users, FileText } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, Users, FileText, Mail, Phone, MapPin, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Api from '../../services/api';
 import { formatCurrency, formatDate } from './landlordPageStyles';
 
-// ── Design tokens — 1:1 with landlordPageStyles / MyProperties
+// ── Design tokens — 1:1 with landlordPageStyles / MyProperties (unchanged)
 const C = {
   pageBg:    '#F1F5F9',
   headerBg:  '#1E293B',
@@ -41,6 +41,7 @@ interface OwnerApplication {
   created_at?: string;
   message?: string;
   rejection_reason?: string;
+  rent_payment_status?: string;
   user?: { first_name?: string; last_name?: string; email?: string; phone?: string; };
   property?: { id: number; title?: string; location?: string; price?: number | string; };
 }
@@ -121,20 +122,83 @@ const ApplicationsPage = () => {
   };
 
   const statCards = [
-    { label: 'Total',    value: stats.total,    color: C.text,  bg: C.slate100 },
-    { label: 'Pending',  value: stats.pending,  color: C.amber, bg: C.amberBg  },
-    { label: 'Approved', value: stats.approved, color: C.green, bg: C.greenBg  },
-    { label: 'Rejected', value: stats.rejected, color: C.red,   bg: C.redBg    },
+    { label: 'Total',    value: stats.total,    color: '#FFFFFF', bg: 'rgba(255,255,255,0.07)' },
+    { label: 'Pending',  value: stats.pending,  color: C.amber,   bg: 'rgba(217,119,6,0.14)'   },
+    { label: 'Approved', value: stats.approved, color: C.green,   bg: 'rgba(22,163,74,0.14)'   },
+    { label: 'Rejected', value: stats.rejected, color: C.red,     bg: 'rgba(220,38,38,0.14)'   },
   ];
 
+  const ActionBlock = ({ app }: { app: OwnerApplication }) => (
+    app.status === 'pending' ? (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <button
+          disabled={busyId === app.id}
+          onClick={() => handleApprove(app.id)}
+          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px 16px', background: C.green, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: busyId === app.id ? 'not-allowed' : 'pointer', opacity: busyId === app.id ? 0.6 : 1, boxShadow: '0 2px 8px rgba(22,163,74,0.25)' }}>
+          {busyId === app.id ? '…' : <><CheckCircle size={13} /> Approve</>}
+        </button>
+        <input
+          className="act-input"
+          style={inputCss}
+          placeholder="Rejection reason…"
+          value={rejectionReasons[app.id] || ''}
+          onChange={e => setRejectionReasons(c => ({ ...c, [app.id]: e.target.value }))}
+        />
+        <button
+          disabled={busyId === app.id}
+          onClick={() => handleReject(app.id)}
+          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px 16px', background: C.redBg, color: C.red, border: `1px solid rgba(220,38,38,0.28)`, borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: busyId === app.id ? 'not-allowed' : 'pointer', opacity: busyId === app.id ? 0.6 : 1 }}>
+          {busyId === app.id ? '…' : <><XCircle size={13} /> Reject</>}
+        </button>
+      </div>
+    ) : (
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: C.slate100, borderRadius: '8px', color: C.textMuted, fontSize: '12px', fontWeight: 500 }}>
+        <FileText size={12} /> No action needed
+      </div>
+    )
+  );
+
   return (
-    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', padding: '24px', fontFamily: 'DM Sans, sans-serif' }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } } tr.app-row:hover td { background: #f8fafc; } .act-input:focus { border-color: ${C.gold} !important; outline: none; }`}</style>
+    <div className="apps-page" style={{ backgroundColor: C.pageBg, minHeight: '100vh', padding: '24px', fontFamily: 'DM Sans, sans-serif' }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        tr.app-row:hover td { background: #f8fafc; }
+        .act-input:focus { border-color: ${C.gold} !important; outline: none; }
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        .apps-wrap { max-width: 1200px; margin: 0 auto; }
+        .apps-header { background: ${C.headerBg}; border-radius: 14px; padding: 24px 28px; margin-bottom: 20px; color: #fff; }
+        .apps-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 20px; }
+        .apps-stat { padding: 16px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); }
 
-        {/* ── Slate-800 Header ── */}
-        <div style={{ background: C.headerBg, borderRadius: '14px', padding: '24px 28px', marginBottom: '20px', color: '#fff' }}>
+        .apps-table-wrap { overflow-x: auto; }
+        .apps-cards { display: none; }
+
+        .app-card { background: ${C.cardBg}; border: 1px solid ${C.border}; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(15,23,42,0.04); }
+        .app-card-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid ${C.slate100}; }
+        .app-card-detail { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: ${C.textSub}; margin-top: 5px; }
+        .app-card-detail svg { color: ${C.textMuted}; flex-shrink: 0; }
+        .app-card-section { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid ${C.slate100}; }
+        .app-card-section:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .app-card-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: ${C.textMuted}; margin-bottom: 6px; }
+
+        @media (max-width: 900px) {
+          .apps-header { padding: 20px 20px; border-radius: 12px; }
+        }
+
+        @media (max-width: 640px) {
+          .apps-page { padding: 14px !important; }
+        }
+
+        @media (max-width: 780px) {
+          .apps-table-wrap { display: none; }
+          .apps-cards { display: block; }
+        }
+      `}</style>
+
+      <div className="apps-wrap">
+
+        {/* ── Header ── */}
+        <div className="apps-header">
           <div style={{ fontSize: '11px', letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: '6px' }}>
             Landlord Workspace
           </div>
@@ -146,11 +210,11 @@ const ApplicationsPage = () => {
           </p>
 
           {/* Stat cards inside header */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginTop: '20px' }}>
+          <div className="apps-stats">
             {statCards.map(({ label, value, color, bg }) => (
-              <div key={label} style={{ padding: '16px 18px', borderRadius: '10px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
+              <div key={label} className="apps-stat" style={{ background: bg }}>
                 <div style={{ fontSize: '11px', color: C.textLight, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '6px' }}>{label}</div>
-                <div style={{ fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{value}</div>
+                <div style={{ fontSize: '26px', fontWeight: 800, color, letterSpacing: '-0.02em' }}>{value}</div>
               </div>
             ))}
           </div>
@@ -163,7 +227,7 @@ const ApplicationsPage = () => {
           </div>
         )}
         {success && (
-          <div style={{ background: C.greenBg, border: `1px solid rgba(22,163,74,0.22)`, borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: C.green }}>
+          <div style={{ background: C.greenBg, border: `1px solid rgba(22,163,74,0.22)`, borderRadius: '10px', padding: '14px 18px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: C.green, flexWrap: 'wrap' }}>
             <CheckCircle size={15} />
             <span style={{ flex: 1 }}>{success}</span>
             {success.includes('created') && (
@@ -175,7 +239,7 @@ const ApplicationsPage = () => {
           </div>
         )}
 
-        {/* ── Table Panel ── */}
+        {/* ── Content Panel ── */}
         <div style={{ background: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
           {loading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '56px 28px', color: C.textMuted }}>
@@ -191,106 +255,144 @@ const ApplicationsPage = () => {
               <div style={{ fontSize: '13px', color: C.textSub }}>Applications from tenants will appear here.</div>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-                <thead>
-                  <tr>
-                    {['Applicant', 'Property', 'Applied', 'Status', 'Message', 'Actions'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '13px 18px', fontSize: '11px', letterSpacing: '0.10em', textTransform: 'uppercase', fontWeight: 700, color: C.slate500, borderBottom: `1px solid ${C.border}`, background: C.slate100 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {applications.map((app) => {
-                    const { color, bg } = getStatusColor(app.status);
-                    return (
-                      <tr key={app.id} id={`app-${app.id}`} className="app-row" style={{ transition: 'background 0.15s' }}>
+            <>
+              {/* ── Desktop table ── */}
+              <div className="apps-table-wrap">
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+                  <thead>
+                    <tr>
+                      {['Applicant', 'Property', 'Applied', 'Status', 'Message', 'Actions'].map(h => (
+                        <th key={h} style={{ textAlign: 'left', padding: '13px 18px', fontSize: '11px', letterSpacing: '0.10em', textTransform: 'uppercase', fontWeight: 700, color: C.slate500, borderBottom: `1px solid ${C.border}`, background: C.slate100 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {applications.map((app) => {
+                      const { color, bg } = getStatusColor(app.status);
+                      return (
+                        <tr key={app.id} id={`app-${app.id}`} className="app-row" style={{ transition: 'background 0.15s' }}>
 
-                        {/* Applicant */}
-                        <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top' }}>
-                          <div style={{ fontWeight: 700, fontSize: '14px', color: C.text }}>
-                            {app.user?.first_name} {app.user?.last_name}
-                          </div>
-                          <div style={{ color: C.textMuted, fontSize: '12px', marginTop: '3px' }}>{app.user?.email || '—'}</div>
-                          <div style={{ color: C.textMuted, fontSize: '12px', marginTop: '2px' }}>{app.user?.phone || '—'}</div>
-                        </td>
-
-                        {/* Property */}
-                        <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top' }}>
-                          <div style={{ fontWeight: 600, fontSize: '14px', color: C.text }}>{app.property?.title || 'Untitled property'}</div>
-                          <div style={{ color: C.textMuted, fontSize: '12px', marginTop: '3px' }}>{app.property?.location || '—'}</div>
-                          <div style={{ color: C.gold, fontSize: '13px', fontWeight: 700, marginTop: '3px' }}>{formatCurrency(app.property?.price)}</div>
-                        </td>
-
-                        {/* Applied date */}
-                        <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top', color: C.textMuted, fontSize: '13px', whiteSpace: 'nowrap' }}>
-                          {formatDate(app.created_at)}
-                        </td>
-
-                        {/* Status */}
-                        <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: '999px', background: bg, border: `1px solid ${color}30`, color, fontSize: '11px', fontWeight: 700, textTransform: 'capitalize', letterSpacing: '0.04em' }}>
-                            {app.status || 'unknown'}
-                          </span>
-                          {app.rejection_reason && (
-                            <div style={{ color: C.red, fontSize: '12px', marginTop: '8px', maxWidth: '200px', lineHeight: 1.5 }}>
-                              {app.rejection_reason}
+                          {/* Applicant */}
+                          <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top' }}>
+                            <div style={{ fontWeight: 700, fontSize: '14px', color: C.text }}>
+                              {app.user?.first_name} {app.user?.last_name}
                             </div>
-                          )}
-                        </td>
+                            <div style={{ color: C.textMuted, fontSize: '12px', marginTop: '3px' }}>{app.user?.email || '—'}</div>
+                            <div style={{ color: C.textMuted, fontSize: '12px', marginTop: '2px' }}>{app.user?.phone || '—'}</div>
+                          </td>
 
-                        {/* Message */}
-                        <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top' }}>
-                          <div style={{ maxWidth: '240px', color: C.textSub, fontSize: '13px', lineHeight: 1.6 }}>
-                            {app.message || <span style={{ color: C.textMuted, fontStyle: 'italic' }}>No message provided.</span>}
-                          </div>
-                          <div style={{ marginTop: 10 }}>
-                            {app.rent_payment_status === 'paid' ? (
-                              <div style={{ fontSize: 12, color: C.green, fontWeight: 700 }}>✓ Rent paid</div>
-                            ) : (
-                              <div style={{ fontSize: 12, color: C.amber, fontWeight: 700 }}>
-                                Rent: {(app.rent_payment_status ?? 'pending')}
+                          {/* Property */}
+                          <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top' }}>
+                            <div style={{ fontWeight: 600, fontSize: '14px', color: C.text }}>{app.property?.title || 'Untitled property'}</div>
+                            <div style={{ color: C.textMuted, fontSize: '12px', marginTop: '3px' }}>{app.property?.location || '—'}</div>
+                            <div style={{ color: C.gold, fontSize: '13px', fontWeight: 700, marginTop: '3px' }}>{formatCurrency(app.property?.price)}</div>
+                          </td>
+
+                          {/* Applied date */}
+                          <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top', color: C.textMuted, fontSize: '13px', whiteSpace: 'nowrap' }}>
+                            {formatDate(app.created_at)}
+                          </td>
+
+                          {/* Status */}
+                          <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: '999px', background: bg, border: `1px solid ${color}30`, color, fontSize: '11px', fontWeight: 700, textTransform: 'capitalize', letterSpacing: '0.04em' }}>
+                              {app.status || 'unknown'}
+                            </span>
+                            {app.rejection_reason && (
+                              <div style={{ color: C.red, fontSize: '12px', marginTop: '8px', maxWidth: '200px', lineHeight: 1.5 }}>
+                                {app.rejection_reason}
                               </div>
                             )}
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Actions */}
-                        <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top' }}>
-                          {app.status === 'pending' ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '200px' }}>
-                              <button
-                                disabled={busyId === app.id}
-                                onClick={() => handleApprove(app.id)}
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px 16px', background: C.green, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: busyId === app.id ? 'not-allowed' : 'pointer', opacity: busyId === app.id ? 0.6 : 1, boxShadow: '0 2px 8px rgba(22,163,74,0.25)' }}>
-                                {busyId === app.id ? '…' : <><CheckCircle size={13} /> Approve</>}
-                              </button>
-                              <input
-                                className="act-input"
-                                style={inputCss}
-                                placeholder="Rejection reason…"
-                                value={rejectionReasons[app.id] || ''}
-                                onChange={e => setRejectionReasons(c => ({ ...c, [app.id]: e.target.value }))}
-                              />
-                              <button
-                                disabled={busyId === app.id}
-                                onClick={() => handleReject(app.id)}
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px 16px', background: C.redBg, color: C.red, border: `1px solid rgba(220,38,38,0.28)`, borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: busyId === app.id ? 'not-allowed' : 'pointer', opacity: busyId === app.id ? 0.6 : 1 }}>
-                                {busyId === app.id ? '…' : <><XCircle size={13} /> Reject</>}
-                              </button>
+                          {/* Message */}
+                          <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top' }}>
+                            <div style={{ maxWidth: '240px', color: C.textSub, fontSize: '13px', lineHeight: 1.6 }}>
+                              {app.message || <span style={{ color: C.textMuted, fontStyle: 'italic' }}>No message provided.</span>}
                             </div>
+                            <div style={{ marginTop: 10 }}>
+                              {app.rent_payment_status === 'paid' ? (
+                                <div style={{ fontSize: 12, color: C.green, fontWeight: 700 }}>✓ Rent paid</div>
+                              ) : (
+                                <div style={{ fontSize: 12, color: C.amber, fontWeight: 700 }}>
+                                  Rent: {(app.rent_payment_status ?? 'pending')}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Actions */}
+                          <td style={{ padding: '16px 18px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'top', minWidth: '200px' }}>
+                            <ActionBlock app={app} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* ── Mobile cards ── */}
+              <div className="apps-cards" style={{ padding: '14px' }}>
+                {applications.map((app) => {
+                  const { color, bg } = getStatusColor(app.status);
+                  return (
+                    <div key={app.id} id={`app-${app.id}`} className="app-card">
+
+                      {/* Applicant + status */}
+                      <div className="app-card-row">
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '14.5px', color: C.text }}>
+                            {app.user?.first_name} {app.user?.last_name}
+                          </div>
+                          <div className="app-card-detail"><Mail size={11} />{app.user?.email || '—'}</div>
+                          <div className="app-card-detail"><Phone size={11} />{app.user?.phone || '—'}</div>
+                        </div>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: '999px', background: bg, border: `1px solid ${color}30`, color, fontSize: '10.5px', fontWeight: 700, textTransform: 'capitalize', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                          {app.status || 'unknown'}
+                        </span>
+                      </div>
+
+                      {/* Property */}
+                      <div className="app-card-section">
+                        <div className="app-card-label">Property</div>
+                        <div style={{ fontWeight: 600, fontSize: '14px', color: C.text }}>{app.property?.title || 'Untitled property'}</div>
+                        <div className="app-card-detail"><MapPin size={11} />{app.property?.location || '—'}</div>
+                        <div style={{ color: C.gold, fontSize: '13px', fontWeight: 700, marginTop: '5px' }}>{formatCurrency(app.property?.price)}</div>
+                      </div>
+
+                      {/* Applied + message */}
+                      <div className="app-card-section">
+                        <div className="app-card-detail" style={{ marginTop: 0 }}><Calendar size={11} />Applied {formatDate(app.created_at)}</div>
+                        <div style={{ marginTop: 8, color: C.textSub, fontSize: '13px', lineHeight: 1.6 }}>
+                          {app.message || <span style={{ color: C.textMuted, fontStyle: 'italic' }}>No message provided.</span>}
+                        </div>
+                        {app.rejection_reason && (
+                          <div style={{ color: C.red, fontSize: '12px', marginTop: '8px', lineHeight: 1.5 }}>
+                            {app.rejection_reason}
+                          </div>
+                        )}
+                        <div style={{ marginTop: 8 }}>
+                          {app.rent_payment_status === 'paid' ? (
+                            <div style={{ fontSize: 12, color: C.green, fontWeight: 700 }}>✓ Rent paid</div>
                           ) : (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: C.slate100, borderRadius: '8px', color: C.textMuted, fontSize: '12px', fontWeight: 500 }}>
-                              <FileText size={12} /> No action needed
+                            <div style={{ fontSize: 12, color: C.amber, fontWeight: 700 }}>
+                              Rent: {(app.rent_payment_status ?? 'pending')}
                             </div>
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="app-card-section">
+                        <div className="app-card-label">Actions</div>
+                        <ActionBlock app={app} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </div>

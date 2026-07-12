@@ -105,11 +105,41 @@ const AnalyticsPage = () => {
 
   return (
     <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', fontFamily: 'DM Sans, sans-serif' }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .analytics-header { padding: 24px 24px 28px; }
+        .analytics-header-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .analytics-refresh-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; align-self: flex-start; transition: background 0.15s; font-family: 'DM Sans', sans-serif; }
+        .analytics-refresh-btn:hover { background: rgba(255,255,255,0.16); }
+        .analytics-refresh-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+
+        .analytics-body { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+        .metric-card { background: ${C.cardBg}; border: 1px solid ${C.border}; border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(15,23,42,0.05); display: flex; flex-direction: column; justify-content: space-between; min-height: 108px; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+        .metric-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(15,23,42,0.09); border-color: #CBD5E1; }
+        .metric-icon-badge { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; flex-shrink: 0; }
+        .metric-value { font-size: 22px; font-weight: 800; color: ${C.slate800}; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .metric-label { font-size: 11px; color: ${C.slate500}; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+
+        @media (max-width: 640px) {
+          .analytics-header { padding: 20px 16px 24px; }
+          .analytics-body { padding: 18px 14px; }
+          .metric-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+          .metric-card { padding: 14px 14px; min-height: 96px; border-radius: 10px; }
+          .metric-value { font-size: 19px; }
+          .metric-label { font-size: 10px; }
+        }
+
+        @media (max-width: 380px) {
+          .metric-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+      `}</style>
 
       {/* ══ Slate-800 header — matches _slateHeader() in landlord_analytics.dart ══ */}
-      <div style={{ background: C.headerBg, padding: '24px 24px 28px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div className="analytics-header" style={{ background: C.headerBg }}>
+        <div className="analytics-header-inner">
           <div>
             <div style={{ fontSize: 11, letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: 6 }}>
               Landlord Workspace
@@ -121,15 +151,15 @@ const AnalyticsPage = () => {
               Performance metrics for your portfolio
             </p>
           </div>
-          <button onClick={() => loadData(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>
+          <button className="analytics-refresh-btn" onClick={() => loadData(true)} disabled={refreshing}>
             <RefreshCw size={14} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
-            Refresh
+            {refreshing ? 'Refreshing…' : 'Refresh'}
           </button>
         </div>
       </div>
 
       {/* ══ Page body ══ */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
+      <div className="analytics-body">
 
         {/* Error */}
         {error && (
@@ -149,32 +179,22 @@ const AnalyticsPage = () => {
            * Each card: kCardBg (white), kBorder border, colored icon badge
            * Matches _MetricCard widget exactly
            */
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 14 }}>
+          <div className="metric-grid">
             {METRICS.map((m, idx) => {
               const Icon = ICONS[idx];
               return (
-                <div key={m.label} style={{
-                  background: C.cardBg,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 12,
-                  padding: '16px 18px',
-                  boxShadow: '0 1px 3px rgba(15,23,42,0.05)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  minHeight: 108,
-                }}>
+                <div key={m.label} className="metric-card">
                   {/* Icon badge — matches Container(width:28,height:28,color:item.bg) */}
-                  <div style={{ width: 30, height: 30, borderRadius: 8, background: m.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, flexShrink: 0 }}>
+                  <div className="metric-icon-badge" style={{ background: m.bg }}>
                     <Icon color={m.accent} />
                   </div>
                   <div>
                     {/* Value — matches TextStyle(color:kSlate800, fontSize:20, fontWeight:w800) */}
-                    <div style={{ fontSize: 22, fontWeight: 800, color: C.slate800, letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="metric-value">
                       {m.getValue(analytics)}
                     </div>
                     {/* Label — matches TextStyle(color:kSlate500, fontSize:10) */}
-                    <div style={{ fontSize: 11, color: C.slate500, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <div className="metric-label">
                       {m.label}
                     </div>
                   </div>
