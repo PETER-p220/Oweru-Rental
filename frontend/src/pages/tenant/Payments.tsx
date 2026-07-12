@@ -9,58 +9,34 @@ import { paymentConfirmationMessage } from '../../utils/paymentStatus';
 const StatCard = ({ label, value, icon: Icon, accent = false }: {
   label: string; value: string | number; icon: any; accent?: boolean;
 }) => (
-  <div style={{
-    padding: '22px 20px',
-    background: accent ? 'rgba(200,145,40,0.10)' : '#FFFFFF',
-    border: `1px solid ${accent ? 'rgba(200,145,40,0.28)' : '#E2E8F0'}`,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 12,
-    position: 'relative' as const,
-    overflow: 'hidden' as const,
-    fontFamily: "'DM Sans', sans-serif",
-  }}>
-    {accent && (
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: '#C89128' }} />
-    )}
-    <div style={{
-      width: 36, height: 36,
-      background: accent ? 'rgba(200,145,40,0.2)' : '#F1F5F9',
-      border: `1px solid ${accent ? 'rgba(200,145,40,0.28)' : '#E2E8F0'}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: accent ? '#C89128' : '#64748B',
-    }}>
-      <Icon size={16} />
-    </div>
-    <div>
-      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#64748B', marginBottom: 5 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: accent ? '#C89128' : '#0F172A', letterSpacing: '-0.02em' }}>
-        {value}
-      </div>
+  <div className={`stat-card${accent ? ' accent' : ''}`}>
+    <div className="stat-card-icon"><Icon size={16} /></div>
+    <div className="stat-card-body">
+      <div className="stat-card-label">{label}</div>
+      <div className="stat-card-value">{value}</div>
     </div>
   </div>
 );
 
 /* ─── Status badge ─── */
 const StatusBadge = ({ status }: { status: string }) => {
-  const colorMap: Record<string, string> = {
-    paid: '#C89128', completed: '#C89128', pending: '#f59e0b',
-    failed: '#ef4444', cancelled: '#ef4444',
+  const map: Record<string, { color: string; bg: string; border: string }> = {
+    paid:      { color: '#166534', bg: '#DCFCE7', border: '#BBF7D0' },
+    completed: { color: '#166534', bg: '#DCFCE7', border: '#BBF7D0' },
+    pending:   { color: '#92400E', bg: '#FEF3C7', border: '#FDE68A' },
+    failed:    { color: '#991B1B', bg: '#FEE2E2', border: '#FECACA' },
+    cancelled: { color: '#991B1B', bg: '#FEE2E2', border: '#FECACA' },
   };
-  const color = colorMap[status] ?? '#94A3B8';
+  const s = map[status] ?? { color: '#64748B', bg: '#F1F5F9', border: '#E2E8F0' };
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
-      padding: '3px 10px',
-      background: `${color}18`,
-      border: `1px solid ${color}40`,
-      color,
-      fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-      fontFamily: "'DM Sans', sans-serif",
+      padding: '3px 10px', borderRadius: 999,
+      background: s.bg, border: `1px solid ${s.border}`, color: s.color,
+      fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+      fontFamily: "'Inter', sans-serif",
     }}>
-      <span style={{ width: 5, height: 5, borderRadius: '50%', background: color }} />
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.color }} />
       {status}
     </span>
   );
@@ -212,53 +188,75 @@ const Payments = () => {
       ];
 
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#F1F5F9', color: '#0F172A', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Inter', sans-serif", background: '#F1F5F9', color: '#0F172A', minHeight: '100vh' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
+
+        .pay-header { background: #FFFFFF; border-bottom: 1px solid #E2E8F0; }
+        .pay-header-inner { max-width: 1280px; margin: 0 auto; padding: 40px 40px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+        .pay-eyebrow { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #475569; margin-bottom: 12px; display: inline-flex; align-items: center; gap: 8px; background: #F1F5F9; border: 1px solid #E2E8F0; padding: 5px 12px; border-radius: 20px; }
+        .pay-heading { font-family: 'Inter', sans-serif; font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; color: #0F172A; margin: 0; }
+        .pay-tagline { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 400; color: #64748B; margin: 8px 0 0; }
+
+        /* ── Stat cards — always one row, shrink on mobile ── */
+        .stats-row { max-width: 1280px; margin: 0 auto; padding: 24px 40px 0; display: flex; gap: 14px; }
+        .stat-card { flex: 1; min-width: 0; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px 18px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(15,23,42,0.09); border-color: #CBD5E1; }
+        .stat-card.accent { background: #0F172A; border-color: #0F172A; }
+        .stat-card-icon { width: 34px; height: 34px; border-radius: 9px; background: #F1F5F9; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center; color: #475569; flex-shrink: 0; }
+        .stat-card.accent .stat-card-icon { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.18); color: #FFFFFF; }
+        .stat-card-body { min-width: 0; }
+        .stat-card-label { font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #64748B; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stat-card.accent .stat-card-label { color: rgba(255,255,255,0.6); }
+        .stat-card-value { font-size: 22px; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stat-card.accent .stat-card-value { color: #FFFFFF; }
 
         .pay-panel {
           background: #FFFFFF;
           border: 1px solid #E2E8F0;
-          padding: 32px;
+          border-radius: 14px;
+          padding: 28px;
           margin-bottom: 24px;
           position: relative;
           overflow: hidden;
+          box-shadow: 0 1px 2px rgba(15,23,42,0.04);
         }
 
         .pay-tag {
-          font-size: 10px; font-weight: 600;
-          letter-spacing: 0.24em; text-transform: uppercase;
-          color: #C89128;
+          font-size: 10px; font-weight: 700;
+          letter-spacing: 0.2em; text-transform: uppercase;
+          color: #64748B;
           margin-bottom: 10px;
           display: flex; align-items: center; gap: 8px;
         }
-
-        .pay-tag::before { content: ''; width: 20px; height: 1px; background: #C89128; }
+        .pay-tag::before { content: ''; width: 20px; height: 1px; background: #CBD5E1; }
 
         table.pay-table { width: 100%; border-collapse: collapse; }
         table.pay-table thead th {
-          font-size: 9px; font-weight: 700; letter-spacing: 0.2em;
-          text-transform: uppercase; color: #C89128;
+          font-size: 9.5px; font-weight: 700; letter-spacing: 0.16em;
+          text-transform: uppercase; color: #64748B;
           padding: 10px 16px; text-align: left;
           border-bottom: 1px solid #E2E8F0;
-          background: #F1F5F9;
+          background: #F8FAFC;
+          white-space: nowrap;
         }
         table.pay-table tbody td {
-          padding: 14px 16px; font-size: 14px;
+          padding: 14px 16px; font-size: 13.5px;
           border-bottom: 1px solid #F1F5F9;
           color: #334155; vertical-align: middle;
         }
         table.pay-table tbody tr:last-child td { border-bottom: none; }
-        table.pay-table tbody tr:hover td { background: rgba(200,145,40,0.03); }
+        table.pay-table tbody tr:hover td { background: #F8FAFC; }
 
         .pay-method-select {
           background: #FFFFFF;
           border: 1px solid #E2E8F0;
+          border-radius: 8px;
           color: #0F172A;
           padding: 9px 14px;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Inter', sans-serif;
           font-size: 13px;
           font-weight: 400;
           outline: none;
@@ -266,42 +264,68 @@ const Payments = () => {
           max-width: 220px;
           transition: border-color 0.2s;
         }
-        .pay-method-select:focus { border-color: #C89128; }
+        .pay-method-select:focus { border-color: #94A3B8; }
 
-        .pay-btn-gold {
+        .pay-btn-primary {
           display: inline-flex; align-items: center; gap: 6px;
-          background: #C89128; color: #FFFFFF;
+          background: #0F172A; color: #FFFFFF;
           padding: 10px 20px;
-          font-family: 'DM Sans', sans-serif;
+          border-radius: 8px;
+          font-family: 'Inter', sans-serif;
           font-size: 12px; font-weight: 700;
-          letter-spacing: 0.1em; text-transform: uppercase;
+          letter-spacing: 0.08em; text-transform: uppercase;
           border: none; cursor: pointer;
           transition: background 0.2s;
         }
-        .pay-btn-gold:hover { background: '#D4A84B'; }
+        .pay-btn-primary:hover { background: #1E293B; }
 
         .pay-empty {
           text-align: center;
           padding: 60px 24px;
           color: #64748B;
         }
+
+        @media (max-width: 900px) {
+          .pay-header-inner { padding: 32px 24px 26px; }
+          .stats-row { padding: 20px 24px 0; }
+          .pay-panel { margin-left: 24px; margin-right: 24px; width: auto; }
+        }
+
+        @media (max-width: 640px) {
+          .pay-header-inner { padding: 22px 16px 18px; }
+          .pay-heading { font-size: 21px; }
+          .pay-tagline { font-size: 12.5px; }
+
+          /* Force a single, compact row of stat cards on mobile */
+          .stats-row { padding: 16px 12px 0; gap: 8px; }
+          .stat-card { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 10px; border-radius: 10px; }
+          .stat-card-icon { width: 26px; height: 26px; border-radius: 7px; }
+          .stat-card-icon svg { width: 13px; height: 13px; }
+          .stat-card-label { font-size: 8.5px; letter-spacing: 0.06em; margin-bottom: 2px; }
+          .stat-card-value { font-size: 15px; }
+
+          .pay-panel { margin-left: 12px; margin-right: 12px; padding: 18px; border-radius: 12px; }
+        }
+
+        @media (max-width: 380px) {
+          .stat-card-value { font-size: 13px; }
+          .stat-card-label { font-size: 8px; }
+        }
       `}</style>
 
       {/* ── Header ── */}
-      <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+      <div className="pay-header">
+        <div className="pay-header-inner">
           <div>
-            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
-              Tenant Workspace
-            </div>
-            <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 'clamp(20px,3.5vw,28px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>Rent Payments</h1>
-            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>Pay upcoming months and review your rent history.</p>
+            <div className="pay-eyebrow">Tenant Workspace</div>
+            <h1 className="pay-heading">Rent Payments</h1>
+            <p className="pay-tagline">Pay upcoming months and review your rent history.</p>
           </div>
         </div>
       </div>
 
-      {/* ── Stats ── */}
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 40px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+      {/* ── Stats — always one horizontal row ── */}
+      <div className="stats-row">
         <StatCard label="Total Paid"  value={formatCurrency(stats.total_paid)}   icon={TrendingUp} accent />
         <StatCard label="Pending"     value={stats.pending_payments ?? 0}         icon={Clock} />
         <StatCard label="This Month"  value={formatCurrency(stats.this_month)}    icon={Calendar} />
@@ -346,10 +370,10 @@ const Payments = () => {
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748B', marginBottom: 8 }}>Total</div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#C89128' }}>{formatCurrency(extraTotal)}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: '#0F172A' }}>{formatCurrency(extraTotal)}</div>
             </div>
             <button
-              className="pay-btn-gold"
+              className="pay-btn-primary"
               disabled={creatingExtra || !extraPropertyId || extraTotal <= 0}
               onClick={handleCreateAdditionalMonths}
               style={{ opacity: creatingExtra || !extraPropertyId || extraTotal <= 0 ? 0.6 : 1, justifyContent: 'center' }}
@@ -368,27 +392,26 @@ const Payments = () => {
         </h2>
 
         {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#f87171', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', padding: '13px 16px', marginBottom: 20, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#DC2626', background: '#FEE2E2', border: '1px solid #FECACA', borderRadius: 10, padding: '13px 16px', marginBottom: 20, fontSize: 13 }}>
             <AlertCircle size={15} /> {error}
           </div>
         )}
 
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#64748B', padding: '40px 0' }}>
-            <div style={{ width: 16, height: 16, border: '2px solid #E2E8F0', borderTopColor: '#C89128', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <div style={{ width: 16, height: 16, border: '2px solid #E2E8F0', borderTopColor: '#0F172A', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             Loading payments…
           </div>
         ) : (
           <>
             {/* Next payment banner */}
             {nextPending && (
-              <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', padding: '16px 20px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: '#C89128' }} />
-                <CreditCard size={16} style={{ color: '#C89128', flexShrink: 0 }} />
+              <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', padding: '16px 20px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, marginBottom: 24 }}>
+                <CreditCard size={16} style={{ color: '#0F172A', flexShrink: 0 }} />
                 <span style={{ fontSize: 14, fontWeight: 500, color: '#0F172A' }}>
-                  Next payment due: <span style={{ color: '#C89128', fontWeight: 700 }}>{formatCurrency(nextPending.amount)}</span>
+                  Next payment due: <span style={{ color: '#0F172A', fontWeight: 700 }}>{formatCurrency(nextPending.amount)}</span>
                 </span>
-                <button className="pay-btn-gold" onClick={() => openPayModal(nextPending)}>
+                <button className="pay-btn-primary" onClick={() => openPayModal(nextPending)}>
                   Pay Now
                 </button>
               </div>
@@ -396,12 +419,12 @@ const Payments = () => {
 
             {payments.length === 0 ? (
               <div className="pay-empty">
-                <CreditCard size={40} style={{ color: '#C89128', opacity: 0.3, margin: '0 auto 14px', display: 'block' }} />
-                <div style={{ fontSize: 16, fontWeight: 500, color: '#0F172A', marginBottom: 6 }}>No payments yet</div>
-                <div style={{ fontSize: 13, fontWeight: 300 }}>Site visit fees, first-month rent, and monthly rent will appear here after you pay.</div>
+                <CreditCard size={40} style={{ color: '#94A3B8', margin: '0 auto 14px', display: 'block' }} />
+                <div style={{ fontSize: 16, fontWeight: 600, color: '#0F172A', marginBottom: 6 }}>No payments yet</div>
+                <div style={{ fontSize: 13, fontWeight: 400 }}>Site visit fees, first-month rent, and monthly rent will appear here after you pay.</div>
               </div>
             ) : (
-              <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0' }}>
+              <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: 10 }}>
                 <table className="pay-table">
                   <thead>
                     <tr>
@@ -419,8 +442,8 @@ const Payments = () => {
                             </div>
                           )}
                         </td>
-                        <td><div style={{ fontWeight: 700, color: '#C89128' }}>{formatCurrency(item.amount)}</div></td>
-                        <td><div style={{ fontSize: 13, fontWeight: 300, color: '#64748B' }}>{formatDate(item.paid_at || item.due_date || item.created_at)}</div></td>
+                        <td><div style={{ fontWeight: 700, color: '#0F172A' }}>{formatCurrency(item.amount)}</div></td>
+                        <td><div style={{ fontSize: 13, fontWeight: 400, color: '#64748B' }}>{formatDate(item.paid_at || item.due_date || item.created_at)}</div></td>
                         <td><div style={{ fontSize: 13, color: '#64748B' }}>{item.property?.title || '—'}</div></td>
                         <td><StatusBadge status={item.status || 'unknown'} /></td>
                       </tr>
@@ -435,14 +458,14 @@ const Payments = () => {
 
       {payModalOpen && (activePayment || nextPending) && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
           onClick={(e) => { if (e.target === e.currentTarget && payResult !== 'waiting') closePayModal(); }}
         >
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', maxWidth: 440, width: '100%', padding: 28, position: 'relative' }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 16, maxWidth: 440, width: '100%', padding: 28, position: 'relative', boxShadow: '0 30px 70px rgba(15,23,42,0.25)' }}>
             <h3 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700, color: '#0F172A' }}>Pay Rent</h3>
             <p style={{ margin: '0 0 20px', fontSize: 13, color: '#64748B' }}>
               {(activePayment || nextPending)?.description || 'Rent payment'} —{' '}
-              <strong style={{ color: '#C89128' }}>{formatCurrency((activePayment || nextPending)?.amount)}</strong>
+              <strong style={{ color: '#0F172A' }}>{formatCurrency((activePayment || nextPending)?.amount)}</strong>
             </p>
 
             {payResult !== 'success' && (
@@ -458,9 +481,10 @@ const Payments = () => {
                         onClick={() => setPaymentProvider(p.id as typeof paymentProvider)}
                         style={{
                           padding: '10px 12px',
-                          border: `1px solid ${paymentProvider === p.id ? '#C89128' : '#E2E8F0'}`,
-                          background: paymentProvider === p.id ? 'rgba(200,145,40,0.10)' : '#FFFFFF',
-                          color: paymentProvider === p.id ? '#C89128' : '#334155',
+                          borderRadius: 8,
+                          border: `1px solid ${paymentProvider === p.id ? '#0F172A' : '#E2E8F0'}`,
+                          background: paymentProvider === p.id ? '#F1F5F9' : '#FFFFFF',
+                          color: paymentProvider === p.id ? '#0F172A' : '#334155',
                           fontWeight: 600,
                           fontSize: 12,
                           cursor: payResult === 'waiting' ? 'not-allowed' : 'pointer',
@@ -481,7 +505,7 @@ const Payments = () => {
                     disabled={payResult === 'waiting'}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="07XXXXXXXX"
-                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', fontSize: 14, outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #E2E8F0', borderRadius: 8, fontSize: 14, outline: 'none' }}
                   />
                 </div>
               </>
@@ -489,10 +513,10 @@ const Payments = () => {
 
             {payMessage && (
               <div style={{
-                marginBottom: 14, padding: '10px 12px', fontSize: 13, display: 'flex', alignItems: 'flex-start', gap: 8,
-                color: payResult === 'success' ? '#059669' : payResult === 'error' ? '#dc2626' : '#C89128',
-                background: payResult === 'success' ? 'rgba(5,150,105,0.08)' : payResult === 'error' ? 'rgba(220,38,38,0.08)' : 'rgba(200,145,40,0.08)',
-                border: `1px solid ${payResult === 'success' ? 'rgba(5,150,105,0.2)' : payResult === 'error' ? 'rgba(220,38,38,0.2)' : 'rgba(200,145,40,0.2)'}`,
+                marginBottom: 14, padding: '10px 12px', borderRadius: 8, fontSize: 13, display: 'flex', alignItems: 'flex-start', gap: 8,
+                color: payResult === 'success' ? '#166534' : payResult === 'error' ? '#991B1B' : '#0F172A',
+                background: payResult === 'success' ? '#DCFCE7' : payResult === 'error' ? '#FEE2E2' : '#F1F5F9',
+                border: `1px solid ${payResult === 'success' ? '#BBF7D0' : payResult === 'error' ? '#FECACA' : '#E2E8F0'}`,
               }}>
                 {payResult === 'waiting' && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', flexShrink: 0, marginTop: 2 }} />}
                 {payResult === 'success' && <CheckCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />}
@@ -505,7 +529,7 @@ const Payments = () => {
                 type="button"
                 onClick={closePayModal}
                 disabled={paying || payResult === 'waiting'}
-                style={{ flex: 1, padding: '11px 14px', border: '1px solid #E2E8F0', background: '#FFFFFF', cursor: payResult === 'waiting' ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+                style={{ flex: 1, padding: '11px 14px', border: '1px solid #E2E8F0', borderRadius: 8, background: '#FFFFFF', cursor: payResult === 'waiting' ? 'not-allowed' : 'pointer', fontWeight: 600 }}
               >
                 {payResult === 'success' ? 'Done' : 'Cancel'}
               </button>
@@ -514,8 +538,8 @@ const Payments = () => {
                   type="button"
                   onClick={handlePay}
                   disabled={paying || phoneNumber.length < 10}
-                  className="pay-btn-gold"
-                  style={{ flex: 2, opacity: paying || phoneNumber.length < 10 ? 0.6 : 1 }}
+                  className="pay-btn-primary"
+                  style={{ flex: 2, opacity: paying || phoneNumber.length < 10 ? 0.6 : 1, justifyContent: 'center' }}
                 >
                   {paying ? 'Processing…' : 'Confirm Payment'}
                 </button>
