@@ -42,6 +42,7 @@ class Property extends Model
         'clicks',
         'shares',
         'images',
+        'videos',
         'amenities',
     ];
 
@@ -55,6 +56,7 @@ class Property extends Model
         'furnished'       => 'boolean',
         'available_from'  => 'date',
         'images'          => 'array',
+        'videos'          => 'array',
         'amenities'       => 'array',
     ];
 

@@ -367,6 +367,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/properties',                    [AdminController::class, 'getProperties']);
         Route::post('/admin/properties',                   [AdminController::class, 'createProperty']);
         Route::post('/admin/properties/upload-images',     [AdminController::class, 'uploadImages']);
+        Route::post('/admin/properties/upload-videos',     [AdminController::class, 'uploadVideos']);
         Route::put('/admin/properties/{property}',         [AdminController::class, 'updateProperty']);
         Route::delete('/admin/properties/{property}',      [AdminController::class, 'deleteProperty']);
 

@@ -209,6 +209,7 @@ const AdminRoutes = () => (
         <Route path="verification" element={<VerificationManagement />} />
         <Route path="alerts" element={<AlertsManagement />} />
         <Route path="activity-logs" element={<ActivityLogs />} />
+        <Route path="bnb-properties" element={<BnbProperties />} />
         <Route path="settings" element={<SystemSettings />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Building, Plus, Edit2, Trash2, Search, Filter, MapPin, Bed, Bath,
-  Square, Eye, Heart, Shield, TrendingUp, DollarSign
+  Building, Plus, Edit2, Trash2, Search, MapPin, Bed, Bath,
+  Square, Shield, TrendingUp, DollarSign, Upload, X, Check, Video
 } from 'lucide-react';
 import Api from '../../services/api';
 
@@ -21,26 +21,58 @@ const formatCurrency = (amount: number) =>
     minimumFractionDigits: 0, maximumFractionDigits: 0,
   }).format(amount);
 
+const commonAmenities = [
+  'Parking', 'Security', 'Gym', 'Pool', 'Garden', 'Balcony',
+  'Air Conditioning', 'Heating', 'WiFi', 'Kitchen', 'Laundry',
+  'Elevator', 'Storage', 'Pet Friendly', 'Furnished',
+];
+
+interface MediaItem {
+  file?: File;
+  preview: string;
+  uploadedUrl?: string;
+}
+
+const parseAmenities = (amenities: unknown): string[] => {
+  if (Array.isArray(amenities)) return amenities.filter((a): a is string => typeof a === 'string');
+  if (typeof amenities === 'string' && amenities.trim()) {
+    try {
+      const parsed = JSON.parse(amenities);
+      if (Array.isArray(parsed)) return parsed.filter((a): a is string => typeof a === 'string');
+    } catch { /* fall through */ }
+    return amenities.split(',').map(a => a.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+const mediaUrl = (path: string) =>
+  path.startsWith('http') ? path : `${VITE_STORAGE}/${path.replace(/^\//, '')}`;
+
+const emptyForm = () => ({
+  title: '',
+  description: '',
+  location: '',
+  address: '',
+  price: '',
+  type: 'oweru_rental',
+  bedrooms: '',
+  bathrooms: '',
+  area: '',
+  featured: true,
+  available: true,
+  amenities: [] as string[],
+  images: [] as MediaItem[],
+  videos: [] as MediaItem[],
+});
+
 const OweruProperties = () => {
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProperty, setEditingProperty] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    location: '',
-    address: '',
-    price: '',
-    type: 'oweru_rental',
-    bedrooms: '',
-    bathrooms: '',
-    area: '',
-    featured: true,
-    available: true,
-    amenities: ''
-  });
+  const [formData, setFormData] = useState(emptyForm());
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadProperties();
@@ -58,37 +90,136 @@ const OweruProperties = () => {
     }
   };
 
+  const handleAmenityToggle = (amenity: string) => {
+    setFormData(prev => ({
+      ...prev,
+      amenities: prev.amenities.includes(amenity)
+        ? prev.amenities.filter(a => a !== amenity)
+        : [...prev.amenities, amenity],
+    }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const preview = event.target?.result as string;
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, { file, preview }],
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      if (!file.type.startsWith('video/')) return;
+      const preview = URL.createObjectURL(file);
+      setFormData(prev => ({
+        ...prev,
+        videos: [...prev.videos, { file, preview }],
+      }));
+    });
+    e.target.value = '';
+  };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
+  };
+
+  const removeVideo = (index: number) => {
+    setFormData(prev => {
+      const item = prev.videos[index];
+      if (item?.file && item.preview.startsWith('blob:')) URL.revokeObjectURL(item.preview);
+      return { ...prev, videos: prev.videos.filter((_, i) => i !== index) };
+    });
+  };
+
+  const uploadMediaFiles = async () => {
+    const token = localStorage.getItem('token');
+    const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
+    const base = import.meta.env.VITE_API_URL;
+
+    const newImages = formData.images.filter(i => i.file);
+    const existingImages = formData.images.filter(i => i.uploadedUrl).map(i => i.uploadedUrl!);
+    let uploadedImages = [...existingImages];
+
+    if (newImages.length > 0) {
+      const fd = new FormData();
+      newImages.forEach((item, index) => fd.append(`images[${index}]`, item.file!));
+      const res = await fetch(`${base}/api/admin/properties/upload-images`, { method: 'POST', headers, body: fd });
+      if (!res.ok) throw new Error('Failed to upload images');
+      const data = await res.json();
+      uploadedImages = [...uploadedImages, ...(data.images || [])];
+    }
+
+    const newVideos = formData.videos.filter(v => v.file);
+    const existingVideos = formData.videos.filter(v => v.uploadedUrl).map(v => v.uploadedUrl!);
+    let uploadedVideos = [...existingVideos];
+
+    if (newVideos.length > 0) {
+      const fd = new FormData();
+      newVideos.forEach((item, index) => fd.append(`videos[${index}]`, item.file!));
+      const res = await fetch(`${base}/api/admin/properties/upload-videos`, { method: 'POST', headers, body: fd });
+      if (!res.ok) throw new Error('Failed to upload videos');
+      const data = await res.json();
+      uploadedVideos = [...uploadedVideos, ...(data.videos || [])];
+    }
+
+    return { images: uploadedImages, videos: uploadedVideos };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.images.length === 0 && formData.videos.length === 0) {
+      alert('Please add at least one image or video.');
+      return;
+    }
+
     try {
+      setUploading(true);
+      const { images, videos } = await uploadMediaFiles();
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        address: formData.address,
+        price: formData.price,
+        type: formData.type,
+        bedrooms: formData.bedrooms,
+        bathrooms: formData.bathrooms,
+        area: formData.area,
+        featured: formData.featured,
+        available: formData.available,
+        amenities: formData.amenities,
+        images,
+        videos,
+        landlord_name: 'Oweru Rental',
+      };
+
       if (editingProperty) {
-        await Api.updateAdminProperty(editingProperty.id, formData);
+        await Api.updateAdminProperty(editingProperty.id, payload);
         alert('Oweru property updated successfully!');
       } else {
-        await Api.createAdminProperty(formData);
+        await Api.createAdminProperty(payload);
         alert('Oweru property created successfully!');
       }
-      
+
       setShowAddModal(false);
       setEditingProperty(null);
-      setFormData({
-        title: '',
-        description: '',
-        location: '',
-        address: '',
-        price: '',
-        type: 'oweru_rental',
-        bedrooms: '',
-        bathrooms: '',
-        area: '',
-        featured: true,
-        available: true,
-        amenities: ''
-      });
+      setFormData(emptyForm());
       loadProperties();
     } catch (error: any) {
       console.error('Failed to save property:', error);
-      alert(error?.response?.data?.message || 'Failed to save property');
+      alert(error?.message || error?.response?.data?.message || 'Failed to save property');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -104,9 +235,17 @@ const OweruProperties = () => {
       bedrooms: property.bedrooms || '',
       bathrooms: property.bathrooms || '',
       area: property.area || '',
-      featured: property.featured || true,
-      available: property.available || true,
-      amenities: property.amenities || ''
+      featured: property.featured ?? true,
+      available: property.available ?? true,
+      amenities: parseAmenities(property.amenities),
+      images: (property.images || []).map((url: string) => ({
+        preview: mediaUrl(url),
+        uploadedUrl: url,
+      })),
+      videos: (property.videos || []).map((url: string) => ({
+        preview: mediaUrl(url),
+        uploadedUrl: url,
+      })),
     });
     setShowAddModal(true);
   };
@@ -164,7 +303,7 @@ const OweruProperties = () => {
             </p>
           </div>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => { setEditingProperty(null); setFormData(emptyForm()); setShowAddModal(true); }}
             style={{
               background: 'var(--color-primary)',
               color: 'var(--color-background)',
@@ -329,7 +468,7 @@ const OweruProperties = () => {
           </div>
           {!searchTerm && (
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => { setEditingProperty(null); setFormData(emptyForm()); setShowAddModal(true); }}
               style={{
                 background: 'var(--color-primary)',
                 color: 'var(--color-background)',
@@ -539,7 +678,7 @@ const OweruProperties = () => {
             borderRadius: '12px',
             padding: '24px',
             width: '90%',
-            maxWidth: '500px',
+            maxWidth: '720px',
             maxHeight: '90vh',
             overflowY: 'auto'
           }}>
@@ -741,25 +880,106 @@ const OweruProperties = () => {
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
                   Amenities
                 </label>
-                <textarea
-                  value={formData.amenities}
-                  onChange={(e) => setFormData({ ...formData, amenities: e.target.value })}
-                  rows={2}
-                  placeholder="e.g. Parking, Security, Pool, WiFi"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'var(--color-background)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    color: 'var(--color-text)',
-                    fontSize: '14px',
-                    resize: 'vertical'
-                  }}
-                />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px' }}>
+                  {commonAmenities.map(amenity => {
+                    const selected = formData.amenities.includes(amenity);
+                    return (
+                      <div
+                        key={amenity}
+                        onClick={() => handleAmenityToggle(amenity)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '8px',
+                          padding: '8px 10px', borderRadius: '6px', cursor: 'pointer',
+                          border: `1.5px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                          background: selected ? 'rgba(201, 168, 76, 0.12)' : 'var(--color-background)',
+                        }}
+                      >
+                        <div style={{
+                          width: 16, height: 16, borderRadius: '3px', flexShrink: 0,
+                          border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-text-muted)'}`,
+                          background: selected ? 'var(--color-primary)' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {selected && <Check size={10} color="#080808" />}
+                        </div>
+                        <span style={{ fontSize: '12px', color: selected ? 'var(--color-primary)' : 'var(--color-text)' }}>
+                          {amenity}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Images */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                  Property Images
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px' }}>
+                  {formData.images.map((item, index) => (
+                    <div key={index} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                      <img src={item.preview} alt={`Property ${index + 1}`}
+                        style={{ width: '100%', height: '90px', objectFit: 'cover', display: 'block' }} />
+                      <button type="button" onClick={() => removeImage(index)}
+                        style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '4px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <label style={{
+                    height: '90px', borderRadius: '8px', border: '2px dashed var(--color-border)',
+                    background: 'var(--color-background)', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  }}>
+                    <input type="file" multiple accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                    <Upload size={20} style={{ color: 'var(--color-text-muted)', marginBottom: 4 }} />
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Add Images</span>
+                  </label>
+                </div>
+                {formData.images.length > 0 && (
+                  <div style={{ marginTop: 6, fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                    {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} selected
+                  </div>
+                )}
+              </div>
+
+              {/* Videos */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                  Property Videos
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
+                  {formData.videos.map((item, index) => (
+                    <div key={index} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                      <video src={item.preview} style={{ width: '100%', height: '90px', objectFit: 'cover', display: 'block' }} muted />
+                      <button type="button" onClick={() => removeVideo(index)}
+                        style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '4px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <label style={{
+                    height: '90px', borderRadius: '8px', border: '2px dashed var(--color-border)',
+                    background: 'var(--color-background)', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  }}>
+                    <input type="file" multiple accept="video/*" onChange={handleVideoUpload} style={{ display: 'none' }} />
+                    <Video size={20} style={{ color: 'var(--color-text-muted)', marginBottom: 4 }} />
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Add Videos</span>
+                  </label>
+                </div>
+                {formData.videos.length > 0 && (
+                  <div style={{ marginTop: 6, fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                    {formData.videos.length} video{formData.videos.length !== 1 ? 's' : ''} selected
+                  </div>
+                )}
+                <div style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                  Add at least one image or video
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
@@ -789,20 +1009,7 @@ const OweruProperties = () => {
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingProperty(null);
-                    setFormData({
-                      title: '',
-                      description: '',
-                      location: '',
-                      address: '',
-                      price: '',
-                      type: 'oweru_rental',
-                      bedrooms: '',
-                      bathrooms: '',
-                      area: '',
-                      featured: true,
-                      available: true,
-                      amenities: ''
-                    });
+                    setFormData(emptyForm());
                   }}
                   style={{
                     background: 'transparent',
@@ -818,18 +1025,19 @@ const OweruProperties = () => {
                 </button>
                 <button
                   type="submit"
+                  disabled={uploading}
                   style={{
-                    background: 'var(--color-primary)',
+                    background: uploading ? 'var(--color-text-muted)' : 'var(--color-primary)',
                     color: 'var(--color-background)',
                     border: 'none',
                     borderRadius: '6px',
                     padding: '8px 16px',
                     fontSize: '14px',
                     fontWeight: 600,
-                    cursor: 'pointer'
+                    cursor: uploading ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  {editingProperty ? 'Update Property' : 'Create Property'}
+                  {uploading ? 'Saving…' : editingProperty ? 'Update Property' : 'Create Property'}
                 </button>
               </div>
             </form>

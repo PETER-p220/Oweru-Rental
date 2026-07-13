@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   Home, Check, X, Plus, Upload, ArrowLeft, ArrowRight,
-  AlertCircle, Building, CheckCircle,
+  AlertCircle, Building, CheckCircle, Video,
 } from 'lucide-react';
 import Api from '../../services/api';
 
@@ -33,6 +33,11 @@ interface ImageFile {
   preview: string;
 }
 
+interface VideoFile {
+  file: File;
+  preview: string;
+}
+
 const AddProperty = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -51,6 +56,7 @@ const AddProperty = () => {
     bathrooms: 1,
     amenities: [] as string[],
     images: [] as ImageFile[],
+    videos: [] as VideoFile[],
     featured: false,
     latitude: '',
     longitude: '',
@@ -105,6 +111,25 @@ const AddProperty = () => {
     setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
   };
 
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      if (file.type.startsWith('video/')) {
+        const preview = URL.createObjectURL(file);
+        setFormData(prev => ({ ...prev, videos: [...prev.videos, { file, preview }] }));
+      }
+    });
+    e.target.value = '';
+  };
+
+  const removeVideo = (index: number) => {
+    setFormData(prev => {
+      const item = prev.videos[index];
+      if (item) URL.revokeObjectURL(item.preview);
+      return { ...prev, videos: prev.videos.filter((_, i) => i !== index) };
+    });
+  };
+
   const validateStep = () => {
     const errs: string[] = [];
     if (step === 1) {
@@ -117,7 +142,9 @@ const AddProperty = () => {
       if (!formData.price || Number(formData.price) <= 0) errs.push('Price must be greater than 0');
     }
     if (step === 3) {
-      if (formData.images.length === 0) errs.push('At least one image is required');
+      if (formData.images.length === 0 && formData.videos.length === 0) {
+        errs.push('At least one image or video is required');
+      }
     }
     setErrors(errs);
     return errs.length === 0;
@@ -154,6 +181,10 @@ const AddProperty = () => {
       let response;
       if (isAdmin) {
         let uploadedImages: string[] = [];
+        let uploadedVideos: string[] = [];
+        const token = localStorage.getItem('token');
+        const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+
         if (formData.images.length > 0) {
           const imageFormData = new FormData();
           formData.images.forEach((imageFile, index) => {
@@ -161,9 +192,7 @@ const AddProperty = () => {
           });
           try {
             const imageResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/properties/upload-images`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Accept': 'application/json' },
-              body: imageFormData,
+              method: 'POST', headers, body: imageFormData,
             });
             if (imageResponse.ok) {
               const imageResult = await imageResponse.json();
@@ -172,17 +201,34 @@ const AddProperty = () => {
           } catch (error) { console.error('Error uploading images:', error); }
         }
 
+        if (formData.videos.length > 0) {
+          const videoFormData = new FormData();
+          formData.videos.forEach((videoFile, index) => {
+            videoFormData.append(`videos[${index}]`, videoFile.file);
+          });
+          try {
+            const videoResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/properties/upload-videos`, {
+              method: 'POST', headers, body: videoFormData,
+            });
+            if (videoResponse.ok) {
+              const videoResult = await videoResponse.json();
+              uploadedVideos = videoResult.videos || [];
+            }
+          } catch (error) { console.error('Error uploading videos:', error); }
+        }
+
         const propertyData = {
           title: formData.title, description: formData.description,
           price: formData.price, location: formData.location, address: formData.address,
           type: isOweruProperty ? 'oweru_rental' : formData.type,
           bedrooms: formData.bedrooms, bathrooms: formData.bathrooms,
           featured: formData.featured, latitude: formData.latitude, longitude: formData.longitude,
-          amenities: formData.amenities.join(', '),
+          amenities: formData.amenities,
           owner_id: user?.id || 1,
           landlord_name: 'Oweru Rental',
           landlord_phone: '+255 712 345 678',
           images: uploadedImages,
+          videos: uploadedVideos,
         };
         response = await Api.createAdminProperty(propertyData);
       } else {
@@ -445,10 +491,10 @@ const AddProperty = () => {
                 </div>
               </div>
 
-              {/* Images */}
+              {/* Images & Videos */}
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, fontSize: '13px', color: C.text }}>Property Images *</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, fontSize: '13px', color: C.text }}>Property Images</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
                   {formData.images.map((imageFile, index) => (
                     <div key={index} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: `1px solid ${C.border}` }}>
                       <img src={imageFile.preview} alt={`Property ${index + 1}`}
@@ -472,10 +518,42 @@ const AddProperty = () => {
                   </label>
                 </div>
                 {formData.images.length > 0 && (
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: C.textMuted }}>
+                  <div style={{ marginBottom: '16px', fontSize: '12px', color: C.textMuted }}>
                     {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} selected
                   </div>
                 )}
+
+                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, fontSize: '13px', color: C.text }}>Property Videos</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                  {formData.videos.map((videoFile, index) => (
+                    <div key={index} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: `1px solid ${C.border}` }}>
+                      <video src={videoFile.preview} style={{ width: '100%', height: '140px', objectFit: 'cover', display: 'block' }} muted />
+                      <button type="button" onClick={() => removeVideo(index)}
+                        style={{ position: 'absolute', top: '8px', right: '8px', width: 28, height: 28, background: 'rgba(15,23,42,0.7)', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <label style={{
+                    height: '140px', borderRadius: '10px', border: `2px dashed ${C.border}`,
+                    background: C.slate100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', transition: 'border-color 0.2s',
+                  }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = C.gold)}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = C.border)}>
+                    <input type="file" multiple accept="video/*" onChange={handleVideoUpload} style={{ display: 'none' }} />
+                    <Video size={28} style={{ color: C.textMuted, marginBottom: '8px' }} />
+                    <span style={{ fontSize: '12px', color: C.textMuted, fontWeight: 600 }}>Upload Videos</span>
+                  </label>
+                </div>
+                {formData.videos.length > 0 && (
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: C.textMuted }}>
+                    {formData.videos.length} video{formData.videos.length !== 1 ? 's' : ''} selected
+                  </div>
+                )}
+                <div style={{ marginTop: '6px', fontSize: '12px', color: C.textMuted }}>
+                  Add at least one image or video
+                </div>
               </div>
 
               {/* Featured */}

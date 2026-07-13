@@ -383,7 +383,7 @@ class AdminController extends Controller
     public function uploadImages(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'images.*' => 'required|file|image|mimes:jpeg,jpg,png,gif|max:5120',
+            'images.*' => 'required|file|image|mimes:jpeg,jpg,png,gif,webp|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -394,10 +394,14 @@ class AdminController extends Controller
         }
 
         $uploadedImages = [];
+        $directory = public_path('storage/properties');
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
 
         foreach ($request->file('images') ?? [] as $image) {
             $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('storage/properties'), $imageName);
+            $image->move($directory, $imageName);
             $uploadedImages[] = 'storage/properties/' . $imageName;
         }
 
@@ -405,6 +409,55 @@ class AdminController extends Controller
             'message' => 'Images uploaded successfully',
             'images' => $uploadedImages
         ]);
+    }
+
+    public function uploadVideos(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'videos.*' => 'required|file|mimes:mp4,webm,mov,avi|max:51200',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $uploadedVideos = [];
+        $directory = public_path('storage/properties/videos');
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        foreach ($request->file('videos') ?? [] as $video) {
+            $videoName = time() . '_' . uniqid() . '.' . $video->getClientOriginalExtension();
+            $video->move($directory, $videoName);
+            $uploadedVideos[] = 'storage/properties/videos/' . $videoName;
+        }
+
+        return response()->json([
+            'message' => 'Videos uploaded successfully',
+            'videos' => $uploadedVideos
+        ]);
+    }
+
+    private function normalizeAmenities(mixed $amenities): array
+    {
+        if (is_array($amenities)) {
+            return array_values(array_filter($amenities, fn ($a) => is_string($a) && trim($a) !== ''));
+        }
+
+        if (is_string($amenities) && trim($amenities) !== '') {
+            $decoded = json_decode($amenities, true);
+            if (is_array($decoded)) {
+                return array_values(array_filter($decoded, fn ($a) => is_string($a) && trim($a) !== ''));
+            }
+
+            return array_values(array_filter(array_map('trim', explode(',', $amenities))));
+        }
+
+        return [];
     }
 
     public function createProperty(Request $request): JsonResponse
@@ -423,7 +476,9 @@ class AdminController extends Controller
             'available' => 'boolean',
             'images' => 'nullable|array',
             'images.*' => 'string',
-            'amenities' => 'nullable|string',
+            'videos' => 'nullable|array',
+            'videos.*' => 'string',
+            'amenities' => 'nullable',
             'owner_id' => 'nullable|integer|exists:users,id',
             'landlord_name' => 'nullable|string|max:255',
             'landlord_phone' => 'nullable|string|max:20',
@@ -449,7 +504,8 @@ class AdminController extends Controller
             'featured' => $request->boolean('featured', true),
             'available' => $request->boolean('available', true),
             'images' => $request->images ?? [],
-            'amenities' => $request->amenities,
+            'videos' => $request->videos ?? [],
+            'amenities' => $this->normalizeAmenities($request->amenities),
             'owner_id' => $request->owner_id,
             'agent_id' => null,
             'landlord_name' => $request->landlord_name ?? 'Oweru Rental',
@@ -478,7 +534,9 @@ class AdminController extends Controller
             'available' => 'sometimes|boolean',
             'images' => 'sometimes|array',
             'images.*' => 'string',
-            'amenities' => 'sometimes|string',
+            'videos' => 'sometimes|array',
+            'videos.*' => 'string',
+            'amenities' => 'sometimes',
         ]);
 
         if ($validator->fails()) {
@@ -488,7 +546,12 @@ class AdminController extends Controller
             ], 422);
         }
 
-        $property->update($request->all());
+        $data = $request->all();
+        if ($request->has('amenities')) {
+            $data['amenities'] = $this->normalizeAmenities($request->amenities);
+        }
+
+        $property->update($data);
 
         return response()->json([
             'message' => 'Property updated successfully',
