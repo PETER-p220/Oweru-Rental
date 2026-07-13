@@ -1,19 +1,34 @@
 import { useState, useEffect } from 'react';
 import {
   Building, Plus, Edit2, Trash2, Search, MapPin, Bed, Bath,
-  Square, Shield, TrendingUp, DollarSign, Upload, X, Check, Video
+  Square, Shield, DollarSign, Upload, X, Check, Video, CheckCircle,
 } from 'lucide-react';
 import Api from '../../services/api';
 
 const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
 
-const getImage = (property: any): string => {
-  if (property.images?.length) {
-    const i = property.images[0];
-    return i.startsWith('http') ? i : `${VITE_STORAGE}/storage/${i}`;
-  }
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
+const C = {
+  pageBg:    '#F1F5F9',
+  headerBg:  '#1E293B',
+  cardBg:    '#FFFFFF',
+  border:    '#E2E8F0',
+  text:      '#0F172A',
+  textSub:   '#475569',
+  textMuted: '#94A3B8',
+  textLight: '#CBD5E1',
+  slate100:  '#F1F5F9',
+  slate200:  '#E2E8F0',
+  gold:      '#C89128',
+  goldGlow:  '0 4px 14px rgba(200,145,40,0.26)',
+  goldBg:    'rgba(200,145,40,0.08)',
+  goldBorder:'rgba(200,145,40,0.28)',
+  green:     '#16A34A', greenBg: '#DCFCE7',
+  blue:      '#2563EB', blueBg:  '#DBEAFE',
+  amber:     '#D97706', amberBg: '#FEF3C7',
+  red:       '#DC2626', redBg:   '#FFE4E6',
 };
+
+const PLACEHOLDER_IMG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%23E2E8F0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%2394A3B8'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-TZ', {
@@ -48,18 +63,15 @@ const parseAmenities = (amenities: unknown): string[] => {
 const mediaUrl = (path: string) =>
   path.startsWith('http') ? path : `${VITE_STORAGE}/${path.replace(/^\//, '')}`;
 
+const getImage = (property: any): string => {
+  if (property.images?.length) return mediaUrl(property.images[0]);
+  return PLACEHOLDER_IMG;
+};
+
 const emptyForm = () => ({
-  title: '',
-  description: '',
-  location: '',
-  address: '',
-  price: '',
-  type: 'oweru_rental',
-  bedrooms: '',
-  bathrooms: '',
-  area: '',
-  featured: true,
-  available: true,
+  title: '', description: '', location: '', address: '', price: '',
+  type: 'oweru_rental', bedrooms: '', bathrooms: '', area: '',
+  featured: true, available: true,
   amenities: [] as string[],
   images: [] as MediaItem[],
   videos: [] as MediaItem[],
@@ -74,9 +86,19 @@ const OweruProperties = () => {
   const [formData, setFormData] = useState(emptyForm());
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    loadProperties();
-  }, []);
+  const inputCss: React.CSSProperties = {
+    width: '100%', padding: '10px 14px', borderRadius: '8px',
+    background: C.cardBg, border: `1.5px solid ${C.border}`,
+    color: C.text, fontSize: '14px', fontFamily: 'DM Sans, sans-serif',
+    outline: 'none', boxSizing: 'border-box',
+  };
+
+  const labelCss: React.CSSProperties = {
+    display: 'block', marginBottom: '7px', fontWeight: 700,
+    fontSize: '13px', color: C.text, fontFamily: 'DM Sans, sans-serif',
+  };
+
+  useEffect(() => { loadProperties(); }, []);
 
   const loadProperties = async () => {
     try {
@@ -90,6 +112,12 @@ const OweruProperties = () => {
     }
   };
 
+  const openAddModal = () => {
+    setEditingProperty(null);
+    setFormData(emptyForm());
+    setShowAddModal(true);
+  };
+
   const handleAmenityToggle = (amenity: string) => {
     setFormData(prev => ({
       ...prev,
@@ -100,15 +128,13 @@ const OweruProperties = () => {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(file => {
+    Array.from(e.target.files || []).forEach(file => {
       if (!file.type.startsWith('image/')) return;
       const reader = new FileReader();
       reader.onload = (event) => {
-        const preview = event.target?.result as string;
         setFormData(prev => ({
           ...prev,
-          images: [...prev.images, { file, preview }],
+          images: [...prev.images, { file, preview: event.target?.result as string }],
         }));
       };
       reader.readAsDataURL(file);
@@ -117,13 +143,11 @@ const OweruProperties = () => {
   };
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(file => {
+    Array.from(e.target.files || []).forEach(file => {
       if (!file.type.startsWith('video/')) return;
-      const preview = URL.createObjectURL(file);
       setFormData(prev => ({
         ...prev,
-        videos: [...prev.videos, { file, preview }],
+        videos: [...prev.videos, { file, preview: URL.createObjectURL(file) }],
       }));
     });
     e.target.value = '';
@@ -186,20 +210,12 @@ const OweruProperties = () => {
       setUploading(true);
       const { images, videos } = await uploadMediaFiles();
       const payload = {
-        title: formData.title,
-        description: formData.description,
-        location: formData.location,
-        address: formData.address,
-        price: formData.price,
-        type: formData.type,
-        bedrooms: formData.bedrooms,
-        bathrooms: formData.bathrooms,
-        area: formData.area,
-        featured: formData.featured,
-        available: formData.available,
-        amenities: formData.amenities,
-        images,
-        videos,
+        title: formData.title, description: formData.description,
+        location: formData.location, address: formData.address,
+        price: formData.price, type: formData.type,
+        bedrooms: formData.bedrooms, bathrooms: formData.bathrooms, area: formData.area,
+        featured: formData.featured, available: formData.available,
+        amenities: formData.amenities, images, videos,
         landlord_name: 'Oweru Rental',
       };
 
@@ -216,7 +232,6 @@ const OweruProperties = () => {
       setFormData(emptyForm());
       loadProperties();
     } catch (error: any) {
-      console.error('Failed to save property:', error);
       alert(error?.message || error?.response?.data?.message || 'Failed to save property');
     } finally {
       setUploading(false);
@@ -226,688 +241,307 @@ const OweruProperties = () => {
   const handleEdit = (property: any) => {
     setEditingProperty(property);
     setFormData({
-      title: property.title || '',
-      description: property.description || '',
-      location: property.location || '',
-      address: property.address || '',
-      price: property.price || '',
-      type: property.type || 'oweru_rental',
-      bedrooms: property.bedrooms || '',
-      bathrooms: property.bathrooms || '',
-      area: property.area || '',
-      featured: property.featured ?? true,
+      title: property.title || '', description: property.description || '',
+      location: property.location || '', address: property.address || '',
+      price: property.price || '', type: property.type || 'oweru_rental',
+      bedrooms: property.bedrooms || '', bathrooms: property.bathrooms || '',
+      area: property.area || '', featured: property.featured ?? true,
       available: property.available ?? true,
       amenities: parseAmenities(property.amenities),
-      images: (property.images || []).map((url: string) => ({
-        preview: mediaUrl(url),
-        uploadedUrl: url,
-      })),
-      videos: (property.videos || []).map((url: string) => ({
-        preview: mediaUrl(url),
-        uploadedUrl: url,
-      })),
+      images: (property.images || []).map((url: string) => ({ preview: mediaUrl(url), uploadedUrl: url })),
+      videos: (property.videos || []).map((url: string) => ({ preview: mediaUrl(url), uploadedUrl: url })),
     });
     setShowAddModal(true);
   };
 
   const handleDelete = async (propertyId: number) => {
-    if (confirm('Are you sure you want to delete this Oweru property?')) {
-      try {
-        await Api.deleteAdminProperty(propertyId);
-        alert('Oweru property deleted successfully!');
-        loadProperties();
-      } catch (error) {
-        console.error('Failed to delete property:', error);
-        alert('Failed to delete property');
-      }
+    if (!confirm('Are you sure you want to delete this Oweru property?')) return;
+    try {
+      await Api.deleteAdminProperty(propertyId);
+      loadProperties();
+    } catch {
+      alert('Failed to delete property');
     }
   };
 
-  const filteredProperties = properties.filter(property =>
-    property.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    property.location?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProperties = properties.filter(p =>
+    p.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const featuredCount = properties.filter(p => p.featured).length;
+  const totalValue = properties.reduce((sum, p) => sum + (p.price || 0), 0);
+
   return (
-    <div style={{
-      fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-      background: '#080808',
-      color: '#e8e4dc',
-      minHeight: '100vh',
-      padding: '24px'
-    }}>
+    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', padding: '24px', fontFamily: 'DM Sans, sans-serif' }}>
       <style>{`
-        :root {
-          --color-background: #080808;
-          --color-surface: #1a1a1a;
-          --color-surface-light: #252525;
-          --color-border: rgba(201, 168, 76, 0.2);
-          --color-primary: #c9a84c;
-          --color-primary-light: #e8c97a;
-          --color-text: #e8e4dc;
-          --color-text-muted: #7a7060;
-          --color-success: #10b981;
-          --color-danger: #ef4444;
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .op-input:focus { border-color: ${C.gold} !important; box-shadow: 0 0 0 3px rgba(200,145,40,0.12); }
+        .op-card { transition: box-shadow 0.2s, transform 0.2s; }
+        .op-card:hover { box-shadow: 0 8px 28px rgba(15,23,42,0.10) !important; transform: translateY(-2px); }
+        .amenity-item:hover { border-color: ${C.gold} !important; }
+        .upload-zone:hover { border-color: ${C.gold} !important; }
       `}</style>
 
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div>
-            <h1 style={{ fontSize: '32px', fontWeight: 600, color: 'var(--color-text)', margin: '0 0 8px' }}>
-              Oweru Rental Properties
-            </h1>
-            <p style={{ fontSize: '16px', color: 'var(--color-text-muted)', margin: 0 }}>
-              Manage properties that appear on the homepage
-            </p>
-          </div>
-          <button
-            onClick={() => { setEditingProperty(null); setFormData(emptyForm()); setShowAddModal(true); }}
-            style={{
-              background: 'var(--color-primary)',
-              color: 'var(--color-background)',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 20px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <Plus size={16} />
-            Add Oweru Property
-          </button>
-        </div>
+      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
 
-        {/* Search Bar */}
-        <div style={{ position: 'relative', maxWidth: '400px' }}>
-          <Search size={18} style={{ 
-            position: 'absolute', 
-            left: '12px', 
-            top: '50%', 
-            transform: 'translateY(-50%)',
-            color: 'var(--color-text-muted)'
-          }} />
-          <input
-            type="text"
-            placeholder="Search properties..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px 12px 10px 40px',
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: '8px',
-              color: 'var(--color-text)',
-              fontSize: '14px'
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '20px', 
-        marginBottom: '32px' 
-      }}>
-        <div style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '12px',
-          padding: '20px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <div style={{ 
-              width: '40px', 
-              height: '40px', 
-              borderRadius: '8px',
-              background: 'rgba(201, 168, 76, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Building size={20} style={{ color: 'var(--color-primary)' }} />
-            </div>
+        {/* Header */}
+        <div style={{ background: C.headerBg, borderRadius: '14px', padding: '24px 28px', marginBottom: '20px', color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--color-text)' }}>
-                {properties.length}
+              <div style={{ fontSize: '11px', letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: '6px' }}>
+                Admin · Oweru Rentals
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                Total Properties
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                <h1 style={{ margin: 0, fontSize: 'clamp(20px,3.5vw,26px)', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
+                  Oweru Rental Properties
+                </h1>
+                <span style={{ padding: '3px 10px', background: 'rgba(255,255,255,0.14)', borderRadius: '999px', fontSize: '12px', color: '#fff', fontWeight: 700 }}>
+                  {properties.length} total
+                </span>
               </div>
+              <p style={{ margin: 0, color: C.textLight, fontSize: '14px', lineHeight: 1.6 }}>
+                Manage homepage featured rentals — add images, videos, and amenities.
+              </p>
             </div>
-          </div>
-        </div>
-
-        <div style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '12px',
-          padding: '20px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <div style={{ 
-              width: '40px', 
-              height: '40px', 
-              borderRadius: '8px',
-              background: 'rgba(16, 185, 129, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
+            <button type="button" onClick={openAddModal} style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '11px 22px', backgroundColor: C.gold, color: '#fff',
+              border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700,
+              boxShadow: C.goldGlow, cursor: 'pointer', alignSelf: 'flex-start',
             }}>
-              <TrendingUp size={20} style={{ color: 'var(--color-success)' }} />
-            </div>
-            <div>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--color-text)' }}>
-                {properties.filter(p => p.featured).length}
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                Featured
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '12px',
-          padding: '20px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <div style={{ 
-              width: '40px', 
-              height: '40px', 
-              borderRadius: '8px',
-              background: 'rgba(239, 68, 68, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <DollarSign size={20} style={{ color: 'var(--color-danger)' }} />
-            </div>
-            <div>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: 'var(--color-text)' }}>
-                {formatCurrency(properties.reduce((sum, p) => sum + (p.price || 0), 0))}
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                Total Value
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Properties Grid */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
-          Loading Oweru properties...
-        </div>
-      ) : filteredProperties.length === 0 ? (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '60px 20px',
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '12px'
-        }}>
-          <Building size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
-          <div style={{ fontSize: '18px', marginBottom: '8px' }}>
-            {searchTerm ? 'No properties found' : 'No Oweru properties yet'}
-          </div>
-          <div style={{ fontSize: '14px', color: 'var(--color-text-muted)', marginBottom: '20px' }}>
-            {searchTerm ? 'Try adjusting your search' : 'Add properties to feature on the homepage'}
-          </div>
-          {!searchTerm && (
-            <button
-              onClick={() => { setEditingProperty(null); setFormData(emptyForm()); setShowAddModal(true); }}
-              style={{
-                background: 'var(--color-primary)',
-                color: 'var(--color-background)',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '10px 16px',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}
-            >
-              Add First Property
+              <Plus size={16} /> Add Oweru Property
             </button>
-          )}
+          </div>
         </div>
-      ) : (
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', 
-          gap: '20px' 
-        }}>
-          {filteredProperties.map((property) => (
-            <div key={property.id} style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              position: 'relative'
+
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+          {[
+            { label: 'Total Properties', value: properties.length, color: C.text, bg: C.slate100, icon: Building },
+            { label: 'Featured', value: featuredCount, color: C.green, bg: C.greenBg, icon: Shield },
+            { label: 'Available', value: properties.filter(p => p.available).length, color: C.blue, bg: C.blueBg, icon: CheckCircle },
+            { label: 'Portfolio Value', value: formatCurrency(totalValue), color: C.amber, bg: C.amberBg, icon: DollarSign },
+          ].map(({ label, value, color, bg, icon: Icon }) => (
+            <div key={label} style={{
+              backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '12px',
+              padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px',
+              boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
             }}>
-              {/* Property Image */}
-              <div style={{ 
-                height: '200px',
-                background: `url(${getImage(property)}) center/cover`,
-                position: 'relative'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  background: 'var(--color-primary)',
-                  color: 'var(--color-background)',
-                  padding: '4px 8px',
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  borderRadius: '4px',
-                  textTransform: 'uppercase'
-                }}>
-                  Oweru Rental
-                </div>
-                {property.featured && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '12px',
-                    left: '12px',
-                    background: 'rgba(16, 185, 129, 0.9)',
-                    color: 'white',
-                    padding: '4px 8px',
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}>
-                    <Shield size={12} />
-                    Featured
-                  </div>
-                )}
+              <div style={{ width: 40, height: 40, borderRadius: '10px', backgroundColor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon size={18} style={{ color }} />
               </div>
-
-              {/* Property Details */}
-              <div style={{ padding: '16px' }}>
-                <h3 style={{ 
-                  fontSize: '18px', 
-                  fontWeight: 600, 
-                  color: 'var(--color-text)', 
-                  margin: '0 0 8px' 
-                }}>
-                  {property.title}
-                </h3>
-                
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
-                  color: 'var(--color-text-muted)', 
-                  fontSize: '13px', 
-                  marginBottom: '12px' 
-                }}>
-                  <MapPin size={12} />
-                  {property.location}
-                </div>
-
-                <div style={{ 
-                  fontSize: '20px', 
-                  fontWeight: 700, 
-                  color: 'var(--color-primary)', 
-                  marginBottom: '12px' 
-                }}>
-                  {formatCurrency(property.price)}
-                  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 400, marginLeft: '4px' }}>
-                    /month
-                  </span>
-                </div>
-
-                {property.bedrooms && (
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '16px', 
-                    fontSize: '13px', 
-                    color: 'var(--color-text-muted)', 
-                    marginBottom: '12px' 
-                  }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Bed size={12} />
-                      {property.bedrooms} beds
-                    </span>
-                    {property.bathrooms && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Bath size={12} />
-                        {property.bathrooms} baths
-                      </span>
-                    )}
-                    {property.area && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Square size={12} />
-                        {property.area}m²
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                <p style={{ 
-                  fontSize: '13px', 
-                  color: 'var(--color-text-muted)', 
-                  marginBottom: '16px', 
-                  lineHeight: 1.5,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
-                }}>
-                  {property.description}
-                </p>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => handleEdit(property)}
-                    style={{
-                      background: 'transparent',
-                      color: 'var(--color-primary)',
-                      border: `1px solid var(--color-primary)`,
-                      borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <Edit2 size={12} />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(property.id)}
-                    style={{
-                      background: 'transparent',
-                      color: 'var(--color-danger)',
-                      border: `1px solid var(--color-danger)`,
-                      borderRadius: '6px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <Trash2 size={12} />
-                    Delete
-                  </button>
-                </div>
+              <div>
+                <div style={{ fontSize: typeof value === 'number' ? '22px' : '15px', fontWeight: 800, color: C.text, lineHeight: 1.2 }}>{value}</div>
+                <div style={{ fontSize: '11px', color: C.textMuted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>{label}</div>
               </div>
             </div>
           ))}
         </div>
-      )}
 
-      {/* Add/Edit Modal */}
+        {/* Search */}
+        <div style={{ backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '16px 20px', marginBottom: '20px', boxShadow: '0 1px 3px rgba(15,23,42,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', maxWidth: '420px', backgroundColor: C.slate100, border: `1.5px solid ${C.border}`, borderRadius: '8px', padding: '0 12px' }}>
+            <Search size={15} style={{ color: C.textMuted, flexShrink: 0 }} />
+            <input
+              type="text" placeholder="Search by title or location…" value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ flex: 1, padding: '9px 0', border: 'none', background: 'transparent', color: C.text, fontSize: '13px', outline: 'none' }}
+            />
+          </div>
+        </div>
+
+        {/* Grid */}
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '48px', color: C.textMuted }}>
+            <div style={{ width: 32, height: 32, border: `3px solid ${C.border}`, borderTopColor: C.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            Loading Oweru properties…
+          </div>
+        ) : filteredProperties.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 24px', backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '14px' }}>
+            <Building size={40} style={{ color: C.textMuted, opacity: 0.4, marginBottom: '14px' }} />
+            <div style={{ fontSize: '17px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>
+              {searchTerm ? 'No properties found' : 'No Oweru properties yet'}
+            </div>
+            <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '20px' }}>
+              {searchTerm ? 'Try a different search term' : 'Add your first Oweru rental to feature on the homepage'}
+            </div>
+            {!searchTerm && (
+              <button type="button" onClick={openAddModal} style={{
+                padding: '10px 20px', background: C.gold, color: '#fff', border: 'none',
+                borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: C.goldGlow,
+              }}>
+                Add First Property
+              </button>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
+            {filteredProperties.map(property => (
+              <div key={property.id} className="op-card" style={{
+                backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '14px',
+                overflow: 'hidden', boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
+              }}>
+                <div style={{ height: '190px', background: `url(${getImage(property)}) center/cover`, position: 'relative' }}>
+                  <span style={{
+                    position: 'absolute', top: '10px', right: '10px', background: C.gold, color: '#fff',
+                    padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '4px', textTransform: 'uppercase',
+                  }}>Oweru Rental</span>
+                  {property.featured && (
+                    <span style={{
+                      position: 'absolute', top: '10px', left: '10px', background: C.green, color: '#fff',
+                      padding: '3px 8px', fontSize: '10px', fontWeight: 700, borderRadius: '4px',
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                    }}>
+                      <Shield size={11} /> Featured
+                    </span>
+                  )}
+                </div>
+                <div style={{ padding: '16px 18px' }}>
+                  <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 800, color: C.text }}>{property.title}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: C.textMuted, fontSize: '13px', marginBottom: '10px' }}>
+                    <MapPin size={13} /> {property.location}
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: C.gold, marginBottom: '10px' }}>
+                    {formatCurrency(property.price)}
+                    <span style={{ fontSize: '12px', color: C.textMuted, fontWeight: 500, marginLeft: '4px' }}>/month</span>
+                  </div>
+                  {(property.bedrooms || property.bathrooms || property.area) && (
+                    <div style={{ display: 'flex', gap: '14px', fontSize: '12px', color: C.textSub, marginBottom: '10px' }}>
+                      {property.bedrooms > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Bed size={12} />{property.bedrooms}</span>}
+                      {property.bathrooms > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Bath size={12} />{property.bathrooms}</span>}
+                      {property.area > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Square size={12} />{property.area}m²</span>}
+                    </div>
+                  )}
+                  {parseAmenities(property.amenities).length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                      {parseAmenities(property.amenities).slice(0, 4).map(a => (
+                        <span key={a} style={{ fontSize: '11px', padding: '2px 8px', background: C.goldBg, border: `1px solid ${C.goldBorder}`, borderRadius: '999px', color: C.gold, fontWeight: 600 }}>{a}</span>
+                      ))}
+                      {parseAmenities(property.amenities).length > 4 && (
+                        <span style={{ fontSize: '11px', color: C.textMuted }}>+{parseAmenities(property.amenities).length - 4} more</span>
+                      )}
+                    </div>
+                  )}
+                  <p style={{ fontSize: '13px', color: C.textSub, margin: '0 0 14px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {property.description}
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="button" onClick={() => handleEdit(property)} style={{
+                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                      padding: '8px 12px', background: C.cardBg, border: `1.5px solid ${C.gold}`, borderRadius: '8px',
+                      color: C.gold, fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                    }}>
+                      <Edit2 size={13} /> Edit
+                    </button>
+                    <button type="button" onClick={() => handleDelete(property.id)} style={{
+                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                      padding: '8px 12px', background: C.redBg, border: `1.5px solid rgba(220,38,38,0.25)`, borderRadius: '8px',
+                      color: C.red, fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                    }}>
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add / Edit Modal */}
       {showAddModal && (
         <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
+          position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+        }} onClick={() => !uploading && setShowAddModal(false)}>
           <div style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: '12px',
-            padding: '24px',
-            width: '90%',
-            maxWidth: '720px',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            <h2 style={{ 
-              fontSize: '20px', 
-              fontWeight: 600, 
-              color: 'var(--color-text)', 
-              margin: '0 0 20px' 
-            }}>
-              {editingProperty ? 'Edit Oweru Property' : 'Add Oweru Property'}
-            </h2>
+            background: C.cardBg, borderRadius: '14px', width: '100%', maxWidth: '760px',
+            maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(15,23,42,0.18)',
+            border: `1px solid ${C.border}`,
+          }} onClick={e => e.stopPropagation()}>
 
-            <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  autoComplete="off"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Enter property title"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'var(--color-background)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    color: 'var(--color-text)',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                  Description *
-                </label>
-                <textarea
-                  name="description"
-                  required
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  placeholder="Describe the property features, amenities, and location..."
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'var(--color-background)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    color: 'var(--color-text)',
-                    fontSize: '14px',
-                    resize: 'vertical'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                  Location *
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  autoComplete="off"
-                  required
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="e.g., Dar es Salaam, Arusha, Mwanza"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'var(--color-background)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    color: 'var(--color-text)',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                  Address
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  autoComplete="street-address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Enter full address or street name"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'var(--color-background)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    color: 'var(--color-text)',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                  Price (TZS) *
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  autoComplete="off"
-                  required
-                  min="0"
-                  step="1000"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  placeholder="e.g., 500000"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    background: 'var(--color-background)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    color: 'var(--color-text)',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                    Bedrooms
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.bedrooms}
-                    onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      background: 'var(--color-background)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '6px',
-                      color: 'var(--color-text)',
-                      fontSize: '14px'
-                    }}
-                  />
+            {/* Modal header */}
+            <div style={{ background: C.headerBg, padding: '20px 24px', borderRadius: '14px 14px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: '4px' }}>
+                  {editingProperty ? 'Edit Property' : 'New Property'}
                 </div>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#fff' }}>
+                  {editingProperty ? editingProperty.title : 'Add Oweru Rental Property'}
+                </h2>
+              </div>
+              <button type="button" onClick={() => !uploading && setShowAddModal(false)} style={{
+                width: 32, height: 32, borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.12)',
+                color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <X size={16} />
+              </button>
+            </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                    Bathrooms
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.bathrooms}
-                    onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      background: 'var(--color-background)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '6px',
-                      color: 'var(--color-text)',
-                      fontSize: '14px'
-                    }}
-                  />
+            <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={labelCss}>Property Title *</label>
+                  <input className="op-input" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} style={inputCss} placeholder="e.g., Modern 2BR Apartment in Masaki" />
                 </div>
-
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '4px' }}>
-                    Area (m²)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={formData.area}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      background: 'var(--color-background)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '6px',
-                      color: 'var(--color-text)',
-                      fontSize: '14px'
-                    }}
-                  />
+                  <label style={labelCss}>Location *</label>
+                  <input className="op-input" required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} style={inputCss} placeholder="Dar es Salaam, Masaki" />
+                </div>
+                <div>
+                  <label style={labelCss}>Address</label>
+                  <input className="op-input" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={inputCss} placeholder="Full street address" />
+                </div>
+                <div>
+                  <label style={labelCss}>Monthly Price (TZS) *</label>
+                  <input className="op-input" type="number" required min="0" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} style={inputCss} placeholder="800000" />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', gridColumn: '1 / -1' }}>
+                  <div>
+                    <label style={labelCss}>Bedrooms</label>
+                    <input className="op-input" type="number" min="0" value={formData.bedrooms} onChange={e => setFormData({ ...formData, bedrooms: e.target.value })} style={inputCss} />
+                  </div>
+                  <div>
+                    <label style={labelCss}>Bathrooms</label>
+                    <input className="op-input" type="number" min="0" value={formData.bathrooms} onChange={e => setFormData({ ...formData, bathrooms: e.target.value })} style={inputCss} />
+                  </div>
+                  <div>
+                    <label style={labelCss}>Area (m²)</label>
+                    <input className="op-input" type="number" min="0" step="0.1" value={formData.area} onChange={e => setFormData({ ...formData, area: e.target.value })} style={inputCss} />
+                  </div>
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={labelCss}>Description *</label>
+                  <textarea className="op-input" required rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ ...inputCss, minHeight: '90px', resize: 'vertical' }} placeholder="Describe the property…" />
                 </div>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
-                  Amenities
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px' }}>
+              {/* Amenities — checkbox grid (same as landlord) */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={labelCss}>Amenities</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))', gap: '8px' }}>
                   {commonAmenities.map(amenity => {
                     const selected = formData.amenities.includes(amenity);
                     return (
-                      <div
-                        key={amenity}
+                      <div key={amenity} className="amenity-item"
                         onClick={() => handleAmenityToggle(amenity)}
                         style={{
-                          display: 'flex', alignItems: 'center', gap: '8px',
-                          padding: '8px 10px', borderRadius: '6px', cursor: 'pointer',
-                          border: `1.5px solid ${selected ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                          background: selected ? 'rgba(201, 168, 76, 0.12)' : 'var(--color-background)',
-                        }}
-                      >
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
+                          border: `1.5px solid ${selected ? C.gold : C.border}`,
+                          background: selected ? C.goldBg : C.slate100,
+                          transition: 'all 0.15s',
+                        }}>
                         <div style={{
-                          width: 16, height: 16, borderRadius: '3px', flexShrink: 0,
-                          border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-text-muted)'}`,
-                          background: selected ? 'var(--color-primary)' : 'transparent',
+                          width: 18, height: 18, borderRadius: '4px', flexShrink: 0,
+                          border: `2px solid ${selected ? C.gold : C.textMuted}`,
+                          background: selected ? C.gold : 'transparent',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
-                          {selected && <Check size={10} color="#080808" />}
+                          {selected && <Check size={11} color="#fff" />}
                         </div>
-                        <span style={{ fontSize: '12px', color: selected ? 'var(--color-primary)' : 'var(--color-text)' }}>
-                          {amenity}
-                        </span>
+                        <span style={{ fontSize: '13px', fontWeight: 500, color: selected ? C.gold : C.textSub }}>{amenity}</span>
                       </div>
                     );
                   })}
@@ -915,129 +549,85 @@ const OweruProperties = () => {
               </div>
 
               {/* Images */}
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
-                  Property Images
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px' }}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={labelCss}>Property Images</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
                   {formData.images.map((item, index) => (
-                    <div key={index} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
-                      <img src={item.preview} alt={`Property ${index + 1}`}
-                        style={{ width: '100%', height: '90px', objectFit: 'cover', display: 'block' }} />
-                      <button type="button" onClick={() => removeImage(index)}
-                        style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '4px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <X size={12} />
-                      </button>
+                    <div key={index} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: `1px solid ${C.border}` }}>
+                      <img src={item.preview} alt="" style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block' }} />
+                      <button type="button" onClick={() => removeImage(index)} style={{
+                        position: 'absolute', top: 6, right: 6, width: 26, height: 26,
+                        background: 'rgba(15,23,42,0.75)', border: 'none', borderRadius: '6px',
+                        color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}><X size={13} /></button>
                     </div>
                   ))}
-                  <label style={{
-                    height: '90px', borderRadius: '8px', border: '2px dashed var(--color-border)',
-                    background: 'var(--color-background)', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  <label className="upload-zone" style={{
+                    height: '100px', borderRadius: '10px', border: `2px dashed ${C.border}`,
+                    background: C.slate100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                   }}>
                     <input type="file" multiple accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
-                    <Upload size={20} style={{ color: 'var(--color-text-muted)', marginBottom: 4 }} />
-                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Add Images</span>
+                    <Upload size={22} style={{ color: C.textMuted, marginBottom: 4 }} />
+                    <span style={{ fontSize: '11px', color: C.textMuted, fontWeight: 600 }}>Add Images</span>
                   </label>
                 </div>
-                {formData.images.length > 0 && (
-                  <div style={{ marginTop: 6, fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                    {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} selected
-                  </div>
-                )}
               </div>
 
               {/* Videos */}
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
-                  Property Videos
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={labelCss}>Property Videos</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
                   {formData.videos.map((item, index) => (
-                    <div key={index} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
-                      <video src={item.preview} style={{ width: '100%', height: '90px', objectFit: 'cover', display: 'block' }} muted />
-                      <button type="button" onClick={() => removeVideo(index)}
-                        style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '4px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <X size={12} />
-                      </button>
+                    <div key={index} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: `1px solid ${C.border}` }}>
+                      <video src={item.preview} style={{ width: '100%', height: '100px', objectFit: 'cover', display: 'block' }} muted />
+                      <button type="button" onClick={() => removeVideo(index)} style={{
+                        position: 'absolute', top: 6, right: 6, width: 26, height: 26,
+                        background: 'rgba(15,23,42,0.75)', border: 'none', borderRadius: '6px',
+                        color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}><X size={13} /></button>
                     </div>
                   ))}
-                  <label style={{
-                    height: '90px', borderRadius: '8px', border: '2px dashed var(--color-border)',
-                    background: 'var(--color-background)', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                  <label className="upload-zone" style={{
+                    height: '100px', borderRadius: '10px', border: `2px dashed ${C.border}`,
+                    background: C.slate100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                   }}>
                     <input type="file" multiple accept="video/*" onChange={handleVideoUpload} style={{ display: 'none' }} />
-                    <Video size={20} style={{ color: 'var(--color-text-muted)', marginBottom: 4 }} />
-                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Add Videos</span>
+                    <Video size={22} style={{ color: C.textMuted, marginBottom: 4 }} />
+                    <span style={{ fontSize: '11px', color: C.textMuted, fontWeight: 600 }}>Add Videos</span>
                   </label>
                 </div>
-                {formData.videos.length > 0 && (
-                  <div style={{ marginTop: 6, fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                    {formData.videos.length} video{formData.videos.length !== 1 ? 's' : ''} selected
-                  </div>
-                )}
-                <div style={{ marginTop: 4, fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                  Add at least one image or video
-                </div>
+                <div style={{ marginTop: 6, fontSize: '12px', color: C.textMuted }}>Add at least one image or video</div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.featured}
-                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '14px', color: 'var(--color-text)' }}>Featured</span>
+              {/* Toggles */}
+              <div style={{ display: 'flex', gap: '20px', marginBottom: '24px', padding: '14px 16px', background: C.slate100, borderRadius: '10px', border: `1px solid ${C.border}` }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: C.text }}>
+                  <input type="checkbox" checked={formData.featured} onChange={e => setFormData({ ...formData, featured: e.target.checked })} style={{ width: 16, height: 16, accentColor: C.gold }} />
+                  Featured on homepage
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.available}
-                    onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '14px', color: 'var(--color-text)' }}>Available</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: C.text }}>
+                  <input type="checkbox" checked={formData.available} onChange={e => setFormData({ ...formData, available: e.target.checked })} style={{ width: 16, height: 16, accentColor: C.gold }} />
+                  Available for rent
                 </label>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingProperty(null);
-                    setFormData(emptyForm());
-                  }}
-                  style={{
-                    background: 'transparent',
-                    color: 'var(--color-text-muted)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '6px',
-                    padding: '8px 16px',
-                    fontSize: '14px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  style={{
-                    background: uploading ? 'var(--color-text-muted)' : 'var(--color-primary)',
-                    color: 'var(--color-background)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '8px 16px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: uploading ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {uploading ? 'Saving…' : editingProperty ? 'Update Property' : 'Create Property'}
+              {/* Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '8px', borderTop: `1px solid ${C.border}` }}>
+                <button type="button" disabled={uploading} onClick={() => setShowAddModal(false)} style={{
+                  padding: '11px 20px', background: C.cardBg, border: `1.5px solid ${C.border}`,
+                  borderRadius: '10px', color: C.textSub, fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+                }}>Cancel</button>
+                <button type="submit" disabled={uploading} style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  padding: '11px 24px', background: uploading ? C.textMuted : C.gold, color: '#fff',
+                  border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700,
+                  cursor: uploading ? 'not-allowed' : 'pointer', boxShadow: uploading ? 'none' : C.goldGlow,
+                }}>
+                  {uploading ? (
+                    <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Saving…</>
+                  ) : (
+                    <>{editingProperty ? 'Update Property' : 'Create Property'}</>
+                  )}
                 </button>
               </div>
             </form>
