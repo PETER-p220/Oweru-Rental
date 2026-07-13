@@ -6,128 +6,9 @@ import {
   ArrowUpDown, BarChart3, Users, Building, Smartphone,
 } from 'lucide-react';
 import Api from '../../services/api';
-
-/* ─── Types ───────────────────────────────────────────────── */
-interface Transaction {
-  id: number;
-  type: 'rent_payment' | 'commission' | 'refund' | 'deposit' | 'withdrawal' | 'fee';
-  amount: number;
-  currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded';
-  description: string;
-  reference: string;
-  paymentMethod: 'card' | 'bank_transfer' | 'mobile_money' | 'cash' | 'wallet';
-  user: { id: number; name: string; email: string; type: string };
-  property?: { id: number; title: string; address: string };
-  agent?: { id: number; name: string; email: string; commissionRate: number };
-  metadata: {
-    invoiceNumber?: string;
-    receiptNumber?: string;
-    transactionId?: string;
-    gateway?: string;
-    fees?: number;
-    netAmount?: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  failedAt?: string;
-  cancelledAt?: string;
-  refundedAt?: string;
-}
-
-interface TransactionStats {
-  totalTransactions: number;
-  totalRevenue: number;
-  totalFees: number;
-  netRevenue: number;
-  pendingTransactions: number;
-  completedTransactions: number;
-  failedTransactions: number;
-  refundedTransactions: number;
-  avgTransactionAmount: number;
-  revenueThisMonth: number;
-  revenueGrowth: number;
-  transactionGrowth: number;
-}
-
-/* ─── Shared style tokens ────────────────────────────────── */
-const tk = {
-  gold:   '#c9a84c',
-  goldLt: '#e8c97a',
-  dark2:  '#0e0e0e',
-  cream:  '#e8e4dc',
-  muted:  '#7a7060',
-  border: 'rgba(201,168,76,0.12)',
-  green:  '#10b981',
-  amber:  '#f59e0b',
-  blue:   '#3b82f6',
-  red:    '#ef4444',
-  purple: '#8b5cf6',
-} as const;
-
-const body: React.CSSProperties = { fontFamily: 'DM Sans, sans-serif' };
-const serif: React.CSSProperties = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
-
-const card: React.CSSProperties = {
-  backgroundColor: tk.dark2,
-  border: `1px solid ${tk.border}`,
-  borderRadius: 10,
-};
-
-const innerRow: React.CSSProperties = {
-  border: '1px solid rgba(201,168,76,0.07)',
-  borderRadius: 8,
-  padding: 20,
-  transition: 'all 0.2s',
-};
-
-const labelStyle: React.CSSProperties = {
-  ...body, fontSize: 10, fontWeight: 500,
-  letterSpacing: '0.12em', textTransform: 'uppercase',
-  color: tk.muted,
-};
-
-const pill = (color: string): React.CSSProperties => ({
-  ...body,
-  display: 'inline-flex', alignItems: 'center', gap: 4,
-  padding: '3px 9px',
-  backgroundColor: `${color}18`,
-  border: `1px solid ${color}30`,
-  color, borderRadius: 999,
-  fontSize: 10, fontWeight: 600,
-  letterSpacing: '0.06em', textTransform: 'uppercase',
-  whiteSpace: 'nowrap',
-});
-
-const ghostBtn = (color: string): React.CSSProperties => ({
-  ...body,
-  display: 'inline-flex', alignItems: 'center', gap: 6,
-  padding: '7px 14px',
-  backgroundColor: `${color}10`,
-  border: `1px solid ${color}25`,
-  color, borderRadius: 6,
-  fontSize: 12, fontWeight: 500,
-  cursor: 'pointer', transition: 'all 0.18s',
-});
-
-const selectStyle: React.CSSProperties = {
-  ...body,
-  padding: '8px 12px',
-  backgroundColor: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.10)',
-  color: tk.cream, borderRadius: 6,
-  fontSize: 13, outline: 'none',
-};
-
-const inputStyle: React.CSSProperties = {
-  ...body,
-  padding: '8px 12px',
-  backgroundColor: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.10)',
-  color: tk.cream, borderRadius: 6,
-  fontSize: 13, outline: 'none',
-};
+import {
+  C, body, pageWrap, pageInner, card, inputCss, selectCss, labelCss, btnPrimary, btnGhost, statCard, ADMIN_CSS, adminHeaderStyle, pill, ghostBtn, innerRow, labelStyle,
+} from './adminTheme';
 
 /* ─── Helpers ────────────────────────────────────────────── */
 const fmt = (n: number) =>
@@ -137,10 +18,10 @@ const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 const statusColor = (s: string): string =>
-  ({ completed: tk.green, pending: tk.amber, failed: tk.red, cancelled: tk.muted, refunded: tk.purple }[s] ?? tk.muted);
+  ({ completed: C.green, pending: C.amber, failed: C.red, cancelled: C.textMuted, refunded: C.purple }[s] ?? C.textMuted);
 
 const typeColor = (t: string): string =>
-  ({ rent_payment: tk.green, commission: tk.blue, refund: tk.purple, deposit: tk.amber, withdrawal: tk.red, fee: tk.muted }[t] ?? tk.muted);
+  ({ rent_payment: C.green, commission: C.blue, refund: C.purple, deposit: C.amber, withdrawal: C.red, fee: C.textMuted }[t] ?? C.textMuted);
 
 const getTypeIcon = (type: string) =>
   ({ rent_payment: Home, commission: Users, refund: RefreshCw, deposit: Banknote, withdrawal: CreditCard, fee: Receipt }[type] ?? FileText);
@@ -286,12 +167,12 @@ const TransactionsManagement = () => {
           <div style={{
             width: 40, height: 40,
             border: '3px solid rgba(201,168,76,0.15)',
-            borderTop: `3px solid ${tk.gold}`,
+            borderTop: `3px solid ${C.gold}`,
             borderRadius: '50%',
             animation: 'spin 0.9s linear infinite',
             margin: '0 auto 14px',
           }} />
-          <p style={{ color: tk.muted, ...body, fontSize: 13 }}>Loading transactions…</p>
+          <p style={{ color: C.textMuted, ...body, fontSize: 13 }}>Loading transactions…</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -300,41 +181,38 @@ const TransactionsManagement = () => {
 
   /* ── Render ── */
   return (
-    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 20px' }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
-        * { box-sizing: border-box; }
-        .txn-row:hover { border-color: rgba(201,168,76,0.15) !important; background: rgba(201,168,76,0.015) !important; }
+    <div className="admin-page" style={pageWrap}>
+      <style>{ADMIN_CSS}{`
+        .txn-row:hover { border-color: rgba(200,145,40,0.15) !important; background: ${C.goldBg} !important; }
         .txn-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .txn-btn:active { transform: scale(.97); }
-        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
+      <div style={pageInner}>
 
-      {/* ── Header ── */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <DollarSign size={22} style={{ color: tk.gold }} />
-          <h1 style={{ ...serif, fontSize: 26, fontWeight: 600, color: tk.cream, margin: 0, letterSpacing: '-0.02em' }}>
-            Transactions
-          </h1>
+      <div style={adminHeaderStyle}>
+        <div className="admin-header-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 0, color: '#fff' }}>
+          <DollarSign size={22} />
+          <div>
+            <div style={{ fontSize: 11, letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: 6 }}>Admin · Finance</div>
+            <h1 style={{ ...body, fontSize: 'clamp(20px,3.5vw,26px)', fontWeight: 800, color: '#fff', margin: '0 0 6px' }}>Transactions</h1>
+            <p style={{ color: C.textLight, ...body, fontSize: 14, margin: 0 }}>
+              Monitor and manage all financial transactions across the platform.
+            </p>
+          </div>
         </div>
-        <p style={{ color: tk.muted, ...body, fontSize: 13, margin: 0 }}>
-          Monitor and manage all financial transactions across the platform.
-        </p>
       </div>
 
       {/* ── Stats strip ── */}
       {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, marginBottom: 24 }}>
+        <div className="admin-stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 14, marginBottom: 24 }}>
           {[
-            { label: 'Total',      value: stats.totalTransactions,       color: tk.cream  },
-            { label: 'Revenue',    value: fmt(stats.totalRevenue),        color: tk.green  },
-            { label: 'Net',        value: fmt(stats.netRevenue),          color: tk.green  },
-            { label: 'Pending',    value: stats.pendingTransactions,      color: tk.amber  },
-            { label: 'Completed',  value: stats.completedTransactions,    color: tk.green  },
-            { label: 'Failed',     value: stats.failedTransactions,       color: tk.red    },
-            { label: 'Avg. Amount',value: fmt(stats.avgTransactionAmount),color: tk.gold   },
-            { label: 'Growth',     value: `+${stats.revenueGrowth}%`,     color: tk.green  },
+            { label: 'Total',      value: stats.totalTransactions,       color: C.text  },
+            { label: 'Revenue',    value: fmt(stats.totalRevenue),        color: C.green  },
+            { label: 'Net',        value: fmt(stats.netRevenue),          color: C.green  },
+            { label: 'Pending',    value: stats.pendingTransactions,      color: C.amber  },
+            { label: 'Completed',  value: stats.completedTransactions,    color: C.green  },
+            { label: 'Failed',     value: stats.failedTransactions,       color: C.red    },
+            { label: 'Avg. Amount',value: fmt(stats.avgTransactionAmount),color: C.gold   },
+            { label: 'Growth',     value: `+${stats.revenueGrowth}%`,     color: C.green  },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ ...card, padding: '14px 16px', textAlign: 'center' }}>
               <div style={{ ...body, fontSize: 18, fontWeight: 700, color, marginBottom: 3, lineHeight: 1.2, wordBreak: 'break-word' }}>{value}</div>
@@ -350,17 +228,17 @@ const TransactionsManagement = () => {
 
           {/* Search */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 220 }}>
-            <Search size={15} style={{ color: tk.muted, flexShrink: 0 }} />
+            <Search size={15} style={{ color: C.textMuted, flexShrink: 0 }} />
             <input
               type="text"
               placeholder="Search transactions…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ ...inputStyle, flex: 1 }}
+              style={{ ...inputCss, flex: 1 }}
             />
           </div>
 
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={selectStyle}>
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="admin-input" style={selectCss}>
             <option value="all">All Types</option>
             <option value="rent_payment">Rent Payment</option>
             <option value="commission">Commission</option>
@@ -370,7 +248,7 @@ const TransactionsManagement = () => {
             <option value="fee">Fee</option>
           </select>
 
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={selectStyle}>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="admin-input" style={selectCss}>
             <option value="all">All Status</option>
             <option value="completed">Completed</option>
             <option value="pending">Pending</option>
@@ -379,7 +257,7 @@ const TransactionsManagement = () => {
             <option value="refunded">Refunded</option>
           </select>
 
-          <select value={paymentMethodFilter} onChange={(e) => setPaymentMethodFilter(e.target.value)} style={selectStyle}>
+          <select value={paymentMethodFilter} onChange={(e) => setPaymentMethodFilter(e.target.value)} className="admin-input" style={selectCss}>
             <option value="all">All Methods</option>
             <option value="card">Card</option>
             <option value="bank_transfer">Bank Transfer</option>
@@ -388,7 +266,7 @@ const TransactionsManagement = () => {
             <option value="wallet">Wallet</option>
           </select>
 
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} style={selectStyle}>
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="admin-input" style={selectCss}>
             <option value="created">Date</option>
             <option value="amount">Amount</option>
             <option value="status">Status</option>
@@ -397,7 +275,7 @@ const TransactionsManagement = () => {
 
           <button
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            style={ghostBtn(tk.gold)}
+            style={ghostBtn(C.gold)}
             className="txn-btn"
           >
             <ArrowUpDown size={13} />
@@ -406,26 +284,26 @@ const TransactionsManagement = () => {
 
           {/* Amount range */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ ...body, fontSize: 11, color: tk.muted, whiteSpace: 'nowrap' }}>Amount:</span>
+            <span style={{ ...body, fontSize: 11, color: C.textMuted, whiteSpace: 'nowrap' }}>Amount:</span>
             <input type="number" placeholder="Min" value={amountRange[0]}
               onChange={(e) => setAmountRange([+e.target.value, amountRange[1]])}
-              style={{ ...inputStyle, width: 90 }} />
-            <span style={{ color: tk.muted }}>–</span>
+              style={{ ...inputCss, width: 90 }} />
+            <span style={{ color: C.textMuted }}>–</span>
             <input type="number" placeholder="Max" value={amountRange[1]}
               onChange={(e) => setAmountRange([amountRange[0], +e.target.value])}
-              style={{ ...inputStyle, width: 90 }} />
+              style={{ ...inputCss, width: 90 }} />
           </div>
 
           {/* Date range */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ ...body, fontSize: 11, color: tk.muted, whiteSpace: 'nowrap' }}>Date:</span>
+            <span style={{ ...body, fontSize: 11, color: C.textMuted, whiteSpace: 'nowrap' }}>Date:</span>
             <input type="date" value={dateRange[0]}
               onChange={(e) => setDateRange([e.target.value, dateRange[1]])}
-              style={{ ...inputStyle, colorScheme: 'dark' }} />
-            <span style={{ color: tk.muted }}>–</span>
+              style={{ ...inputCss, colorScheme: 'dark' }} />
+            <span style={{ color: C.textMuted }}>–</span>
             <input type="date" value={dateRange[1]}
               onChange={(e) => setDateRange([dateRange[0], e.target.value])}
-              style={{ ...inputStyle, colorScheme: 'dark' }} />
+              style={{ ...inputCss, colorScheme: 'dark' }} />
           </div>
         </div>
       </div>
@@ -433,18 +311,18 @@ const TransactionsManagement = () => {
       {/* ── Transactions list ── */}
       <div style={{ ...card, padding: '22px 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: tk.cream, margin: 0 }}>
+          <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: 0 }}>
             Transactions
           </h3>
-          <span style={{ ...body, fontSize: 12, color: tk.muted }}>
+          <span style={{ ...body, fontSize: 12, color: C.textMuted }}>
             {filtered.length} result{filtered.length !== 1 ? 's' : ''}
           </span>
         </div>
 
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '56px 20px' }}>
-            <DollarSign size={40} style={{ color: tk.muted, marginBottom: 12 }} />
-            <p style={{ ...body, fontSize: 14, color: tk.muted, margin: 0 }}>No transactions match your filters.</p>
+            <DollarSign size={40} style={{ color: C.textMuted, marginBottom: 12 }} />
+            <p style={{ ...body, fontSize: 14, color: C.textMuted, margin: 0 }}>No transactions match your filters.</p>
           </div>
         )}
 
@@ -475,20 +353,20 @@ const TransactionsManagement = () => {
                     {/* Top row: title + amount */}
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
                       <div style={{ minWidth: 0 }}>
-                        <p style={{ ...body, fontSize: 13.5, fontWeight: 600, color: tk.cream, margin: '0 0 4px', lineHeight: 1.4 }}>
+                        <p style={{ ...body, fontSize: 13.5, fontWeight: 600, color: C.text, margin: '0 0 4px', lineHeight: 1.4 }}>
                           {txn.description}
                         </p>
                         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: tk.muted }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: C.textMuted }}>
                             <User size={11} /> {txn.user?.name || 'Unknown'} · {txn.user?.type || 'Unknown'}
                           </span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: tk.muted, fontFamily: 'monospace' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: C.textMuted, fontFamily: 'monospace' }}>
                             <FileText size={11} /> {txn.reference || 'N/A'}
                           </span>
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ ...body, fontSize: 19, fontWeight: 700, color: tk.cream, lineHeight: 1, marginBottom: 6 }}>
+                        <div style={{ ...body, fontSize: 19, fontWeight: 700, color: C.text, lineHeight: 1, marginBottom: 6 }}>
                           {fmt(txn.amount)}
                         </div>
                         <div style={{ display: 'flex', gap: 5, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -508,7 +386,7 @@ const TransactionsManagement = () => {
                         txn.metadata?.netAmount ? { Icon: DollarSign, label: `Net: ${fmt(txn.metadata.netAmount)}` } : null,
                         txn.property           ? { Icon: Home,     label: txn.property.title }             : null,
                       ].filter(Boolean).map(({ Icon, label }: any) => (
-                        <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: tk.muted }}>
+                        <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: C.textMuted }}>
                           <Icon size={12} /> {label}
                         </span>
                       ))}
@@ -518,18 +396,18 @@ const TransactionsManagement = () => {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       {/* ✅ FIX: was onClick={() => setShowDeleteModal(true); setSelectedTransaction(transaction)}
                              Now uses openDetailModal / openDeleteModal named functions */}
-                      <button style={ghostBtn(tk.gold)}   className="txn-btn" onClick={() => openDetailModal(txn)}>
+                      <button style={ghostBtn(C.gold)}   className="txn-btn" onClick={() => openDetailModal(txn)}>
                         <Eye size={13} /> View Details
                       </button>
-                      <button style={ghostBtn(tk.blue)}   className="txn-btn" onClick={() => handleDownload(txn)}>
+                      <button style={ghostBtn(C.blue)}   className="txn-btn" onClick={() => handleDownload(txn)}>
                         <Download size={13} /> Download
                       </button>
                       {txn.status === 'pending' && (
-                        <button style={ghostBtn(tk.green)} className="txn-btn" onClick={() => handleStatusChange(txn.id, 'completed')}>
+                        <button style={ghostBtn(C.green)} className="txn-btn" onClick={() => handleStatusChange(txn.id, 'completed')}>
                           <CheckCircle size={13} /> Complete
                         </button>
                       )}
-                      <button style={ghostBtn(tk.red)}    className="txn-btn" onClick={() => openDeleteModal(txn)}>
+                      <button style={ghostBtn(C.red)}    className="txn-btn" onClick={() => openDeleteModal(txn)}>
                         <Trash2 size={13} /> Delete
                       </button>
                     </div>
@@ -552,19 +430,19 @@ const TransactionsManagement = () => {
         }}>
           <div style={{ ...card, padding: 28, maxWidth: 520, width: '100%', position: 'relative', maxHeight: '85vh', overflowY: 'auto' }}>
             <button onClick={() => setShowDetailModal(false)}
-              style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: tk.muted, cursor: 'pointer' }}>
+              style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer' }}>
               <X size={18} />
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-              <FileText size={15} style={{ color: tk.gold }} />
-              <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: tk.cream, margin: 0 }}>Transaction Details</h3>
+              <FileText size={15} style={{ color: C.gold }} />
+              <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: 0 }}>Transaction Details</h3>
             </div>
 
             <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
               <span style={pill(statusColor(selectedTransaction.status))}>{selectedTransaction.status}</span>
               <span style={pill(typeColor(selectedTransaction.type))}>{selectedTransaction.type.replace('_', ' ')}</span>
-              <span style={{ ...body, fontSize: 11, color: tk.muted, alignSelf: 'center', fontFamily: 'monospace' }}>
+              <span style={{ ...body, fontSize: 11, color: C.textMuted, alignSelf: 'center', fontFamily: 'monospace' }}>
                 {selectedTransaction.reference}
               </span>
             </div>
@@ -588,7 +466,7 @@ const TransactionsManagement = () => {
                 padding: '8px 0', borderBottom: '1px solid rgba(201,168,76,0.07)',
               }}>
                 <span style={{ ...labelStyle, marginBottom: 0, whiteSpace: 'nowrap' }}>{label}</span>
-                <span style={{ ...body, fontSize: 12.5, color: tk.cream, textAlign: 'right' }}>{value}</span>
+                <span style={{ ...body, fontSize: 12.5, color: C.text, textAlign: 'right' }}>{value}</span>
               </div>
             ))}
 
@@ -602,11 +480,11 @@ const TransactionsManagement = () => {
             )}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button style={{ ...ghostBtn(tk.blue), flex: 1, justifyContent: 'center' }} className="txn-btn"
+              <button style={{ ...ghostBtn(C.blue), flex: 1, justifyContent: 'center' }} className="txn-btn"
                 onClick={() => handleDownload(selectedTransaction)}>
                 <Download size={13} /> Download
               </button>
-              <button style={{ ...ghostBtn(tk.muted), flex: 1, justifyContent: 'center' }} className="txn-btn"
+              <button style={{ ...ghostBtn(C.textMuted), flex: 1, justifyContent: 'center' }} className="txn-btn"
                 onClick={() => setShowDetailModal(false)}>
                 Close
               </button>
@@ -624,24 +502,24 @@ const TransactionsManagement = () => {
           padding: 20, zIndex: 999,
         }}>
           <div style={{ ...card, padding: 28, maxWidth: 400, width: '100%', textAlign: 'center' }}>
-            <AlertTriangle size={40} style={{ color: tk.red, marginBottom: 14 }} />
-            <h3 style={{ ...serif, fontSize: 20, fontWeight: 500, color: tk.cream, margin: '0 0 10px' }}>
+            <AlertTriangle size={40} style={{ color: C.red, marginBottom: 14 }} />
+            <h3 style={{ ...body, fontSize: 20, fontWeight: 500, color: C.text, margin: '0 0 10px' }}>
               Delete Transaction
             </h3>
-            <p style={{ ...body, fontSize: 13, color: tk.muted, lineHeight: 1.7, marginBottom: 22 }}>
-              Are you sure you want to delete <strong style={{ color: tk.cream, fontFamily: 'monospace' }}>{selectedTransaction.reference}</strong>?<br />
+            <p style={{ ...body, fontSize: 13, color: C.textMuted, lineHeight: 1.7, marginBottom: 22 }}>
+              Are you sure you want to delete <strong style={{ color: C.text, fontFamily: 'monospace' }}>{selectedTransaction.reference}</strong>?<br />
               This action cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button
-                style={{ ...ghostBtn(tk.muted), flex: 1, justifyContent: 'center' }}
+                style={{ ...ghostBtn(C.textMuted), flex: 1, justifyContent: 'center' }}
                 className="txn-btn"
                 onClick={() => { setShowDeleteModal(false); setSelectedTransaction(null); }}
               >
                 Cancel
               </button>
               <button
-                style={{ ...ghostBtn(tk.red), flex: 1, justifyContent: 'center' }}
+                style={{ ...ghostBtn(C.red), flex: 1, justifyContent: 'center' }}
                 className="txn-btn"
                 onClick={() => handleDeleteTransaction(selectedTransaction.id)}
               >
@@ -652,6 +530,7 @@ const TransactionsManagement = () => {
         </div>
       )}
 
+      </div>
     </div>
   );
 };

@@ -4,29 +4,12 @@ import {
   Square, Shield, DollarSign, Upload, X, Check, Video, CheckCircle,
 } from 'lucide-react';
 import Api from '../../services/api';
+import {
+  C, pageWrap, pageInner, inputCss, labelCss, btnPrimary, btnGhost,
+  statCard, ADMIN_CSS, adminHeaderStyle,
+} from './adminTheme';
 
 const VITE_STORAGE = import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
-
-const C = {
-  pageBg:    '#F1F5F9',
-  headerBg:  '#1E293B',
-  cardBg:    '#FFFFFF',
-  border:    '#E2E8F0',
-  text:      '#0F172A',
-  textSub:   '#475569',
-  textMuted: '#94A3B8',
-  textLight: '#CBD5E1',
-  slate100:  '#F1F5F9',
-  slate200:  '#E2E8F0',
-  gold:      '#C89128',
-  goldGlow:  '0 4px 14px rgba(200,145,40,0.26)',
-  goldBg:    'rgba(200,145,40,0.08)',
-  goldBorder:'rgba(200,145,40,0.28)',
-  green:     '#16A34A', greenBg: '#DCFCE7',
-  blue:      '#2563EB', blueBg:  '#DBEAFE',
-  amber:     '#D97706', amberBg: '#FEF3C7',
-  red:       '#DC2626', redBg:   '#FFE4E6',
-};
 
 const PLACEHOLDER_IMG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect width='600' height='400' fill='%23E2E8F0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='16' fill='%2394A3B8'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
@@ -85,18 +68,6 @@ const OweruProperties = () => {
   const [editingProperty, setEditingProperty] = useState<any>(null);
   const [formData, setFormData] = useState(emptyForm());
   const [uploading, setUploading] = useState(false);
-
-  const inputCss: React.CSSProperties = {
-    width: '100%', padding: '10px 14px', borderRadius: '8px',
-    background: C.cardBg, border: `1.5px solid ${C.border}`,
-    color: C.text, fontSize: '14px', fontFamily: 'DM Sans, sans-serif',
-    outline: 'none', boxSizing: 'border-box',
-  };
-
-  const labelCss: React.CSSProperties = {
-    display: 'block', marginBottom: '7px', fontWeight: 700,
-    fontSize: '13px', color: C.text, fontFamily: 'DM Sans, sans-serif',
-  };
 
   useEffect(() => { loadProperties(); }, []);
 
@@ -273,21 +244,17 @@ const OweruProperties = () => {
   const totalValue = properties.reduce((sum, p) => sum + (p.price || 0), 0);
 
   return (
-    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', padding: '24px', fontFamily: 'DM Sans, sans-serif' }}>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .op-input:focus { border-color: ${C.gold} !important; box-shadow: 0 0 0 3px rgba(200,145,40,0.12); }
-        .op-card { transition: box-shadow 0.2s, transform 0.2s; }
-        .op-card:hover { box-shadow: 0 8px 28px rgba(15,23,42,0.10) !important; transform: translateY(-2px); }
+    <div className="admin-page" style={pageWrap}>
+      <style>{ADMIN_CSS}{`
         .amenity-item:hover { border-color: ${C.gold} !important; }
         .upload-zone:hover { border-color: ${C.gold} !important; }
       `}</style>
 
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+      <div style={pageInner}>
 
         {/* Header */}
-        <div style={{ background: C.headerBg, borderRadius: '14px', padding: '24px 28px', marginBottom: '20px', color: '#fff' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={adminHeaderStyle}>
+          <div className="admin-header-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <div style={{ fontSize: '11px', letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: '6px' }}>
                 Admin · Oweru Rentals
@@ -304,30 +271,21 @@ const OweruProperties = () => {
                 Manage homepage featured rentals — add images, videos, and amenities.
               </p>
             </div>
-            <button type="button" onClick={openAddModal} style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '11px 22px', backgroundColor: C.gold, color: '#fff',
-              border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700,
-              boxShadow: C.goldGlow, cursor: 'pointer', alignSelf: 'flex-start',
-            }}>
+            <button type="button" onClick={openAddModal} style={{ ...btnPrimary, alignSelf: 'flex-start' }}>
               <Plus size={16} /> Add Oweru Property
             </button>
           </div>
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+        <div className="admin-stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '20px' }}>
           {[
             { label: 'Total Properties', value: properties.length, color: C.text, bg: C.slate100, icon: Building },
             { label: 'Featured', value: featuredCount, color: C.green, bg: C.greenBg, icon: Shield },
             { label: 'Available', value: properties.filter(p => p.available).length, color: C.blue, bg: C.blueBg, icon: CheckCircle },
             { label: 'Portfolio Value', value: formatCurrency(totalValue), color: C.amber, bg: C.amberBg, icon: DollarSign },
           ].map(({ label, value, color, bg, icon: Icon }) => (
-            <div key={label} style={{
-              backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '12px',
-              padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px',
-              boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
-            }}>
+            <div key={label} style={{ ...statCard, display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{ width: 40, height: 40, borderRadius: '10px', backgroundColor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Icon size={18} style={{ color }} />
               </div>
@@ -354,7 +312,7 @@ const OweruProperties = () => {
         {/* Grid */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '48px', color: C.textMuted }}>
-            <div style={{ width: 32, height: 32, border: `3px solid ${C.border}`, borderTopColor: C.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            <div style={{ width: 32, height: 32, border: `3px solid ${C.border}`, borderTopColor: C.gold, borderRadius: '50%', animation: 'admin-spin 0.8s linear infinite', margin: '0 auto 12px' }} />
             Loading Oweru properties…
           </div>
         ) : filteredProperties.length === 0 ? (
@@ -378,7 +336,7 @@ const OweruProperties = () => {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
             {filteredProperties.map(property => (
-              <div key={property.id} className="op-card" style={{
+              <div key={property.id} className="admin-card-hover" style={{
                 backgroundColor: C.cardBg, border: `1px solid ${C.border}`, borderRadius: '14px',
                 overflow: 'hidden', boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
               }}>
@@ -455,14 +413,14 @@ const OweruProperties = () => {
           position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 1000,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
         }} onClick={() => !uploading && setShowAddModal(false)}>
-          <div style={{
+          <div className="admin-modal" style={{
             background: C.cardBg, borderRadius: '14px', width: '100%', maxWidth: '760px',
             maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 24px 64px rgba(15,23,42,0.18)',
             border: `1px solid ${C.border}`,
           }} onClick={e => e.stopPropagation()}>
 
             {/* Modal header */}
-            <div style={{ background: C.headerBg, padding: '20px 24px', borderRadius: '14px 14px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ background: C.headerBg, padding: '20px 24px', borderRadius: '14px 14px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff' }}>
               <div>
                 <div style={{ fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: '4px' }}>
                   {editingProperty ? 'Edit Property' : 'New Property'}
@@ -480,40 +438,40 @@ const OweruProperties = () => {
             </div>
 
             <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div className="admin-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label style={labelCss}>Property Title *</label>
-                  <input className="op-input" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} style={inputCss} placeholder="e.g., Modern 2BR Apartment in Masaki" />
+                  <input className="admin-input" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} style={inputCss} placeholder="e.g., Modern 2BR Apartment in Masaki" />
                 </div>
                 <div>
                   <label style={labelCss}>Location *</label>
-                  <input className="op-input" required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} style={inputCss} placeholder="Dar es Salaam, Masaki" />
+                  <input className="admin-input" required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} style={inputCss} placeholder="Dar es Salaam, Masaki" />
                 </div>
                 <div>
                   <label style={labelCss}>Address</label>
-                  <input className="op-input" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={inputCss} placeholder="Full street address" />
+                  <input className="admin-input" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={inputCss} placeholder="Full street address" />
                 </div>
                 <div>
                   <label style={labelCss}>Monthly Price (TZS) *</label>
-                  <input className="op-input" type="number" required min="0" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} style={inputCss} placeholder="800000" />
+                  <input className="admin-input" type="number" required min="0" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} style={inputCss} placeholder="800000" />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', gridColumn: '1 / -1' }}>
+                <div className="admin-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', gridColumn: '1 / -1' }}>
                   <div>
                     <label style={labelCss}>Bedrooms</label>
-                    <input className="op-input" type="number" min="0" value={formData.bedrooms} onChange={e => setFormData({ ...formData, bedrooms: e.target.value })} style={inputCss} />
+                    <input className="admin-input" type="number" min="0" value={formData.bedrooms} onChange={e => setFormData({ ...formData, bedrooms: e.target.value })} style={inputCss} />
                   </div>
                   <div>
                     <label style={labelCss}>Bathrooms</label>
-                    <input className="op-input" type="number" min="0" value={formData.bathrooms} onChange={e => setFormData({ ...formData, bathrooms: e.target.value })} style={inputCss} />
+                    <input className="admin-input" type="number" min="0" value={formData.bathrooms} onChange={e => setFormData({ ...formData, bathrooms: e.target.value })} style={inputCss} />
                   </div>
                   <div>
                     <label style={labelCss}>Area (m²)</label>
-                    <input className="op-input" type="number" min="0" step="0.1" value={formData.area} onChange={e => setFormData({ ...formData, area: e.target.value })} style={inputCss} />
+                    <input className="admin-input" type="number" min="0" step="0.1" value={formData.area} onChange={e => setFormData({ ...formData, area: e.target.value })} style={inputCss} />
                   </div>
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label style={labelCss}>Description *</label>
-                  <textarea className="op-input" required rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ ...inputCss, minHeight: '90px', resize: 'vertical' }} placeholder="Describe the property…" />
+                  <textarea className="admin-input" required rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ ...inputCss, minHeight: '90px', resize: 'vertical' }} placeholder="Describe the property…" />
                 </div>
               </div>
 
@@ -613,18 +571,15 @@ const OweruProperties = () => {
 
               {/* Actions */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '8px', borderTop: `1px solid ${C.border}` }}>
-                <button type="button" disabled={uploading} onClick={() => setShowAddModal(false)} style={{
-                  padding: '11px 20px', background: C.cardBg, border: `1.5px solid ${C.border}`,
-                  borderRadius: '10px', color: C.textSub, fontSize: '14px', fontWeight: 700, cursor: 'pointer',
-                }}>Cancel</button>
+                <button type="button" disabled={uploading} onClick={() => setShowAddModal(false)} style={btnGhost}>Cancel</button>
                 <button type="submit" disabled={uploading} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  padding: '11px 24px', background: uploading ? C.textMuted : C.gold, color: '#fff',
-                  border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700,
-                  cursor: uploading ? 'not-allowed' : 'pointer', boxShadow: uploading ? 'none' : C.goldGlow,
+                  ...btnPrimary,
+                  background: uploading ? C.textMuted : C.gold,
+                  cursor: uploading ? 'not-allowed' : 'pointer',
+                  boxShadow: uploading ? 'none' : C.goldGlow,
                 }}>
                   {uploading ? (
-                    <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Saving…</>
+                    <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'admin-spin 0.8s linear infinite' }} /> Saving…</>
                   ) : (
                     <>{editingProperty ? 'Update Property' : 'Create Property'}</>
                   )}

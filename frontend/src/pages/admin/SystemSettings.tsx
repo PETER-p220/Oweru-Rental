@@ -7,134 +7,20 @@ import {
   ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import Api from '../../services/api';
-
-/* ─── Types ───────────────────────────────────────────────── */
-interface SystemSettings {
-  siteName: string;
-  siteDescription: string;
-  contactEmail: string;
-  contactPhone: string;
-  maintenanceMode: boolean;
-  allowRegistration: boolean;
-  requireEmailVerification: boolean;
-  requirePhoneVerification: boolean;
-  maxLoginAttempts: number;
-  sessionTimeout: number;
-  defaultUserRole: string;
-  enableNotifications: boolean;
-  enableAnalytics: boolean;
-  enableBackup: boolean;
-  backupFrequency: string;
-  storageQuota: number;
-  enableTwoFactor: boolean;
-  passwordMinLength: number;
-  passwordRequireSpecialChars: boolean;
-  passwordRequireNumbers: boolean;
-  passwordRequireUppercase: boolean;
-}
-
-interface SystemLog {
-  id: number;
-  level: 'info' | 'warning' | 'error' | 'debug';
-  message: string;
-  context: string;
-  userId?: number;
-  userEmail?: string;
-  ipAddress: string;
-  userAgent: string;
-  timestamp: string;
-}
-
-interface SystemBackup {
-  id: number;
-  filename: string;
-  size: number;
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  createdAt: string;
-  completedAt?: string;
-  error?: string;
-}
-
-/* ─── Shared style tokens ────────────────────────────────── */
-const tk = {
-  gold:   '#c9a84c',
-  goldLt: '#e8c97a',
-  dark2:  '#0e0e0e',
-  cream:  '#e8e4dc',
-  muted:  '#7a7060',
-  border: 'rgba(201,168,76,0.12)',
-  green:  '#10b981',
-  amber:  '#f59e0b',
-  blue:   '#3b82f6',
-  red:    '#ef4444',
-  gray:   '#6b7280',
-} as const;
-
-const body: React.CSSProperties = { fontFamily: 'DM Sans, sans-serif' };
-const serif: React.CSSProperties = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
-
-const card: React.CSSProperties = {
-  backgroundColor: tk.dark2,
-  border: `1px solid ${tk.border}`,
-  borderRadius: 10,
-};
-
-const innerRow: React.CSSProperties = {
-  border: '1px solid rgba(201,168,76,0.07)',
-  borderRadius: 8,
-  padding: '14px 16px',
-  transition: 'all 0.2s',
-};
-
-const labelStyle: React.CSSProperties = {
-  ...body, fontSize: 10, fontWeight: 500,
-  letterSpacing: '0.12em', textTransform: 'uppercase', color: tk.muted,
-};
-
-const pill = (color: string): React.CSSProperties => ({
-  ...body,
-  display: 'inline-flex', alignItems: 'center', gap: 4,
-  padding: '3px 9px',
-  backgroundColor: `${color}18`,
-  border: `1px solid ${color}30`,
-  color, borderRadius: 999,
-  fontSize: 10, fontWeight: 600,
-  letterSpacing: '0.06em', textTransform: 'uppercase',
-  whiteSpace: 'nowrap',
-});
-
-const ghostBtn = (color: string): React.CSSProperties => ({
-  ...body,
-  display: 'inline-flex', alignItems: 'center', gap: 6,
-  padding: '7px 14px',
-  backgroundColor: `${color}10`,
-  border: `1px solid ${color}25`,
-  color, borderRadius: 6,
-  fontSize: 12, fontWeight: 500,
-  cursor: 'pointer', transition: 'all 0.18s',
-});
+import {
+  C, body, pageWrap, pageInner, card, inputCss, selectCss, labelCss, btnPrimary, btnGhost, statCard, ADMIN_CSS, adminHeaderStyle, pill, ghostBtn, innerRow,
+} from './adminTheme';
 
 const solidBtn: React.CSSProperties = {
   ...body,
   display: 'inline-flex', alignItems: 'center', gap: 7,
   padding: '9px 20px',
-  background: `linear-gradient(135deg, ${tk.gold}, ${tk.goldLt})`,
+  background: `linear-gradient(135deg, ${C.gold}, ${C.gold})`,
   border: 'none', color: '#111',
   borderRadius: 6, fontSize: 13, fontWeight: 700,
   cursor: 'pointer', letterSpacing: '0.03em',
   boxShadow: `0 3px 14px rgba(201,168,76,0.28)`,
 };
-
-const inputStyle: React.CSSProperties = {
-  ...body,
-  width: '100%', padding: '10px 12px',
-  backgroundColor: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.10)',
-  color: tk.cream, borderRadius: 6,
-  fontSize: 13, outline: 'none',
-};
-
-const selectStyle: React.CSSProperties = { ...inputStyle };
 
 /* ─── Helpers ────────────────────────────────────────────── */
 const fmtDate = (d: string) =>
@@ -149,13 +35,13 @@ const formatFileSize = (bytes: number) => {
 };
 
 const logLevelColor = (l: string): string =>
-  ({ error: tk.red, warning: tk.amber, info: tk.blue, debug: tk.gray }[l] ?? tk.gray);
+  ({ error: C.red, warning: C.amber, info: C.blue, debug: C.textMuted }[l] ?? C.textMuted);
 
 const getLogIcon = (level: string) =>
   ({ error: AlertTriangle, warning: AlertTriangle, info: Activity, debug: Database }[level] ?? Activity);
 
 const backupStatusColor = (s: string): string =>
-  ({ completed: tk.green, in_progress: tk.amber, failed: tk.red, pending: tk.gray }[s] ?? tk.gray);
+  ({ completed: C.green, in_progress: C.amber, failed: C.red, pending: C.textMuted }[s] ?? C.textMuted);
 
 /* ── Toggle switch component ───────────────────────────────
    Replaces the missing `Toggle` lucide icon with a real
@@ -172,12 +58,12 @@ function ToggleSwitch({
   onChange: (v: boolean) => void;
   dangerWhenOn?: boolean;
 }) {
-  const color = dangerWhenOn && checked ? tk.red : checked ? tk.green : tk.gray;
+  const color = dangerWhenOn && checked ? C.red : checked ? C.green : C.textMuted;
   const Icon  = checked ? ToggleRight : ToggleLeft;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <span style={{ ...body, fontSize: 12, color: tk.cream }}>{label}</span>
+      <span style={{ ...body, fontSize: 12, color: C.text }}>{label}</span>
       <button
         onClick={() => onChange(!checked)}
         style={{
@@ -274,8 +160,8 @@ const SystemSettingsPage = () => {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '3px solid rgba(201,168,76,0.15)', borderTop: `3px solid ${tk.gold}`, borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 14px' }} />
-          <p style={{ color: tk.muted, ...body, fontSize: 13 }}>Loading system settings…</p>
+          <div style={{ width: 40, height: 40, border: '3px solid rgba(201,168,76,0.15)', borderTop: `3px solid ${C.gold}`, borderRadius: '50%', animation: 'spin 0.9s linear infinite', margin: '0 auto 14px' }} />
+          <p style={{ color: C.textMuted, ...body, fontSize: 13 }}>Loading system settings…</p>
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -285,7 +171,7 @@ const SystemSettingsPage = () => {
   /* ── Field row (reused in forms) ── */
   const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <label style={{ ...body, fontSize: 11.5, color: tk.cream }}>{label}</label>
+      <label style={{ ...body, fontSize: 11.5, color: C.text }}>{label}</label>
       {children}
     </div>
   );
@@ -302,28 +188,25 @@ const SystemSettingsPage = () => {
 
   /* ── Render ── */
   return (
-    <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 20px' }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
-        * { box-sizing: border-box; }
-        .ss-row:hover { border-color: rgba(201,168,76,0.15) !important; background: rgba(201,168,76,0.015) !important; }
+    <div className="admin-page" style={pageWrap}>
+      <style>{ADMIN_CSS}{`
+        .ss-row:hover { border-color: rgba(200,145,40,0.15) !important; background: ${C.goldBg} !important; }
         .ss-btn:hover  { filter: brightness(1.1); transform: translateY(-1px); }
-        .ss-btn:active { transform: scale(.97); }
         input[type=number]::-webkit-inner-spin-button { opacity: 0.4; }
-        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
+      <div style={pageInner}>
 
-      {/* ── Header ── */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <Settings size={22} style={{ color: tk.gold }} />
-          <h1 style={{ ...serif, fontSize: 26, fontWeight: 600, color: tk.cream, margin: 0, letterSpacing: '-0.02em' }}>
-            System Settings
-          </h1>
+      <div style={adminHeaderStyle}>
+        <div className="admin-header-row" style={{ display: 'flex', alignItems: 'flex-start', gap: 10, color: '#fff' }}>
+          <Settings size={22} />
+          <div>
+            <div style={{ fontSize: 11, letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: 6 }}>Admin · System</div>
+            <h1 style={{ ...body, fontSize: 'clamp(20px,3.5vw,26px)', fontWeight: 800, color: '#fff', margin: '0 0 6px' }}>System Settings</h1>
+            <p style={{ color: C.textLight, ...body, fontSize: 14, margin: 0 }}>
+              Configure system-wide settings and preferences.
+            </p>
+          </div>
         </div>
-        <p style={{ color: tk.muted, ...body, fontSize: 13, margin: 0 }}>
-          Configure system-wide settings and preferences.
-        </p>
       </div>
 
       {/* ── Tab toggle ── */}
@@ -331,9 +214,9 @@ const SystemSettingsPage = () => {
         {(['general', 'security', 'notifications', 'backup', 'logs'] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
             flex: 1, minWidth: 80, padding: '8px 14px',
-            backgroundColor: activeTab === tab ? tk.gold : 'transparent',
-            border: `1px solid ${activeTab === tab ? tk.gold : 'rgba(201,168,76,0.15)'}`,
-            color: activeTab === tab ? '#111' : tk.muted,
+            backgroundColor: activeTab === tab ? C.gold : 'transparent',
+            border: `1px solid ${activeTab === tab ? C.gold : 'rgba(201,168,76,0.15)'}`,
+            color: activeTab === tab ? '#111' : C.textMuted,
             borderRadius: 6, ...body, fontSize: 13, fontWeight: 600,
             cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize',
           }}>
@@ -345,20 +228,20 @@ const SystemSettingsPage = () => {
       {/* ══ GENERAL ══ */}
       {activeTab === 'general' && settings && (
         <div style={{ ...card, padding: '22px 24px' }}>
-          <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: tk.cream, margin: '0 0 22px' }}>General Settings</h3>
+          <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: '0 0 22px' }}>General Settings</h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 20, marginBottom: 20 }}>
             <Field label="Site Name">
-              <input type="text" value={settings.siteName} onChange={(e) => setSettings({ ...settings, siteName: e.target.value })} style={inputStyle} />
+              <input type="text" value={settings.siteName} onChange={(e) => setSettings({ ...settings, siteName: e.target.value })} className="admin-input" style={inputCss} />
             </Field>
             <Field label="Contact Email">
-              <input type="email" value={settings.contactEmail} onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })} style={inputStyle} />
+              <input type="email" value={settings.contactEmail} onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })} className="admin-input" style={inputCss} />
             </Field>
             <Field label="Contact Phone">
-              <input type="tel" value={settings.contactPhone} onChange={(e) => setSettings({ ...settings, contactPhone: e.target.value })} style={inputStyle} />
+              <input type="tel" value={settings.contactPhone} onChange={(e) => setSettings({ ...settings, contactPhone: e.target.value })} className="admin-input" style={inputCss} />
             </Field>
             <Field label="Default User Role">
-              <select value={settings.defaultUserRole} onChange={(e) => setSettings({ ...settings, defaultUserRole: e.target.value })} style={selectStyle}>
+              <select value={settings.defaultUserRole} onChange={(e) => setSettings({ ...settings, defaultUserRole: e.target.value })} className="admin-input" style={selectCss}>
                 <option value="tenant">Tenant</option>
                 <option value="landlord">Landlord</option>
                 <option value="agent">Agent</option>
@@ -369,7 +252,7 @@ const SystemSettingsPage = () => {
 
           <Field label="Site Description">
             <textarea value={settings.siteDescription} onChange={(e) => setSettings({ ...settings, siteDescription: e.target.value })} rows={3}
-              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }} />
+              style={{ ...inputCss, resize: 'vertical', lineHeight: 1.6 }} />
           </Field>
 
           <SaveBtn />
@@ -379,25 +262,25 @@ const SystemSettingsPage = () => {
       {/* ══ SECURITY ══ */}
       {activeTab === 'security' && settings && (
         <div style={{ ...card, padding: '22px 24px' }}>
-          <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: tk.cream, margin: '0 0 22px' }}>Security Settings</h3>
+          <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: '0 0 22px' }}>Security Settings</h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 20, marginBottom: 28 }}>
             <Field label="Max Login Attempts">
-              <input type="number" value={settings.maxLoginAttempts} onChange={(e) => setSettings({ ...settings, maxLoginAttempts: +e.target.value })} style={inputStyle} />
+              <input type="number" value={settings.maxLoginAttempts} onChange={(e) => setSettings({ ...settings, maxLoginAttempts: +e.target.value })} className="admin-input" style={inputCss} />
             </Field>
             <Field label="Session Timeout (minutes)">
-              <input type="number" value={settings.sessionTimeout} onChange={(e) => setSettings({ ...settings, sessionTimeout: +e.target.value })} style={inputStyle} />
+              <input type="number" value={settings.sessionTimeout} onChange={(e) => setSettings({ ...settings, sessionTimeout: +e.target.value })} className="admin-input" style={inputCss} />
             </Field>
             <Field label="Storage Quota (GB)">
-              <input type="number" value={settings.storageQuota / 1e9} onChange={(e) => setSettings({ ...settings, storageQuota: +e.target.value * 1e9 })} style={inputStyle} />
+              <input type="number" value={settings.storageQuota / 1e9} onChange={(e) => setSettings({ ...settings, storageQuota: +e.target.value * 1e9 })} className="admin-input" style={inputCss} />
             </Field>
             <Field label="Min Password Length">
-              <input type="number" value={settings.passwordMinLength} onChange={(e) => setSettings({ ...settings, passwordMinLength: +e.target.value })} style={inputStyle} />
+              <input type="number" value={settings.passwordMinLength} onChange={(e) => setSettings({ ...settings, passwordMinLength: +e.target.value })} className="admin-input" style={inputCss} />
             </Field>
           </div>
 
-          <div style={{ borderTop: `1px solid ${tk.border}`, paddingTop: 22 }}>
-            <div style={{ ...body, fontSize: 12, color: tk.cream, marginBottom: 16 }}>Password Requirements</div>
+          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 22 }}>
+            <div style={{ ...body, fontSize: 12, color: C.text, marginBottom: 16 }}>Password Requirements</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 16 }}>
               <ToggleSwitch label="Require Special Chars" checked={settings.passwordRequireSpecialChars} onChange={(v) => setSettings({ ...settings, passwordRequireSpecialChars: v })} />
               <ToggleSwitch label="Require Numbers"       checked={settings.passwordRequireNumbers}      onChange={(v) => setSettings({ ...settings, passwordRequireNumbers: v })} />
@@ -413,7 +296,7 @@ const SystemSettingsPage = () => {
       {/* ══ NOTIFICATIONS ══ */}
       {activeTab === 'notifications' && settings && (
         <div style={{ ...card, padding: '22px 24px' }}>
-          <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: tk.cream, margin: '0 0 22px' }}>Notification &amp; System Toggles</h3>
+          <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: '0 0 22px' }}>Notification &amp; System Toggles</h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 20 }}>
             <ToggleSwitch label="Notifications"     checked={settings.enableNotifications} onChange={(v) => setSettings({ ...settings, enableNotifications: v })} />
@@ -428,7 +311,7 @@ const SystemSettingsPage = () => {
           {settings.enableBackup && (
             <div style={{ marginTop: 24 }}>
               <Field label="Backup Frequency">
-                <select value={settings.backupFrequency} onChange={(e) => setSettings({ ...settings, backupFrequency: e.target.value })} style={{ ...selectStyle, maxWidth: 260 }}>
+                <select value={settings.backupFrequency} onChange={(e) => setSettings({ ...settings, backupFrequency: e.target.value })} className="admin-input" style={{ ...selectCss, maxWidth: 260 }}>
                   <option value="hourly">Hourly</option>
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
@@ -446,7 +329,7 @@ const SystemSettingsPage = () => {
       {activeTab === 'backup' && (
         <div style={{ ...card, padding: '22px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: tk.cream, margin: 0 }}>System Backups</h3>
+            <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: 0 }}>System Backups</h3>
             <button onClick={handleCreateBackup} style={solidBtn} className="ss-btn">
               <Plus size={14} /> Create Backup
             </button>
@@ -458,22 +341,22 @@ const SystemSettingsPage = () => {
               return (
                 <div key={b.id} className="ss-row" style={{ ...innerRow, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                    <Database size={18} style={{ color: tk.gold, flexShrink: 0 }} />
+                    <Database size={18} style={{ color: C.gold, flexShrink: 0 }} />
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ ...body, fontSize: 13, fontWeight: 600, color: tk.cream, margin: '0 0 3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <p style={{ ...body, fontSize: 13, fontWeight: 600, color: C.text, margin: '0 0 3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {b.filename}
                       </p>
-                      <p style={{ ...body, fontSize: 11, color: tk.muted, margin: 0 }}>
+                      <p style={{ ...body, fontSize: 11, color: C.textMuted, margin: 0 }}>
                         {formatFileSize(b.size)} · {fmtDate(b.createdAt)}
                       </p>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
                     <span style={pill(sColor)}>{b.status.replace('_', ' ')}</span>
-                    <button style={ghostBtn(tk.gold)} className="ss-btn" onClick={() => handleDownloadBackup(b)}>
+                    <button style={ghostBtn(C.gold)} className="ss-btn" onClick={() => handleDownloadBackup(b)}>
                       <Download size={13} /> Download
                     </button>
-                    <button style={ghostBtn(tk.red)} className="ss-btn" onClick={() => handleDeleteBackup(b.id)}>
+                    <button style={ghostBtn(C.red)} className="ss-btn" onClick={() => handleDeleteBackup(b.id)}>
                       <Trash2 size={13} /> Delete
                     </button>
                   </div>
@@ -488,10 +371,10 @@ const SystemSettingsPage = () => {
       {activeTab === 'logs' && (
         <div style={{ ...card, padding: '22px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
-            <h3 style={{ ...serif, fontSize: 18, fontWeight: 500, color: tk.cream, margin: 0 }}>System Logs</h3>
+            <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: 0 }}>System Logs</h3>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <select value={logLevel} onChange={(e) => setLogLevel(e.target.value)}
-                style={{ ...selectStyle, minWidth: 130 }}>
+                className="admin-input" style={{ ...selectCss, minWidth: 130 }}>
                 <option value="all">All Levels</option>
                 <option value="debug">Debug</option>
                 <option value="info">Info</option>
@@ -499,15 +382,15 @@ const SystemSettingsPage = () => {
                 <option value="error">Error</option>
               </select>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 220 }}>
-                <Search size={15} style={{ color: tk.muted, flexShrink: 0 }} />
+                <Search size={15} style={{ color: C.textMuted, flexShrink: 0 }} />
                 <input type="text" placeholder="Search logs…" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{ ...inputStyle, flex: 1 }} />
+                  style={{ ...inputCss, flex: 1 }} />
               </div>
             </div>
           </div>
 
           {filteredLogs.length === 0 && (
-            <p style={{ ...body, fontSize: 13, color: tk.muted, textAlign: 'center', padding: '40px 0', margin: 0 }}>
+            <p style={{ ...body, fontSize: 13, color: C.textMuted, textAlign: 'center', padding: '40px 0', margin: 0 }}>
               No logs match your filters.
             </p>
           )}
@@ -520,8 +403,8 @@ const SystemSettingsPage = () => {
                 <div key={log.id} className="ss-row" style={{ ...innerRow, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                   <LogIcon size={15} style={{ color: lColor, flexShrink: 0, marginTop: 2 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ ...body, fontSize: 13, color: tk.cream, margin: '0 0 3px', lineHeight: 1.4 }}>{log.message}</p>
-                    <p style={{ ...body, fontSize: 11, color: tk.muted, margin: 0 }}>
+                    <p style={{ ...body, fontSize: 13, color: C.text, margin: '0 0 3px', lineHeight: 1.4 }}>{log.message}</p>
+                    <p style={{ ...body, fontSize: 11, color: C.textMuted, margin: 0 }}>
                       {log.context} · {fmtDate(log.timestamp)}
                       {log.userEmail ? ` · ${log.userEmail}` : ''}
                     </p>
@@ -534,6 +417,7 @@ const SystemSettingsPage = () => {
         </div>
       )}
 
+      </div>
     </div>
   );
 };

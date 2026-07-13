@@ -7,37 +7,10 @@ import {
   UserCheck, Briefcase, Home, Bell, BarChart3,
 } from 'lucide-react';
 import Api from '../../services/api';
-
-const C = {
-  pageBg:    '#F1F5F9',
-  headerBg:  '#1E293B',
-  cardBg:    '#FFFFFF',
-  border:    '#E2E8F0',
-  text:      '#0F172A',
-  textSub:   '#475569',
-  textMuted: '#94A3B8',
-  textLight: '#CBD5E1',
-  slate100:  '#F1F5F9',
-  gold:      '#C89128',
-  goldDim:   'rgba(200,145,40,0.08)',
-  goldBorder:'rgba(200,145,40,0.28)',
-  goldGlow:  '0 4px 14px rgba(200,145,40,0.26)',
-  green:     '#16A34A', greenBg: '#DCFCE7',
-  red:       '#DC2626', redBg:   '#FFE4E6',
-  amber:     '#D97706', amberBg: '#FEF3C7',
-  blue:      '#2563EB', blueBg:  '#DBEAFE',
-  purple:    '#8b5cf6',
-};
-
-const body = { fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" };
-
-const card: React.CSSProperties = {
-  background: C.cardBg,
-  border: `1px solid ${C.border}`,
-  borderRadius: 14,
-  padding: '22px 24px',
-  boxShadow: '0 1px 3px rgba(15,23,42,0.04)',
-};
+import {
+  C, body, pageWrap, pageInner, card, btnPrimary,
+  ADMIN_CSS, adminHeaderStyle,
+} from './adminTheme';
 
 type ReportData = {
   users: Record<string, number> | null;
@@ -106,7 +79,7 @@ const ReportSection = ({ title, badge, icon: Icon, href, children }: ReportSecti
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18, gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{
-          width: 42, height: 42, borderRadius: 10, background: C.goldDim,
+          width: 42, height: 42, borderRadius: 10, background: C.goldBg,
           border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
           <Icon size={20} style={{ color: C.gold }} />
@@ -123,7 +96,7 @@ const ReportSection = ({ title, badge, icon: Icon, href, children }: ReportSecti
         ...body, display: 'inline-flex', alignItems: 'center', gap: 4,
         fontSize: 12, fontWeight: 600, color: C.gold, textDecoration: 'none',
         padding: '6px 10px', borderRadius: 6, border: `1px solid ${C.border}`,
-        background: C.goldDim, whiteSpace: 'nowrap',
+        background: C.goldBg, whiteSpace: 'nowrap',
       }}>
         View <ArrowUpRight size={13} />
       </Link>
@@ -278,31 +251,28 @@ const AdminDashboard = () => {
       }}>
         <div style={{
           width: 40, height: 40, border: `3px solid ${C.border}`,
-          borderTopColor: C.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+          borderTopColor: C.gold, borderRadius: '50%', animation: 'admin-spin 0.8s linear infinite',
         }} />
         <div style={{ fontSize: 16, fontWeight: 500 }}>Loading system reports…</div>
         <div style={{ fontSize: 13, color: C.textMuted }}>Aggregating platform metrics</div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <style>{ADMIN_CSS}</style>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: 1440, margin: '0 auto', background: C.pageBg, minHeight: '100vh' }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap');
+    <div className="admin-page" style={pageWrap}>
+      <style>{ADMIN_CSS}{`
         .admin-kpi-card:hover { transform: translateY(-2px); border-color: rgba(200,145,40,0.35) !important; }
         .admin-activity-item:hover { border-color: rgba(200,145,40,0.3) !important; }
         .admin-quick-link:hover { border-color: rgba(200,145,40,0.4) !important; background: rgba(200,145,40,0.06) !important; }
-        @media (max-width: 768px) {
-          .admin-reports-grid { grid-template-columns: 1fr !important; }
-          .admin-bottom-grid { grid-template-columns: 1fr !important; }
-        }
       `}</style>
 
+      <div style={pageInner}>
+
       {/* Header */}
-      <div style={{ background: C.headerBg, borderRadius: '14px', padding: '24px 28px', marginBottom: '24px', color: '#fff' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div style={adminHeaderStyle}>
+        <div className="admin-header-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ fontSize: '11px', letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: '6px' }}>
               Admin · System Reports
@@ -314,7 +284,7 @@ const AdminDashboard = () => {
               Complete platform metrics across users, properties, finance, contracts, and operations.
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start' }}>
+          <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, alignSelf: 'flex-start' }}>
             {lastUpdated && (
               <span style={{ ...body, fontSize: 12, color: C.textLight }}>
                 Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -323,14 +293,9 @@ const AdminDashboard = () => {
             <button
               onClick={() => loadDashboard(true)}
               disabled={refreshing}
-              style={{
-                ...body, display: 'inline-flex', alignItems: 'center', gap: 8,
-                padding: '10px 16px', background: C.gold, border: 'none', borderRadius: 8,
-                color: '#fff', fontSize: 13, fontWeight: 700, cursor: refreshing ? 'wait' : 'pointer',
-                opacity: refreshing ? 0.7 : 1, boxShadow: C.goldGlow,
-              }}
+              style={{ ...btnPrimary, opacity: refreshing ? 0.7 : 1, cursor: refreshing ? 'wait' : 'pointer' }}
             >
-              <RefreshCw size={15} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
+              <RefreshCw size={15} style={{ animation: refreshing ? 'admin-spin 0.8s linear infinite' : 'none' }} />
               {refreshing ? 'Refreshing…' : 'Refresh'}
             </button>
           </div>
@@ -338,7 +303,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Executive KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 28 }}>
+      <div className="admin-stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 28 }}>
         <KpiCard label="Total Users" value={fmt(u?.total)} icon={Users} color={C.gold}
           trend={u?.newThisMonth ? `+${fmt(u.newThisMonth)} this month` : undefined} />
         <KpiCard label="Total Properties" value={fmt(p?.total_properties)} icon={Building} color={C.green}
@@ -507,7 +472,7 @@ const AdminDashboard = () => {
                     background: C.slate100, borderRadius: 10, border: `1px solid ${C.border}`, transition: 'border-color 0.2s',
                   }}>
                     <div style={{
-                      width: 34, height: 34, borderRadius: 8, background: C.goldDim,
+                      width: 34, height: 34, borderRadius: 8, background: C.goldBg,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       color: getStatusColor(activity.status),
                     }}>
@@ -561,6 +526,7 @@ const AdminDashboard = () => {
             ))}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

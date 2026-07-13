@@ -6,46 +6,10 @@ import {
   RefreshCw, ChevronDown, ChevronUp
 } from 'lucide-react';
 import Api from '../../services/api';
-
-/* ─────────────────────────────────────────────────────────────
-   PAYMENTS MANAGEMENT STYLE TOKENS
-───────────────────────────────────────────────────────────── */
-const t = {
-  gold:    '#c9a84c',
-  goldLt:  '#e8c97a',
-  dark:    '#080808',
-  dark2:   '#0e0e0e',
-  dark3:   '#141414',
-  cream:   '#e8e4dc',
-  muted:   '#7a7060',
-  border:  'rgba(37,99,235,0.12)',
-  green:   '#10b981',
-  red:     '#ef4444',
-  blue:    '#38bdf8',
-  orange:  '#f59e0b',
-} as const;
-
-const body: React.CSSProperties = { fontFamily: 'DM Sans, sans-serif' };
-const serif: React.CSSProperties = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
-
-const card: React.CSSProperties = {
-  backgroundColor: t.dark2,
-  border: `1px solid ${t.border}`,
-  borderRadius: 12,
-  padding: '20px',
-};
-
-const button: React.CSSProperties = {
-  ...body,
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-  padding: '10px 16px',
-  borderRadius: 8,
-  fontSize: 14,
-  fontWeight: 500,
-  cursor: 'pointer',
-  border: 'none',
-  transition: 'all 0.2s',
-};
+import {
+  C, body, pageWrap, pageInner, card, inputCss, selectCss,
+  btnPrimary, btnGhost, statCard, ADMIN_CSS, adminHeaderStyle,
+} from './adminTheme';
 
 /* ─────────────────────────────────────────────────────────────
    PAYMENTS MANAGEMENT COMPONENT
@@ -146,11 +110,11 @@ const PaymentsManagement = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return t.green;
-      case 'pending': return t.orange;
-      case 'failed': return t.red;
-      case 'cancelled': return t.muted;
-      default: return t.muted;
+      case 'completed': return C.green;
+      case 'pending': return C.amber;
+      case 'failed': return C.red;
+      case 'cancelled': return C.textMuted;
+      default: return C.textMuted;
     }
   };
 
@@ -241,15 +205,15 @@ const PaymentsManagement = () => {
         alignItems: 'center', 
         justifyContent: 'center',
         padding: '60px',
-        backgroundColor: t.dark2,
+        backgroundColor: C.cardBg,
         borderRadius: 12,
-        border: `1px solid ${t.border}`
+        border: `1px solid ${C.border}`
       }}>
         <div style={{
           width: 40,
           height: 40,
-          border: `3px solid ${t.border}`,
-          borderTop: `3px solid ${t.gold}`,
+          border: `3px solid ${C.border}`,
+          borderTop: `3px solid ${C.gold}`,
           borderRadius: '50%',
           animation: 'spin 1s linear infinite',
         }} />
@@ -258,37 +222,33 @@ const PaymentsManagement = () => {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <div>
-          <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.cream, margin: '0 0 8px' }}>
-            Payments Management
-          </h1>
-          <p style={{ ...body, fontSize: 16, color: t.muted, margin: 0 }}>
-            Manage and monitor all payment transactions
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={handleExport}
-            style={{ ...button, backgroundColor: `${t.green}20`, color: t.green }}
-          >
-            <Download size={16} />
-            Export CSV
-          </button>
-          <button
-            onClick={loadPayments}
-            style={{ ...button, backgroundColor: `${t.blue}20`, color: t.blue }}
-          >
-            <RefreshCw size={16} />
-            Refresh
-          </button>
+    <div className="admin-page" style={pageWrap}>
+      <style>{ADMIN_CSS}</style>
+      <div style={pageInner}>
+      <div style={adminHeaderStyle}>
+        <div className="admin-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, color: '#fff' }}>
+          <div>
+            <div style={{ fontSize: 11, letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: 6 }}>Admin · Payments</div>
+            <h1 style={{ ...body, fontSize: 'clamp(22px,3.5vw,32px)', fontWeight: 800, color: '#fff', margin: '0 0 8px' }}>
+              Payments Management
+            </h1>
+            <p style={{ ...body, fontSize: 14, color: C.textLight, margin: 0 }}>
+              Manage and monitor all payment transactions
+            </p>
+          </div>
+          <div className="admin-header-actions" style={{ display: 'flex', gap: 12 }}>
+            <button onClick={handleExport} style={{ ...btnGhost, backgroundColor: C.greenBg, color: C.green, borderColor: `${C.green}30` }}>
+              <Download size={16} /> Export CSV
+            </button>
+            <button onClick={loadPayments} style={{ ...btnGhost, backgroundColor: C.blueBg, color: C.blue, borderColor: `${C.blue}30` }}>
+              <RefreshCw size={16} /> Refresh
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div style={{ 
+      <div className="admin-stats-row" style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
         gap: 20, 
@@ -298,15 +258,15 @@ const PaymentsManagement = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ 
               width: 48, height: 48, 
-              background: `${t.green}20`,
+              background: `${C.green}20`,
               borderRadius: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <DollarSign size={24} style={{ color: t.green }} />
+              <DollarSign size={24} style={{ color: C.green }} />
             </div>
             <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Total Revenue</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
+              <div style={{ ...body, fontSize: 14, color: C.textMuted, marginBottom: 4 }}>Total Revenue</div>
+              <div style={{ ...body, fontSize: 24, fontWeight: 600, color: C.text }}>
                 {formatCurrency(filteredPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0))}
               </div>
             </div>
@@ -317,15 +277,15 @@ const PaymentsManagement = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ 
               width: 48, height: 48, 
-              background: `${t.blue}20`,
+              background: `${C.blue}20`,
               borderRadius: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <CheckCircle size={24} style={{ color: t.blue }} />
+              <CheckCircle size={24} style={{ color: C.blue }} />
             </div>
             <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Completed</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
+              <div style={{ ...body, fontSize: 14, color: C.textMuted, marginBottom: 4 }}>Completed</div>
+              <div style={{ ...body, fontSize: 24, fontWeight: 600, color: C.text }}>
                 {filteredPayments.filter((p: any) => p.status === 'completed').length}
               </div>
             </div>
@@ -336,15 +296,15 @@ const PaymentsManagement = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ 
               width: 48, height: 48, 
-              background: `${t.orange}20`,
+              background: `${C.amber}20`,
               borderRadius: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <Clock size={24} style={{ color: t.orange }} />
+              <Clock size={24} style={{ color: C.amber }} />
             </div>
             <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Pending</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
+              <div style={{ ...body, fontSize: 14, color: C.textMuted, marginBottom: 4 }}>Pending</div>
+              <div style={{ ...body, fontSize: 24, fontWeight: 600, color: C.text }}>
                 {filteredPayments.filter((p: any) => p.status === 'pending').length}
               </div>
             </div>
@@ -355,15 +315,15 @@ const PaymentsManagement = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ 
               width: 48, height: 48, 
-              background: `${t.red}20`,
+              background: `${C.red}20`,
               borderRadius: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <XCircle size={24} style={{ color: t.red }} />
+              <XCircle size={24} style={{ color: C.red }} />
             </div>
             <div>
-              <div style={{ ...body, fontSize: 14, color: t.muted, marginBottom: 4 }}>Failed</div>
-              <div style={{ ...serif, fontSize: 24, fontWeight: 600, color: t.cream }}>
+              <div style={{ ...body, fontSize: 14, color: C.textMuted, marginBottom: 4 }}>Failed</div>
+              <div style={{ ...body, fontSize: 24, fontWeight: 600, color: C.text }}>
                 {filteredPayments.filter((p: any) => p.status === 'failed').length}
               </div>
             </div>
@@ -381,7 +341,7 @@ const PaymentsManagement = () => {
                 left: 12, 
                 top: '50%', 
                 transform: 'translateY(-50%)',
-                color: t.muted 
+                color: C.textMuted 
               }} />
               <input
                 type="text"
@@ -392,10 +352,10 @@ const PaymentsManagement = () => {
                   ...body,
                   width: '100%',
                   padding: '10px 12px 10px 40px',
-                  backgroundColor: t.dark3,
-                  border: `1px solid ${t.border}`,
+                  backgroundColor: C.slate100,
+                  border: `1px solid ${C.border}`,
                   borderRadius: 8,
-                  color: t.cream,
+                  color: C.text,
                   fontSize: 14,
                 }}
               />
@@ -408,10 +368,10 @@ const PaymentsManagement = () => {
             style={{
               ...body,
               padding: '10px 12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
+              backgroundColor: C.slate100,
+              border: `1px solid ${C.border}`,
               borderRadius: 8,
-              color: t.cream,
+              color: C.text,
               fontSize: 14,
               minWidth: 120,
             }}
@@ -429,10 +389,10 @@ const PaymentsManagement = () => {
             style={{
               ...body,
               padding: '10px 12px',
-              backgroundColor: t.dark3,
-              border: `1px solid ${t.border}`,
+              backgroundColor: C.slate100,
+              border: `1px solid ${C.border}`,
               borderRadius: 8,
-              color: t.cream,
+              color: C.text,
               fontSize: 14,
               minWidth: 120,
             }}
@@ -447,15 +407,15 @@ const PaymentsManagement = () => {
 
       {/* Payments Table */}
       <div style={card}>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="admin-table-wrap">
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+              <tr style={{ borderBottom: `1px solid ${C.border}` }}>
                 <th style={{ 
                   ...body, 
                   padding: '12px', 
                   textAlign: 'left', 
-                  color: t.muted, 
+                  color: C.textMuted, 
                   fontSize: 12,
                   fontWeight: 600,
                   textTransform: 'uppercase',
@@ -468,7 +428,7 @@ const PaymentsManagement = () => {
                   ...body, 
                   padding: '12px', 
                   textAlign: 'left', 
-                  color: t.muted, 
+                  color: C.textMuted, 
                   fontSize: 12,
                   fontWeight: 600,
                   textTransform: 'uppercase'
@@ -477,7 +437,7 @@ const PaymentsManagement = () => {
                   ...body, 
                   padding: '12px', 
                   textAlign: 'left', 
-                  color: t.muted, 
+                  color: C.textMuted, 
                   fontSize: 12,
                   fontWeight: 600,
                   textTransform: 'uppercase'
@@ -486,7 +446,7 @@ const PaymentsManagement = () => {
                   ...body, 
                   padding: '12px', 
                   textAlign: 'left', 
-                  color: t.muted, 
+                  color: C.textMuted, 
                   fontSize: 12,
                   fontWeight: 600,
                   textTransform: 'uppercase',
@@ -499,7 +459,7 @@ const PaymentsManagement = () => {
                   ...body, 
                   padding: '12px', 
                   textAlign: 'left', 
-                  color: t.muted, 
+                  color: C.textMuted, 
                   fontSize: 12,
                   fontWeight: 600,
                   textTransform: 'uppercase'
@@ -508,7 +468,7 @@ const PaymentsManagement = () => {
                   ...body, 
                   padding: '12px', 
                   textAlign: 'left', 
-                  color: t.muted, 
+                  color: C.textMuted, 
                   fontSize: 12,
                   fontWeight: 600,
                   textTransform: 'uppercase'
@@ -517,7 +477,7 @@ const PaymentsManagement = () => {
                   ...body, 
                   padding: '12px', 
                   textAlign: 'left', 
-                  color: t.muted, 
+                  color: C.textMuted, 
                   fontSize: 12,
                   fontWeight: 600,
                   textTransform: 'uppercase',
@@ -530,7 +490,7 @@ const PaymentsManagement = () => {
                   ...body, 
                   padding: '12px', 
                   textAlign: 'left', 
-                  color: t.muted, 
+                  color: C.textMuted, 
                   fontSize: 12,
                   fontWeight: 600,
                   textTransform: 'uppercase'
@@ -544,43 +504,43 @@ const PaymentsManagement = () => {
                     ...body, 
                     padding: '40px', 
                     textAlign: 'center', 
-                    color: t.muted 
+                    color: C.textMuted 
                   }}>
                     No payments found
                   </td>
                 </tr>
               ) : (
                 filteredPayments.map((payment: any) => (
-                  <tr key={payment.id} style={{ borderBottom: `1px solid ${t.border}` }}>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
+                  <tr key={payment.id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <td style={{ ...body, padding: '12px', color: C.text }}>
                       #{payment.id}
                     </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
+                    <td style={{ ...body, padding: '12px', color: C.text }}>
                       <div>
                         <div>{payment.tenant?.name || 'N/A'}</div>
-                        <div style={{ fontSize: 12, color: t.muted }}>
+                        <div style={{ fontSize: 12, color: C.textMuted }}>
                           {payment.tenant?.email || 'N/A'}
                         </div>
                       </div>
                     </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
+                    <td style={{ ...body, padding: '12px', color: C.text }}>
                       <div>
                         <div>{payment.property?.title || 'N/A'}</div>
-                        <div style={{ fontSize: 12, color: t.muted }}>
+                        <div style={{ fontSize: 12, color: C.textMuted }}>
                           {payment.property?.address || 'N/A'}
                         </div>
                       </div>
                     </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream, fontWeight: 600 }}>
+                    <td style={{ ...body, padding: '12px', color: C.text, fontWeight: 600 }}>
                       {formatCurrency(payment.amount)}
                     </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
+                    <td style={{ ...body, padding: '12px', color: C.text }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {getTypeIcon(payment.type)}
                         <span>{payment.type}</span>
                       </div>
                     </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
+                    <td style={{ ...body, padding: '12px', color: C.text }}>
                       <div style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
@@ -591,7 +551,7 @@ const PaymentsManagement = () => {
                         <span>{payment.status}</span>
                       </div>
                     </td>
-                    <td style={{ ...body, padding: '12px', color: t.cream }}>
+                    <td style={{ ...body, padding: '12px', color: C.text }}>
                       {formatDate(payment.due_date)}
                     </td>
                     <td style={{ ...body, padding: '12px' }}>
@@ -599,10 +559,10 @@ const PaymentsManagement = () => {
                         <button
                           onClick={() => handleViewDetails(payment)}
                           style={{
-                            ...button,
+                            ...btnGhost,
                             padding: '6px',
-                            backgroundColor: `${t.blue}20`,
-                            color: t.blue,
+                            backgroundColor: `${C.blue}20`,
+                            color: C.blue,
                             borderRadius: 6,
                           }}
                           title="View Details"
@@ -640,53 +600,53 @@ const PaymentsManagement = () => {
                 right: 14,
                 background: 'none',
                 border: 'none',
-                color: t.muted,
+                color: C.textMuted,
                 cursor: 'pointer',
               }}
             >
               <XCircle size={18} />
             </button>
 
-            <h2 style={{ ...serif, fontSize: 20, fontWeight: 600, color: t.cream, margin: '0 0 20px' }}>
+            <h2 style={{ ...body, fontSize: 20, fontWeight: 600, color: C.text, margin: '0 0 20px' }}>
               Payment Details
             </h2>
 
             <div style={{ display: 'grid', gap: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Payment ID:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream }}>#{selectedPayment.id}</div>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Payment ID:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text }}>#{selectedPayment.id}</div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Tenant:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream }}>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Tenant:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text }}>
                   {selectedPayment.tenant?.name || 'N/A'}
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Property:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream }}>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Property:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text }}>
                   {selectedPayment.property?.title || 'N/A'}
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Amount:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream, fontWeight: 600 }}>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Amount:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text, fontWeight: 600 }}>
                   {formatCurrency(selectedPayment.amount)}
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Type:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream }}>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Type:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text }}>
                   {selectedPayment.type}
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Status:</div>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Status:</div>
                 <div style={{ 
                   ...body, 
                   fontSize: 14, 
@@ -701,36 +661,36 @@ const PaymentsManagement = () => {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Transaction ID:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream }}>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Transaction ID:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text }}>
                   {selectedPayment.transaction_id || 'N/A'}
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Payment Method:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream }}>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Payment Method:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text }}>
                   {selectedPayment.method || 'N/A'}
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Due Date:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream }}>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Due Date:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text }}>
                   {formatDate(selectedPayment.due_date)}
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Paid Date:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream }}>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Paid Date:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text }}>
                   {selectedPayment.paid_date ? formatDate(selectedPayment.paid_date) : 'Not paid'}
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-                <div style={{ ...body, fontSize: 14, color: t.muted }}>Created:</div>
-                <div style={{ ...body, fontSize: 14, color: t.cream }}>
+                <div style={{ ...body, fontSize: 14, color: C.textMuted }}>Created:</div>
+                <div style={{ ...body, fontSize: 14, color: C.text }}>
                   {formatDate(selectedPayment.created_at)}
                 </div>
               </div>
@@ -739,64 +699,7 @@ const PaymentsManagement = () => {
         </div>
       )}
 
-      {/* Mobile Responsiveness CSS */}
-      <style>{`
-        @media (max-width: 768px) {
-          /* Improve table scrolling on mobile */
-          table {
-            font-size: 12px;
-          }
-          
-          th, td {
-            padding: 8px !important;
-            white-space: nowrap;
-          }
-          
-          /* Make modal mobile-friendly */
-          .modal-overlay {
-            padding: 16px;
-          }
-          
-          .modal-content {
-            width: 100% !important;
-            max-width: 100% !important;
-            max-height: 90vh;
-            overflow-y: auto;
-          }
-          
-          /* Improve filters on mobile */
-          .filters-container {
-            flex-direction: column !important;
-            gap: 8px !important;
-          }
-          
-          .filter-input {
-            width: 100% !important;
-          }
-          
-          .filter-select {
-            width: 100% !important;
-          }
-          
-          /* Stats grid responsive */
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 8px !important;
-          }
-          
-          /* Action buttons mobile-friendly */
-          .action-button {
-            padding: 8px 12px !important;
-            font-size: 12px !important;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .stats-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
+      </div>
     </div>
   );
 };
