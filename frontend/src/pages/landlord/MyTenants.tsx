@@ -249,17 +249,7 @@ const MyTenants = () => {
                 <Users size={28} style={{ color: C.textMuted }} />
               </div>
               <div style={{ fontSize: '16px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>No tenants found</div>
-              <div style={{ fontSize: '13px', color: C.textSub, marginBottom: '24px', maxWidth: '420px', margin: '0 auto 24px', lineHeight: 1.6 }}>
-                If you have approved applications, click <strong style={{ color: C.text }}>Sync from Approved Apps</strong> to generate tenant records automatically.
-              </div>
-              <button
-                onClick={handleCreateFromApproved}
-                disabled={creatingTenants}
-                style={{ ...buttonStyle('primary'), opacity: creatingTenants ? 0.7 : 1 }}
-              >
-                <UserPlus size={15} />
-                {creatingTenants ? 'Creating…' : 'Sync from Approved Apps'}
-              </button>
+             
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ color: C.textMuted, padding: '24px 0', fontSize: '14px' }}>No tenants matched your search.</div>

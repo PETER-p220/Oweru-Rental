@@ -88,7 +88,6 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Digital Contracts',  icon: BookOpen,      href: 'digital-contracts' },
       { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection'},
       { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts'       },
-      { name: 'Commission Reports', icon: PieChart,      href: 'commissions'    },
       { name: 'Analytics',          icon: BarChart3,     href: 'analytics'      },
       { name: 'Messages',           icon: MessageSquare, href: 'messages'       },
     ],

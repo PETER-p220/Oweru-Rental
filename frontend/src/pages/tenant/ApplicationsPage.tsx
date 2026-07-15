@@ -8,6 +8,19 @@ import Api from '../../services/api';
 import { usePaymentPolling } from '../../hooks/usePaymentPolling';
 import { paymentConfirmationMessage, parsePaymentStatus } from '../../utils/paymentStatus';
 
+interface RentFeeBreakdown {
+  listing_type?: 'agent' | 'owner';
+  monthly_rent?: number;
+  tenant_rent_to_landlord?: number;
+  oweru_initial_fee?: number;
+  oweru_fee?: number;
+  recipient_amount?: number;
+  total_charge?: number;
+  recipient_type?: string;
+  oweru_share_percent?: number;
+  recipient_share_percent?: number;
+}
+
 interface ApplicationItem {
   id: number;
   status?: string;
@@ -16,6 +29,8 @@ interface ApplicationItem {
   rent_paid?: boolean;
   can_pay_rent?: boolean;
   site_visit_paid?: boolean;
+  is_agent_listed?: boolean;
+  rent_fee_breakdown?: RentFeeBreakdown;
   next_step?: string;
   rejection_reason?: string;
   property?: {
@@ -230,6 +245,17 @@ const CSS = `
 }
 .ap-amount-label{color:var(--slate-600);font-size:13px;}
 .ap-amount-value{font-size:22px;font-weight:700;color:var(--gold);}
+.ap-fee-breakdown{
+  margin-top:12px;padding-top:12px;border-top:1px dashed var(--slate-200);
+  display:flex;flex-direction:column;gap:8px;
+}
+.ap-fee-line{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--slate-600);}
+.ap-fee-line strong{color:var(--slate-900);font-weight:600;}
+.ap-fee-note{
+  display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--slate-600);
+  background:var(--slate-100);border-radius:var(--r-sm);padding:10px 12px;margin-top:4px;line-height:1.45;
+}
+.ap-fee-note svg{color:var(--gold);flex-shrink:0;margin-top:1px;}
 
 .ap-field-label{
   font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--slate-600);
@@ -301,6 +327,39 @@ const parseRent = (price?: number | string): number => {
   if (typeof price === 'number') return price;
   const cleaned = price.replace(/[^0-9.]/g, '');
   return parseFloat(cleaned) || 0;
+};
+
+const getRentFeeBreakdown = (item: ApplicationItem): RentFeeBreakdown => {
+  if (item.rent_fee_breakdown?.total_charge) {
+    return item.rent_fee_breakdown;
+  }
+
+  const monthlyRent = parseRent(item.property?.price);
+  const isAgent = item.is_agent_listed ?? false;
+
+  if (isAgent) {
+    return {
+      listing_type: 'agent',
+      monthly_rent: monthlyRent,
+      oweru_fee: monthlyRent * 0.3,
+      recipient_amount: monthlyRent * 0.7,
+      total_charge: monthlyRent,
+      recipient_type: 'agent',
+      oweru_share_percent: 30,
+      recipient_share_percent: 70,
+    };
+  }
+
+  return {
+    listing_type: 'owner',
+    monthly_rent: monthlyRent,
+    tenant_rent_to_landlord: monthlyRent,
+    oweru_initial_fee: monthlyRent,
+    oweru_fee: monthlyRent,
+    recipient_amount: monthlyRent,
+    total_charge: monthlyRent * 2,
+    recipient_type: 'landlord',
+  };
 };
 
 const formatCurrency = (price?: number | string): string => {
@@ -614,7 +673,8 @@ const ApplicationsPage = () => {
   );
 
   const activeApp = paymentModal ? applications.find(a => a.id === paymentModal) : null;
-  const modalAmount = activeApp ? parseRent(activeApp.property?.price) : 0;
+  const feeBreakdown = activeApp ? getRentFeeBreakdown(activeApp) : null;
+  const modalAmount = feeBreakdown?.total_charge ?? 0;
 
   return (
     <div className="ap-root">
@@ -720,9 +780,52 @@ const ApplicationsPage = () => {
                   </div>
                 )}
                 <div className="ap-amount-row">
-                  <span className="ap-amount-label">Amount Due</span>
+                  <span className="ap-amount-label">Total Amount Due</span>
                   <span className="ap-amount-value">Tsh {modalAmount.toLocaleString()}</span>
                 </div>
+                {feeBreakdown && (
+                  <div className="ap-fee-breakdown">
+                    {feeBreakdown.listing_type === 'agent' ? (
+                      <>
+                        <div className="ap-fee-line">
+                          <span>Monthly rent</span>
+                          <strong>Tsh {(feeBreakdown.monthly_rent ?? 0).toLocaleString()}</strong>
+                        </div>
+                        <div className="ap-fee-line">
+                          <span>Agent share (70%)</span>
+                          <strong>Tsh {(feeBreakdown.recipient_amount ?? 0).toLocaleString()}</strong>
+                        </div>
+                        <div className="ap-fee-line">
+                          <span>Oweru platform fee (30%)</span>
+                          <strong>Tsh {(feeBreakdown.oweru_fee ?? 0).toLocaleString()}</strong>
+                        </div>
+                        <div className="ap-fee-note">
+                          <Info size={14} />
+                          <span>You pay one month rent. 70% goes to the agent and 30% to Oweru.</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="ap-fee-line">
+                          <span>First month rent to landlord (full amount)</span>
+                          <strong>Tsh {(feeBreakdown.tenant_rent_to_landlord ?? feeBreakdown.monthly_rent ?? 0).toLocaleString()}</strong>
+                        </div>
+                        <div className="ap-fee-line">
+                          <span>Oweru initial platform fee (1 month, separate)</span>
+                          <strong>Tsh {(feeBreakdown.oweru_initial_fee ?? feeBreakdown.oweru_fee ?? 0).toLocaleString()}</strong>
+                        </div>
+                        <div className="ap-fee-note">
+                          <Info size={14} />
+                          <span>
+                            The landlord receives the full monthly rent of Tsh {(feeBreakdown.tenant_rent_to_landlord ?? feeBreakdown.monthly_rent ?? 0).toLocaleString()}.
+                            The Oweru fee is a separate initial charge (equal to one month rent), like standard agency fees in Tanzania.
+                            Future monthly payments are only the rent amount.
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Provider Selection */}

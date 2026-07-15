@@ -230,17 +230,7 @@ const LandlordDashboard = () => {
             </Link>
           ))}
 
-          {/* Add Property gold CTA tile */}
-          <Link to="add-property" className="qa-tile" style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '14px',
-            background: C.gold, border: 'none', borderRadius: 12,
-            textDecoration: 'none', boxShadow: C.goldGlow,
-          }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(255,255,255,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Plus size={17} style={{ color: '#fff' }} />
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Add Property</div>
-          </Link>
+         
         </div>
 
         

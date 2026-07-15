@@ -11,6 +11,7 @@ class RentPaymentService
     public function __construct(
         private SelcomPaymentService $selcom,
         private PaymentAlertService $alerts,
+        private RentFeeService $fees,
     ) {}
 
     /**
@@ -58,7 +59,8 @@ class RentPaymentService
             ];
         }
 
-        $rentAmount = (float) ($application->offered_rent ?? $property->price ?? 0);
+        $feeBreakdown = $this->fees->calculateFirstMonthFees($application);
+        $rentAmount = (float) $feeBreakdown['total_charge'];
         if ($rentAmount <= 0) {
             return ['success' => false, 'message' => 'Unable to determine rent amount.'];
         }
@@ -95,6 +97,11 @@ class RentPaymentService
                 'order_id' => $orderId,
                 'application_id' => $application->id,
                 'amount' => $rentAmount,
+                'monthly_rent' => $feeBreakdown['monthly_rent'],
+                'oweru_fee' => $feeBreakdown['oweru_fee'],
+                'recipient_amount' => $feeBreakdown['recipient_amount'],
+                'listing_type' => $feeBreakdown['listing_type'],
+                'fee_breakdown' => $feeBreakdown,
                 'rent_payment_status' => 'pending',
             ],
         ];
@@ -166,11 +173,12 @@ class RentPaymentService
         }
 
         $application->loadMissing('property', 'user');
-        $rentAmount = (float) ($application->offered_rent ?? $application->property?->price ?? 0);
+        $feeBreakdown = app(RentFeeService::class)->calculateFirstMonthFees($application);
+        $totalPaid = (float) $feeBreakdown['total_charge'];
 
         $application->update([
             'rent_payment_status' => 'paid',
-            'amount_paid' => $rentAmount > 0 ? $rentAmount : $application->amount_paid,
+            'amount_paid' => $totalPaid > 0 ? $totalPaid : $application->amount_paid,
         ]);
 
         // Take the listing offline so other tenants cannot apply or pay for it.
@@ -191,7 +199,7 @@ class RentPaymentService
                 ->update(['status' => 'rejected']);
         }
 
-        $this->alerts->handleRentPaid($application->fresh(['property', 'user']));
+        $this->alerts->handleRentPaid($application->fresh(['property', 'user']), $feeBreakdown, $meta);
 
         Log::info('Rent payment confirmed', [
             'application_id' => $application->id,

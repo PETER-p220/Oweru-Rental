@@ -41,6 +41,12 @@ return [
         'admin_phone' => env('OWERU_ADMIN_PHONE'),
     ],
 
+    'rent_fees' => [
+        'agent_recipient_share' => (float) env('RENT_AGENT_SHARE', 0.70),
+        'agent_oweru_share' => (float) env('RENT_OWERU_SHARE', 0.30),
+        'landlord_oweru_fee_months' => (float) env('RENT_LANDLORD_OWERU_FEE_MONTHS', 1),
+    ],
+
     'selcom' => [
         'vendor_id' => env('SELCOM_VENDOR_ID'),
         'api_key' => env('SELCOM_API_KEY'),

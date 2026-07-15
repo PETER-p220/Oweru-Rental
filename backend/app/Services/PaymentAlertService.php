@@ -149,8 +149,11 @@ class PaymentAlertService
 
     /**
      * Record history + notify after application rent is confirmed.
+     *
+     * @param  array<string, mixed>  $feeBreakdown
+     * @param  array<string, mixed>  $meta
      */
-    public function handleRentPaid(Application $application): void
+    public function handleRentPaid(Application $application, array $feeBreakdown = [], array $meta = []): void
     {
         $application->loadMissing('property', 'user');
         $property = $application->property;
@@ -160,10 +163,15 @@ class PaymentAlertService
             return;
         }
 
-        $amount = (float) ($application->amount_paid ?? $application->offered_rent ?? $property->price ?? 0);
-        $reference = (string) ($application->rent_transaction_id ?: ('RENT-APP-' . $application->id));
+        if ($feeBreakdown === []) {
+            $feeBreakdown = app(RentFeeService::class)->calculateFirstMonthFees($application);
+        }
 
-        $this->recordCompletedPayment(
+        $amount = (float) ($application->amount_paid ?? $feeBreakdown['total_charge'] ?? 0);
+        $reference = (string) ($application->rent_transaction_id ?: ('RENT-APP-' . $application->id));
+        $provider = strtoupper((string) ($application->rent_payment_method ?? $meta['provider'] ?? 'TIGO'));
+
+        $payment = $this->recordCompletedPayment(
             $tenant,
             $property,
             $amount,
@@ -173,9 +181,28 @@ class PaymentAlertService
             [
                 'application_id' => $application->id,
                 'payment_method' => $application->rent_payment_method,
+                'provider' => $provider,
                 'source' => 'rent_payment_service',
+                'monthly_rent' => $feeBreakdown['monthly_rent'] ?? null,
+                'tenant_rent_to_landlord' => $feeBreakdown['tenant_rent_to_landlord'] ?? null,
+                'oweru_initial_fee' => $feeBreakdown['oweru_initial_fee'] ?? null,
+                'oweru_fee' => $feeBreakdown['oweru_fee'] ?? null,
+                'recipient_amount' => $feeBreakdown['recipient_amount'] ?? null,
+                'listing_type' => $feeBreakdown['listing_type'] ?? null,
+                'fee_breakdown' => $feeBreakdown,
             ],
         );
+
+        if ($payment) {
+            try {
+                app(PaymentSplitService::class)->processPaymentSplit($payment);
+            } catch (\Throwable $e) {
+                Log::error('Failed to process first-month rent payment split', [
+                    'payment_id' => $payment->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         $this->notifyStakeholders(
             $property,

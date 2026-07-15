@@ -584,16 +584,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* ── Scroll hint bar (no filter logic — just section jumps) ── */}
-        <div style={{ position: 'relative', zIndex: 10, background: 'rgba(15,23,42,0.9)', borderTop: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'stretch', height: 52 }}>
-            <span style={{ display: 'flex', alignItems: 'center', paddingRight: 20, marginRight: 8, borderRight: '1px solid rgba(255,255,255,0.14)', fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', flexShrink: 0, whiteSpace: 'nowrap' }}>Browse</span>
-           
-            <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto', flexShrink: 0, paddingLeft: 20, borderLeft: '1px solid rgba(255,255,255,0.14)' }}>
-              <Link to="/properties" style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 8, background: '#FFFFFF', color: '#0F172A', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'none', transition: 'all 0.2s' }}>All Listings <ArrowRight size={12} /></Link>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ══ SEARCH RESULTS ══ */}
@@ -639,17 +629,7 @@ const Home = () => {
         </section>
       )}
 
-      {/* ══ STATS ══ */}
-      {!searchActive && (
-        <div className="stats-bar">
-          <div className="stats-inner">
-            {[{ num: '1,247', lbl: 'Active Listings' }, { num: '3,842', lbl: 'Registered Users' }, { num: '892', lbl: 'Available Now' }, { num: '24 hr', lbl: 'Avg. Response' }].map(s => (
-              <div key={s.lbl} className="stat-cell"><div className="stat-num">{s.num}</div><div className="stat-lbl">{s.lbl}</div></div>
-            ))}
-          </div>
-        </div>
-      )}
-
+      
       {/* ══ RESIDENTIAL ══ */}
       {!searchActive && (
         <section id="residential" style={{ background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>

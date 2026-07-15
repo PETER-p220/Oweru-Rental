@@ -38,12 +38,48 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
   Map<String, dynamic>? get _property =>
       widget.application['property'] as Map<String, dynamic>?;
 
-  double get _rentAmount {
+  Map<String, dynamic> get _feeBreakdown {
+    final fromApi = widget.application['rent_fee_breakdown'];
+    if (fromApi is Map<String, dynamic> && fromApi['total_charge'] != null) {
+      return fromApi;
+    }
+
+    final monthlyRent = _monthlyRent;
+    final isAgent = widget.application['is_agent_listed'] == true;
+
+    if (isAgent) {
+      return {
+        'listing_type': 'agent',
+        'monthly_rent': monthlyRent,
+        'oweru_fee': monthlyRent * 0.3,
+        'recipient_amount': monthlyRent * 0.7,
+        'total_charge': monthlyRent,
+      };
+    }
+
+    return {
+      'listing_type': 'owner',
+      'monthly_rent': monthlyRent,
+      'tenant_rent_to_landlord': monthlyRent,
+      'oweru_initial_fee': monthlyRent,
+      'oweru_fee': monthlyRent,
+      'recipient_amount': monthlyRent,
+      'total_charge': monthlyRent * 2,
+    };
+  }
+
+  double get _monthlyRent {
     final price = _property?['price'] ?? widget.application['rent'];
     if (price == null) return 0;
     if (price is num) return price.toDouble();
     final cleaned = price.toString().replaceAll(RegExp(r'[^0-9.]'), '');
     return double.tryParse(cleaned) ?? 0;
+  }
+
+  double get _rentAmount {
+    final total = _feeBreakdown['total_charge'];
+    if (total is num) return total.toDouble();
+    return _monthlyRent;
   }
 
   @override
@@ -203,13 +239,70 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Amount Due', style: TextStyle(color: kSlate, fontSize: 13)),
+                        const Text('Total Amount Due', style: TextStyle(color: kSlate, fontSize: 13)),
                         Text(
                           'TZS ${_rentAmount.toStringAsFixed(0)}',
                           style: const TextStyle(color: kGold, fontSize: 20, fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 10),
+                    if (_feeBreakdown['listing_type'] == 'agent') ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Monthly rent', style: TextStyle(color: kSlate, fontSize: 12)),
+                          Text(
+                            'TZS ${(_feeBreakdown['monthly_rent'] as num? ?? 0).toStringAsFixed(0)}',
+                            style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Agent share (70%)', style: TextStyle(color: kSlate, fontSize: 12)),
+                          Text(
+                            'TZS ${(_feeBreakdown['recipient_amount'] as num? ?? 0).toStringAsFixed(0)}',
+                            style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Oweru fee (30%)', style: TextStyle(color: kSlate, fontSize: 12)),
+                          Text(
+                            'TZS ${(_feeBreakdown['oweru_fee'] as num? ?? 0).toStringAsFixed(0)}',
+                            style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Rent to landlord (full)', style: TextStyle(color: kSlate, fontSize: 12)),
+                          Text(
+                            'TZS ${(_feeBreakdown['tenant_rent_to_landlord'] as num? ?? _feeBreakdown['monthly_rent'] as num? ?? 0).toStringAsFixed(0)}',
+                            style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Oweru initial fee (separate)', style: TextStyle(color: kSlate, fontSize: 12)),
+                          Text(
+                            'TZS ${(_feeBreakdown['oweru_initial_fee'] as num? ?? _feeBreakdown['oweru_fee'] as num? ?? 0).toStringAsFixed(0)}',
+                            style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

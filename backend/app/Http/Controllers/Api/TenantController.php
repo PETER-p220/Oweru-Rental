@@ -1129,16 +1129,21 @@ class TenantController extends Controller
             || in_array($application->payment_status, ['paid', 'waived'], true);
         $rentPaid = $application->rent_payment_status === 'paid';
         $canPayRent = $application->status === 'approved' && $siteVisitPaid && ! $rentPaid;
+        $feeBreakdown = app(\App\Services\RentFeeService::class)->calculateFirstMonthFees($application);
 
         return array_merge($application->toArray(), [
             'rent_paid' => $rentPaid,
             'site_visit_paid' => $siteVisitPaid,
             'can_pay_rent' => $canPayRent,
+            'is_agent_listed' => $isAgentListed,
+            'rent_fee_breakdown' => $feeBreakdown,
             'next_step' => match (true) {
                 $application->status === 'rejected' => 'Application was rejected.',
                 $application->status === 'pending' && $isAgentListed && ! $siteVisitPaid => 'Complete the site visit fee payment.',
                 $application->status === 'pending' => 'Waiting for landlord or agent approval.',
-                $canPayRent => 'Pay your first month rent to secure the property.',
+                $canPayRent => $isAgentListed
+                    ? 'Pay your first month rent (70% to agent, 30% Oweru platform fee).'
+                    : 'Pay full first month rent to the landlord plus a separate Oweru initial platform fee (1 month).',
                 $rentPaid => 'Rent paid. Check Digital Contracts for signing.',
                 default => 'Track your application status here.',
             },

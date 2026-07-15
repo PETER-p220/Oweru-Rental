@@ -41,7 +41,6 @@ import ApplicationsPage from './pages/landlord/ApplicationsPage';
 import DigitalContractPage from './pages/landlord/DigitalContractPage';
 import RentCollectionPage from './pages/landlord/RentCollectionPage';
 import ReceiptsPage from './pages/landlord/ReceiptsPage';
-import CommissionReportsPage from './pages/landlord/CommissionReportsPage';
 import LandlordAnalyticsPage from './pages/landlord/AnalyticsPage';
 import LandlordMessagesPage from './pages/landlord/MessagesPage';
 
@@ -155,7 +154,6 @@ const LandlordRoutes = () => (
         <Route path="tenants" element={<MyTenants />} />
         <Route path="rent-collection" element={<RentCollectionPage />} />
         <Route path="receipts" element={<ReceiptsPage />} />
-        <Route path="commissions" element={<CommissionReportsPage />} />
         <Route path="analytics" element={<LandlordAnalyticsPage />} />
         <Route path="messages" element={<LandlordMessagesPage />} />
         <Route path="settings" element={<SettingsPage />} />
