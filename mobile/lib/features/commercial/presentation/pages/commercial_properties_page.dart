@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/commercial_api_service.dart';
+import '../../../../core/utils/payment_duration.dart';
+import 'commercial_add_property_page.dart';
 
 const Color kGold = Color(0xFFC89128);
 const Color kBg = Color(0xFF0A0F1E);
@@ -289,6 +291,7 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
     final location = property['location'] as String? ?? 'No location';
     final price = property['price'];
     final priceType = property['price_type'] as String? ?? 'monthly';
+    final paymentMonths = paymentDurationMonths(property['payment_duration_months']);
     final status = property['status'] as String? ?? 'pending';
     final type = property['type'] as String? ?? 'commercial';
     final bedrooms = property['bedrooms'];
@@ -395,7 +398,7 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
                       children: [
                         Text(_formatCurrency(price), style: const TextStyle(color: kGold, fontSize: 18, fontWeight: FontWeight.w700)),
                         const SizedBox(width: 4),
-                        Text(_getPriceSuffix(priceType), style: const TextStyle(color: kSlate, fontSize: 11)),
+                        Text(_getPriceSuffix(priceType, paymentMonths), style: const TextStyle(color: kSlate, fontSize: 11)),
                       ],
                     ),
                     if (furnished)
@@ -531,7 +534,10 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
     );
   }
 
-  String _getPriceSuffix(String priceType) {
+  String _getPriceSuffix(String priceType, int paymentMonths) {
+    if (priceType.toLowerCase() != 'sale' && paymentMonths > 1) {
+      return formatPaymentPeriodLabel(paymentMonths);
+    }
     switch (priceType.toLowerCase()) {
       case 'monthly':
         return '/mo';
@@ -543,9 +549,11 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
   }
 
   void _showAddPropertyDialog() {
-    // TODO: Implement add property dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add property dialog to be implemented')),
-    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CommercialAddPropertyPage()),
+    ).then((created) {
+      if (created == true) _loadProperties();
+    });
   }
 }

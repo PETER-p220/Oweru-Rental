@@ -3,6 +3,7 @@ import '../../../../shared/services/landlord_api_service.dart';
 import '../../../../shared/services/user_service.dart';
 import 'landlord_add_property.dart';
 import 'landlord_theme.dart';
+import '../../../../core/utils/payment_duration.dart';
 
 class LandlordPropertiesPage extends StatefulWidget {
   const LandlordPropertiesPage({super.key});
@@ -649,7 +650,7 @@ class _LandlordPropertiesPageState extends State<LandlordPropertiesPage> {
                       _formatCurrency(price),
                       style: const TextStyle(color: kSlate800, fontSize: 16, fontWeight: FontWeight.w800),
                     ),
-                    Text('/ month', style: const TextStyle(color: kSlate400, fontSize: 11)),
+                    Text(formatPriceSuffix(property), style: const TextStyle(color: kSlate400, fontSize: 11)),
                   ],
                 ),
               ],
@@ -870,7 +871,7 @@ class _PropertyCard extends StatelessWidget {
                       _formatPrice(price),
                       style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w800),
                     ),
-                    Text('/ month', style: const TextStyle(color: kSlate400, fontSize: 10)),
+                    Text(formatPriceSuffix(property), style: const TextStyle(color: kSlate400, fontSize: 10)),
                   ],
                 ),
               ],

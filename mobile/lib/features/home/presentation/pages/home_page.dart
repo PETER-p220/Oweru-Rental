@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../shared/widgets/app_navbar.dart';
 import '../../../shared/pages/public_property_detail_page.dart';
+import '../../../../core/utils/payment_duration.dart';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const String kApiBase     = 'https://rental.oweru.com/api';
@@ -785,6 +786,9 @@ class _PropCard extends StatelessWidget {
     final p      = property;
     final imgUrl = getImage(p);
     final price  = num.tryParse(p['price']?.toString() ?? '0') ?? 0;
+    final suffix = paymentDurationMonths(p['payment_duration_months']) > 1
+        ? formatPaymentPeriodLabel(paymentDurationMonths(p['payment_duration_months']))
+        : priceSuffix;
 
     return GestureDetector(
       onTap: onTap,
@@ -842,7 +846,7 @@ class _PropCard extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(fmtPrice(price),
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: kSlate800)),
-                  Text(priceSuffix,
+                  Text(suffix,
                       style: const TextStyle(fontSize: 10, color: kSlate400)),
                 ]),
                 GestureDetector(
@@ -882,7 +886,10 @@ class _CommCard extends StatelessWidget {
     final status = p['status']?.toString() ?? 'active';
     final price  = num.tryParse(p['price']?.toString() ?? '0') ?? 0;
     final pt     = p['price_type']?.toString() ?? '';
-    final sfx    = pt == 'yearly' ? '/yr' : pt == 'sale' ? '' : '/mo';
+    final months = paymentDurationMonths(p['payment_duration_months']);
+    final sfx    = pt != 'sale' && months > 1
+        ? formatPaymentPeriodLabel(months)
+        : (pt == 'yearly' ? '/yr' : pt == 'sale' ? '' : '/mo');
 
     return GestureDetector(
       onTap: onTap,

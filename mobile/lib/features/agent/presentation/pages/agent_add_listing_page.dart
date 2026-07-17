@@ -5,6 +5,7 @@ import 'dart:io';
 import '../../../../shared/services/agent_api_service.dart';
 import '../../../../shared/services/auth_service.dart';
 import '../../../../core/constants/api_config.dart';
+import '../../../../core/utils/payment_duration.dart';
 
 class AgentAddListingPage extends StatefulWidget {
   const AgentAddListingPage({super.key});
@@ -25,6 +26,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
   final _landlordPhone = TextEditingController();
 
   String _propertyType = 'house';
+  int _paymentDurationMonths = 3;
   bool _available = true;
   bool _featured = false;
   bool _saving = false;
@@ -151,6 +153,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
       request.fields['location'] = _location.text.trim();
       request.fields['address'] = _location.text.trim();
       request.fields['price'] = _price.text.trim();
+      request.fields['payment_duration_months'] = _paymentDurationMonths.toString();
       request.fields['type'] = _propertyType;
       request.fields['bedrooms'] = _bedrooms.text.trim();
       request.fields['bathrooms'] = _bathrooms.text.trim();
@@ -332,6 +335,15 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                 _buildTextField('Location *', _location, 'e.g., Masaki, Dar es Salaam'),
                 const SizedBox(height: 18),
                 _buildTextField('Monthly Rent (TZS) *', _price, '500000', keyboardType: TextInputType.number),
+                const SizedBox(height: 18),
+                _buildDurationDropdown(),
+                if ((double.tryParse(_price.text.trim()) ?? 0) > 0) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Tenant pays Tsh ${periodRentTotal(double.parse(_price.text.trim()), _paymentDurationMonths).toStringAsFixed(0)} ${formatPaymentPeriodLabel(_paymentDurationMonths)}',
+                    style: const TextStyle(color: Color(0xFFC9A84C), fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 20),
@@ -558,6 +570,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          onChanged: label.contains('Rent') ? (_) => setState(() {}) : null,
           decoration: InputDecoration(
             hintText: placeholder,
             hintStyle: TextStyle(color: const Color(0xFF8B8680).withValues(alpha: 0.4)),
@@ -644,6 +657,37 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
               onChanged: (newValue) {
                 if (newValue != null) onChanged(newValue);
               },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDurationDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Payment Period *', style: TextStyle(color: Color(0xFF8B8680), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E2D4A),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFF2A2418)),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: _paymentDurationMonths,
+              isExpanded: true,
+              dropdownColor: const Color(0xFF1E2D4A),
+              style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14),
+              items: paymentDurationOptions.map((opt) => DropdownMenuItem(
+                value: opt.value,
+                child: Text(opt.label),
+              )).toList(),
+              onChanged: (v) { if (v != null) setState(() => _paymentDurationMonths = v); },
             ),
           ),
         ),

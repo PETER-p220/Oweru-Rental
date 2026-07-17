@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../core/utils/payment_duration.dart';
+import '../../features/tenant/presentation/pages/tenant_theme.dart';
 import '../services/tenant_api_service.dart';
 import '../utils/payment_status_utils.dart';
 
@@ -45,26 +47,34 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
     }
 
     final monthlyRent = _monthlyRent;
+    final paymentMonths = paymentDurationMonths(
+      _property?['payment_duration_months'] ?? widget.application['rent_fee_breakdown']?['payment_duration_months'],
+    );
+    final periodRent = periodRentTotal(monthlyRent, paymentMonths);
     final isAgent = widget.application['is_agent_listed'] == true;
 
     if (isAgent) {
       return {
         'listing_type': 'agent',
         'monthly_rent': monthlyRent,
-        'oweru_fee': monthlyRent * 0.3,
-        'recipient_amount': monthlyRent * 0.7,
-        'total_charge': monthlyRent,
+        'payment_duration_months': paymentMonths,
+        'period_rent': periodRent,
+        'oweru_fee': periodRent * 0.3,
+        'recipient_amount': periodRent * 0.7,
+        'total_charge': periodRent,
       };
     }
 
     return {
       'listing_type': 'owner',
       'monthly_rent': monthlyRent,
-      'tenant_rent_to_landlord': monthlyRent,
+      'payment_duration_months': paymentMonths,
+      'period_rent': periodRent,
+      'tenant_rent_to_landlord': periodRent,
       'oweru_initial_fee': monthlyRent,
       'oweru_fee': monthlyRent,
-      'recipient_amount': monthlyRent,
-      'total_charge': monthlyRent * 2,
+      'recipient_amount': periodRent,
+      'total_charge': periodRent + monthlyRent,
     };
   }
 
@@ -206,7 +216,7 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
               ),
               const TLabel('SECURE PAYMENT'),
               const SizedBox(height: 6),
-              const Text('Pay Monthly Rent',
+              const Text('Pay Rent',
                   style: TextStyle(color: kCream, fontSize: 20, fontWeight: FontWeight.w700)),
               const Text('Powered by Selcom · Oweru',
                   style: TextStyle(color: kSlate, fontSize: 12)),
@@ -258,6 +268,20 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
                           ),
                         ],
                       ),
+                      if (paymentDurationMonths(_feeBreakdown['payment_duration_months']) > 1) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Rent for ${_feeBreakdown['payment_duration_months']} months',
+                                style: const TextStyle(color: kSlate, fontSize: 12)),
+                            Text(
+                              'TZS ${(_feeBreakdown['period_rent'] as num? ?? _feeBreakdown['total_charge'] as num? ?? 0).toStringAsFixed(0)}',
+                              style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 6),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -284,9 +308,25 @@ class _TenantRentPaymentSheetState extends State<TenantRentPaymentSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Rent to landlord (full)', style: TextStyle(color: kSlate, fontSize: 12)),
+                          const Text('Monthly rent', style: TextStyle(color: kSlate, fontSize: 12)),
                           Text(
-                            'TZS ${(_feeBreakdown['tenant_rent_to_landlord'] as num? ?? _feeBreakdown['monthly_rent'] as num? ?? 0).toStringAsFixed(0)}',
+                            'TZS ${(_feeBreakdown['monthly_rent'] as num? ?? 0).toStringAsFixed(0)}',
+                            style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            paymentDurationMonths(_feeBreakdown['payment_duration_months']) > 1
+                                ? 'Rent for ${_feeBreakdown['payment_duration_months']} months to landlord'
+                                : 'Rent to landlord (full)',
+                            style: const TextStyle(color: kSlate, fontSize: 12),
+                          ),
+                          Text(
+                            'TZS ${(_feeBreakdown['tenant_rent_to_landlord'] as num? ?? _feeBreakdown['period_rent'] as num? ?? _feeBreakdown['monthly_rent'] as num? ?? 0).toStringAsFixed(0)}',
                             style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                         ],

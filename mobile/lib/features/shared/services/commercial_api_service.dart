@@ -173,7 +173,11 @@ class CommercialApiService {
       if (response.statusCode == 201 || response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        return {'success': false, 'message': 'Failed to create property'};
+        final body = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': body['message']?.toString() ?? 'Failed to create property',
+        };
       }
     } catch (e) {
       return {'success': false, 'message': 'Error: $e'};

@@ -3,6 +3,7 @@
 // ============================================================
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/utils/payment_duration.dart';
 import 'tenant_theme.dart';
 
 class PropertyDetailPage extends StatefulWidget {
@@ -394,6 +395,13 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
                   fontWeight: FontWeight.w800, letterSpacing: -0.5)),
               const Text('per month',
                 style: TextStyle(color: kSlate, fontSize: 11)),
+              if (paymentDurationMonths(p['payment_duration_months']) > 1) ...[
+                const SizedBox(height: 6),
+                Text(
+                  '${formatPaymentDuration(paymentDurationMonths(p['payment_duration_months']))} — ${_fmt(periodRentTotal(_price, paymentDurationMonths(p['payment_duration_months'])))} ${formatPaymentPeriodLabel(paymentDurationMonths(p['payment_duration_months']))}',
+                  style: const TextStyle(color: kGold, fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+              ],
             ]),
             Container(
               width: 50, height: 50,

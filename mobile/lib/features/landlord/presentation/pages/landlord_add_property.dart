@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../../shared/services/landlord_api_service.dart';
+import '../../../../core/utils/payment_duration.dart';
 import 'landlord_theme.dart';
 
 class LandlordAddPropertyPage extends StatefulWidget {
@@ -28,6 +29,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
   final _longitudeController = TextEditingController();
 
   String _propertyType = 'house';
+  int _paymentDurationMonths = 3;
   final List<String> _amenities = [];
   final List<File> _images = [];
   bool _featured = false;
@@ -166,6 +168,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
         'location': _locationController.text.trim(),
         'address': _addressController.text.trim(),
         'price': double.tryParse(_priceController.text.trim()) ?? 0,
+        'payment_duration_months': _paymentDurationMonths,
         'type': _propertyType,
         'bedrooms': int.tryParse(_bedroomsController.text.trim()) ?? 1,
         'bathrooms': int.tryParse(_bathroomsController.text.trim()) ?? 1,
@@ -364,6 +367,22 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           const Text('Property Details', style: TextStyle(color: kSlate800, fontSize: 20, fontWeight: FontWeight.w700)),
           const SizedBox(height: 20),
           _buildTextField('Monthly Price (TZS) *', _priceController, 'e.g., 800000', keyboardType: TextInputType.number),
+          const SizedBox(height: 8),
+          const Text(
+            'This is the rent per month. Tenants pay for the payment period you set below.',
+            style: TextStyle(color: kSlate500, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          const Text('Payment Period *', style: TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          _buildPaymentDurationDropdown(),
+          if ((double.tryParse(_priceController.text.trim()) ?? 0) > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Tenant pays TZS ${periodRentTotal(double.parse(_priceController.text.trim()), _paymentDurationMonths).toStringAsFixed(0)} ${formatPaymentPeriodLabel(_paymentDurationMonths)}',
+              style: const TextStyle(color: kGold, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [
@@ -449,6 +468,7 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          onChanged: label.contains('Price') || label.contains('Rent') ? (_) => setState(() {}) : null,
           decoration: InputDecoration(
             hintText: placeholder,
             hintStyle: const TextStyle(color: kSlate400),
@@ -503,6 +523,28 @@ class _LandlordAddPropertyPageState extends State<LandlordAddPropertyPage> {
           style: const TextStyle(color: kSlate800),
         ),
       ],
+    );
+  }
+
+  Widget _buildPaymentDurationDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: kSlate100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: kBorder),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: _paymentDurationMonths,
+          isExpanded: true,
+          items: paymentDurationOptions.map((opt) => DropdownMenuItem(
+            value: opt.value,
+            child: Text(opt.label, style: const TextStyle(color: kSlate800)),
+          )).toList(),
+          onChanged: (v) { if (v != null) setState(() => _paymentDurationMonths = v); },
+        ),
+      ),
     );
   }
 

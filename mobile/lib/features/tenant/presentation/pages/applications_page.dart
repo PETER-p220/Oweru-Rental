@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/widgets/tenant_rent_payment_sheet.dart';
 import '../../../../shared/services/tenant_api_service.dart';
+import '../../../../core/utils/payment_duration.dart';
 import 'tenant_theme.dart';
 
 class ApplicationsPage extends StatefulWidget {
@@ -143,6 +144,7 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
     final title     = property?['title']?.toString() ?? 'Property';
     final location  = property?['location']?.toString() ?? '';
     final rent      = property?['price'] ?? app['rent'] ?? 0;
+    final paymentMonths = paymentDurationMonths(property?['payment_duration_months']);
     final message   = app['message']?.toString() ?? 'Application submitted';
     final createdAt = app['created_at']?.toString() ?? 'Recently';
     final needsRent = tenantApplicationNeedsRentPayment(app, locallyPaidIds: _rentPaidAppIds);
@@ -185,9 +187,14 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Monthly Rent', style: TextStyle(color: kSlateDim, fontSize: 10)),
-                Text('TZS $rent',
-                  style: const TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w700)),
+                Text(paymentMonths > 1 ? 'Payment Period' : 'Monthly Rent',
+                    style: const TextStyle(color: kSlateDim, fontSize: 10)),
+                Text(
+                  paymentMonths > 1
+                      ? 'TZS ${periodRentTotal(rent is num ? rent : num.tryParse(rent.toString()) ?? 0, paymentMonths).toStringAsFixed(0)} ${formatPaymentPeriodLabel(paymentMonths)}'
+                      : 'TZS $rent',
+                  style: const TextStyle(color: kGold, fontSize: 14, fontWeight: FontWeight.w700),
+                ),
               ]),
             ]),
             const SizedBox(height: 10),

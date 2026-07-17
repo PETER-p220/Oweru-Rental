@@ -8,6 +8,7 @@ import 'property_detail_page.dart';
 import '../../../../shared/services/tenant_api_service.dart';
 import '../../../../shared/services/user_service.dart';
 import '../../../../shared/utils/payment_status_utils.dart';
+import '../../../../core/utils/payment_duration.dart';
 
 const String kApiBase = 'https://rental.oweru.com/api';
 const int kItemsPerPage = 12;
@@ -1406,7 +1407,8 @@ class _PropertyCard extends StatelessWidget {
           Text(_formatPrice(property['price']),
             style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w500,
               shadows: [Shadow(color: Colors.black54, blurRadius: 8)])),
-          const Text('/mo', style: TextStyle(color: Color(0xAAFFFFFF), fontSize: 10)),
+          Text(formatPriceSuffix(property),
+            style: const TextStyle(color: Color(0xAAFFFFFF), fontSize: 10)),
         ])),
     ],
   );
@@ -1906,6 +1908,11 @@ class _ApplyModal extends StatelessWidget {
                 if ((property['location'] ?? property['address']) != null)
                   _InfoRow(Icons.location_on_rounded, (property['location'] ?? property['address']).toString()),
                 _InfoRow(Icons.credit_card_rounded, 'Monthly rent: ${_formatPrice(property['price'])}'),
+                if (paymentDurationMonths(property['payment_duration_months']) > 1)
+                  _InfoRow(
+                    Icons.calendar_month_rounded,
+                    'Payment: ${_formatPrice(periodRentTotal(property['price'] is num ? property['price'] as num : 0, paymentDurationMonths(property['payment_duration_months'])))} ${formatPaymentPeriodLabel(paymentDurationMonths(property['payment_duration_months']))}',
+                  ),
                 if (property['bedrooms'] != null)
                   _InfoRow(Icons.bed_rounded, 'Bedrooms: ${property['bedrooms']}'),
                 if (property['furnished'] == true)

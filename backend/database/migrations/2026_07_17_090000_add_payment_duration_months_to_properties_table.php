@@ -8,17 +8,29 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->unsignedTinyInteger('payment_duration_months')
-                ->default(1)
-                ->after('price_type');
-        });
+        if (! Schema::hasColumn('properties', 'price_type')) {
+            Schema::table('properties', function (Blueprint $table) {
+                $table->string('price_type')->default('monthly')->after('price');
+            });
+        }
+
+        if (! Schema::hasColumn('properties', 'payment_duration_months')) {
+            Schema::table('properties', function (Blueprint $table) {
+                $after = Schema::hasColumn('properties', 'price_type') ? 'price_type' : 'price';
+
+                $table->unsignedTinyInteger('payment_duration_months')
+                    ->default(1)
+                    ->after($after);
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('properties', function (Blueprint $table) {
-            $table->dropColumn('payment_duration_months');
-        });
+        if (Schema::hasColumn('properties', 'payment_duration_months')) {
+            Schema::table('properties', function (Blueprint $table) {
+                $table->dropColumn('payment_duration_months');
+            });
+        }
     }
 };
