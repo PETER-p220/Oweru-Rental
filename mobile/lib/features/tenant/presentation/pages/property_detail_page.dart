@@ -1,9 +1,13 @@
 // ============================================================
 // property_detail_page.dart — dark navy/gold + tenant_theme
 // ============================================================
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import '../../../../core/utils/payment_duration.dart';
+import '../../../../core/utils/property_images.dart';
+import '../../../../core/constants/api_config.dart';
 import 'tenant_theme.dart';
 
 class PropertyDetailPage extends StatefulWidget {
@@ -19,33 +23,15 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
   int    _selectedImg = 0;
   bool   _isSaved     = false;
   bool   _showAllDesc = false;
+  Map<String, dynamic> _property = {};
   late PageController        _pageCtrl;
   late AnimationController   _fadeCtrl;
   late Animation<double>     _fadeAnim;
 
   // ── Data helpers ──────────────────────────────────────────
-  Map<String, dynamic> get p => widget.property;
+  Map<String, dynamic> get p => _property.isNotEmpty ? _property : widget.property;
 
-  List<String> get _images {
-    for (final key in ['property_images', 'propertyImages']) {
-      final list = p[key];
-      if (list is List && list.isNotEmpty) {
-        final urls = list
-          .map<String>((i) => (i['image_path'] ?? i['url'] ?? '').toString())
-          .where((s) => s.isNotEmpty)
-          .toList();
-        if (urls.isNotEmpty) return urls;
-      }
-    }
-    final imgs = p['images'];
-    if (imgs is List && imgs.isNotEmpty) {
-      return imgs
-        .map<String>((i) => i is String ? i : (i['image_path'] ?? i['url'] ?? '').toString())
-        .where((s) => s.isNotEmpty)
-        .toList();
-    }
-    return [];
-  }
+  List<String> get _images => getPropertyImageUrls(p);
 
   String get _title    => (p['title']       ?? 'Untitled Property').toString();
   String get _location => (p['location']    ?? p['address'] ?? 'Location not specified').toString();
@@ -102,14 +88,36 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
   @override
   void initState() {
     super.initState();
+    _property = Map<String, dynamic>.from(widget.property);
     _pageCtrl = PageController();
     _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
     _fadeAnim  = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
+    _loadFullProperty();
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
+  }
+
+  Future<void> _loadFullProperty() async {
+    final id = widget.property['id'];
+    if (id == null) return;
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.apiPath}/public/properties/$id'),
+        headers: {'Accept': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final data = body is Map ? (body['data'] ?? body) : null;
+        if (data is Map && mounted) {
+          setState(() {
+            _property = Map<String, dynamic>.from({...widget.property, ...Map<String, dynamic>.from(data)});
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   @override
@@ -138,7 +146,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: kPageBg,
       body: FadeTransition(
         opacity: _fadeAnim,
         child: CustomScrollView(
@@ -176,7 +184,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
   Widget _sliverAppBar() => SliverAppBar(
     expandedHeight: 340,
     pinned: true,
-    backgroundColor: kBg,
+    backgroundColor: kHeaderBg,
     leading: Padding(
       padding: const EdgeInsets.all(8),
       child: GestureDetector(
@@ -187,7 +195,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
             shape: BoxShape.circle,
             border: Border.all(color: kGoldBorder),
           ),
-          child: const Icon(Icons.arrow_back_ios_new_rounded, color: kCream, size: 16),
+          child: const Icon(Icons.arrow_back_ios_new_rounded, color: kWhite, size: 16),
         ),
       ),
     ),
@@ -246,7 +254,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter, end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Color(0xDD0A0F1E)],
+            colors: [Colors.transparent, Color(0xDD1E293B)],
             stops: [0.35, 1.0],
           ),
         ),
@@ -265,7 +273,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
             child: const Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.star_rounded, size: 10, color: kBg),
               SizedBox(width: 4),
-              Text('FEATURED', style: TextStyle(color: kBg, fontSize: 9,
+              Text('FEATURED', style: TextStyle(color: kWhite, fontSize: 9,
                 fontWeight: FontWeight.w800, letterSpacing: 1.2)),
             ]),
           ),
@@ -304,7 +312,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
           bottom: 0, left: 0, right: 0,
           child: Container(
             height: 52,
-            color: kBg.withValues(alpha: .85),
+            color: kPageBg.withValues(alpha: .92),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

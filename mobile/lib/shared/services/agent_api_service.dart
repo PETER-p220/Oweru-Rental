@@ -182,6 +182,22 @@ class AgentApiService {
     return results;
   }
 
+  static Future<Map<String, dynamic>> getRentPayments() async {
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/agent/rent-payments'), headers: _headers);
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
+    return {};
+  }
+
+  static Future<Map<String, dynamic>> getRentPaymentStats() async {
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/agent/rent-payment-stats'), headers: _headers);
+      if (response.statusCode == 200) return jsonDecode(response.body);
+    } catch (_) {}
+    return {};
+  }
+
   static Future<bool> createListing(Map<String, dynamic> payload) async {
     try {
       final response = await http.post(

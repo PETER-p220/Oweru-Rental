@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'agent_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../shared/services/agent_api_service.dart';
@@ -75,35 +76,35 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1218),
+      backgroundColor: kPageBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1D26),
+        backgroundColor: kCardBg,
         elevation: 0,
-        title: const Text('QR Codes', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 18, fontWeight: FontWeight.w700)),
+        title: const Text('QR Codes', style: TextStyle(color: kSlate800, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
       body: Column(
         children: [
           // Header Section
           Container(
             padding: const EdgeInsets.all(20),
-            color: const Color(0xFF1A1D26),
+            color: kCardBg,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Agent Workspace', style: TextStyle(color: Color(0xFF8B8680), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+                const Text('Agent Workspace', style: TextStyle(color: kSlate500, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
                 const SizedBox(height: 16),
-                const Text('QR Codes', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 28, fontWeight: FontWeight.w700)),
+                const Text('QR Codes', style: TextStyle(color: kSlate800, fontSize: 28, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 const Text(
                   'Unique QR codes for each of your listings. Scan to open the property page instantly.',
-                  style: TextStyle(color: Color(0xFF8B8680), fontSize: 13),
+                  style: TextStyle(color: kSlate500, fontSize: 13),
                 ),
                 const SizedBox(height: 22),
                 // Stats Grid
                 Row(
                   children: [
                     Expanded(
-                      child: _buildStatCard('Listings', '${_items.length}', const Color(0xFFC9A84C)),
+                      child: _buildStatCard('Listings', '${_items.length}', kGold),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -136,7 +137,7 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(20),
-              color: const Color(0xFF1A1D26),
+              color: kCardBg,
               child: _isLoading
                   ? _buildLoadingSkeleton()
                   : _items.isEmpty
@@ -146,11 +147,11 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
                           child: DataTable(
                             headingRowColor: WidgetStateProperty.all(const Color(0xFF2A2418)),
                             columns: const [
-                              DataColumn(label: Text('Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('QR Code', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Status', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Tracking URL', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                              DataColumn(label: Text('Actions', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
+                              DataColumn(label: Text('Property', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                              DataColumn(label: Text('QR Code', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                              DataColumn(label: Text('Status', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                              DataColumn(label: Text('Tracking URL', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                              DataColumn(label: Text('Actions', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
                             ],
                             rows: _items.asMap().entries.map((entry) {
                               final idx = entry.key;
@@ -164,18 +165,18 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
                                   DataCell(Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(property['title'] ?? 'Unknown', style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14, fontWeight: FontWeight.w400)),
+                                      Text(property['title'] ?? 'Unknown', style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w400)),
                                       if (property['location'] != null || property['address'] != null)
                                         Padding(
                                           padding: const EdgeInsets.only(top: 2),
                                           child: Row(
                                             children: [
-                                              const Icon(Icons.location_on, size: 11, color: Color(0xFFC9A84C)),
+                                              const Icon(Icons.location_on, size: 11, color: kGold),
                                               const SizedBox(width: 5),
                                               Expanded(
                                                 child: Text(
                                                   property['location'] ?? property['address'] ?? '',
-                                                  style: const TextStyle(color: Color(0xFF8B8680), fontSize: 12),
+                                                  style: const TextStyle(color: kSlate500, fontSize: 12),
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
@@ -204,7 +205,7 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
                                               borderRadius: BorderRadius.circular(8),
                                               border: Border.all(color: const Color(0xFF2A2418), style: BorderStyle.solid),
                                             ),
-                                            child: const Icon(Icons.qr_code_2, size: 20, color: Color(0xFF8B8680)),
+                                            child: const Icon(Icons.qr_code_2, size: 20, color: kSlate500),
                                           ),
                                   )),
                                   DataCell(Center(
@@ -214,12 +215,12 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
                                     onTap: () => _openUrl(url),
                                     child: Row(
                                       children: [
-                                        const Icon(Icons.link, size: 11, color: Color(0xFFC9A84C)),
+                                        const Icon(Icons.link, size: 11, color: kGold),
                                         const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
                                             url,
-                                            style: const TextStyle(color: Color(0xFFC9A84C), fontSize: 11),
+                                            style: const TextStyle(color: kGold, fontSize: 11),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
@@ -231,17 +232,17 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
                                         ? Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
-                                              _buildActionButton(Icons.download, 'Download', const Color(0xFFC9A84C), () {}),
+                                              _buildActionButton(Icons.download, 'Download', kGold, () {}),
                                               const SizedBox(width: 8),
                                               _buildActionButton(
                                                 _copied[propertyId] == true ? Icons.check : Icons.copy,
                                                 _copied[propertyId] == true ? 'Copied!' : 'Copy',
-                                                _copied[propertyId] == true ? const Color(0xFF10B981) : const Color(0xFF8B8680),
+                                                _copied[propertyId] == true ? const Color(0xFF10B981) : kSlate500,
                                                 () => _copyUrl(propertyId),
                                               ),
                                             ],
                                           )
-                                        : const Text('—', style: TextStyle(color: Color(0xFF8B8680), fontSize: 11)),
+                                        : const Text('—', style: TextStyle(color: kSlate500, fontSize: 11)),
                                   )),
                                 ],
                               );
@@ -310,16 +311,16 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color == const Color(0xFFC9A84C) ? color : Colors.transparent,
+          color: color == kGold ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(7),
           border: Border.all(color: color),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 12, color: color == const Color(0xFFC9A84C) ? const Color(0xFF0F1218) : color),
+            Icon(icon, size: 12, color: color == kGold ? kPageBg : color),
             const SizedBox(width: 6),
-            Text(label, style: TextStyle(color: color == const Color(0xFFC9A84C) ? const Color(0xFF0F1218) : color, fontSize: 11, fontWeight: FontWeight.w600)),
+            Text(label, style: TextStyle(color: color == kGold ? kPageBg : color, fontSize: 11, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -330,11 +331,11 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
     return DataTable(
       headingRowColor: WidgetStateProperty.all(const Color(0xFF2A2418)),
       columns: const [
-        DataColumn(label: Text('Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-        DataColumn(label: Text('QR Code', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-        DataColumn(label: Text('Status', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-        DataColumn(label: Text('Tracking URL', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-        DataColumn(label: Text('Actions', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
+        DataColumn(label: Text('Property', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+        DataColumn(label: Text('QR Code', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+        DataColumn(label: Text('Status', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+        DataColumn(label: Text('Tracking URL', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+        DataColumn(label: Text('Actions', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
       ],
       rows: List.generate(4, (index) {
         return DataRow(
@@ -373,18 +374,18 @@ class _AgentQrCodesPageState extends State<AgentQrCodesPage> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFFC9A84C).withValues(alpha: 0.12),
+              color: kGold.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFF2A2418)),
             ),
-            child: const Icon(Icons.qr_code_2, size: 24, color: Color(0xFFC9A84C)),
+            child: const Icon(Icons.qr_code_2, size: 24, color: kGold),
           ),
           const SizedBox(height: 18),
-          const Text('No QR Codes Yet', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 22, fontWeight: FontWeight.w300)),
+          const Text('No QR Codes Yet', style: TextStyle(color: kSlate800, fontSize: 22, fontWeight: FontWeight.w300)),
           const SizedBox(height: 6),
           const Text(
             'QR codes will appear here once your listings are active.',
-            style: TextStyle(color: Color(0xFF8B8680), fontSize: 14),
+            style: TextStyle(color: kSlate500, fontSize: 14),
           ),
         ],
       ),

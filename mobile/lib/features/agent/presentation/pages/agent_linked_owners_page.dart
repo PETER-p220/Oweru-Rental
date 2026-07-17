@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'agent_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../shared/services/agent_api_service.dart';
 
 // Oweru Brand Colors
 const Color kNavy900 = Color(0xFF0F172A);
 const Color kNavy800 = Color(0xFF141F35);
-const Color kGold = Color(0xFFC89128);
 const Color kOffWhite = Color(0xFFF8F8F9);
 const Color kSlateBlue = Color(0xFF6888BC);
 const Color kMutedBlue = Color(0xFF9AAABF);

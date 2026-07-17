@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'agent_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../shared/services/agent_api_service.dart';
@@ -26,7 +27,7 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
   static const _surface = Color(0xFF131720);
   static const _card = Color(0xFF181D2A);
   static const _cardBorder = Color(0xFF242B3D);
-  static const _gold = Color(0xFFC9A84C);
+  static const _gold = kGold;
   static const _goldLight = Color(0xFFE8C76A);
   static const _green = Color(0xFF10B981);
   static const _blue = Color(0xFF38BDF8);

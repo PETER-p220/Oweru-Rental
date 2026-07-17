@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
+import 'agent_theme.dart';
 import '../../../shared/services/agent_api_service.dart';
-
-const Color kGold = Color(0xFFC89128);
-const Color kBg = Color(0xFF0A0F1E);
-const Color kBg2 = Color(0xFF0F172A);
-const Color kBg3 = Color(0xFF162035);
-const Color kCream = Color(0xFFF1F5F9);
-const Color kSlate = Color(0xFF94A3B8);
-const Color kBorder = Color(0x26C89128);
 
 class AgentApplicationsPage extends StatefulWidget {
   const AgentApplicationsPage({super.key});
@@ -154,7 +147,7 @@ class _AgentApplicationsPageState extends State<AgentApplicationsPage> {
     return Scaffold(
       backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: kBg2,
+        backgroundColor: kPageBg,
         elevation: 0,
         title: const Text('Applications', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
@@ -369,7 +362,7 @@ class _AgentApplicationsPageState extends State<AgentApplicationsPage> {
 
   Widget _buildRejectModal() {
     return Dialog(
-      backgroundColor: kBg2,
+      backgroundColor: kPageBg,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         padding: const EdgeInsets.all(24),

@@ -13,7 +13,11 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
   bool _isLoading = true;
   String _error = '';
 
-  num get _totalPaid => _history.fold<num>(0, (s, p) => s + ((p['amount'] as num?) ?? 0));
+  num get _totalPaid => _history.fold<num>(0, (s, p) {
+    final amount = p['amount'];
+    if (amount is num) return s + amount;
+    return s + (num.tryParse(amount?.toString() ?? '') ?? 0);
+  });
 
   @override
   void initState() {
@@ -45,13 +49,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: kBg,
-    appBar: AppBar(
-      backgroundColor: kBg2,
-      elevation: 0,
-      iconTheme: const IconThemeData(color: kGold),
-      title: const Text('Payment History',
-        style: TextStyle(color: kCream, fontSize: 17, fontWeight: FontWeight.w700)),
-    ),
+    appBar: tenantPageAppBar('Payment History'),
     body: _isLoading
         ? ListView(
             padding: const EdgeInsets.all(16),

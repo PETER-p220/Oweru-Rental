@@ -72,7 +72,12 @@ class _SavedPropertiesPageState extends State<SavedPropertiesPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: kBg,
-    appBar: _appBar(),
+    appBar: tenantPageAppBar('Saved Properties', actions: [
+      IconButton(
+        onPressed: _load,
+        icon: const Icon(Icons.refresh_rounded, color: kWhite, size: 20),
+      ),
+    ]),
     body: _isLoading
         ? _skeleton()
         : _error.isNotEmpty
@@ -99,17 +104,6 @@ class _SavedPropertiesPageState extends State<SavedPropertiesPage> {
               ),
   );
 
-  PreferredSizeWidget _appBar() => AppBar(
-    backgroundColor: kBg2,
-    elevation: 0,
-    iconTheme: const IconThemeData(color: kGold),
-    title: const Text('Saved Properties',
-      style: TextStyle(color: kCream, fontSize: 17, fontWeight: FontWeight.w700)),
-    actions: [
-      IconButton(onPressed: _load,
-        icon: const Icon(Icons.refresh_rounded, color: kGold, size: 20)),
-    ],
-  );
 
   Widget _searchBar() => TextField(
     onChanged: (v) => setState(() => _searchQuery = v),

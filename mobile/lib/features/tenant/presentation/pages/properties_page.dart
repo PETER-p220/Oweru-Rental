@@ -9,6 +9,7 @@ import '../../../../shared/services/tenant_api_service.dart';
 import '../../../../shared/services/user_service.dart';
 import '../../../../shared/utils/payment_status_utils.dart';
 import '../../../../core/utils/payment_duration.dart';
+import '../../../../core/utils/property_images.dart';
 
 const String kApiBase = 'https://rental.oweru.com/api';
 const int kItemsPerPage = 12;
@@ -40,41 +41,7 @@ String _formatPrice(dynamic p) {
   return 'TZS $v';
 }
 
-String _resolveUrl(String path) {
-  if (path.isEmpty) return '';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  const base = 'https://rental.oweru.com';
-  if (path.startsWith('/storage/')) return '$base$path';
-  if (path.startsWith('storage/')) return '$base/$path';
-  if (path.startsWith('/')) return '$base$path';
-  return '$base/storage/$path';
-}
-
-String _getImageUrl(PropertyMap p) {
-  final si = p['property_images'];
-  if (si is List && si.isNotEmpty) {
-    final primary = si.firstWhere((i) => i['is_primary'] == 1 || i['is_primary'] == true, orElse: () => si[0]);
-    final path = primary['image_path'] ?? primary['url'] ?? '';
-    if (path.toString().isNotEmpty) return _resolveUrl(path.toString());
-  }
-  final ci = p['propertyImages'];
-  if (ci is List && ci.isNotEmpty) {
-    final primary = ci.firstWhere((i) => i['is_primary'] == 1 || i['is_primary'] == true, orElse: () => ci[0]);
-    final path = primary['image_path'] ?? primary['url'] ?? '';
-    if (path.toString().isNotEmpty) return _resolveUrl(path.toString());
-  }
-  var imgs = p['images'];
-  if (imgs is String) {
-    try { imgs = jsonDecode(imgs); } catch (_) { imgs = null; }
-  }
-  if (imgs is List && imgs.isNotEmpty) {
-    final first = imgs[0];
-    if (first is String && first.trim().isNotEmpty) return _resolveUrl(first);
-    final path = first['image_path'] ?? first['url'] ?? first['path'] ?? '';
-    if (path.toString().isNotEmpty) return _resolveUrl(path.toString());
-  }
-  return '';
-}
+String _getImageUrl(PropertyMap p) => getPropertyImageUrl(p);
 
 const _kCommercialTypes = ['office', 'retail', 'warehouse', 'commercial', 'industrial'];
 
@@ -101,16 +68,19 @@ String _sourceLabel(SourceFilter s) {
 Color _sourceBadgeColor(SourceFilter s) {
   switch (s) {
     case SourceFilter.agent: return kGold;
-    case SourceFilter.admin: return const Color(0xFF10B981);
-    case SourceFilter.landlord: return kBg.withValues(alpha: 0.85);
-    case SourceFilter.all: return kBg;
+    case SourceFilter.admin: return kSuccess;
+    case SourceFilter.landlord: return kSlate700;
+    case SourceFilter.all: return kSlate500;
   }
 }
 
 Color _sourceBadgeTextColor(SourceFilter s) {
   switch (s) {
-    case SourceFilter.landlord: return kCream;
-    default: return kBg;
+    case SourceFilter.landlord:
+    case SourceFilter.admin:
+    case SourceFilter.agent:
+      return kWhite;
+    default: return kWhite;
   }
 }
 
@@ -602,14 +572,14 @@ class _PropertiesPageState extends State<PropertiesPage> {
   // FIX: Reduced expandedHeight, tightened padding, smaller text, safe pill wrapping
   Widget _buildHeader() => SliverAppBar(
     automaticallyImplyLeading: false,
-    backgroundColor: kBg,
+    backgroundColor: kHeaderBg,
     expandedHeight: 155,
     pinned: true,
     flexibleSpace: FlexibleSpaceBar(
       background: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0A0F1E), kBg2],
+            colors: [kHeaderBg, kSlate700],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -639,7 +609,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   RichText(text: const TextSpan(
-                    style: TextStyle(fontFamily: 'serif', fontSize: 24, fontWeight: FontWeight.w300, color: kCream, height: 1.1),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: kWhite, height: 1.1),
                     children: [
                       TextSpan(text: 'Available '),
                       TextSpan(text: 'Properties', style: TextStyle(color: kGold)),
@@ -670,10 +640,10 @@ class _PropertiesPageState extends State<PropertiesPage> {
       title: Padding(
         padding: const EdgeInsets.only(right: 8),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          const Text('Properties', style: TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600)),
+          const Text('Properties', style: TextStyle(color: kWhite, fontSize: 15, fontWeight: FontWeight.w600)),
           Text(
             _loading ? 'Loading…' : '$_paginationTotal listings',
-            style: const TextStyle(color: kSlate, fontSize: 11),
+            style: const TextStyle(color: kSlate300, fontSize: 11),
           ),
         ]),
       ),
@@ -1311,7 +1281,7 @@ class _PropertyCard extends StatelessWidget {
         color: kBg2,
         border: Border.all(color: kBorder),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: kSlate800.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
@@ -1333,7 +1303,7 @@ class _PropertyCard extends StatelessWidget {
         color: kBg2,
         border: Border.all(color: kBorder),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: kSlate800.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
@@ -1363,9 +1333,9 @@ class _PropertyCard extends StatelessWidget {
           : Container(color: kBg3, child: const Center(child: Icon(Icons.image_rounded, color: kSlateDim, size: 40))),
 
       // Gradient overlay
-      Container(decoration: const BoxDecoration(gradient: LinearGradient(
+      Container(decoration: BoxDecoration(gradient: LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [Colors.transparent, Color(0xCC0A0F1E)], stops: [0.4, 1.0]))),
+        colors: [Colors.transparent, kSlate800.withValues(alpha: 0.55)], stops: [0.45, 1.0]))),
 
       // Featured badge
       if (_featured)
@@ -1373,7 +1343,7 @@ class _PropertyCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(5)),
-            child: const Text('FEATURED', style: TextStyle(color: kBg, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+            child: const Text('FEATURED', style: TextStyle(color: kWhite, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
           )),
 
       // Source badge
@@ -1711,16 +1681,14 @@ class _ModalHeader extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.fromLTRB(20, 20, 12, 16),
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF0F172A), Color(0xFF1E2D4A)],
-        begin: Alignment.topLeft, end: Alignment.bottomRight),
+      color: kHeaderBg,
       border: Border(bottom: BorderSide(color: kBorder)),
     ),
     child: Stack(children: [
       Positioned(top: -20, left: -20, right: -12, child: Container(height: 2, color: kGold)),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: const TextStyle(
-          color: kCream, fontSize: 18, fontWeight: FontWeight.w300, letterSpacing: -0.01)),
+          color: kWhite, fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -0.01)),
         if (subtitle != null) ...[
           const SizedBox(height: 3),
           Text(subtitle!, style: const TextStyle(color: kSlate, fontSize: 12)),

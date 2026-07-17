@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'agent_theme.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
@@ -216,7 +217,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
   Widget build(BuildContext context) {
     if (_success) {
       return Scaffold(
-        backgroundColor: const Color(0xFF0F1218),
+        backgroundColor: kPageBg,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -234,13 +235,13 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
               const SizedBox(height: 24),
               const Text(
                 'Listing Created Successfully!',
-                style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 32, fontWeight: FontWeight.w300),
+                style: TextStyle(color: kSlate800, fontSize: 32, fontWeight: FontWeight.w300),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               const Text(
                 'Redirecting to your listings…',
-                style: TextStyle(color: Color(0xFF8B8680), fontSize: 14),
+                style: TextStyle(color: kSlate500, fontSize: 14),
               ),
             ],
           ),
@@ -249,15 +250,15 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1218),
+      backgroundColor: kPageBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1D26),
+        backgroundColor: kCardBg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF8B8680)),
+          icon: const Icon(Icons.arrow_back, color: kSlate500),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Add Listing', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 18, fontWeight: FontWeight.w700)),
+        title: const Text('Add Listing', style: TextStyle(color: kSlate800, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -273,25 +274,25 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFC9A84C).withValues(alpha: 0.12),
+                      color: kGold.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: const Color(0xFF2A2418)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.apartment, size: 10, color: Color(0xFFC9A84C)),
+                        Icon(Icons.apartment, size: 10, color: kGold),
                         SizedBox(width: 6),
-                        Text('NEW LISTING', style: TextStyle(color: Color(0xFFC9A84C), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.22)),
+                        Text('NEW LISTING', style: TextStyle(color: kGold, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.22)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text('Add New Property', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 28, fontWeight: FontWeight.w300)),
+                  const Text('Add New Property', style: TextStyle(color: kSlate800, fontSize: 28, fontWeight: FontWeight.w300)),
                   const SizedBox(height: 8),
                   const Text(
                     'List your property for rent and reach potential tenants across Africa',
-                    style: TextStyle(color: Color(0xFF8B8680), fontSize: 14),
+                    style: TextStyle(color: kSlate500, fontSize: 14),
                   ),
                 ],
               ),
@@ -341,7 +342,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                   const SizedBox(height: 10),
                   Text(
                     'Tenant pays Tsh ${periodRentTotal(double.parse(_price.text.trim()), _paymentDurationMonths).toStringAsFixed(0)} ${formatPaymentPeriodLabel(_paymentDurationMonths)}',
-                    style: const TextStyle(color: Color(0xFFC9A84C), fontSize: 12, fontWeight: FontWeight.w600),
+                    style: const TextStyle(color: kGold, fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                 ],
               ],
@@ -390,7 +391,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                 const SizedBox(height: 14),
                 const Text(
                   'This information is private — it helps you track which landlord owns this property and won\'t be shown to tenants.',
-                  style: TextStyle(color: Color(0xFF8B8680), fontSize: 12, fontStyle: FontStyle.italic),
+                  style: TextStyle(color: kSlate500, fontSize: 12, fontStyle: FontStyle.italic),
                 ),
               ],
             ),
@@ -411,11 +412,11 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.camera_alt, size: 38, color: Color(0xFFC9A84C)),
+                        const Icon(Icons.camera_alt, size: 38, color: kGold),
                         const SizedBox(height: 12),
-                        const Text('Click to upload images', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 16, fontWeight: FontWeight.w600)),
+                        const Text('Click to upload images', style: TextStyle(color: kSlate800, fontSize: 16, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 5),
-                        const Text('PNG, JPG up to 2MB · Max 6 images', style: TextStyle(color: Color(0xFF8B8680), fontSize: 13)),
+                        const Text('PNG, JPG up to 2MB · Max 6 images', style: TextStyle(color: kSlate500, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -455,7 +456,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                                   color: Color(0xFF090F1D),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.close, size: 12, color: Color(0xFFE8E1D5)),
+                                child: const Icon(Icons.close, size: 12, color: kSlate800),
                               ),
                             ),
                           ),
@@ -467,12 +468,12 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F1218),
+                      color: kPageBg,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: const Color(0xFF2A2418)),
                     ),
                     child: const Center(
-                      child: Text('No images yet. Add at least one to showcase your property.', style: TextStyle(color: Color(0xFF8B8680), fontSize: 13)),
+                      child: Text('No images yet. Add at least one to showcase your property.', style: TextStyle(color: kSlate500, fontSize: 13)),
                     ),
                   ),
               ],
@@ -485,7 +486,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                 OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF8B8680),
+                    foregroundColor: kSlate500,
                     side: const BorderSide(color: Color(0xFF2A2418)),
                     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
                   ),
@@ -495,12 +496,12 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                 ElevatedButton(
                   onPressed: _saving ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC9A84C),
-                    foregroundColor: const Color(0xFF0F1218),
+                    backgroundColor: kGold,
+                    foregroundColor: kPageBg,
                     padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
                   ),
                   child: _saving
-                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0F1218)))
+                      ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2, color: kPageBg))
                       : const Row(
                           children: [
                             Icon(Icons.save, size: 14),
@@ -531,7 +532,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 18),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F1218),
+              color: kPageBg,
               border: Border(bottom: BorderSide(color: const Color(0xFF2A2418), width: 1)),
             ),
             child: Row(
@@ -540,14 +541,14 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC9A84C).withValues(alpha: 0.12),
+                    color: kGold.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFF2A2418)),
                   ),
-                  child: Icon(icon, size: 16, color: const Color(0xFFC9A84C)),
+                  child: Icon(icon, size: 16, color: kGold),
                 ),
                 const SizedBox(width: 12),
-                Text(title, style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 19, fontWeight: FontWeight.w400)),
+                Text(title, style: const TextStyle(color: kSlate800, fontSize: 19, fontWeight: FontWeight.w400)),
               ],
             ),
           ),
@@ -565,7 +566,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Color(0xFF8B8680), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+        Text(label, style: const TextStyle(color: kSlate500, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -573,7 +574,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
           onChanged: label.contains('Rent') ? (_) => setState(() {}) : null,
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: TextStyle(color: const Color(0xFF8B8680).withValues(alpha: 0.4)),
+            hintStyle: TextStyle(color: kSlate500.withValues(alpha: 0.4)),
             filled: true,
             fillColor: const Color(0xFF1E2D4A),
             border: OutlineInputBorder(
@@ -586,10 +587,10 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFC9A84C)),
+              borderSide: const BorderSide(color: kGold),
             ),
           ),
-          style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14),
+          style: const TextStyle(color: kSlate800, fontSize: 14),
         ),
       ],
     );
@@ -599,7 +600,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Color(0xFF8B8680), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+        Text(label, style: const TextStyle(color: kSlate500, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -607,7 +608,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
           minLines: 4,
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: TextStyle(color: const Color(0xFF8B8680).withValues(alpha: 0.4)),
+            hintStyle: TextStyle(color: kSlate500.withValues(alpha: 0.4)),
             filled: true,
             fillColor: const Color(0xFF1E2D4A),
             border: OutlineInputBorder(
@@ -620,10 +621,10 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFC9A84C)),
+              borderSide: const BorderSide(color: kGold),
             ),
           ),
-          style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14),
+          style: const TextStyle(color: kSlate800, fontSize: 14),
         ),
       ],
     );
@@ -633,7 +634,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Color(0xFF8B8680), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+        Text(label, style: const TextStyle(color: kSlate500, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -647,7 +648,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
               value: value,
               isExpanded: true,
               dropdownColor: const Color(0xFF1E2D4A),
-              style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14),
+              style: const TextStyle(color: kSlate800, fontSize: 14),
               items: items.map((item) {
                 return DropdownMenuItem<String>(
                   value: item['value'],
@@ -668,7 +669,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Payment Period *', style: TextStyle(color: Color(0xFF8B8680), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+        const Text('Payment Period *', style: TextStyle(color: kSlate500, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -682,7 +683,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
               value: _paymentDurationMonths,
               isExpanded: true,
               dropdownColor: const Color(0xFF1E2D4A),
-              style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14),
+              style: const TextStyle(color: kSlate800, fontSize: 14),
               items: paymentDurationOptions.map((opt) => DropdownMenuItem(
                 value: opt.value,
                 child: Text(opt.label),
@@ -701,9 +702,9 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E2D4A),
+          color: kSlate100,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF2A2418)),
+          border: Border.all(color: kBorder),
         ),
         child: Row(
           children: [
@@ -711,7 +712,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
               width: 44,
               height: 24,
               decoration: BoxDecoration(
-                color: value ? const Color(0xFFC9A84C) : const Color(0xFF0F1218),
+                color: value ? kGold : kPageBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFF2A2418)),
               ),
@@ -723,7 +724,7 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
                   height: 16,
                   margin: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
-                    color: value ? const Color(0xFF0F1218) : const Color(0xFF8B8680),
+                    color: value ? kPageBg : kSlate500,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -734,8 +735,8 @@ class _AgentAddListingPageState extends State<AgentAddListingPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Color(0xFFE8E1D5), fontSize: 14, fontWeight: FontWeight.w600)),
-                  Text(subtitle, style: const TextStyle(color: Color(0xFF8B8680), fontSize: 12, fontWeight: FontWeight.w300)),
+                  Text(title, style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w600)),
+                  Text(subtitle, style: const TextStyle(color: kSlate500, fontSize: 12, fontWeight: FontWeight.w300)),
                 ],
               ),
             ),

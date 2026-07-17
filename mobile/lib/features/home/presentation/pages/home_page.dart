@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../shared/widgets/app_navbar.dart';
 import '../../../shared/pages/public_property_detail_page.dart';
 import '../../../../core/utils/payment_duration.dart';
+import '../../../../core/utils/property_images.dart';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const String kApiBase     = 'https://rental.oweru.com/api';
@@ -19,6 +20,7 @@ const Color kSlate400   = Color(0xFF94A3B8); // muted / hints
 const Color kSlate200   = Color(0xFFE2E8F0); // borders / dividers
 const Color kSlate100   = Color(0xFFF1F5F9); // subtle surface
 const Color kAccent     = Color(0xFF1E293B); // same as slate-800, used for buttons
+const Color kGold       = Color(0xFFC89128); // CTA accent (matches tenant theme)
 const Color kGreen      = Color(0xFF10B981); // available dot
 
 const List<String> kCommercialTypes = [
@@ -38,37 +40,9 @@ String commercialTypeLabel(String? type) {
   return map[type?.toLowerCase()] ?? type ?? 'Commercial';
 }
 
-String resolveStoragePath(String? path) {
-  if (path == null || path.trim().isEmpty) return '';
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  final clean = path.replaceFirst(RegExp(r'^/+'), '');
-  if (clean.startsWith('storage/')) return '$kStorageBase/$clean';
-  return '$kStorageBase/storage/$clean';
-}
+String resolveStoragePath(String? path) => resolvePropertyImageUrl(path);
 
-String getImage(Map<String, dynamic> p) {
-  for (final key in ['propertyImages', 'property_images']) {
-    final ci = p[key];
-    if (ci is List && ci.isNotEmpty) {
-      final img = ci.firstWhere(
-          (i) => i['is_primary'] == 1 || i['is_primary'] == true,
-          orElse: () => ci[0]);
-      final path = img['image_path'] ?? img['path'] ?? '';
-      if (path.toString().isNotEmpty) return resolveStoragePath(path.toString());
-    }
-  }
-  var imgs = p['images'];
-  if (imgs is String) {
-    try { imgs = jsonDecode(imgs); } catch (_) { imgs = null; }
-  }
-  if (imgs is List && imgs.isNotEmpty) {
-    final first = imgs[0];
-    if (first is String && first.trim().isNotEmpty) return resolveStoragePath(first);
-    final path = first['path'] ?? first['image_path'] ?? first['url'] ?? first['src'] ?? '';
-    if (path.toString().isNotEmpty) return resolveStoragePath(path.toString());
-  }
-  return '';
-}
+String getImage(Map<String, dynamic> p) => getPropertyImageUrl(p);
 
 List<Map<String, dynamic>> _extractPropertyList(dynamic payload) {
   if (payload is List) {
@@ -283,22 +257,69 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ]),
               const SizedBox(height: 28),
               // Headline
-             
+              RichText(
+                text: const TextSpan(
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w300, color: kWhite, height: 1.15),
+                  children: [
+                    TextSpan(text: 'Find Your\n'),
+                    TextSpan(text: 'Perfect Rental', style: TextStyle(fontWeight: FontWeight.w800)),
+                    TextSpan(text: '\nProperty'),
+                  ],
+                ),
+              ),
               const SizedBox(height: 16),
               const Text(
-                'Residential, commercial, and short-stay\nlistings across Africa — all in one place.',
+                'Connect with trusted landlords and professional agents across Africa. Residential, commercial, and short-stay all in one place.',
                 style: TextStyle(
                     fontSize: 14, height: 1.65,
                     color: kSlate400, fontWeight: FontWeight.w400),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               // CTA buttons
-             
-              const SizedBox(height: 40),
+              Row(children: [
+                Expanded(child: GestureDetector(
+                  onTap: _doSearch,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    decoration: BoxDecoration(
+                      color: kGold,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Text('Browse All', style: TextStyle(color: kWhite, fontSize: 13, fontWeight: FontWeight.w700)),
+                      SizedBox(width: 6),
+                      Icon(Icons.arrow_forward_rounded, size: 15, color: kWhite),
+                    ]),
+                  ),
+                )),
+                const SizedBox(width: 10),
+                Expanded(child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/register'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white24),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Text('Create Account', style: TextStyle(color: kWhite, fontSize: 13, fontWeight: FontWeight.w600)),
+                      SizedBox(width: 4),
+                      Icon(Icons.chevron_right_rounded, size: 16, color: Colors.white70),
+                    ]),
+                  ),
+                )),
+              ]),
+              const SizedBox(height: 28),
               // Trust chips
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-               
+                child: Row(children: [
+                  _trustChip(Icons.verified_user_outlined, 'Verified landlords'),
+                  const SizedBox(width: 16),
+                  _trustChip(Icons.schedule_rounded, '24hr response'),
+                  const SizedBox(width: 16),
+                  _trustChip(Icons.trending_up_rounded, '1,200+ listings'),
+                ]),
               ),
               const SizedBox(height: 40),
               // Search card
@@ -310,6 +331,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ),
     );
   }
+
+  Widget _trustChip(IconData icon, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
+    Icon(icon, size: 13, color: kWhite),
+    const SizedBox(width: 6),
+    Text(label, style: TextStyle(fontSize: 12, color: kWhite.withValues(alpha: 0.7), fontWeight: FontWeight.w500)),
+  ]);
 
   // ── SEARCH CARD ─────────────────────────────────────────────────────────────
   Widget _buildSearchCard() {
@@ -402,7 +429,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   // ── STATS BAR ──────────────────────────────────────────────────────────────
   Widget _buildStatsBar() {
     const stats = [
-      
+      ('1,200+', 'LISTINGS'),
+      ('500+', 'LANDLORDS'),
+      ('98%', 'SATISFACTION'),
+      ('24hr', 'RESPONSE'),
     ];
     return Container(
       color: kSlate800,
@@ -437,7 +467,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   // ── CATEGORY QUICK-LINKS ──────────────────────────────────────────────────
   Widget _buildCategoryBar() {
     const cats = [
-      ];
+      (Icons.apartment_outlined, 'Residential'),
+      (Icons.storefront_outlined, 'Commercial'),
+      (Icons.hotel_outlined, 'Short Stay'),
+      (Icons.verified_outlined, 'Oweru'),
+    ];
     return Container(
       color: kWhite,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -808,6 +842,10 @@ class _PropCard extends StatelessWidget {
                 width: double.infinity,
                 child: imgUrl.isNotEmpty
                     ? Image.network(imgUrl, fit: BoxFit.cover,
+                        loadingBuilder: (_, child, progress) => progress == null
+                            ? child
+                            : Container(color: kSlate100, child: const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2, color: kSlate400))),
                         errorBuilder: (_, _, _) => _ImgPlaceholder(Icons.home_outlined))
                     : _ImgPlaceholder(Icons.home_outlined),
               ),
@@ -907,6 +945,10 @@ class _CommCard extends StatelessWidget {
                 height: 175, width: double.infinity,
                 child: imgUrl.isNotEmpty
                     ? Image.network(imgUrl, fit: BoxFit.cover,
+                        loadingBuilder: (_, child, progress) => progress == null
+                            ? child
+                            : Container(color: kSlate100, child: const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2, color: kSlate400))),
                         errorBuilder: (_, _, _) => _ImgPlaceholder(Icons.business_outlined, dark: true))
                     : _ImgPlaceholder(Icons.business_outlined, dark: true),
               ),

@@ -6,35 +6,50 @@ import '../../core/constants/api_config.dart';
 
 class TenantApiService {
   static const String _baseUrl = ApiConfig.apiPath;
-  static Map<String, String> get _headers => {
-    'Accept': 'application/json',
-    'Authorization': 'Bearer ${UserService().token ?? AuthService.token}',
-    'Content-Type': 'application/json',
-  };
+
+  static Future<Map<String, String>> _authHeaders() async {
+    await UserService().ensureLoaded();
+    return {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer ${UserService().token ?? AuthService.token ?? ''}',
+      'Content-Type': 'application/json',
+    };
+  }
+
+  static List<Map<String, dynamic>> _asList(dynamic payload) {
+    final data = payload is Map<String, dynamic> ? (payload['data'] ?? payload) : payload;
+    if (data is List) {
+      return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+    return [];
+  }
 
   static Future<Map<String, dynamic>> getDashboard() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/dashboard'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/dashboard'), headers: await _authHeaders());
       if (response.statusCode == 200) return jsonDecode(response.body);
-    } catch (_) {}
+      print('TenantApiService.getDashboard: HTTP ${response.statusCode}');
+    } catch (e) {
+      print('TenantApiService.getDashboard: $e');
+    }
     return {};
   }
 
   static Future<List<Map<String, dynamic>>> getApplications() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/applications'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/applications'), headers: await _authHeaders());
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final applications = data['data'] ?? data;
-        return List<Map<String, dynamic>>.from((applications is List ? applications : []).cast<Map<String, dynamic>>());
+        return _asList(jsonDecode(response.body));
       }
-    } catch (_) {}
+    } catch (e) {
+      print('TenantApiService.getApplications: $e');
+    }
     return [];
   }
 
   static Future<List<Map<String, dynamic>>> getSavedProperties() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/saved-properties'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/saved-properties'), headers: await _authHeaders());
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final properties = data['data'] ?? data;
@@ -46,19 +61,19 @@ class TenantApiService {
 
   static Future<List<Map<String, dynamic>>> getPayments() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/payments'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/payments'), headers: await _authHeaders());
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final payments = data['data'] ?? data;
-        return List<Map<String, dynamic>>.from((payments is List ? payments : []).cast<Map<String, dynamic>>());
+        return _asList(jsonDecode(response.body));
       }
-    } catch (_) {}
+    } catch (e) {
+      print('TenantApiService.getPayments: $e');
+    }
     return [];
   }
 
   static Future<List<Map<String, dynamic>>> getPaymentHistory() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/payment-history'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/payment-history'), headers: await _authHeaders());
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final history = data['data'] ?? data;
@@ -70,7 +85,7 @@ class TenantApiService {
 
   static Future<Map<String, dynamic>> getPaymentStats() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/payment-stats'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/payment-stats'), headers: await _authHeaders());
       if (response.statusCode == 200) return jsonDecode(response.body);
     } catch (_) {}
     return {};
@@ -78,7 +93,7 @@ class TenantApiService {
 
   static Future<List<Map<String, dynamic>>> getDigitalContracts() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/digital-contracts'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/digital-contracts'), headers: await _authHeaders());
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final contracts = data['data'] ?? data;
@@ -90,7 +105,7 @@ class TenantApiService {
 
   static Future<List<Map<String, dynamic>>> getNotifications() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/notifications'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/notifications'), headers: await _authHeaders());
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final notifications = data['data'] ?? data;
@@ -102,7 +117,7 @@ class TenantApiService {
 
   static Future<List<Map<String, dynamic>>> getMessages() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/messages'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/messages'), headers: await _authHeaders());
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final container = data['data'] ?? data;
@@ -117,7 +132,7 @@ class TenantApiService {
 
   static Future<Map<String, dynamic>> getAnalytics() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/analytics'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/analytics'), headers: await _authHeaders());
       if (response.statusCode == 200) return jsonDecode(response.body);
     } catch (_) {}
     return {};
@@ -125,7 +140,7 @@ class TenantApiService {
 
   static Future<bool> markNotificationAsRead(int id) async {
     try {
-      final response = await http.patch(Uri.parse('$_baseUrl/tenant/notifications/$id/read'), headers: _headers);
+      final response = await http.patch(Uri.parse('$_baseUrl/tenant/notifications/$id/read'), headers: await _authHeaders());
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return false;
@@ -134,7 +149,7 @@ class TenantApiService {
 
   static Future<bool> markAllNotificationsAsRead() async {
     try {
-      final response = await http.patch(Uri.parse('$_baseUrl/tenant/notifications/read-all'), headers: _headers);
+      final response = await http.patch(Uri.parse('$_baseUrl/tenant/notifications/read-all'), headers: await _authHeaders());
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return false;
@@ -145,7 +160,7 @@ class TenantApiService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/tenant/messages'),
-        headers: _headers,
+        headers: await _authHeaders(),
         body: jsonEncode({'body': body, if (subject != null && subject.isNotEmpty) 'subject': subject}),
       );
       return response.statusCode >= 200 && response.statusCode < 300;
@@ -162,7 +177,7 @@ class TenantApiService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/tenant/digital-contracts/submit'),
-        headers: _headers,
+        headers: await _authHeaders(),
         body: jsonEncode({'contract_id': contractId, 'fields': fields, 'signature': signature}),
       );
       return response.statusCode >= 200 && response.statusCode < 300;
@@ -179,7 +194,7 @@ class TenantApiService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/tenant/payments/$paymentId/pay'),
-        headers: _headers,
+        headers: await _authHeaders(),
         body: jsonEncode({
           'phone_number': phoneNumber,
           'provider': provider,
@@ -208,7 +223,7 @@ class TenantApiService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/tenant/properties/$propertyId/save'),
-        headers: _headers,
+        headers: await _authHeaders(),
       );
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
@@ -220,7 +235,7 @@ class TenantApiService {
     try {
       final response = await http.delete(
         Uri.parse('$_baseUrl/tenant/properties/$propertyId/save'),
-        headers: _headers,
+        headers: await _authHeaders(),
       );
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
@@ -232,7 +247,7 @@ class TenantApiService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/tenant/applications'),
-        headers: _headers,
+        headers: await _authHeaders(),
         body: jsonEncode(applicationData),
       );
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -244,7 +259,7 @@ class TenantApiService {
 
   static Future<Map<String, dynamic>> getApplicationStatus() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/applications/application-status'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/applications/application-status'), headers: await _authHeaders());
       if (response.statusCode == 200) return jsonDecode(response.body);
     } catch (_) {}
     return {};
@@ -252,7 +267,7 @@ class TenantApiService {
 
   static Future<Map<String, dynamic>> getMyContract() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/contract'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/contract'), headers: await _authHeaders());
       if (response.statusCode == 200) return jsonDecode(response.body);
     } catch (_) {}
     return {};
@@ -262,7 +277,7 @@ class TenantApiService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/tenant/contract'),
-        headers: _headers,
+        headers: await _authHeaders(),
         body: jsonEncode(contractData),
       );
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -274,7 +289,7 @@ class TenantApiService {
 
   static Future<String> downloadContract(int contractId) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/contracts/$contractId/download'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/contracts/$contractId/download'), headers: await _authHeaders());
       if (response.statusCode == 200) return response.body;
     } catch (_) {}
     return '';
@@ -282,7 +297,7 @@ class TenantApiService {
 
   static Future<String> downloadDigitalContract(int contractId) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/digital-contracts/$contractId/download'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/digital-contracts/$contractId/download'), headers: await _authHeaders());
       if (response.statusCode == 200) return response.body;
     } catch (_) {}
     return '';
@@ -290,7 +305,7 @@ class TenantApiService {
 
   static Future<List<Map<String, dynamic>>> getPaymentMethods() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/payment-methods'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/payment-methods'), headers: await _authHeaders());
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final methods = data['data'] ?? data;
@@ -302,7 +317,7 @@ class TenantApiService {
 
   static Future<Map<String, dynamic>> getPaymentSummary() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/payment-summary'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/payment-summary'), headers: await _authHeaders());
       if (response.statusCode == 200) return jsonDecode(response.body);
     } catch (_) {}
     return {};
@@ -310,7 +325,7 @@ class TenantApiService {
 
   static Future<String> downloadReceipt(int paymentId) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/payments/$paymentId/receipt'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/payments/$paymentId/receipt'), headers: await _authHeaders());
       if (response.statusCode == 200) return response.body;
     } catch (_) {}
     return '';
@@ -318,7 +333,7 @@ class TenantApiService {
 
   static Future<Map<String, dynamic>> getNotificationStats() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/tenant/notification-stats'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/tenant/notification-stats'), headers: await _authHeaders());
       if (response.statusCode == 200) return jsonDecode(response.body);
     } catch (_) {}
     return {};
@@ -326,7 +341,7 @@ class TenantApiService {
 
   static Future<bool> archiveNotification(int id) async {
     try {
-      final response = await http.patch(Uri.parse('$_baseUrl/tenant/notifications/$id/archive'), headers: _headers);
+      final response = await http.patch(Uri.parse('$_baseUrl/tenant/notifications/$id/archive'), headers: await _authHeaders());
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return false;
@@ -335,7 +350,7 @@ class TenantApiService {
 
   static Future<bool> deleteNotification(int id) async {
     try {
-      final response = await http.delete(Uri.parse('$_baseUrl/tenant/notifications/$id'), headers: _headers);
+      final response = await http.delete(Uri.parse('$_baseUrl/tenant/notifications/$id'), headers: await _authHeaders());
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return false;
@@ -344,7 +359,7 @@ class TenantApiService {
 
   static Future<Map<String, dynamic>> getProperty(int propertyId) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/properties/$propertyId'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/properties/$propertyId'), headers: await _authHeaders());
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['data'] ?? data;
@@ -355,13 +370,13 @@ class TenantApiService {
 
   static Future<List<Map<String, dynamic>>> getPublicProperties() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/public/properties'), headers: _headers);
+      final response = await http.get(Uri.parse('$_baseUrl/public/properties?page=1'), headers: await _authHeaders());
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final properties = data['data'] ?? data;
-        return List<Map<String, dynamic>>.from((properties is List ? properties : []).cast<Map<String, dynamic>>());
+        return _asList(jsonDecode(response.body));
       }
-    } catch (_) {}
+    } catch (e) {
+      print('TenantApiService.getPublicProperties: $e');
+    }
     return [];
   }
 
@@ -375,7 +390,7 @@ class TenantApiService {
     try {
       final response = await http.put(
         Uri.parse('$_baseUrl/tenant/applications/$applicationId/payment-status'),
-        headers: _headers,
+        headers: await _authHeaders(),
         body: jsonEncode({
           'payment_status': paymentStatus,
           'payment_method': paymentMethod,
@@ -404,7 +419,7 @@ class TenantApiService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/tenant/rent/pay'),
-        headers: _headers,
+        headers: await _authHeaders(),
         body: jsonEncode({
           'application_id': applicationId,
           'phone_number': phoneNumber,
@@ -428,7 +443,7 @@ class TenantApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/tenant/rent/status/${Uri.encodeComponent(orderId)}'),
-        headers: _headers,
+        headers: await _authHeaders(),
       );
       final data = jsonDecode(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -448,7 +463,7 @@ class TenantApiService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/tenant/site-visit/pay'),
-        headers: _headers,
+        headers: await _authHeaders(),
         body: jsonEncode({
           'property_id': propertyId,
           'phone_number': phoneNumber,
@@ -472,7 +487,7 @@ class TenantApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/tenant/site-visit/status/${Uri.encodeComponent(orderId)}'),
-        headers: _headers,
+        headers: await _authHeaders(),
       );
       final data = jsonDecode(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -488,7 +503,7 @@ class TenantApiService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/tenant/payments/$paymentId/status'),
-        headers: _headers,
+        headers: await _authHeaders(),
       );
       final data = jsonDecode(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -527,7 +542,7 @@ class TenantApiService {
 
       final response = await http.post(
         Uri.parse('$_baseUrl/payment/selcom/mobile-money?t=${DateTime.now().millisecondsSinceEpoch}'),
-        headers: _headers,
+        headers: await _authHeaders(),
         body: jsonEncode(requestBody),
       );
 

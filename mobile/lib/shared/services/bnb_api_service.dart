@@ -97,4 +97,79 @@ class BnbApiService {
     }
     return {};
   }
+
+  /// Dashboard stats (same endpoint as analytics).
+  static Future<Map<String, dynamic>> getDashboard() => getAnalytics();
+
+  static Future<Map<String, dynamic>> createProperty(Map<String, dynamic> propertyData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/bnb/properties'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+        body: jsonEncode(propertyData),
+      );
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return {'success': false, 'message': 'Failed to create property'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateProperty(int propertyId, Map<String, dynamic> propertyData) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$_baseUrl/bnb/properties/$propertyId'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+        body: jsonEncode(propertyData),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Failed to update property'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> deleteProperty(int propertyId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/bnb/properties/$propertyId'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Failed to delete property'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> respondToReview(int reviewId, String reviewResponse) async {
+    try {
+      final httpResponse = await http.post(
+        Uri.parse('$_baseUrl/bnb/reviews/$reviewId/respond'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+        body: jsonEncode({'response': reviewResponse}),
+      );
+      if (httpResponse.statusCode == 200) return jsonDecode(httpResponse.body);
+      return {'success': false, 'message': 'Failed to respond to review'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
 }

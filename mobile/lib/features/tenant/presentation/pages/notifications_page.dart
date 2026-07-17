@@ -59,21 +59,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     return Scaffold(
       backgroundColor: kBg,
-      appBar: AppBar(
-        backgroundColor: kBg2,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: kGold),
-        title: const Text('Notifications',
-            style: TextStyle(color: kCream, fontSize: 17, fontWeight: FontWeight.w700)),
-        actions: [
-          if (unreadCount > 0)
-            TextButton(
-              onPressed: _markAllRead,
-              child: const Text('Mark all read',
-                  style: TextStyle(color: kGold, fontSize: 12, fontWeight: FontWeight.w600)),
-            ),
-        ],
-      ),
+      appBar: tenantPageAppBar('Notifications', actions: [
+        if (unreadCount > 0)
+          TextButton(
+            onPressed: _markAllRead,
+            child: const Text('Mark all read',
+                style: TextStyle(color: kGold, fontSize: 12, fontWeight: FontWeight.w600)),
+          ),
+      ]),
       body: _isLoading
           ? ListView(
               padding: const EdgeInsets.all(16),
@@ -109,21 +102,51 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
+  IconData _iconForNotification(Map<String, dynamic> notification) {
+    final type = (notification['type'] ?? '').toString().toLowerCase();
+    switch (type) {
+      case 'success':
+        return Icons.check_circle_outline_rounded;
+      case 'warning':
+        return Icons.warning_amber_rounded;
+      case 'danger':
+      case 'error':
+        return Icons.error_outline_rounded;
+      case 'payment':
+      case 'rent':
+        return Icons.payments_outlined;
+      case 'contract':
+        return Icons.description_outlined;
+      case 'application':
+        return Icons.assignment_outlined;
+      case 'message':
+        return Icons.chat_bubble_outline_rounded;
+      default:
+        return Icons.notifications_outlined;
+    }
+  }
+
   Widget _buildNotificationCard(Map<String, dynamic> notification) {
     final typeColors = <String, Color>{
       'success': kSuccess,
       'warning': kWarning,
       'danger':  kDanger,
+      'error':   kDanger,
       'info':    kInfo,
+      'payment': kGold,
+      'contract': kInfo,
+      'application': kGold,
+      'message': kInfo,
     };
-    final color = typeColors[notification['type']] ?? kInfo;
+    final type = (notification['type'] ?? 'info').toString().toLowerCase();
+    final color = typeColors[type] ?? kInfo;
     final isRead = notification['is_read'] == true || notification['read'] == true;
 
     return GestureDetector(
       onTap: () async {
         final id = notification['id'];
-        if (id is int && !isRead) {
-          await TenantApiService.markNotificationAsRead(id);
+        if (id != null && !isRead) {
+          await TenantApiService.markNotificationAsRead((id as num).toInt());
         }
         if (!mounted) return;
         setState(() {
@@ -150,7 +173,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: color.withValues(alpha: 0.25)),
               ),
-              child: Icon(notification['icon'] as IconData, color: color, size: 20),
+              child: Icon(_iconForNotification(notification), color: color, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -161,7 +184,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        notification['title'],
+                        notification['title']?.toString() ?? 'Notification',
                         style: TextStyle(
                           color: kCream,
                           fontSize: 12,
@@ -177,7 +200,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    notification['message'],
+                    notification['message']?.toString() ?? '',
                     style: const TextStyle(color: kSlate, fontSize: 11, height: 1.5),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

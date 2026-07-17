@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'agent_theme.dart';
 import '../../../../shared/services/agent_api_service.dart';
 
 class AgentCommissionsPage extends StatefulWidget {
@@ -83,28 +84,28 @@ class _AgentCommissionsPageState extends State<AgentCommissionsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1218),
+      backgroundColor: kPageBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1D26),
+        backgroundColor: kCardBg,
         elevation: 0,
-        title: const Text('My Commissions', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 18, fontWeight: FontWeight.w700)),
+        title: const Text('My Commissions', style: TextStyle(color: kSlate800, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
       body: Column(
         children: [
           // Header Section
           Container(
             padding: const EdgeInsets.all(20),
-            color: const Color(0xFF1A1D26),
+            color: kCardBg,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Agent Workspace', style: TextStyle(color: Color(0xFF8B8680), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+                const Text('Agent Workspace', style: TextStyle(color: kSlate500, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
                 const SizedBox(height: 16),
-                const Text('My Commissions', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 28, fontWeight: FontWeight.w700)),
+                const Text('My Commissions', style: TextStyle(color: kSlate800, fontSize: 28, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 const Text(
                   'Commission records now come from the Laravel API instead of static mock data.',
-                  style: TextStyle(color: Color(0xFF8B8680), fontSize: 13),
+                  style: TextStyle(color: kSlate500, fontSize: 13),
                 ),
                 const SizedBox(height: 22),
                 // Stats Grid
@@ -156,51 +157,51 @@ class _AgentCommissionsPageState extends State<AgentCommissionsPage> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(20),
-              color: const Color(0xFF1A1D26),
+              color: kCardBg,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Commission Records', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 18, fontWeight: FontWeight.w700)),
+                      const Text('Commission Records', style: TextStyle(color: kSlate800, fontSize: 18, fontWeight: FontWeight.w700)),
                       if (_items.isNotEmpty)
                         OutlinedButton.icon(
                           onPressed: () {},
                           icon: const Icon(Icons.download, size: 14),
                           label: const Text('Export CSV'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFC9A84C),
-                            side: const BorderSide(color: Color(0xFFC9A84C)),
+                            foregroundColor: kGold,
+                            side: const BorderSide(color: kGold),
                           ),
                         ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: Color(0xFFC9A84C)))
+                      ? const Center(child: CircularProgressIndicator(color: kGold))
                       : _items.isEmpty
                           ? const Center(
-                              child: Text('No commission records found.', style: TextStyle(color: Color(0xFF8B8680), fontSize: 13)),
+                              child: Text('No commission records found.', style: TextStyle(color: kSlate500, fontSize: 13)),
                             )
                           : SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: DataTable(
                                 headingRowColor: WidgetStateProperty.all(const Color(0xFF2A2418)),
                                 columns: const [
-                                  DataColumn(label: Text('Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                                  DataColumn(label: Text('Amount', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                                  DataColumn(label: Text('Status', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                                  DataColumn(label: Text('Date', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
+                                  DataColumn(label: Text('Property', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                                  DataColumn(label: Text('Amount', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                                  DataColumn(label: Text('Status', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                                  DataColumn(label: Text('Date', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
                                 ],
                                 rows: _items.map((item) {
                                   final property = item['property'] as Map<String, dynamic>? ?? {};
                                   return DataRow(
                                     cells: [
-                                      DataCell(Text(property['title'] ?? 'Property commission', style: const TextStyle(color: Color(0xFFE8E1D5)))),
-                                      DataCell(Text(_formatCurrency(item['amount']), style: const TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w600))),
+                                      DataCell(Text(property['title'] ?? 'Property commission', style: const TextStyle(color: kSlate800))),
+                                      DataCell(Text(_formatCurrency(item['amount']), style: const TextStyle(color: kGold, fontWeight: FontWeight.w600))),
                                       DataCell(_buildStatusBadge(item['status'])),
-                                      DataCell(Text(_formatDate(item['created_at'] ?? ''), style: const TextStyle(color: Color(0xFF8B8680)))),
+                                      DataCell(Text(_formatDate(item['created_at'] ?? ''), style: const TextStyle(color: kSlate500))),
                                     ],
                                   );
                                 }).toList(),

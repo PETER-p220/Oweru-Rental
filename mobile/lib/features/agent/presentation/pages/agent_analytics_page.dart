@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'agent_theme.dart';
 import '../../../../shared/services/agent_api_service.dart';
 
 class AgentAnalyticsPage extends StatefulWidget {
@@ -56,28 +57,28 @@ class _AgentAnalyticsPageState extends State<AgentAnalyticsPage> {
     final topProperties = revenueMetrics['top_performing_properties'] as List<dynamic>? ?? [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1218),
+      backgroundColor: kPageBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1D26),
+        backgroundColor: kCardBg,
         elevation: 0,
-        title: const Text('Analytics', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 18, fontWeight: FontWeight.w700)),
+        title: const Text('Analytics', style: TextStyle(color: kSlate800, fontSize: 18, fontWeight: FontWeight.w700)),
       ),
       body: Column(
         children: [
           // Header Section
           Container(
             padding: const EdgeInsets.all(20),
-            color: const Color(0xFF1A1D26),
+            color: kCardBg,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Agent Workspace', style: TextStyle(color: Color(0xFF8B8680), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
+                const Text('Agent Workspace', style: TextStyle(color: kSlate500, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.14)),
                 const SizedBox(height: 16),
-                const Text('Analytics', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 28, fontWeight: FontWeight.w700)),
+                const Text('Analytics', style: TextStyle(color: kSlate800, fontSize: 28, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 const Text(
                   'Performance and revenue metrics from the Laravel agent analytics endpoint.',
-                  style: TextStyle(color: Color(0xFF8B8680), fontSize: 13),
+                  style: TextStyle(color: kSlate500, fontSize: 13),
                 ),
                 const SizedBox(height: 22),
                 // Stats Grid
@@ -129,35 +130,35 @@ class _AgentAnalyticsPageState extends State<AgentAnalyticsPage> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(20),
-              color: const Color(0xFF1A1D26),
+              color: kCardBg,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Top Performing Properties', style: TextStyle(color: Color(0xFFE8E1D5), fontSize: 18, fontWeight: FontWeight.w700)),
+                  const Text('Top Performing Properties', style: TextStyle(color: kSlate800, fontSize: 18, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 16),
                   _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: Color(0xFFC9A84C)))
+                      ? const Center(child: CircularProgressIndicator(color: kGold))
                       : topProperties.isEmpty
                           ? const Center(
-                              child: Text('No analytics records found.', style: TextStyle(color: Color(0xFF8B8680), fontSize: 13)),
+                              child: Text('No analytics records found.', style: TextStyle(color: kSlate500, fontSize: 13)),
                             )
                           : SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: DataTable(
                                 headingRowColor: WidgetStateProperty.all(const Color(0xFF2A2418)),
                                 columns: const [
-                                  DataColumn(label: Text('Top Property', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                                  DataColumn(label: Text('Applications', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                                  DataColumn(label: Text('Leads', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
-                                  DataColumn(label: Text('Price', style: TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w700))),
+                                  DataColumn(label: Text('Top Property', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                                  DataColumn(label: Text('Applications', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                                  DataColumn(label: Text('Leads', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
+                                  DataColumn(label: Text('Price', style: TextStyle(color: kGold, fontWeight: FontWeight.w700))),
                                 ],
                                 rows: topProperties.map((item) {
                                   return DataRow(
                                     cells: [
-                                      DataCell(Text(item['title'] ?? 'Unknown', style: const TextStyle(color: Color(0xFFE8E1D5)))),
-                                      DataCell(Text('${item['applications'] ?? 0}', style: const TextStyle(color: Color(0xFF8B8680)))),
-                                      DataCell(Text('${item['leads'] ?? 0}', style: const TextStyle(color: Color(0xFF8B8680)))),
-                                      DataCell(Text(_formatCurrency(item['price']), style: const TextStyle(color: Color(0xFFC9A84C), fontWeight: FontWeight.w600))),
+                                      DataCell(Text(item['title'] ?? 'Unknown', style: const TextStyle(color: kSlate800))),
+                                      DataCell(Text('${item['applications'] ?? 0}', style: const TextStyle(color: kSlate500))),
+                                      DataCell(Text('${item['leads'] ?? 0}', style: const TextStyle(color: kSlate500))),
+                                      DataCell(Text(_formatCurrency(item['price']), style: const TextStyle(color: kGold, fontWeight: FontWeight.w600))),
                                     ],
                                   );
                                 }).toList(),

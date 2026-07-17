@@ -14,11 +14,35 @@ class PaymentsPage extends StatefulWidget {
 
 class _PaymentsPageState extends State<PaymentsPage> {
   List<Map<String, dynamic>> _pending  = [];
-  List<Map<String, dynamic>> _upcoming = [];
+  List<Map<String, dynamic>> _recent   = [];
+  Map<String, dynamic> _stats = {};
   bool _isLoading = true;
   String _error = '';
   String _method = 'tigo';
   bool _processing = false;
+
+  static bool _isPaid(String? status) {
+    final s = (status ?? '').toLowerCase();
+    return s == 'paid' || s == 'completed';
+  }
+
+  static String _propertyTitle(Map<String, dynamic> pay) {
+    final property = pay['property'];
+    if (property is Map) return property['title']?.toString() ?? 'Property';
+    return pay['description']?.toString() ?? 'Property';
+  }
+
+  static String _fmtAmount(dynamic amount) {
+    final v = _asNum(amount);
+    if (v >= 1000000) return 'TZS ${(v / 1000000).toStringAsFixed(1)}M';
+    if (v >= 1000) return 'TZS ${(v / 1000).toStringAsFixed(1)}K';
+    return 'TZS ${v.toStringAsFixed(0)}';
+  }
+
+  static num _asNum(dynamic value, [num fallback = 0]) {
+    if (value is num) return value;
+    return num.tryParse(value?.toString() ?? '') ?? fallback;
+  }
 
   static const _methods = [
     {'id': 'tigo',     'name': 'Tigo Money',    'icon': Icons.phone_android_rounded},
@@ -36,24 +60,42 @@ class _PaymentsPageState extends State<PaymentsPage> {
   Future<void> _load() async {
     setState(() { _isLoading = true; _error = ''; });
     try {
-      final payments = await TenantApiService.getPayments();
+      final results = await Future.wait([
+        TenantApiService.getPayments(),
+        TenantApiService.getPaymentStats(),
+        TenantApiService.getPaymentMethods(),
+      ]);
+      final payments = results[0] as List<Map<String, dynamic>>;
+      final statsRes = results[1] as Map<String, dynamic>;
+      final methods  = results[2] as List<Map<String, dynamic>>;
+
+      final rentPayments = payments.where((p) => p['type']?.toString() != 'site_visit').toList();
+
       if (mounted) {
         setState(() {
-        _pending  = payments.where((p) => p['status'] != 'paid').toList();
-        _upcoming = payments.where((p) =>
-          p['status'] == 'paid' || p['status'] == 'scheduled').toList();
-        _isLoading = false;
-      });
+          _stats = (statsRes['data'] as Map<String, dynamic>?) ?? {};
+          _pending = rentPayments.where((p) => !_isPaid(p['status']?.toString())).toList();
+          _recent  = rentPayments.where((p) => _isPaid(p['status']?.toString())).take(5).toList();
+          if (methods.isNotEmpty && _method.isEmpty) {
+            _method = methods.first['id']?.toString() ?? 'tigo';
+          }
+          _isLoading = false;
+        });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
+      if (mounted) setState(() { _error = 'Unable to load payments'; _isLoading = false; });
     }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: kBg,
-    appBar: _appBar(),
+    appBar: tenantPageAppBar('Payments', actions: [
+      IconButton(
+        onPressed: _load,
+        icon: const Icon(Icons.refresh_rounded, color: kWhite, size: 20),
+      ),
+    ]),
     body: _isLoading
         ? _skeleton()
         : _error.isNotEmpty
@@ -65,42 +107,62 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
                   children: [
+                    _statsRow(),
+                    const SizedBox(height: 16),
                     if (_pending.isNotEmpty) ...[
                       const TSectionHeader('Pending Payments'),
                       ..._pending.map(_pendingCard),
                       const SizedBox(height: 8),
-                    ],
-                    const TSectionHeader('Upcoming Payments'),
-                    if (_upcoming.isEmpty)
+                    ] else
                       const TEmptyState(
-                        icon: Icons.calendar_month_rounded,
-                        title: 'No upcoming payments',
-                        subtitle: 'You\'re all caught up! New payments will appear here.',
-                      )
-                    else
-                      ..._upcoming.map(_upcomingCard),
+                        icon: Icons.check_circle_outline_rounded,
+                        title: 'No pending payments',
+                        subtitle: 'You\'re all caught up on rent payments.',
+                      ),
+                    if (_recent.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const TSectionHeader('Recent Payments'),
+                      ..._recent.map(_recentCard),
+                    ],
                   ],
                 ),
               ),
   );
 
-  PreferredSizeWidget _appBar() => AppBar(
-    backgroundColor: kBg2,
-    elevation: 0,
-    iconTheme: const IconThemeData(color: kGold),
-    title: const Text('Payments',
-      style: TextStyle(color: kCream, fontSize: 17, fontWeight: FontWeight.w700)),
-    actions: [
-      IconButton(onPressed: _load,
-        icon: const Icon(Icons.refresh_rounded, color: kGold, size: 20)),
-    ],
+  Widget _statsRow() {
+    final totalPaid = _asNum(_stats['total_paid']);
+    final pending   = _asNum(_stats['pending_payments'], _pending.length);
+    final thisMonth = _asNum(_stats['this_month']);
+
+    return Row(children: [
+      Expanded(child: _statTile('Total Paid', _fmtAmount(totalPaid), kSuccess)),
+      const SizedBox(width: 8),
+      Expanded(child: _statTile('Pending', '$pending', kWarning)),
+      const SizedBox(width: 8),
+      Expanded(child: _statTile('This Month', _fmtAmount(thisMonth), kInfo)),
+    ]);
+  }
+
+  Widget _statTile(String label, String value, Color color) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: kBg2,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: kBorder),
+    ),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(color: kSlate500, fontSize: 10)),
+      const SizedBox(height: 4),
+      Text(value, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700)),
+    ]),
   );
 
   Widget _pendingCard(Map<String, dynamic> pay) {
-    final property      = pay['property']?.toString() ?? 'Property';
-    final amount        = pay['amount'] ?? pay['price'] ?? 0;
-    final dueDate       = pay['due_date']?.toString() ?? 'TBD';
-    final daysRemaining = pay['days_remaining'] ?? 5;
+    final property  = _propertyTitle(pay);
+    final amount    = pay['amount'] ?? 0;
+    final dueDate   = pay['due_date']?.toString() ?? 'TBD';
+    final status    = (pay['status']?.toString() ?? 'pending').toLowerCase();
+    final desc      = pay['description']?.toString() ?? 'Rent payment';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -117,13 +179,15 @@ class _PaymentsPageState extends State<PaymentsPage> {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(property,
               style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
-            Text('Due in $daysRemaining days',
-              style: const TextStyle(color: kWarning, fontSize: 11, fontWeight: FontWeight.w600)),
+            Text(desc,
+              style: const TextStyle(color: kSlate500, fontSize: 11)),
+            const SizedBox(height: 4),
+            TStatusBadge(label: status, color: status == 'failed' ? kDanger : kWarning),
           ])),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('TZS $amount',
+            Text(_fmtAmount(amount),
               style: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w700)),
-            Text(dueDate, style: const TextStyle(color: kSlateDim, fontSize: 10)),
+            Text('Due $dueDate', style: const TextStyle(color: kSlateDim, fontSize: 10)),
           ]),
         ]),
         const SizedBox(height: 14),
@@ -132,10 +196,10 @@ class _PaymentsPageState extends State<PaymentsPage> {
     );
   }
 
-  Widget _upcomingCard(Map<String, dynamic> pay) {
-    final month   = pay['month']?.toString() ?? 'Upcoming';
-    final dueDate = pay['due_date']?.toString() ?? 'TBD';
-    final amount  = pay['amount'] ?? pay['price'] ?? 0;
+  Widget _recentCard(Map<String, dynamic> pay) {
+    final property = _propertyTitle(pay);
+    final dueDate  = pay['paid_at']?.toString() ?? pay['due_date']?.toString() ?? '—';
+    final amount   = pay['amount'] ?? 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -145,19 +209,15 @@ class _PaymentsPageState extends State<PaymentsPage> {
         border: Border.all(color: kBorder)),
       child: Row(children: [
         Container(width: 44, height: 44,
-          decoration: BoxDecoration(color: kGoldDim, borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: kGoldBorder)),
-          child: const Icon(Icons.calendar_month_rounded, color: kGold, size: 20)),
+          decoration: BoxDecoration(color: kSuccessBg, borderRadius: BorderRadius.circular(10)),
+          child: const Icon(Icons.check_circle_rounded, color: kSuccess, size: 20)),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(month, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(property, style: const TextStyle(color: kCream, fontSize: 12, fontWeight: FontWeight.w600)),
           Text(dueDate, style: const TextStyle(color: kSlate, fontSize: 10)),
         ])),
-        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text('TZS $amount',
-            style: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w700)),
-          const Text('Not due yet', style: TextStyle(color: kSuccess, fontSize: 10, fontWeight: FontWeight.w500)),
-        ]),
+        Text(_fmtAmount(amount),
+          style: const TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w700)),
       ]),
     );
   }
@@ -310,7 +370,7 @@ class _PaymentModalState extends State<_PaymentModal> {
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('Make Payment',
                 style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
-              Text(pay['property']?.toString() ?? '',
+              Text(_PaymentsPageState._propertyTitle(pay),
                 style: const TextStyle(color: kSlate, fontSize: 12)),
             ])),
             GestureDetector(

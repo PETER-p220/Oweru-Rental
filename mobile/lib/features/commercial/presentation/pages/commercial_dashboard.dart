@@ -6,6 +6,7 @@ import '../../../shared/widgets/logout_button.dart';
 import '../../../shared/services/user_service.dart';
 import '../../../shared/services/commercial_api_service.dart';
 import 'commercial_applications_page.dart';
+import '../../../../core/utils/property_images.dart';
 import 'commercial_properties_page.dart';
 
 // ── Color System ──────────────────────────────────────────────
@@ -786,8 +787,7 @@ class _CommercialPropertyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final images       = property['images'] as List?;
-    final imageUrl     = images != null && images.isNotEmpty ? images[0] as String? : null;
+    final imageUrl = getPropertyImageUrl(property);
     final title        = property['title']         as String? ?? 'Untitled';
     final location     = property['location']      as String? ?? 'No location';
     final propertyType = property['property_type'] as String? ?? 'Office';
@@ -812,11 +812,9 @@ class _CommercialPropertyCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               child: Container(
                 width: 76, height: 76, color: kSlate100,
-                child: imageUrl != null && imageUrl.isNotEmpty
+                child: imageUrl.isNotEmpty
                     ? Image.network(
-                        imageUrl.startsWith('http')
-                            ? imageUrl
-                            : 'https://rental.oweru.com/storage/$imageUrl',
+                        imageUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) =>
                             const Icon(Icons.domain_outlined, color: kSlate300, size: 28))

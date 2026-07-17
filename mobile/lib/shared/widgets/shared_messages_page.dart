@@ -20,7 +20,7 @@ class _RoleConfig {
 
 const _roleConfigs = {
   MessagesRole.tenant: _RoleConfig(
-    accent: Color(0xFF6C63FF),
+    accent: Color(0xFF2563EB),
     label: 'Tenant Inbox',
     tagline: 'Talk to your landlord or agent',
   ),

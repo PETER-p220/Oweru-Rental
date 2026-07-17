@@ -157,4 +157,116 @@ class CommercialApiService {
     }
     return {};
   }
+
+  static Future<List<Map<String, dynamic>>> getAmenities() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/commercial/amenities'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final amenities = data['data'] ?? data;
+        return List<Map<String, dynamic>>.from(
+          (amenities is List ? amenities : []).cast<Map<String, dynamic>>(),
+        );
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+    return [];
+  }
+
+  static Future<Map<String, dynamic>> createProperty(Map<String, dynamic> propertyData) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/commercial/properties'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+        body: jsonEncode(propertyData),
+      );
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      final body = jsonDecode(response.body);
+      return {
+        'success': false,
+        'message': body['message']?.toString() ?? 'Failed to create property',
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateProperty(int propertyId, Map<String, dynamic> propertyData) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$_baseUrl/commercial/properties/$propertyId'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+        body: jsonEncode(propertyData),
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Failed to update property'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> deleteProperty(int propertyId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/commercial/properties/$propertyId'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Failed to delete property'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> approveApplication(int applicationId) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/commercial/applications/$applicationId/approve'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Failed to approve application'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> rejectApplication(int applicationId) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/commercial/applications/$applicationId/reject'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${AuthService.token}',
+        },
+      );
+      if (response.statusCode == 200) return jsonDecode(response.body);
+      return {'success': false, 'message': 'Failed to reject application'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
 }

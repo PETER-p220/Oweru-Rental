@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/commercial_api_service.dart';
 import '../../../../core/utils/payment_duration.dart';
+import '../../../../core/utils/property_images.dart';
 import 'commercial_add_property_page.dart';
 
 const Color kGold = Color(0xFFC89128);
@@ -300,8 +301,7 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
     final parkingSpaces = property['parking_spaces'];
     final furnished = property['furnished'] as bool? ?? false;
     final views = property['views'] ?? 0;
-    final images = property['property_images'] as List?;
-    final imageUrl = images != null && images.isNotEmpty ? images[0]['image_path'] as String? : null;
+    final imageUrl = getPropertyImageUrl(property);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -325,9 +325,9 @@ class _CommercialPropertiesPageState extends State<CommercialPropertiesPage> {
                 ),
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: imageUrl != null && imageUrl.isNotEmpty
+                  child: imageUrl.isNotEmpty
                       ? Image.network(
-                          imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
+                          imageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => const Center(
                             child: Icon(Icons.domain_outlined, color: kSlate, size: 36),

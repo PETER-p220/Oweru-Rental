@@ -10,17 +10,11 @@ import 'agent_messages_page.dart';
 import 'agent_linked_owners_page.dart';
 import 'agent_payout_history_page.dart';
 import 'agent_qr_codes_page.dart';
+import 'agent_rent_payments_page.dart';
 import 'agent_share_track_page.dart';
+import 'agent_theme.dart';
 import 'leads_page.dart';
 import 'my_listings_page.dart';
-
-const Color kGold = Color(0xFFC89128);
-const Color kBg = Color(0xFF0A0F1E);
-const Color kBg2 = Color(0xFF0F172A);
-const Color kBg3 = Color(0xFF162035);
-const Color kCream = Color(0xFFF1F5F9);
-const Color kSlate = Color(0xFF94A3B8);
-const Color kBorder = Color(0x26C89128);
 
 class AgentDashboard extends StatefulWidget {
   const AgentDashboard({super.key});
@@ -29,7 +23,7 @@ class AgentDashboard extends StatefulWidget {
   State<AgentDashboard> createState() => _AgentDashboardState();
 }
 
-class _AgentDashboardState extends State<AgentDashboard> {
+class _AgentDashboardState extends State<AgentDashboard> {      
   int _selectedIndex = 0;
   final _userService = UserService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -55,9 +49,10 @@ class _AgentDashboardState extends State<AgentDashboard> {
     {'label': 'Linked Owners', 'icon': Icons.people_alt, 'index': 6},
     {'label': 'Share & Track', 'icon': Icons.share, 'index': 7},
     {'label': 'QR Codes', 'icon': Icons.qr_code, 'index': 8},
-    {'label': 'Payout History', 'icon': Icons.account_balance_wallet, 'index': 9},
-    {'label': 'Messages', 'icon': Icons.mail, 'index': 10},
-    {'label': 'Settings', 'icon': Icons.settings, 'index': 11},
+    {'label': 'Rent Payments', 'icon': Icons.payments_outlined, 'index': 9},
+    {'label': 'Payout History', 'icon': Icons.account_balance_wallet, 'index': 10},
+    {'label': 'Messages', 'icon': Icons.mail, 'index': 11},
+    {'label': 'Settings', 'icon': Icons.settings, 'index': 12},
   ];
 
   final Map<int, int> _bottomToPage = {0: 0, 1: 1, 2: 2, 3: 3};
@@ -92,7 +87,7 @@ class _AgentDashboardState extends State<AgentDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: kBg,
+      backgroundColor: kPageBg,
       appBar: _buildAppBar(),
       drawer: _buildDrawer(),
       endDrawer: _buildProfileDrawer(),
@@ -103,11 +98,12 @@ class _AgentDashboardState extends State<AgentDashboard> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: kBg2,
+      backgroundColor: kWhite,
       elevation: 0,
+      surfaceTintColor: Colors.transparent,
       automaticallyImplyLeading: false,
       title: Row(children: [
-        const Text('Oweru', style: TextStyle(color: kGold, fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+        const Text('Oweru', style: TextStyle(color: kSlate800, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 0.3)),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -137,32 +133,32 @@ class _AgentDashboardState extends State<AgentDashboard> {
 
   Widget _buildProfileDrawer() {
     return Drawer(
-      backgroundColor: kBg2,
+      backgroundColor: kSlate900,
       child: SafeArea(
         child: Column(children: [
           Padding(
             padding: const EdgeInsets.all(20),
             child: Row(children: [
-              Container(width: 48, height: 48, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: kGold, width: 2)),
+              Container(width: 48, height: 48, decoration: BoxDecoration(shape: BoxShape.circle, color: kSlate700, border: Border.all(color: kSlate500, width: 2)),
                 child: Center(child: Text(
                   _userService.userName?.isNotEmpty == true ? _userService.userName![0].toUpperCase() : 'A',
-                  style: const TextStyle(color: kGold, fontSize: 20, fontWeight: FontWeight.w700),
+                  style: const TextStyle(color: kWhite, fontSize: 20, fontWeight: FontWeight.w700),
                 ))),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(_userService.userName ?? 'Agent', style: const TextStyle(color: kCream, fontSize: 15, fontWeight: FontWeight.w600)),
-                const Text('Real Estate Agent', style: TextStyle(color: kSlate, fontSize: 12)),
+                Text(_userService.userName ?? 'Agent', style: const TextStyle(color: kWhite, fontSize: 15, fontWeight: FontWeight.w600)),
+                const Text('Real Estate Agent', style: TextStyle(color: kSlate400, fontSize: 12)),
               ])),
             ]),
           ),
-          Divider(color: kGold.withValues(alpha: 0.2)),
+          const Divider(color: kSlate700),
           ListTile(
-            leading: const Icon(Icons.settings, color: kSlate, size: 20),
-            title: const Text('Settings', style: TextStyle(color: kCream, fontSize: 14)),
-            onTap: () { Navigator.pop(context); setState(() => _selectedIndex = 11); },
+            leading: const Icon(Icons.settings, color: kSlate400, size: 20),
+            title: const Text('Settings', style: TextStyle(color: kSlate200, fontSize: 14)),
+            onTap: () { Navigator.pop(context); setState(() => _selectedIndex = 12); },
           ),
           const Spacer(),
-          Divider(color: kGold.withValues(alpha: 0.2)),
+          const Divider(color: kSlate700),
           Padding(padding: const EdgeInsets.all(16), child: LogoutButton()),
         ]),
       ),
@@ -171,22 +167,22 @@ class _AgentDashboardState extends State<AgentDashboard> {
 
   Widget _buildDrawer() {
     return Drawer(
-      backgroundColor: kBg2,
+      backgroundColor: kSlate900,
       child: SafeArea(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-            child: const Text('More', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
+            child: const Text('More', style: TextStyle(color: kWhite, fontSize: 18, fontWeight: FontWeight.w700)),
           ),
-          Divider(color: kGold.withValues(alpha: 0.2)),
+          const Divider(color: kSlate700),
           ..._drawerItems.map((item) => ListTile(
-            leading: Icon(item['icon'], color: _selectedIndex == item['index'] ? kGold : kSlate, size: 20),
+            leading: Icon(item['icon'], color: _selectedIndex == item['index'] ? kWhite : kSlate400, size: 20),
             title: Text(item['label'], style: TextStyle(
-              color: _selectedIndex == item['index'] ? kGold : kCream,
-              fontWeight: _selectedIndex == item['index'] ? FontWeight.bold : FontWeight.normal,
+              color: _selectedIndex == item['index'] ? kWhite : kSlate300,
+              fontWeight: _selectedIndex == item['index'] ? FontWeight.w600 : FontWeight.normal,
               fontSize: 14,
             )),
-            tileColor: _selectedIndex == item['index'] ? kGold.withValues(alpha: 0.08) : null,
+            tileColor: _selectedIndex == item['index'] ? kSlate700 : null,
             onTap: () { Navigator.pop(context); setState(() => _selectedIndex = item['index']); },
           )),
         ]),
@@ -196,7 +192,7 @@ class _AgentDashboardState extends State<AgentDashboard> {
 
   Widget _buildBottomNav() {
     return Container(
-      decoration: BoxDecoration(color: kBg2, border: Border(top: BorderSide(color: kGold.withValues(alpha: 0.2), width: 1))),
+      decoration: const BoxDecoration(color: kWhite, border: Border(top: BorderSide(color: kBorder, width: 1))),
       child: SafeArea(
         child: SizedBox(
           height: 60,
@@ -215,9 +211,9 @@ class _AgentDashboardState extends State<AgentDashboard> {
                   },
                   behavior: HitTestBehavior.opaque,
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(item['icon'], color: isSelected ? kGold : kSlate, size: 22),
+                    Icon(item['icon'], color: isSelected ? kSlate800 : kSlate400, size: 22),
                     const SizedBox(height: 3),
-                    Text(item['label'], style: TextStyle(color: isSelected ? kGold : kSlate, fontSize: 10, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400)),
+                    Text(item['label'], style: TextStyle(color: isSelected ? kSlate800 : kSlate400, fontSize: 10, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400)),
                   ]),
                 ),
               );
@@ -239,9 +235,10 @@ class _AgentDashboardState extends State<AgentDashboard> {
       case 6: return const AgentLinkedOwnersPage();
       case 7: return const AgentShareTrackPage();
       case 8: return const AgentQrCodesPage();
-      case 9: return const AgentPayoutHistoryPage();
-      case 10: return _buildMessagesContent();
-      case 11: return _buildSettingsContent();
+      case 9: return const AgentRentPaymentsPage();
+      case 10: return const AgentPayoutHistoryPage();
+      case 11: return _buildMessagesContent();
+      case 12: return _buildSettingsContent();
       default: return _buildDashboardContent();
     }
   }
@@ -508,9 +505,9 @@ class _AgentDashboardState extends State<AgentDashboard> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 52),
-          decoration: BoxDecoration(color: kBg2, borderRadius: BorderRadius.circular(12), border: Border.all(color: kBorder)),
+          decoration: BoxDecoration(color: kCardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: kBorder)),
           child: Column(children: [
-            Container(width: 52, height: 52, decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(12), border: Border.all(color: kGold.withValues(alpha: 0.2))), child: Icon(icon, color: kGold.withValues(alpha: 0.5), size: 24)),
+            Container(width: 52, height: 52, decoration: BoxDecoration(color: kSlate100, borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: kSlate400, size: 24)),
             const SizedBox(height: 12),
             Text(emptyTitle, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
@@ -526,10 +523,10 @@ class _AgentDashboardState extends State<AgentDashboard> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: kBg2, borderRadius: BorderRadius.circular(12), border: Border.all(color: kBorder)),
+      decoration: BoxDecoration(color: kCardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: kBorder)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w600)),
-        Divider(color: kGold.withValues(alpha: 0.15), height: 14),
+        const Divider(color: kBorder, height: 14),
         child,
       ]),
     );

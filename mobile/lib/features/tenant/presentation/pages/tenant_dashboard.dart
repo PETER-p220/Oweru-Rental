@@ -3,9 +3,9 @@
 // ============================================================
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../shared/widgets/logout_button.dart';
-import '../../../shared/services/user_service.dart';
-import '../../../shared/services/tenant_api_service.dart';
+import 'package:mobile/shared/widgets/logout_button.dart';
+import 'package:mobile/shared/services/user_service.dart';
+import 'package:mobile/shared/services/tenant_api_service.dart';
 import 'applications_page.dart';
 import 'saved_properties_page.dart';
 import 'payments_page.dart';
@@ -16,6 +16,7 @@ import 'notifications_page.dart';
 import 'analytics_page.dart';
 import 'application_status_page.dart';
 import 'properties_page.dart';
+import '../../../../core/utils/property_images.dart';
 import 'tenant_theme.dart';
 
 // ── Animated counter tween ────────────────────────────────
@@ -51,8 +52,9 @@ class _TenantDashboardState extends State<TenantDashboard>
 
   // Dashboard data
   Map<String, dynamic> _stats     = {};
-  final List<Map<String, dynamic>> _properties = [];
+  List<Map<String, dynamic>> _properties = [];
   List<Map<String, dynamic>> _contracts = [];
+  Map<String, dynamic> _paymentStats = {};
   bool   _isLoading = true;
   String _error     = '';
 
@@ -97,6 +99,7 @@ class _TenantDashboardState extends State<TenantDashboard>
     _pulseAnim = CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut);
 
     _fadeCtrl.forward();
+    _userService.ensureLoaded();
     _loadDashboardData();
   }
 
@@ -113,24 +116,34 @@ class _TenantDashboardState extends State<TenantDashboard>
     try {
       final results = await Future.wait([
         TenantApiService.getDashboard(),
+        TenantApiService.getPublicProperties(),
         TenantApiService.getDigitalContracts()
             .catchError((_) => Future.value(<Map<String, dynamic>>[])),
+        TenantApiService.getPaymentStats()
+            .catchError((_) => Future.value(<String, dynamic>{})),
       ]);
 
       final statsData     = results[0];
-      final contractsData = results[1];
+      final propertiesData = results[1];
+      final contractsData = results[2];
+      final paymentStats  = results[3];
 
       if (!mounted) return;
       setState(() {
         if (statsData is Map<String, dynamic>) {
           _stats = (statsData['data'] as Map<String, dynamic>?) ?? {};
         }
+        if (propertiesData is List) {
+          _properties = propertiesData.cast<Map<String, dynamic>>().take(4).toList();
+        }
         if (contractsData is List) {
           _contracts = contractsData.cast<Map<String, dynamic>>();
         }
+        if (paymentStats is Map<String, dynamic>) {
+          _paymentStats = (paymentStats['data'] as Map<String, dynamic>?) ?? {};
+        }
         _isLoading = false;
       });
-      // Kick off counter animation after data loads
       _counterCtrl.forward(from: 0);
     } catch (e) {
       if (!mounted) return;
@@ -154,9 +167,8 @@ class _TenantDashboardState extends State<TenantDashboard>
   @override
   Widget build(BuildContext context) => Scaffold(
     key: _scaffoldKey,
-    backgroundColor: kBg,
+    backgroundColor: kPageBg,
     extendBodyBehindAppBar: true,
-    appBar: _appBar(),
     drawer: _drawer(),
     endDrawer: _profileDrawer(),
     body: FadeTransition(
@@ -242,77 +254,73 @@ class _TenantDashboardState extends State<TenantDashboard>
 
   // ── Profile Drawer ──────────────────────────────────────
   Widget _profileDrawer() => Drawer(
-    backgroundColor: kBg2,
+    backgroundColor: kSlate900,
     child: SafeArea(child: Column(children: [
       Container(
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: kSlate800,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white12)),
+            border: Border.all(color: kSlate700)),
         child: Column(children: [
           Container(
             width: 64, height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF334155),
-              border: Border.all(color: Colors.white24, width: 2),
+              color: kSlate700,
+              border: Border.all(color: kSlate500, width: 2),
             ),
             child: Center(child: Text(
               _userService.userName?.isNotEmpty == true
                   ? _userService.userName![0].toUpperCase() : 'T',
-              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
+              style: const TextStyle(color: kWhite, fontSize: 24, fontWeight: FontWeight.w800),
             )),
           ),
           const SizedBox(height: 12),
           Text(_userService.userName ?? 'Tenant',
-              style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w700)),
+              style: const TextStyle(color: kWhite, fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           const TStatusBadge(label: 'Active Tenant', color: kSuccess),
         ]),
       ),
-      Divider(color: Colors.white12),
+      const Divider(color: kSlate700),
       _drawerTile(Icons.tune_rounded, 'Settings', () { Navigator.pop(context); _navigate(11); }),
       _drawerTile(Icons.analytics_rounded, 'Analytics', () { Navigator.pop(context); _navigate(10); }),
       const Spacer(),
-      Divider(color: Colors.white12),
+      const Divider(color: kSlate700),
       const Padding(padding: EdgeInsets.all(16), child: LogoutButton()),
     ])),
   );
 
   Widget _drawerTile(IconData icon, String label, VoidCallback onTap) =>
       ListTile(
-        leading: Icon(icon, color: kSlate, size: 20),
-        title: Text(label, style: const TextStyle(color: kCream, fontSize: 14)),
+        leading: Icon(icon, color: kSlate400, size: 20),
+        title: Text(label, style: const TextStyle(color: kSlate200, fontSize: 14)),
         onTap: onTap,
       );
 
   // ── Side Drawer ─────────────────────────────────────────
   Widget _drawer() => Drawer(
-    backgroundColor: kBg2,
+    backgroundColor: kSlate900,
     child: SafeArea(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Padding(
         padding: EdgeInsets.fromLTRB(20, 22, 20, 8),
-        child: Text('More', style: TextStyle(color: kCream, fontSize: 22, fontWeight: FontWeight.w800)),
+        child: Text('More', style: TextStyle(color: kWhite, fontSize: 22, fontWeight: FontWeight.w800)),
       ),
-      Divider(color: Colors.white12),
+      const Divider(color: kSlate700),
       ..._drawerItems.map((item) {
         final active = _selectedIndex == (item['index'] as int);
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-          decoration: BoxDecoration(
-            color: active ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           child: ListTile(
-            leading: Icon(item['icon'] as IconData, color: active ? Colors.white : kSlate, size: 20),
+            leading: Icon(item['icon'] as IconData, color: active ? kWhite : kSlate400, size: 20),
             title: Text(item['label'] as String,
                 style: TextStyle(
-                    color: active ? Colors.white : kCream,
+                    color: active ? kWhite : kSlate300,
                     fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                     fontSize: 14)),
+            tileColor: active ? kSlate700 : null,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             onTap: () { Navigator.pop(context); _navigate(item['index'] as int); },
           ),
@@ -323,10 +331,9 @@ class _TenantDashboardState extends State<TenantDashboard>
 
   // ── Bottom Nav ──────────────────────────────────────────
   Widget _bottomNav() => Container(
-    decoration: BoxDecoration(
-      color: kBg2,
-      border: Border(top: BorderSide(color: Colors.white10, width: 0.5)),
-      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, -4))],
+    decoration: const BoxDecoration(
+      color: kWhite,
+      border: Border(top: BorderSide(color: kBorder, width: 1)),
     ),
     child: SafeArea(child: SizedBox(
       height: 64,
@@ -339,27 +346,21 @@ class _TenantDashboardState extends State<TenantDashboard>
             _navigate(i);
           },
           behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            decoration: BoxDecoration(
-              color: sel ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              width: sel ? 36 : 0, height: 3,
+              decoration: BoxDecoration(color: kSlate800, borderRadius: BorderRadius.circular(2)),
             ),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              AnimatedScale(
-                scale: sel ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                child: Icon(item['icon'] as IconData, color: sel ? Colors.white : kSlate, size: 20),
-              ),
-              const SizedBox(height: 3),
-              Text(item['label'] as String,
-                  style: TextStyle(
-                      color: sel ? Colors.white : kSlate,
-                      fontSize: 10,
-                      fontWeight: sel ? FontWeight.w700 : FontWeight.w400)),
-            ]),
-          ),
+            const SizedBox(height: 6),
+            Icon(item['icon'] as IconData, color: sel ? kSlate800 : kSlate400, size: 20),
+            const SizedBox(height: 3),
+            Text(item['label'] as String,
+                style: TextStyle(
+                    color: sel ? kSlate800 : kSlate400,
+                    fontSize: 10,
+                    fontWeight: sel ? FontWeight.w700 : FontWeight.w400)),
+          ]),
         ));
       })),
     )),
@@ -388,7 +389,7 @@ class _TenantDashboardState extends State<TenantDashboard>
     if (_isLoading) {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         SizedBox(width: 40, height: 40,
-            child: CircularProgressIndicator(color: Colors.white54, strokeWidth: 2)),
+            child: CircularProgressIndicator(color: kSlate800, strokeWidth: 2)),
         const SizedBox(height: 14),
         const Text('Loading your dashboard…', style: TextStyle(color: kSlate, fontSize: 13)),
       ]));
@@ -402,7 +403,7 @@ class _TenantDashboardState extends State<TenantDashboard>
         const SizedBox(height: 14),
         TextButton(
           onPressed: _loadDashboardData,
-          child: const Text('Retry', style: TextStyle(color: Colors.white70)),
+          child: const Text('Retry', style: TextStyle(color: kGold)),
         ),
       ]));
     }
@@ -412,12 +413,13 @@ class _TenantDashboardState extends State<TenantDashboard>
     final totalApplications = _stats['total_applications'] ?? 0;
     final contracts         = _stats['contracts']          ?? _contracts.length;
     final messages          = _stats['messages']           ?? 0;
+    final pendingPayments   = int.tryParse('${_paymentStats['pending_payments']}') ?? 0;
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
-        // Top padding for AppBar overlap
-        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        // Top bar
+        SliverToBoxAdapter(child: _topBar()),
 
         // ── Hero Banner ──────────────────────────────────
         SliverToBoxAdapter(child: Padding(
@@ -425,7 +427,11 @@ class _TenantDashboardState extends State<TenantDashboard>
           child: _heroBanner(),
         )),
 
-
+        if (pendingPayments > 0)
+          SliverToBoxAdapter(child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: _paymentAlert(),
+          )),
         // ── Stats ────────────────────────────────────────
         SliverToBoxAdapter(child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
@@ -464,6 +470,27 @@ class _TenantDashboardState extends State<TenantDashboard>
           ])),
         )),
 
+        // ── Active Contracts ─────────────────────────────
+        if (_contracts.isNotEmpty) ...[
+          SliverToBoxAdapter(child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+            child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              _sectionLabel('Active Contracts'),
+              GestureDetector(
+                onTap: () => _navigate(7),
+                child: const Text('View all', style: TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w500)),
+              ),
+            ]),
+          )),
+          SliverList(delegate: SliverChildBuilderDelegate(
+            (_, i) => Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: _ContractCard(contract: _contracts[i]),
+            ),
+            childCount: _contracts.take(3).length,
+          )),
+        ],
+
         // ── Featured Properties ──────────────────────────
         SliverToBoxAdapter(child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
@@ -471,7 +498,7 @@ class _TenantDashboardState extends State<TenantDashboard>
             _sectionLabel('Featured Picks'),
             GestureDetector(
               onTap: () => _navigate(1),
-              child: const Text('See all', style: TextStyle(color: Colors.white60, fontSize: 13, fontWeight: FontWeight.w500)),
+              child: const Text('See all', style: TextStyle(color: kGold, fontSize: 13, fontWeight: FontWeight.w500)),
             ),
           ]),
         )),
@@ -500,9 +527,8 @@ class _TenantDashboardState extends State<TenantDashboard>
   Widget _heroBanner() => Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: const Color(0xFF1E293B),
+      color: kHeaderBg,
       borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: Colors.white10, width: 1),
       boxShadow: const [BoxShadow(color: Color(0x28000000), blurRadius: 24, offset: Offset(0, 8))],
     ),
     child: Row(children: [
@@ -566,15 +592,31 @@ class _TenantDashboardState extends State<TenantDashboard>
   );
 
   // ── Payment Alert ────────────────────────────────────────
-  Widget _paymentAlert() => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    decoration: BoxDecoration(
-      color: const Color(0xFF1A0A00),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: kDanger.withValues(alpha: 0.4)),
-    ),
-   
-  );
+  Widget _paymentAlert() {
+    final count = int.tryParse('${_paymentStats['pending_payments']}') ?? 0;
+    return GestureDetector(
+      onTap: () => _navigate(3),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: kWarningBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: kWarning.withValues(alpha: 0.35)),
+        ),
+        child: Row(children: [
+          const Icon(Icons.warning_amber_rounded, color: kWarning, size: 22),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('$count pending payment${count == 1 ? '' : 's'}',
+              style: const TextStyle(color: kSlate800, fontSize: 13, fontWeight: FontWeight.w700)),
+            const Text('Tap to review and pay rent',
+              style: TextStyle(color: kSlate500, fontSize: 11)),
+          ])),
+          const Icon(Icons.chevron_right_rounded, color: kSlate400, size: 20),
+        ]),
+      ),
+    );
+  }
 
   // ── Stats Row ───────────────────────────────────────────
   Widget _statsRow({
@@ -638,9 +680,35 @@ class _TenantDashboardState extends State<TenantDashboard>
     )).toList());
   }
 
+  Widget _topBar() => Container(
+    color: kWhite,
+    padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 8, 8, 12),
+    child: Row(children: [
+      const Text('Oweru', style: TextStyle(color: kSlate800, fontSize: 22, fontWeight: FontWeight.w800)),
+      const SizedBox(width: 8),
+      const TLabel('Tenant'),
+      const Spacer(),
+      IconButton(
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
+        icon: const Icon(Icons.notifications_none_rounded, color: kSlate500, size: 22),
+      ),
+      GestureDetector(
+        onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
+        child: Container(
+          width: 34, height: 34,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: kSlate200, border: Border.all(color: kBorder)),
+          child: Center(child: Text(
+            _userService.userName?.isNotEmpty == true ? _userService.userName![0].toUpperCase() : 'T',
+            style: const TextStyle(color: kSlate800, fontSize: 14, fontWeight: FontWeight.w800),
+          )),
+        ),
+      ),
+    ]),
+  );
+
   // ── Helpers ─────────────────────────────────────────────
   Widget _sectionLabel(String label) => Text(label,
-      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2));
+      style: const TextStyle(color: kSlate800, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2));
 
   Widget _emptyState(IconData icon, String msg) => Container(
     padding: const EdgeInsets.all(20),
@@ -701,8 +769,7 @@ class _PropertyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final images   = property['images'] as List?;
-    final imageUrl = images?.isNotEmpty == true ? images![0] as String? : null;
+    final imageUrl = getPropertyImageUrl(property);
     final title    = property['title']    as String? ?? 'Untitled property';
     final location = property['location'] as String? ?? 'No location';
     final bedrooms  = property['bedrooms']  ?? 0;
@@ -716,15 +783,13 @@ class _PropertyCard extends StatelessWidget {
         Stack(children: [
           Container(
             width: 90, height: 72,
-            decoration: BoxDecoration(color: kBg3, borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: kSlate100, borderRadius: BorderRadius.circular(14)),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: imageUrl != null && imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl.startsWith('http') ? imageUrl : 'https://rental.oweru.com/storage/$imageUrl',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const Icon(Icons.home, color: Colors.white38, size: 24))
-                  : const Icon(Icons.home, color: Colors.white38, size: 24),
+              child: imageUrl.isNotEmpty
+                  ? Image.network(imageUrl, fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const Icon(Icons.home, color: kSlate400, size: 24))
+                  : const Icon(Icons.home, color: kSlate400, size: 24),
             ),
           ),
           Positioned(top: 6, left: 6,
@@ -759,7 +824,7 @@ class _PropertyCard extends StatelessWidget {
         ])),
         const SizedBox(width: 6),
         Text(_fmt(price),
-            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+            style: const TextStyle(color: kSlate800, fontSize: 13, fontWeight: FontWeight.w700),
             textAlign: TextAlign.right),
       ]),
     );
@@ -833,12 +898,12 @@ class _ContractCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text('${_fmtCurrency(rentAmount)}/mo',
-              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+              style: const TextStyle(color: kSlate800, fontSize: 13, fontWeight: FontWeight.w700)),
         ]),
       ]),
       if (paymentStatus != null) ...[
         const SizedBox(height: 10),
-        Divider(color: Colors.white10, height: 1),
+        Divider(color: kBorder, height: 1),
         const SizedBox(height: 10),
         Row(children: [
           const Icon(Icons.receipt_long_rounded, color: kSlateDim, size: 13),
@@ -937,14 +1002,14 @@ class _ActionRow extends StatelessWidget {
             child: Icon(icon, color: color, size: 18)),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-            Text(sublabel, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+            Text(label, style: const TextStyle(color: kSlate800, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(sublabel, style: const TextStyle(color: kSlate500, fontSize: 11)),
           ])),
-          const Icon(Icons.chevron_right_rounded, color: Colors.white24, size: 18),
+          const Icon(Icons.chevron_right_rounded, color: kSlate300, size: 18),
         ]),
       ),
     ),
-    if (!last) Divider(color: Colors.white10, height: 1),
+    if (!last) Divider(color: kBorder, height: 1),
   ]);
 }
 
@@ -978,18 +1043,18 @@ class _SettingsRow extends StatelessWidget {
       child: Row(children: [
         Container(
           width: 34, height: 34,
-          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(9)),
-          child: Icon(icon, color: Colors.white60, size: 16),
+          decoration: BoxDecoration(color: kSlate100, borderRadius: BorderRadius.circular(9)),
+          child: Icon(icon, color: kSlate500, size: 16),
         ),
         const SizedBox(width: 10),
         Expanded(child: Text(title,
-            style: const TextStyle(color: kCream, fontSize: 13), overflow: TextOverflow.ellipsis)),
+            style: const TextStyle(color: kSlate800, fontSize: 13), overflow: TextOverflow.ellipsis)),
         Flexible(child: Text(value,
-            style: const TextStyle(color: kSlate, fontSize: 12), overflow: TextOverflow.ellipsis)),
+            style: const TextStyle(color: kSlate500, fontSize: 12), overflow: TextOverflow.ellipsis)),
         const SizedBox(width: 4),
-        const Icon(Icons.chevron_right_rounded, color: kSlateDim, size: 16),
+        const Icon(Icons.chevron_right_rounded, color: kSlate400, size: 16),
       ]),
     ),
-    if (!last) Divider(color: Colors.white10, height: 1),
+    if (!last) Divider(color: kBorder, height: 1),
   ]);
 }

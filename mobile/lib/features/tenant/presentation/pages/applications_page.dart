@@ -41,7 +41,7 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
       final data = await TenantApiService.getApplications();
       if (mounted) setState(() { _applications = data; _isLoading = false; });
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
+      if (mounted) setState(() { _error = 'Unable to load applications'; _isLoading = false; });
     }
   }
 
@@ -72,7 +72,12 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: kBg,
-    appBar: _appBar(),
+    appBar: tenantPageAppBar('My Applications', actions: [
+      IconButton(
+        onPressed: _load,
+        icon: const Icon(Icons.refresh_rounded, color: kWhite, size: 20),
+      ),
+    ]),
     body: _isLoading
         ? _skeleton()
         : _error.isNotEmpty
@@ -99,18 +104,6 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
               ),
   );
 
-  PreferredSizeWidget _appBar() => AppBar(
-    backgroundColor: kBg2,
-    elevation: 0,
-    iconTheme: const IconThemeData(color: kGold),
-    title: const Text('My Applications',
-      style: TextStyle(color: kCream, fontSize: 17, fontWeight: FontWeight.w700)),
-    actions: [
-      IconButton(
-        onPressed: _load,
-        icon: const Icon(Icons.refresh_rounded, color: kGold, size: 20)),
-    ],
-  );
 
   Widget _filterRow() => SingleChildScrollView(
     scrollDirection: Axis.horizontal,

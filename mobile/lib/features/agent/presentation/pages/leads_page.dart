@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
+import 'agent_theme.dart';
 import '../../../shared/services/agent_api_service.dart';
-
-const Color kGold = Color(0xFFC89128);
-const Color kBg = Color(0xFF0A0F1E);
-const Color kBg2 = Color(0xFF0F172A);
-const Color kBg3 = Color(0xFF162035);
-const Color kCream = Color(0xFFF1F5F9);
-const Color kSlate = Color(0xFF94A3B8);
-const Color kBorder = Color(0x26C89128);
 
 class LeadsPage extends StatefulWidget {
   const LeadsPage({super.key});
@@ -94,7 +87,7 @@ class _LeadsPageState extends State<LeadsPage> {
     return Scaffold(
       backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: kBg2,
+        backgroundColor: kPageBg,
         elevation: 0,
         title: const Text('Leads & Visitors', style: TextStyle(color: kCream, fontSize: 18, fontWeight: FontWeight.w700)),
       ),

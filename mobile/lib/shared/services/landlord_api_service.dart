@@ -171,6 +171,24 @@ class LandlordApiService {
     return [];
   }
 
+  // Get rental contracts
+  static Future<List<Map<String, dynamic>>> getContracts() async {
+    try {
+      await UserService().ensureLoaded();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/owner/contracts'),
+        headers: _headers,
+      );
+
+      if (response.statusCode == 200) {
+        return _asList(jsonDecode(response.body));
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+    return [];
+  }
+
   // Get Analytics
   static Future<Map<String, dynamic>> getAnalytics() async {
     try {
