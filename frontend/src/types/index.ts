@@ -3,6 +3,7 @@ export interface Property {
   title: string;
   description: string;
   price: number;
+  payment_duration_months?: number;
   address: string;
   bedrooms: number;
   bathrooms: number;

@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building, Camera, MapPin, Home, Save, ArrowLeft, FileText, X, User, Phone, CheckCircle } from 'lucide-react';
 import Api from '../../services/api';
+import { PAYMENT_DURATION_OPTIONS, formatPaymentPeriodLabel, periodRentTotal } from '../../utils/paymentDuration';
 
 interface PropertyData {
-  title: string; description: string; price: number; location: string;
+  title: string; description: string; price: number; payment_duration_months: number; location: string;
   bedrooms: number; bathrooms: number; area: number; type: string;
   featured: boolean; available: boolean; images: string[];
   owner_id: number; landlord_name: string; landlord_phone: string;
@@ -17,7 +18,7 @@ const AddListing: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState<PropertyData>({
-    title: '', description: '', price: 0, location: '',
+    title: '', description: '', price: 0, payment_duration_months: 3, location: '',
     bedrooms: 1, bathrooms: 1, area: 1, type: 'house',
     featured: false, available: true, images: [],
     owner_id: 0, landlord_name: '', landlord_phone: ''
@@ -77,6 +78,7 @@ const AddListing: React.FC = () => {
     if (!formData.title.trim()) return 'Title is required';
     if (!formData.description.trim()) return 'Description is required';
     if (!formData.price || formData.price <= 0) return 'Price must be greater than 0';
+    if (!formData.payment_duration_months) return 'Payment period is required';
     if (!formData.location.trim()) return 'Location is required';
     if (!formData.bedrooms || formData.bedrooms <= 0) return 'Bedrooms must be > 0';
     if (!formData.bathrooms || formData.bathrooms <= 0) return 'Bathrooms must be > 0';
@@ -275,6 +277,19 @@ const AddListing: React.FC = () => {
                 <div className="al-fld">
                   <label className="al-lbl">Monthly Rent (TZS) *</label>
                   <input type="number" name="price" value={formData.price} onChange={handleInputChange} className="al-inp" placeholder="500000" min="0" required />
+                </div>
+                <div className="al-fld">
+                  <label className="al-lbl">Payment Period *</label>
+                  <select name="payment_duration_months" value={formData.payment_duration_months} onChange={handleInputChange} className="al-inp" required>
+                    {PAYMENT_DURATION_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  {formData.price > 0 && (
+                    <p style={{ marginTop: 8, fontSize: 12, color: '#C89128', fontWeight: 600 }}>
+                      Tenant pays Tsh {periodRentTotal(formData.price, formData.payment_duration_months).toLocaleString()} {formatPaymentPeriodLabel(formData.payment_duration_months)}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

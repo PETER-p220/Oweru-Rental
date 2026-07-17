@@ -87,6 +87,7 @@ class PropertyController extends Controller
             'address'        => 'required|string|max:500',
             'price'          => 'required|numeric|min:0',
             'price_type'     => 'required|in:monthly,yearly,sale',
+            'payment_duration_months' => 'required_unless:price_type,sale|integer|in:1,3,6,12',
             'area'           => 'required|numeric|min:0',
             'bedrooms'       => 'nullable|integer|min:0',
             'bathrooms'      => 'nullable|integer|min:0',
@@ -115,6 +116,9 @@ class PropertyController extends Controller
             'address'        => $request->address,
             'price'          => $request->price,
             'price_type'     => $request->price_type,
+            'payment_duration_months' => $request->price_type === 'sale'
+                ? 1
+                : (int) $request->input('payment_duration_months', 1),
             'area'           => $request->area,
             'bedrooms'       => $request->bedrooms       ?? 0,
             'bathrooms'      => $request->bathrooms      ?? 0,
@@ -181,6 +185,7 @@ class PropertyController extends Controller
             'address'          => 'required|string|max:500',
             'price'            => 'required|numeric|min:0',
             'price_type'       => 'required|in:monthly,yearly,sale',
+            'payment_duration_months' => 'required_unless:price_type,sale|integer|in:1,3,6,12',
             'area'             => 'required|numeric|min:0',
             'bedrooms'         => 'nullable|integer|min:0',
             'bathrooms'        => 'nullable|integer|min:0',
@@ -208,6 +213,9 @@ class PropertyController extends Controller
             'address'        => $request->address,
             'price'          => $request->price,
             'price_type'     => $request->price_type,
+            'payment_duration_months' => $request->price_type === 'sale'
+                ? 1
+                : (int) $request->input('payment_duration_months', 1),
             'area'           => $request->area,
             'bedrooms'       => $request->bedrooms       ?? 0,
             'bathrooms'      => $request->bathrooms      ?? 0,

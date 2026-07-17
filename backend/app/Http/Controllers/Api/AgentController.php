@@ -65,6 +65,7 @@ class AgentController extends Controller
             'title'          => 'required|string|max:255',
             'description'    => 'required|string|max:2000',
             'price'          => 'required|numeric|min:0',
+            'payment_duration_months' => 'required|integer|in:1,3,6,12',
             'location'       => 'required|string|max:255',
             'type'           => 'sometimes|in:Master-bedroom,house,Single-room',
             'bedrooms'       => 'required|integer|min:0',
@@ -111,6 +112,7 @@ class AgentController extends Controller
             'title'          => $request->title,
             'description'    => $request->description,
             'price'          => $request->price,
+            'payment_duration_months' => (int) $request->input('payment_duration_months', 1),
             'location'       => $request->location,
             'address'        => $request->address ?? '',
             'type'           => $request->type,
@@ -155,6 +157,7 @@ class AgentController extends Controller
             'title'       => 'sometimes|string|max:255',
             'description' => 'sometimes|string|max:2000',
             'price'       => 'sometimes|numeric|min:0',
+            'payment_duration_months' => 'sometimes|integer|in:1,3,6,12',
             'location'    => 'sometimes|string|max:255',
             'type'        => 'sometimes|in:Master-bedroom,house,Single-room',
             'bedrooms'    => 'sometimes|integer|min:0',
@@ -171,7 +174,7 @@ class AgentController extends Controller
         }
 
         $property->update($request->only([
-            'title', 'description', 'price', 'location', 'type',
+            'title', 'description', 'price', 'payment_duration_months', 'location', 'type',
             'bedrooms', 'bathrooms', 'area', 'available',
         ]));
 

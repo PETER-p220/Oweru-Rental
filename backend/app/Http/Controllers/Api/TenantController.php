@@ -1142,8 +1142,8 @@ class TenantController extends Controller
                 $application->status === 'pending' && $isAgentListed && ! $siteVisitPaid => 'Complete the site visit fee payment.',
                 $application->status === 'pending' => 'Waiting for landlord or agent approval.',
                 $canPayRent => $isAgentListed
-                    ? 'Pay your first month rent (70% to agent, 30% Oweru platform fee).'
-                    : 'Pay full first month rent to the landlord plus a separate Oweru initial platform fee (1 month).',
+                    ? 'Pay your rent for the property payment period (70% to agent, 30% Oweru platform fee).'
+                    : 'Pay rent for the property payment period to the landlord plus a separate Oweru initial platform fee (1 month).',
                 $rentPaid => 'Rent paid. Check Digital Contracts for signing.',
                 default => 'Track your application status here.',
             },

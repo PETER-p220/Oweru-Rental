@@ -4,6 +4,7 @@ import {
   Building2, Plus, X, Upload, MapPin, DollarSign,
   Home, Car, Calendar, Save, ChevronRight
 } from 'lucide-react';
+import { PAYMENT_DURATION_OPTIONS, formatPaymentPeriodLabel, periodRentTotal } from '../../utils/paymentDuration';
 
 // ── Must match the TOKEN_KEY in Api.ts ────────────────────────────────────────
 const TOKEN_KEY = 'token';
@@ -14,7 +15,7 @@ interface Amenity { id: number; name: string; icon: string; }
 interface FormData {
   title: string; description: string; type: string;
   location: string; address: string;
-  price: number; price_type: string;
+  price: number; price_type: string; payment_duration_months: number;
   parking_spaces: number; furnished: boolean;
   bedrooms: number; bathrooms: number; area: number;
   available_from: string; contact_phone: string; contact_email: string;
@@ -33,7 +34,7 @@ const AddProperty: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     title: '', description: '', type: 'office',
     location: '', address: '',
-    price: 0, price_type: 'monthly',
+    price: 0, price_type: 'monthly', payment_duration_months: 3,
     parking_spaces: 0, furnished: false,
     bedrooms: 0, bathrooms: 0, area: 0,
     available_from: '', contact_phone: '', contact_email: '',
@@ -106,6 +107,9 @@ const AddProperty: React.FC = () => {
     if (!formData.location.trim())      e.location      = 'Location is required';
     if (!formData.address.trim())       e.address       = 'Address is required';
     if (!formData.price || formData.price <= 0)  e.price = 'Price must be greater than 0';
+    if (formData.price_type !== 'sale' && !formData.payment_duration_months) {
+      e.payment_duration_months = 'Payment period is required for rentals';
+    }
     if (!formData.area  || formData.area  <= 0)  e.area  = 'Area must be greater than 0';
     if (!formData.available_from)       e.available_from  = 'Available date is required';
     if (!formData.contact_phone.trim()) e.contact_phone   = 'Contact phone is required';
@@ -335,12 +339,28 @@ const AddProperty: React.FC = () => {
                     {priceTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
+                {formData.price_type !== 'sale' && (
+                  <div>
+                    <label className="form-label">Payment Period *</label>
+                    <select name="payment_duration_months" value={formData.payment_duration_months} onChange={handleChange} className="form-input">
+                      {PAYMENT_DURATION_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    {errors.payment_duration_months && <p className="error-text">{errors.payment_duration_months}</p>}
+                  </div>
+                )}
                 <div>
                   <label className="form-label">Area (m²) *</label>
                   <input type="number" name="area" value={formData.area || ''} onChange={handleChange} className="form-input" placeholder="120" min="1" />
                   {errors.area && <p className="error-text">{errors.area}</p>}
                 </div>
               </div>
+              {formData.price_type !== 'sale' && formData.price > 0 && (
+                <p style={{ marginTop: 12, fontSize: 12, color: '#D4AF37', fontWeight: 600 }}>
+                  Tenant pays TZS {periodRentTotal(formData.price, formData.payment_duration_months).toLocaleString()} {formatPaymentPeriodLabel(formData.payment_duration_months)}
+                </p>
+              )}
             </div>
           </div>
 

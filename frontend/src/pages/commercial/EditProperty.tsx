@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Building2, Plus, X, Upload, MapPin, DollarSign, Home, Car, Bed, Bath, Square, Calendar, Save, ArrowLeft } from 'lucide-react';
+import { PAYMENT_DURATION_OPTIONS, formatPaymentPeriodLabel, periodRentTotal } from '../../utils/paymentDuration';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -8,7 +9,7 @@ interface Amenity { id: number; name: string; icon: string; }
 
 interface Property {
   id: number; title: string; description: string; type: string; location: string;
-  address: string; price: number; price_type: string; area: number; bedrooms?: number;
+  address: string; price: number; price_type: string; payment_duration_months?: number; area: number; bedrooms?: number;
   bathrooms?: number; parking_spaces?: number; furnished: boolean; available_from: string;
   contact_phone: string; contact_email: string; latitude?: number; longitude?: number;
   amenities: Array<{ id: number; name: string; icon: string }>;
@@ -17,7 +18,7 @@ interface Property {
 
 interface FormData {
   title: string; description: string; type: string; location: string; address: string;
-  price: number; price_type: string; area: number; bedrooms: number; bathrooms: number;
+  price: number; price_type: string; payment_duration_months: number; area: number; bedrooms: number; bathrooms: number;
   parking_spaces: number; furnished: boolean; available_from: string;
   contact_phone: string; contact_email: string; latitude: number; longitude: number; amenities: number[];
 }
@@ -36,7 +37,7 @@ const EditProperty: React.FC = () => {
 
   const [formData, setFormData] = useState<FormData>({
     title: '', description: '', type: 'residential', location: '', address: '',
-    price: 0, price_type: 'monthly', area: 0, bedrooms: 0, bathrooms: 0,
+    price: 0, price_type: 'monthly', payment_duration_months: 3, area: 0, bedrooms: 0, bathrooms: 0,
     parking_spaces: 0, furnished: false, available_from: '',
     contact_phone: '', contact_email: '', latitude: 0, longitude: 0, amenities: []
   });
@@ -93,6 +94,7 @@ const EditProperty: React.FC = () => {
         address: data.address || '',
         price: Number(data.price) || 0,
         price_type: data.price_type || 'monthly',
+        payment_duration_months: Number(data.payment_duration_months) || 3,
         area: Number(data.area) || 0,
         bedrooms: Number(data.bedrooms) || 0,
         bathrooms: Number(data.bathrooms) || 0,
@@ -395,12 +397,27 @@ const EditProperty: React.FC = () => {
                     {priceTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
+                {formData.price_type !== 'sale' && (
+                  <div>
+                    <label className="form-label">Payment Period *</label>
+                    <select name="payment_duration_months" value={formData.payment_duration_months} onChange={handleChange} className="form-input">
+                      {PAYMENT_DURATION_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="form-label">Area (m²) *</label>
                   <input type="number" name="area" value={formData.area} onChange={handleChange} className="form-input" placeholder="120" />
                   {errors.area && <p className="error-text">{errors.area}</p>}
                 </div>
               </div>
+              {formData.price_type !== 'sale' && formData.price > 0 && (
+                <p style={{ marginTop: 12, fontSize: 12, color: '#D4AF37', fontWeight: 600 }}>
+                  Tenant pays TZS {periodRentTotal(formData.price, formData.payment_duration_months).toLocaleString()} {formatPaymentPeriodLabel(formData.payment_duration_months)}
+                </p>
+              )}
             </div>
           </div>
 

@@ -164,7 +164,7 @@ export const PropertyApplication: React.FC<PropertyApplicationProps> = ({
           </div>
 
           <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-sm text-blue-800 dark:text-blue-300">
-            <strong>Note:</strong> After the owner approves your application, you'll need to pay the first month's rent plus a service charge to activate your lease.
+            <strong>Note:</strong> After the owner approves your application, you'll need to pay rent for the property's payment period (e.g. 3, 6, or 12 months) plus any service charge to activate your lease.
           </div>
 
           <button

@@ -8,6 +8,7 @@ import {
 import type { Property } from '../types';
 import Api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { formatPaymentDuration, formatPaymentPeriodLabel, periodRentTotal } from '../utils/paymentDuration';
 
 /* ─── TOKENS — matches landlord design system ─── */
 const t = {
@@ -473,6 +474,11 @@ const PropertyDetail = () => {
                     <div style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: t.slate600, marginBottom: 6 }}>Monthly Rent</div>
                     <div style={{ ...serif, fontSize: 28, color: t.gold, lineHeight: 1 }}>{formatPrice(property.price || 0)}</div>
                     <div style={{ ...body, fontSize: 12, color: t.slate600, marginTop: 5 }}>TZS per month</div>
+                    {(property.payment_duration_months ?? 1) > 1 && (
+                      <div style={{ ...body, fontSize: 12, color: t.gold, marginTop: 8, fontWeight: 600 }}>
+                        {formatPaymentDuration(property.payment_duration_months)} — {formatPrice(periodRentTotal(property.price || 0, property.payment_duration_months))} {formatPaymentPeriodLabel(property.payment_duration_months)}
+                      </div>
+                    )}
                   </div>
 
                   {[

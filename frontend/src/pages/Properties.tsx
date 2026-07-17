@@ -12,12 +12,13 @@ import { usePaymentPolling } from '../hooks/usePaymentPolling';
 import { paymentConfirmationMessage, parsePaymentStatus } from '../utils/paymentStatus';
 import PropertyThumbnail from '../components/PropertyThumbnail';
 import { getStorageOrigin } from '../utils/propertyImages';
+import { formatPaymentPeriodLabel, periodRentTotal } from '../utils/paymentDuration';
 
 /* ─── Types ─── */
 interface Pagination { current_page: number; last_page: number; per_page: number; total: number; }
 interface Property {
   id: number; title: string; location?: string; address?: string;
-  price: number | null | undefined; bedrooms?: number; bathrooms?: number; size?: number; area?: number;
+  price: number | null | undefined; payment_duration_months?: number; bedrooms?: number; bathrooms?: number; size?: number; area?: number;
   type?: string; featured?: boolean; furnished?: boolean; description?: string;
   images?: string[];
   property_images?: { image_path: string; is_primary?: boolean }[];
@@ -734,7 +735,11 @@ const PropertyCard = memo(({ property, isSaved, onSave, onApply, imagePriority =
         <span className={`pc-badge-source ${source}`}>{sourceLabel[source]}</span>
         <div className="pc-price-overlay">
           <div className="pc-price-main">{formatPrice(property.price)}</div>
-          <div className="pc-price-period">/month</div>
+          <div className="pc-price-period">
+            {(property.payment_duration_months ?? 1) > 1
+              ? formatPaymentPeriodLabel(property.payment_duration_months)
+              : '/month'}
+          </div>
         </div>
         <div className="pc-img-actions">
           <button
@@ -846,6 +851,12 @@ const ApplyModal = ({ property, requiresFee, processing, onClose, onProceed }: {
           <div className="prop-info-row"><MapPin size={12} /><strong>{property.location || property.address}</strong></div>
         )}
         <div className="prop-info-row"><CreditCard size={12} />Monthly rent: <strong>{formatPrice(property.price)}</strong></div>
+        {(property.payment_duration_months ?? 1) > 1 && (
+          <div className="prop-info-row">
+            <CreditCard size={12} />
+            Payment period: <strong>{formatPrice(periodRentTotal(property.price ?? 0, property.payment_duration_months))} {formatPaymentPeriodLabel(property.payment_duration_months)}</strong>
+          </div>
+        )}
         {property.bedrooms != null && <div className="prop-info-row"><Bed size={12} />Bedrooms: <strong>{property.bedrooms}</strong></div>}
         {property.furnished && (
           <div className="prop-info-row">

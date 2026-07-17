@@ -44,6 +44,8 @@ class RentFeeService
         $application->loadMissing('property');
         $property = $application->property;
         $monthlyRent = $this->getMonthlyRent($application);
+        $paymentMonths = $property ? $property->getPaymentDurationMonths() : 1;
+        $periodRent = round($monthlyRent * $paymentMonths, 2);
 
         $agentShare = (float) config('services.rent_fees.agent_recipient_share', 0.70);
         $oweruShare = (float) config('services.rent_fees.agent_oweru_share', 0.30);
@@ -53,11 +55,13 @@ class RentFeeService
             return [
                 'listing_type' => 'agent',
                 'monthly_rent' => $monthlyRent,
+                'payment_duration_months' => $paymentMonths,
+                'period_rent' => $periodRent,
                 'tenant_rent_to_landlord' => 0,
-                'oweru_initial_fee' => round($monthlyRent * $oweruShare, 2),
-                'oweru_fee' => round($monthlyRent * $oweruShare, 2),
-                'recipient_amount' => round($monthlyRent * $agentShare, 2),
-                'total_charge' => $monthlyRent,
+                'oweru_initial_fee' => round($periodRent * $oweruShare, 2),
+                'oweru_fee' => round($periodRent * $oweruShare, 2),
+                'recipient_amount' => round($periodRent * $agentShare, 2),
+                'total_charge' => $periodRent,
                 'recipient_type' => 'agent',
                 'oweru_share_percent' => $oweruShare * 100,
                 'recipient_share_percent' => $agentShare * 100,
@@ -69,11 +73,13 @@ class RentFeeService
         return [
             'listing_type' => 'owner',
             'monthly_rent' => $monthlyRent,
-            'tenant_rent_to_landlord' => $monthlyRent,
+            'payment_duration_months' => $paymentMonths,
+            'period_rent' => $periodRent,
+            'tenant_rent_to_landlord' => $periodRent,
             'oweru_initial_fee' => $oweruInitialFee,
             'oweru_fee' => $oweruInitialFee,
-            'recipient_amount' => $monthlyRent,
-            'total_charge' => round($monthlyRent + $oweruInitialFee, 2),
+            'recipient_amount' => $periodRent,
+            'total_charge' => round($periodRent + $oweruInitialFee, 2),
             'recipient_type' => 'landlord',
         ];
     }

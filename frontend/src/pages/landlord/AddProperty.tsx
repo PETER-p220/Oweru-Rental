@@ -6,6 +6,7 @@ import {
   AlertCircle, Building, CheckCircle, Video,
 } from 'lucide-react';
 import Api from '../../services/api';
+import { PAYMENT_DURATION_OPTIONS, formatPaymentPeriodLabel, periodRentTotal } from '../../utils/paymentDuration';
 
 // ── Design tokens — 1:1 with landlordPageStyles / MyProperties
 const C = {
@@ -52,6 +53,7 @@ const AddProperty = () => {
     location: '',
     address: '',
     price: '',
+    payment_duration_months: 3,
     bedrooms: 1,
     bathrooms: 1,
     amenities: [] as string[],
@@ -140,6 +142,7 @@ const AddProperty = () => {
     }
     if (step === 2) {
       if (!formData.price || Number(formData.price) <= 0) errs.push('Price must be greater than 0');
+      if (!formData.payment_duration_months) errs.push('Payment period is required');
     }
     if (step === 3) {
       if (formData.images.length === 0 && formData.videos.length === 0) {
@@ -167,6 +170,7 @@ const AddProperty = () => {
       formDataToSend.append('title', formData.title);
       formDataToSend.append('description', formData.description);
       formDataToSend.append('price', formData.price);
+      formDataToSend.append('payment_duration_months', String(formData.payment_duration_months));
       formDataToSend.append('location', formData.location);
       formDataToSend.append('address', formData.address);
       formDataToSend.append('type', isOweruProperty ? 'oweru_rental' : formData.type);
@@ -219,7 +223,8 @@ const AddProperty = () => {
 
         const propertyData = {
           title: formData.title, description: formData.description,
-          price: formData.price, location: formData.location, address: formData.address,
+          price: formData.price, payment_duration_months: formData.payment_duration_months,
+          location: formData.location, address: formData.address,
           type: isOweruProperty ? 'oweru_rental' : formData.type,
           bedrooms: formData.bedrooms, bathrooms: formData.bathrooms,
           featured: formData.featured, latitude: formData.latitude, longitude: formData.longitude,
@@ -416,6 +421,30 @@ const AddProperty = () => {
                 <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Monthly Price (TZS) *</label>
                 <input className="ap-input" type="number" name="price" value={formData.price} onChange={handleInputChange}
                   style={inputCss} placeholder="e.g., 800000" min="0" required />
+                <p style={{ margin: '6px 0 0', fontSize: '12px', color: C.textMuted }}>
+                  This is the rent amount per month. Tenants will pay this rate for the payment period you set below.
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Payment Period *</label>
+                <select
+                  className="ap-input"
+                  name="payment_duration_months"
+                  value={formData.payment_duration_months}
+                  onChange={handleInputChange}
+                  style={inputCss}
+                  required
+                >
+                  {PAYMENT_DURATION_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                {formData.price && Number(formData.price) > 0 && (
+                  <p style={{ margin: '6px 0 0', fontSize: '12px', color: C.gold, fontWeight: 600 }}>
+                    Tenant pays TZS {periodRentTotal(Number(formData.price), formData.payment_duration_months).toLocaleString()} {formatPaymentPeriodLabel(formData.payment_duration_months)}
+                  </p>
+                )}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '18px' }}>

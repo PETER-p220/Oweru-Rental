@@ -171,19 +171,26 @@ class PaymentAlertService
         $reference = (string) ($application->rent_transaction_id ?: ('RENT-APP-' . $application->id));
         $provider = strtoupper((string) ($application->rent_payment_method ?? $meta['provider'] ?? 'TIGO'));
 
+        $paymentMonths = (int) ($feeBreakdown['payment_duration_months'] ?? 1);
+        $periodLabel = $paymentMonths > 1 ? "{$paymentMonths}-month rent" : 'First month rent';
+
         $payment = $this->recordCompletedPayment(
             $tenant,
             $property,
             $amount,
             'first_month_rent',
             $reference,
-            'First month rent — ' . ($property->title ?? 'Property'),
+            $periodLabel . ' — ' . ($property->title ?? 'Property'),
             [
                 'application_id' => $application->id,
                 'payment_method' => $application->rent_payment_method,
                 'provider' => $provider,
                 'source' => 'rent_payment_service',
+                'months' => $paymentMonths,
+                'rent_amount' => $feeBreakdown['monthly_rent'] ?? null,
                 'monthly_rent' => $feeBreakdown['monthly_rent'] ?? null,
+                'payment_duration_months' => $paymentMonths,
+                'period_rent' => $feeBreakdown['period_rent'] ?? null,
                 'tenant_rent_to_landlord' => $feeBreakdown['tenant_rent_to_landlord'] ?? null,
                 'oweru_initial_fee' => $feeBreakdown['oweru_initial_fee'] ?? null,
                 'oweru_fee' => $feeBreakdown['oweru_fee'] ?? null,

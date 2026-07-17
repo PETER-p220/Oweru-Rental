@@ -11,6 +11,8 @@ import { paymentConfirmationMessage, parsePaymentStatus } from '../../utils/paym
 interface RentFeeBreakdown {
   listing_type?: 'agent' | 'owner';
   monthly_rent?: number;
+  payment_duration_months?: number;
+  period_rent?: number;
   tenant_rent_to_landlord?: number;
   oweru_initial_fee?: number;
   oweru_fee?: number;
@@ -38,6 +40,7 @@ interface ApplicationItem {
     title?: string;
     location?: string;
     price?: number | string;
+    payment_duration_months?: number;
   };
 }
 
@@ -766,7 +769,7 @@ const ApplicationsPage = () => {
                 </button>
               )}
               <div className="ap-modal-eyebrow">SECURE PAYMENT</div>
-              <div className="ap-modal-title">Pay Monthly Rent</div>
+              <div className="ap-modal-title">Pay Rent</div>
               <div className="ap-modal-sub">Powered by Selcom · Oweru</div>
             </div>
 
@@ -791,6 +794,12 @@ const ApplicationsPage = () => {
                           <span>Monthly rent</span>
                           <strong>Tsh {(feeBreakdown.monthly_rent ?? 0).toLocaleString()}</strong>
                         </div>
+                        {(feeBreakdown.payment_duration_months ?? 1) > 1 && (
+                          <div className="ap-fee-line">
+                            <span>Rent for {feeBreakdown.payment_duration_months} months</span>
+                            <strong>Tsh {(feeBreakdown.period_rent ?? feeBreakdown.total_charge ?? 0).toLocaleString()}</strong>
+                          </div>
+                        )}
                         <div className="ap-fee-line">
                           <span>Agent share (70%)</span>
                           <strong>Tsh {(feeBreakdown.recipient_amount ?? 0).toLocaleString()}</strong>
@@ -801,14 +810,26 @@ const ApplicationsPage = () => {
                         </div>
                         <div className="ap-fee-note">
                           <Info size={14} />
-                          <span>You pay one month rent. 70% goes to the agent and 30% to Oweru.</span>
+                          <span>
+                            You pay rent {(feeBreakdown.payment_duration_months ?? 1) > 1
+                              ? `for ${feeBreakdown.payment_duration_months} months`
+                              : 'for one month'}. 70% goes to the agent and 30% to Oweru.
+                          </span>
                         </div>
                       </>
                     ) : (
                       <>
                         <div className="ap-fee-line">
-                          <span>First month rent to landlord (full amount)</span>
-                          <strong>Tsh {(feeBreakdown.tenant_rent_to_landlord ?? feeBreakdown.monthly_rent ?? 0).toLocaleString()}</strong>
+                          <span>Monthly rent</span>
+                          <strong>Tsh {(feeBreakdown.monthly_rent ?? 0).toLocaleString()}</strong>
+                        </div>
+                        <div className="ap-fee-line">
+                          <span>
+                            {(feeBreakdown.payment_duration_months ?? 1) > 1
+                              ? `Rent for ${feeBreakdown.payment_duration_months} months to landlord`
+                              : 'First month rent to landlord (full amount)'}
+                          </span>
+                          <strong>Tsh {(feeBreakdown.tenant_rent_to_landlord ?? feeBreakdown.period_rent ?? feeBreakdown.monthly_rent ?? 0).toLocaleString()}</strong>
                         </div>
                         <div className="ap-fee-line">
                           <span>Oweru initial platform fee (1 month, separate)</span>
@@ -817,7 +838,8 @@ const ApplicationsPage = () => {
                         <div className="ap-fee-note">
                           <Info size={14} />
                           <span>
-                            The landlord receives the full monthly rent of Tsh {(feeBreakdown.tenant_rent_to_landlord ?? feeBreakdown.monthly_rent ?? 0).toLocaleString()}.
+                            The landlord receives Tsh {(feeBreakdown.tenant_rent_to_landlord ?? feeBreakdown.period_rent ?? feeBreakdown.monthly_rent ?? 0).toLocaleString()}
+                            {(feeBreakdown.payment_duration_months ?? 1) > 1 ? ` for ${feeBreakdown.payment_duration_months} months` : ''}.
                             The Oweru fee is a separate initial charge (equal to one month rent), like standard agency fees in Tanzania.
                             Future monthly payments are only the rent amount.
                           </span>

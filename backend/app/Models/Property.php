@@ -17,6 +17,7 @@ class Property extends Model
         'description',
         'price',
         'price_type',
+        'payment_duration_months',
         'location',
         'address',
         'type',
@@ -47,7 +48,8 @@ class Property extends Model
     ];
 
     protected $casts = [
-        'price'           => 'decimal:2',
+        'price'                   => 'decimal:2',
+        'payment_duration_months' => 'integer',
         'area'            => 'decimal:2',
         'latitude'        => 'decimal:8',
         'longitude'       => 'decimal:8',
@@ -140,6 +142,13 @@ class Property extends Model
     public function getFormattedPriceAttribute(): string
     {
         return number_format($this->price, 2);
+    }
+
+    public function getPaymentDurationMonths(): int
+    {
+        $months = (int) ($this->payment_duration_months ?? 1);
+
+        return max(1, $months);
     }
 
     public function getMainImageAttribute(): string

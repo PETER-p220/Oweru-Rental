@@ -308,6 +308,7 @@ class PropertyController extends Controller
             'title'       => $request->input('title'),
             'description' => $request->input('description'),
             'price'       => $request->input('price'),
+            'payment_duration_months' => $request->input('payment_duration_months', 1),
             'location'    => $request->input('location'),
             'address'     => $request->input('address', ''),
             'type'        => $request->input('type', 'apartment'),
@@ -324,6 +325,7 @@ class PropertyController extends Controller
             'title'       => 'required|string|max:255',
             'description' => 'required|string',
             'price'       => 'required|numeric|min:0',
+            'payment_duration_months' => 'required|integer|in:1,3,6,12',
             'location'    => 'required|string|max:255',
             'address'     => 'required|string|max:500',
             'type'        => 'required|in:house,villa,apartment',
@@ -363,6 +365,7 @@ class PropertyController extends Controller
             'title'       => $data['title'],
             'description' => $data['description'],
             'price'       => $data['price'],
+            'payment_duration_months' => (int) ($data['payment_duration_months'] ?? 1),
             'location'    => $data['location'],
             'address'     => $data['address'],
             'type'        => $data['type'],
@@ -415,6 +418,7 @@ class PropertyController extends Controller
             'title'       => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
             'price'       => 'sometimes|numeric|min:0',
+            'payment_duration_months' => 'sometimes|integer|in:1,3,6,12',
             'location'    => 'sometimes|string|max:255',
             'address'     => 'sometimes|string|max:500',
             'type'        => 'sometimes|in:Master-bedroom,house,Single-room',
@@ -436,7 +440,7 @@ class PropertyController extends Controller
         }
 
         $property->update($request->only([
-            'title', 'description', 'price', 'location', 'address',
+            'title', 'description', 'price', 'payment_duration_months', 'location', 'address',
             'type', 'bedrooms', 'bathrooms', 'area',
             'images', 'amenities', 'featured', 'available',
         ]));
