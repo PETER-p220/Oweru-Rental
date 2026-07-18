@@ -54,6 +54,7 @@ const Notifications: React.FC = () => {
 
       const listData = await listRes.json();
       const statsData = statsRes.ok ? await statsRes.json() : { data: {} };
+
       setItems(Array.isArray(listData.data) ? listData.data : []);
       setStats({
         total: statsData.data?.total ?? 0,
@@ -116,123 +117,168 @@ const Notifications: React.FC = () => {
       : '—';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080E1A', fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="cd-page">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
-        * { box-sizing: border-box; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .card-panel { background: #0F1829; border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; }
-        .form-input {
-          width: 100%; padding: 10px 16px 10px 40px; background: #0C1420;
-          border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
-          color: #E2D5B0; font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        .cd-page { background: #F1F5F9; min-height: 100vh; font-family: 'Inter', sans-serif; }
+        .cd-header { background: #FFFFFF; border-bottom: 1px solid #E2E8F0; padding: 32px 40px; }
+        .cd-wrap { max-width: 1280px; margin: 0 auto; padding: 32px 40px 80px; }
+        
+        .cd-card { 
+          background: #FFFFFF; 
+          border: 1px solid #E2E8F0; 
+          border-radius: 16px; 
+          overflow: hidden; 
+          box-shadow: 0 1px 3px rgba(15,23,42,0.04); 
         }
-        .form-input:focus { border-color: rgba(212,175,55,0.5); }
-        .n-row { display: flex; gap: 14px; padding: 16px 22px; border-bottom: 1px solid rgba(255,255,255,0.03); align-items: flex-start; }
-        .n-row:last-child { border-bottom: none; }
-        .n-row:hover { background: rgba(212,175,55,0.025); }
-        @media (max-width: 640px) {
-          .stats-row { flex-direction: column; align-items: stretch !important; }
-          .n-row { padding: 14px 16px; }
-          .n-actions { flex-wrap: wrap; }
+        
+        .cd-stat {
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 12px;
+          padding: 16px 20px;
+        }
+        
+        .cd-row {
+          padding: 20px 24px;
+          border-bottom: 1px solid #F1F5F9;
+          transition: background 0.2s;
+        }
+        .cd-row:hover { background: #F8FAFC; }
+        .cd-row:last-child { border-bottom: none; }
+        
+        .cd-filter-input {
+          width: 100%;
+          padding: 11px 12px 11px 40px;
+          border: 1px solid #CBD5E1;
+          border-radius: 10px;
+          font-size: 14px;
+        }
+        
+        .cd-btn {
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
         }
       `}</style>
 
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '28px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+      {/* Header */}
+      <div className="cd-header">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Alerts</span>
-            <h1 style={{ fontSize: 'clamp(24px, 5vw, 32px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 4 }}>Notifications</h1>
-            <p style={{ color: '#4A5568', fontSize: 13 }}>Applications, payments, contracts, and other updates for your commercial account</p>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#64748B', textTransform: 'uppercase' }}>
+              ALERTS
+            </div>
+            <h1 style={{ fontSize: 'clamp(24px, 3.5vw, 28px)', fontWeight: 800, color: '#0F172A', margin: '8px 0 4px 0' }}>
+              Notifications
+            </h1>
+            <p style={{ color: '#64748B' }}>Stay updated with applications, payments, and important events</p>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              onClick={load}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 14px', minHeight: 44, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: '#94A3B8', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-            >
-              <RefreshCw size={14} /> Refresh
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={load} className="cd-btn" style={{ border: '1px solid #CBD5E1', color: '#475569' }}>
+              <RefreshCw size={16} /> Refresh
             </button>
-            <button
-              onClick={markAllRead}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 14px', minHeight: 44, background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.18)', borderRadius: 12, color: '#D4AF37', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-            >
-              <CheckCheck size={14} /> Mark all read
+            <button onClick={markAllRead} className="cd-btn" style={{ background: '#0F172A', color: 'white' }}>
+              <CheckCheck size={16} /> Mark all read
             </button>
           </div>
         </div>
+      </div>
 
-        <div className="stats-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="cd-wrap">
+        {/* Stats */}
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 32 }}>
           {[
             { label: 'Total', value: stats.total },
             { label: 'Unread', value: stats.unread, accent: true },
-            { label: 'This week', value: stats.this_week },
-          ].map((s) => (
-            <div
-              key={s.label}
-              style={{
-                padding: '10px 16px',
-                borderRadius: 12,
-                background: s.accent ? 'rgba(212,175,55,0.08)' : '#0F1829',
-                border: s.accent ? '1px solid rgba(212,175,55,0.18)' : '1px solid rgba(255,255,255,0.05)',
-                display: 'flex',
-                gap: 10,
-                alignItems: 'center',
-              }}
-            >
-              <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4A5568', fontWeight: 700 }}>{s.label}</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: s.accent ? '#D4AF37' : '#F1EDD8' }}>{s.value}</span>
+            { label: 'This Week', value: stats.this_week },
+          ].map((s, i) => (
+            <div key={i} className="cd-stat" style={{ flex: 1, minWidth: 160 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {s.label}
+              </p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: s.accent ? '#3B82F6' : '#0F172A', marginTop: 6 }}>
+                {s.value}
+              </p>
             </div>
           ))}
-          <div style={{ flex: 1, minWidth: 200, maxWidth: 320, position: 'relative' }}>
-            <Search size={14} color="#4A5568" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
-            <input className="form-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search notifications…" />
+        </div>
+
+        {/* Search */}
+        <div className="cd-card" style={{ padding: 20, marginBottom: 24 }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={18} style={{ position: 'absolute', left: 14, top: 13, color: '#94A3B8' }} />
+            <input
+              className="cd-filter-input"
+              placeholder="Search notifications..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </div>
 
         {error && (
-          <div className="card-panel" style={{ padding: 16, display: 'flex', gap: 10, alignItems: 'center', color: '#FCA5A5' }}>
-            <AlertCircle size={16} /> {error}
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', padding: '16px 20px', borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <AlertCircle size={20} />
+            {error}
           </div>
         )}
 
-        <div className="card-panel">
+        <div className="cd-card">
           {loading ? (
-            <div style={{ padding: 48, textAlign: 'center', color: '#4A5568' }}>
-              <div style={{ width: 32, height: 32, border: '2px solid rgba(212,175,55,0.2)', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-              Loading notifications…
+            <div style={{ padding: '80px 20px', textAlign: 'center', color: '#64748B' }}>
+              <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+              Loading notifications...
             </div>
           ) : filtered.length === 0 ? (
-            <div style={{ padding: 56, textAlign: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-                <Bell size={24} color="#2D3748" />
-              </div>
-              <p style={{ color: '#E2D5B0', fontWeight: 600, marginBottom: 6 }}>No notifications yet</p>
-              <p style={{ color: '#4A5568', fontSize: 13 }}>You will see alerts here when tenants apply, pay, or take other actions on your properties.</p>
+            <div style={{ padding: '80px 20px', textAlign: 'center' }}>
+              <Bell size={48} style={{ color: '#CBD5E1', marginBottom: 16 }} />
+              <h3 style={{ color: '#0F172A' }}>No notifications yet</h3>
+              <p style={{ color: '#64748B', maxWidth: 360, margin: '12px auto 0' }}>
+                You will see important updates here when tenants apply, pay rent, or take action on your properties.
+              </p>
             </div>
           ) : (
             filtered.map((item) => {
               const unread = isUnread(item);
               return (
-                <div key={item.id} className="n-row">
-                  <div style={{ width: 8, paddingTop: 6 }}>
-                    {unread && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D4AF37', boxShadow: '0 0 8px rgba(212,175,55,0.6)' }} />}
+                <div key={item.id} className="cd-row" style={{ display: 'flex', gap: 16 }}>
+                  <div style={{ paddingTop: 4 }}>
+                    {unread && (
+                      <div style={{ width: 8, height: 8, background: '#3B82F6', borderRadius: '50%', boxShadow: '0 0 6px rgba(59,130,246,0.5)' }} />
+                    )}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
-                      <p style={{ color: '#E2D5B0', fontWeight: unread ? 700 : 500, fontSize: 14 }}>{item.title || 'Notification'}</p>
-                      <span style={{ color: '#4A5568', fontSize: 11 }}>{fmtDate(item.created_at)}</span>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
+                      <p style={{ fontWeight: unread ? 700 : 500, color: '#0F172A', fontSize: 15 }}>
+                        {item.title || 'System Notification'}
+                      </p>
+                      <span style={{ color: '#94A3B8', fontSize: 12.5 }}>{fmtDate(item.created_at)}</span>
                     </div>
-                    <p style={{ color: '#64748B', fontSize: 13, marginBottom: 8 }}>{item.message}</p>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4A5568', fontWeight: 700 }}>
+
+                    <p style={{ color: '#475569', lineHeight: 1.5, marginBottom: 10 }}>{item.message}</p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         {(item.type || 'system').replace(/_/g, ' ')}
                       </span>
+
                       {unread && (
                         <button
                           onClick={() => markRead(item.id)}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 8, border: '1px solid rgba(212,175,55,0.2)', background: 'rgba(212,175,55,0.08)', color: '#D4AF37', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                          className="cd-btn"
+                          style={{ background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE' }}
                         >
-                          <CheckCheck size={12} /> Mark read
+                          <CheckCheck size={14} /> Mark as read
                         </button>
                       )}
                     </div>

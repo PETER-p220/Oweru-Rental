@@ -47,235 +47,305 @@ const Dashboard: React.FC = () => {
   const fmt = (n: number) => new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
   const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short', year: 'numeric' });
 
-  const statusMap: Record<string, { label: string; dot: string; text: string }> = {
-    active:    { label: 'Active',    dot: '#10B981', text: '#10B981' },
-    pending:   { label: 'Pending',   dot: '#F59E0B', text: '#F59E0B' },
-    confirmed: { label: 'Confirmed', dot: '#3B82F6', text: '#3B82F6' },
-    paid:      { label: 'Paid',      dot: '#10B981', text: '#10B981' },
-    completed: { label: 'Paid',      dot: '#10B981', text: '#10B981' },
-    inactive:  { label: 'Inactive',  dot: '#64748B', text: '#64748B' },
+  // Same semantic status colors used across the tenant dashboard's contract badges
+  const statusMap: Record<string, { label: string; cls: string }> = {
+    active:    { label: 'Active',    cls: 'active' },
+    pending:   { label: 'Pending',   cls: 'pending' },
+    confirmed: { label: 'Confirmed', cls: 'signed' },
+    paid:      { label: 'Paid',      cls: 'active' },
+    completed: { label: 'Paid',      cls: 'active' },
+    inactive:  { label: 'Inactive',  cls: 'unknown' },
   };
 
-  const statCards = [
-    { title: 'Total Properties', value: stats?.total_properties ?? 0, icon: Building2,  change: 12, up: true,  fmt: (v: number) => v.toString() },
-    { title: 'Active Listings',  value: stats?.active_properties ?? 0, icon: TrendingUp, change: 8,  up: true,  fmt: (v: number) => v.toString() },
-    { title: 'Approved Apps',    value: stats?.total_bookings ?? 0,    icon: Users,      change: 15, up: true,  fmt: (v: number) => v.toString() },
-    { title: 'Total Revenue',    value: stats?.total_revenue ?? 0,     icon: DollarSign, change: 23, up: true,  fmt: fmt },
-    { title: 'Payments',         value: (stats as any)?.total_payments ?? 0, icon: Star, change: 5,  up: true,  fmt: (v: number) => v.toString() },
-    { title: 'Occupancy Rate',   value: stats?.occupancy_rate ?? 0,    icon: Eye,        change: 3,  up: false, fmt: (v: number) => `${v}%` },
+  // Each stat gets its own tone, mirroring the tenant dashboard's color-coded stat cards
+  const statCards: { title: string; value: number; icon: any; change: number; up: boolean; tone: string; fmt: (v: number) => string }[] = [
+    { title: 'Total Properties', value: stats?.total_properties ?? 0, icon: Building2,  change: 12, up: true,  tone: 'blue',    fmt: (v) => v.toString() },
+    { title: 'Active Listings',  value: stats?.active_properties ?? 0, icon: TrendingUp, change: 8,  up: true,  tone: 'emerald', fmt: (v) => v.toString() },
+    { title: 'Approved Apps',    value: stats?.total_bookings ?? 0,    icon: Users,      change: 15, up: true,  tone: 'violet',  fmt: (v) => v.toString() },
+    { title: 'Total Revenue',    value: stats?.total_revenue ?? 0,     icon: DollarSign, change: 23, up: true,  tone: 'amber',   fmt: fmt },
+    { title: 'Payments',         value: (stats as any)?.total_payments ?? 0, icon: Star, change: 5,  up: true,  tone: 'rose',    fmt: (v) => v.toString() },
+    { title: 'Occupancy Rate',   value: stats?.occupancy_rate ?? 0,    icon: Eye,        change: 3,  up: false, tone: 'cyan',    fmt: (v) => `${v}%` },
   ];
 
   const maxRevenue = Math.max(...monthlyRevenue.map(m => m.revenue), 1);
 
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#080E1A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div className="spinner" />
-        <p style={{ color: '#64748B', fontSize: 13, marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>Loading dashboard…</p>
-      </div>
-    </div>
-  );
-
   return (
-    <div style={{ minHeight: '100vh', background: '#080E1A', fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="cd-page"> 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        .spinner { width: 36px; height: 36px; border: 2px solid rgba(212,175,55,0.15); border-top-color: #D4AF37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .stat-card { background: linear-gradient(145deg, #0F1829 0%, #0C1420 100%); border: 1px solid rgba(212,175,55,0.08); border-radius: 20px; padding: 24px; transition: all 0.3s ease; position: relative; overflow: hidden; cursor: default; }
-        .stat-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(212,175,55,0.03) 0%, transparent 60%); opacity: 0; transition: opacity 0.3s; }
-        .stat-card:hover { border-color: rgba(212,175,55,0.25); transform: translateY(-2px); box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,175,55,0.08); }
-        .stat-card:hover::before { opacity: 1; }
-        .stat-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.12); display: flex; align-items: center; justify-content: center; color: #D4AF37; flex-shrink: 0; }
-        .booking-row { display: flex; align-items: center; gap: 14px; padding: 14px 20px; transition: background 0.2s; border-bottom: 1px solid rgba(255,255,255,0.03); }
-        .booking-row:last-child { border-bottom: none; }
-        .booking-row:hover { background: rgba(212,175,55,0.03); }
-        .bar-group { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; height: 100%; justify-content: flex-end; position: relative; }
-        .bar-track { width: 100%; flex: 1; display: flex; align-items: flex-end; min-height: 0; }
-        .bar-fill { width: 100%; border-radius: 6px 6px 0 0; background: linear-gradient(to top, rgba(212,175,55,0.8), rgba(212,175,55,0.3)); border-top: 2px solid rgba(212,175,55,0.9); transition: opacity 0.2s; cursor: pointer; position: relative; }
-        .bar-fill:hover { opacity: 0.85; }
-        .bar-tip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #0F1829; border: 1px solid rgba(212,175,55,0.3); border-radius: 8px; padding: 5px 10px; font-size: 11px; color: #D4AF37; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 10; }
-        .bar-fill:hover .bar-tip { opacity: 1; }
-        .card-panel { background: #0F1829; border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden; }
-        .panel-header { padding: 18px 22px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: space-between; }
-        .gold-dot { width: 7px; height: 7px; border-radius: 50%; background: #D4AF37; margin-right: 10px; flex-shrink: 0; box-shadow: 0 0 8px rgba(212,175,55,0.5); }
-        .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; letter-spacing: 0.5px; }
-        .empty-state { padding: 56px 20px; text-align: center; }
-        .empty-icon { width: 56px; height: 56px; background: rgba(255,255,255,0.03); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
-        .add-btn { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #D4AF37 0%, #B8960C 100%); color: #080E1A; padding: 12px 22px; border-radius: 14px; font-weight: 700; font-size: 13px; text-decoration: none; transition: all 0.2s; box-shadow: 0 8px 24px rgba(212,175,55,0.25); border: none; cursor: pointer; letter-spacing: 0.3px; }
-        .add-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(212,175,55,0.35); }
-        .verified-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); border-radius: 20px; color: #10B981; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
-        @media (max-width: 640px) {
-          .stat-card { padding: 18px; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-          .two-col { grid-template-columns: 1fr !important; }
-          .booking-row { padding: 12px 16px; gap: 10px; }
-          .panel-header { padding: 14px 18px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .cd-page { background: #F1F5F9; min-height: 100vh; font-family: 'Inter', sans-serif; }
+        .cd-header { background: #FFFFFF; border-bottom: 1px solid #E2E8F0; }
+        .cd-header-inner { max-width: 1280px; margin: 0 auto; padding: 40px 40px 32px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+        .cd-eyebrow-badge { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #475569; margin-bottom: 12px; display: inline-flex; align-items: center; gap: 8px; background: #F1F5F9; border: 1px solid #E2E8F0; padding: 5px 12px; border-radius: 20px; }
+        .cd-heading { font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; color: #0F172A; margin: 0; }
+        .cd-tagline { font-size: 14px; font-weight: 400; color: #64748B; margin: 8px 0 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        .cd-wrap { max-width: 1280px; margin: 0 auto; padding: 32px 40px 56px; }
+        .cd-section-label { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #64748B; margin: 0 0 16px; display: flex; align-items: center; gap: 10px; }
+        .cd-section-label::after { content: ''; flex: 1; height: 1px; background: #E2E8F0; }
+        .cd-section { margin-bottom: 28px; }
+
+        .cd-add-btn { display: inline-flex; align-items: center; gap: 8px; background: #0F172A; border: 1px solid #0F172A; color: #FFFFFF; padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 13.5px; text-decoration: none; transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+        .cd-add-btn:hover { transform: translateY(-2px); background: #1E293B; box-shadow: 0 10px 24px rgba(15,23,42,0.18); }
+        .verified-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; background: #ECFDF5; border: 1px solid #BBF7D0; border-radius: 20px; color: #166534; font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; }
+
+        /* ── Smart stat cards, same recipe as the tenant dashboard: tone bar + icon chip ── */
+        .cd-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .cd-stat { position: relative; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; overflow: hidden; }
+        .cd-stat::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--tone-solid); }
+        .cd-stat:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(15,23,42,0.09); border-color: #CBD5E1; }
+        .cd-stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+        .cd-stat-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--tone-bg); color: var(--tone-solid); flex-shrink: 0; }
+        .cd-stat-trend { display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; }
+        .cd-stat-trend.up { color: #059669; }
+        .cd-stat-trend.down { color: #E11D48; }
+        .cd-stat-value { font-size: clamp(19px, 3vw, 25px); font-weight: 800; color: #0F172A; margin-bottom: 4px; letter-spacing: -0.02em; }
+        .cd-stat-label { font-size: 11.5px; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+
+        .tone-blue { --tone-bg: #EFF6FF; --tone-solid: #2563EB; }
+        .tone-rose { --tone-bg: #FFF1F2; --tone-solid: #E11D48; }
+        .tone-amber { --tone-bg: #FFFBEB; --tone-solid: #D97706; }
+        .tone-emerald { --tone-bg: #ECFDF5; --tone-solid: #059669; }
+        .tone-violet { --tone-bg: #F5F3FF; --tone-solid: #7C3AED; }
+        .tone-cyan { --tone-bg: #ECFEFF; --tone-solid: #0891B2; }
+
+        /* ── Panels (recent payments / top properties / revenue) ── */
+        .cd-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .cd-panel { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+        .cd-panel-header { padding: 16px 20px; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+        .cd-panel-title { display: flex; align-items: center; gap: 8px; color: #0F172A; font-weight: 700; font-size: 14px; }
+        .cd-panel-count { color: #94A3B8; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+        .cd-dot { width: 7px; height: 7px; border-radius: 50%; background: #0F172A; flex-shrink: 0; }
+
+        .cd-row { display: flex; align-items: center; gap: 14px; padding: 13px 20px; transition: background 0.15s; border-bottom: 1px solid #F8FAFC; }
+        .cd-row:last-child { border-bottom: none; }
+        .cd-row:hover { background: #F8FAFC; }
+        .cd-row-avatar { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; background: #EFF6FF; color: #2563EB; }
+        .cd-row-title { color: #0F172A; font-size: 13.5px; font-weight: 700; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cd-row-meta { color: #64748B; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cd-row-amount { color: #0F172A; font-size: 13.5px; font-weight: 700; }
+        .cd-row-views { color: #94A3B8; font-size: 10.5px; display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 2px; }
+
+        /* Status pill, same visual language as tenant contract status badges */
+        .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+        .status-pill.pending { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+        .status-pill.active { background: #DCFCE7; color: #166534; border: 1px solid #BBF7D0; }
+        .status-pill.signed { background: #DBEAFE; color: #1D4ED8; border: 1px solid #BFDBFE; }
+        .status-pill.unknown { background: #F1F5F9; color: #64748B; border: 1px solid #E2E8F0; }
+
+        .cd-empty { padding: 44px 20px; text-align: center; }
+        .cd-empty-icon { width: 52px; height: 52px; background: #F1F5F9; border: 1px dashed #CBD5E1; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; color: #94A3B8; }
+        .cd-empty p { color: #94A3B8; font-size: 13px; }
+
+        /* Revenue bars */
+        .cd-bar-group { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; height: 100%; justify-content: flex-end; position: relative; }
+        .cd-bar-track { width: 100%; flex: 1; display: flex; align-items: flex-end; min-height: 0; }
+        .cd-bar-fill { width: 100%; border-radius: 6px 6px 0 0; background: linear-gradient(to top, #0F172A, #334155); transition: opacity 0.2s; cursor: pointer; position: relative; }
+        .cd-bar-fill:hover { opacity: 0.82; }
+        .cd-bar-tip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #0F172A; color: #FFFFFF; border-radius: 8px; padding: 5px 10px; font-size: 11px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 10; }
+        .cd-bar-fill:hover .cd-bar-tip { opacity: 1; }
+        .cd-bar-month { font-size: 9.5px; color: #94A3B8; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+        .cd-revenue-summary { border-top: 1px solid #F1F5F9; padding-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 11.5px; color: #64748B; }
+        .cd-revenue-summary b { color: #0F172A; font-weight: 700; }
+
+        /* ── Skeleton loading, same recipe as the tenant dashboard ── */
+        .cd-skel-shimmer { background: linear-gradient(90deg, #E2E8F0 25%, #EDF1F5 37%, #E2E8F0 63%); background-size: 400% 100%; animation: cd-shimmer 1.4s ease infinite; border-radius: 10px; }
+        @keyframes cd-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+        .cd-skel-stat { height: 100px; border-radius: 14px; }
+        .cd-skel-panel { height: 260px; border-radius: 16px; }
+
+        @media (max-width: 1024px) {
+          .cd-header-inner { padding: 32px 28px 26px; }
+          .cd-wrap { padding: 26px 28px 44px; }
+          .cd-stats { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 680px) {
+          .cd-header-inner { padding: 24px 18px 20px; }
+          .cd-wrap { padding: 20px 16px 40px; }
+          .cd-section { margin-bottom: 22px; }
+          .cd-heading { font-size: 22px; }
+
+          .cd-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+          .cd-stat { padding: 14px 16px; border-radius: 12px; }
+          .cd-stat-top { margin-bottom: 10px; }
+          .cd-stat-icon { width: 28px; height: 28px; border-radius: 8px; }
+          .cd-stat-value { font-size: 19px; }
+          .cd-stat-label { font-size: 10.5px; }
+          .cd-skel-stat { height: 84px; }
+
+          .cd-two-col { grid-template-columns: 1fr; }
+          .cd-row { padding: 12px 16px; gap: 10px; }
+          .cd-panel-header { padding: 14px 16px; }
+        }
+
+        @media (max-width: 380px) {
+          .cd-stats { grid-template-columns: 1fr 1fr; }
         }
       `}</style>
 
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '28px 20px' }}>
-
-        {/* ── Header ── */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 36, flexWrap: 'wrap' }}>
+      <div className="cd-header">
+        <div className="cd-header-inner">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase' }}>Commercial Portal</span>
-            </div>
-            <h1 style={{ fontSize: 'clamp(24px, 5vw, 34px)', fontWeight: 700, color: '#F1EDD8', fontFamily: "'Playfair Display', serif", lineHeight: 1.1, marginBottom: 8 }}>
-              Good Morning, {user?.name?.split(' ')[0] || 'User'}
-            </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ color: '#4A5568', fontSize: 13 }}>{user?.company_name || 'Your Dashboard'}</span>
+            <div className="cd-eyebrow-badge">Commercial Portal</div>
+            <h1 className="cd-heading">Good Morning, {user?.name?.split(' ')[0] || 'User'}</h1>
+            <div className="cd-tagline">
+              <span>{user?.company_name || 'Your Dashboard'}</span>
               {user?.verified && <span className="verified-badge">✓ Verified Business</span>}
             </div>
           </div>
-          <Link to="/dashboard/commercial/properties/add" className="add-btn">
+          <Link to="/dashboard/commercial/properties/add" className="cd-add-btn">
             <Plus size={15} />Add Property
           </Link>
         </div>
+      </div>
 
-        {/* ── Stats Grid ── */}
-        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-          {statCards.map((c, i) => {
-            const Icon = c.icon;
-            return (
-              <div key={i} className="stat-card">
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18 }}>
-                  <div className="stat-icon"><Icon size={18} /></div>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 600, color: c.up ? '#10B981' : '#EF4444' }}>
-                    {c.up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}{c.change}%
-                  </span>
-                </div>
-                <div style={{ fontSize: 'clamp(18px, 3vw, 24px)', fontWeight: 700, color: '#F1EDD8', marginBottom: 4, letterSpacing: '-0.5px' }}>
-                  {c.fmt(c.value as number)}
-                </div>
-                <div style={{ fontSize: 12, color: '#4A5568', fontWeight: 500 }}>{c.title}</div>
-              </div>
-            );
-          })}
+      <div className="cd-wrap">
+        {/* Stats */}
+        <div className="cd-section">
+          {loading ? (
+            <div className="cd-stats">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="cd-skel-shimmer cd-skel-stat" />
+              ))}
+            </div>
+          ) : (
+            <div className="cd-stats">
+              {statCards.map((c, i) => {
+                const Icon = c.icon;
+                return (
+                  <div key={i} className={`cd-stat tone-${c.tone}`}>
+                    <div className="cd-stat-top">
+                      <div className="cd-stat-icon"><Icon size={18} /></div>
+                      <span className={`cd-stat-trend ${c.up ? 'up' : 'down'}`}>
+                        {c.up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}{c.change}%
+                      </span>
+                    </div>
+                    <div className="cd-stat-value">{c.fmt(c.value as number)}</div>
+                    <div className="cd-stat-label">{c.title}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* ── Two Column ── */}
-        <div className="two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
-
-          {/* Recent Bookings */}
-          <div className="card-panel">
-            <div className="panel-header">
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div className="gold-dot" />
-                <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Recent Payments</span>
-              </div>
-              <span style={{ color: '#2D3748', fontSize: 11, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>{recentBookings.length} total</span>
-            </div>
-            {recentBookings.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><Calendar size={22} color="#2D3748" /></div>
-                <p style={{ color: '#2D3748', fontSize: 13 }}>No payments recorded yet</p>
-              </div>
-            ) : recentBookings.map(b => {
-              const s = statusMap[b.status] || statusMap.inactive;
-              return (
-                <div key={b.id} className="booking-row">
-                  <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Building2 size={15} color="#D4AF37" />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ color: '#E2D5B0', fontSize: 13, fontWeight: 600, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.property?.title || (b as any).property_title || 'Property'}</p>
-                    <p style={{ color: '#4A5568', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.customer_name || (b as any).tenant_name} · {fmtDate(b.created_at || (b as any).paid_at)}</p>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <p style={{ color: '#D4AF37', fontSize: 13, fontWeight: 700 }}>{fmt(b.total_amount)}</p>
-                    <span className="status-pill" style={{ background: `${s.dot}15`, color: s.text }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.dot, display: 'inline-block' }} />
-                      {s.label}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Popular Properties */}
-          <div className="card-panel">
-            <div className="panel-header">
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div className="gold-dot" />
-                <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Top Properties</span>
-              </div>
-              <span style={{ color: '#2D3748', fontSize: 11, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>{popularProperties.length} listed</span>
-            </div>
-            {popularProperties.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon"><Building2 size={22} color="#2D3748" /></div>
-                <p style={{ color: '#2D3748', fontSize: 13 }}>No properties listed yet</p>
-              </div>
-            ) : popularProperties.map((p, idx) => (
-              <div key={p.id} className="booking-row">
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: '#0C1420', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                  {p.image
-                    ? <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <span style={{ fontSize: 11, fontWeight: 800, color: '#D4AF37' }}>#{idx + 1}</span>}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: '#E2D5B0', fontSize: 13, fontWeight: 600, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
-                  <p style={{ color: '#4A5568', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.location}</p>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <p style={{ color: '#D4AF37', fontSize: 13, fontWeight: 700 }}>{fmt(p.price)}</p>
-                  <p style={{ color: '#4A5568', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3, marginTop: 2 }}>
-                    <Eye size={10} />{p.views}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Revenue Chart ── */}
-        <div className="card-panel">
-          <div className="panel-header">
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div className="gold-dot" />
-              <span style={{ color: '#E2D5B0', fontWeight: 600, fontSize: 14 }}>Monthly Revenue</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#4A5568', fontSize: 11 }}>
-              <BarChart3 size={13} />
-              <span style={{ fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>{monthlyRevenue.length} months</span>
-            </div>
-          </div>
-          <div style={{ padding: '24px 22px' }}>
-            {monthlyRevenue.length === 0 ? (
-              <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <p style={{ color: '#2D3748', fontSize: 13 }}>No revenue data available</p>
-              </div>
+        {/* Two column */}
+        <div className="cd-section">
+          <div className="cd-two-col">
+            {/* Recent Payments */}
+            {loading ? (
+              <div className="cd-skel-shimmer cd-skel-panel" />
             ) : (
-              <>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 200, marginBottom: 8 }}>
-                  {monthlyRevenue.map((m, i) => {
-                    const pct = Math.max((m.revenue / maxRevenue) * 100, 4);
-                    return (
-                      <div key={i} className="bar-group">
-                        <div className="bar-track">
-                          <div className="bar-fill" style={{ height: `${pct}%` }}>
-                            <div className="bar-tip">{fmt(m.revenue)}</div>
-                          </div>
-                        </div>
-                        <span style={{ fontSize: 9, color: '#4A5568', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{m.month}</span>
+              <div className="cd-panel">
+                <div className="cd-panel-header">
+                  <div className="cd-panel-title"><span className="cd-dot" />Recent Payments</div>
+                  <span className="cd-panel-count">{recentBookings.length} total</span>
+                </div>
+                {recentBookings.length === 0 ? (
+                  <div className="cd-empty">
+                    <div className="cd-empty-icon"><Calendar size={20} /></div>
+                    <p>No payments recorded yet</p>
+                  </div>
+                ) : recentBookings.map(b => {
+                  const s = statusMap[b.status] || statusMap.inactive;
+                  return (
+                    <div key={b.id} className="cd-row">
+                      <div className="cd-row-avatar"><Building2 size={15} /></div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p className="cd-row-title">{b.property?.title || (b as any).property_title || 'Property'}</p>
+                        <p className="cd-row-meta">{b.customer_name || (b as any).tenant_name} · {fmtDate(b.created_at || (b as any).paid_at)}</p>
                       </div>
-                    );
-                  })}
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <p className="cd-row-amount">{fmt(b.total_amount)}</p>
+                        <span className={`status-pill ${s.cls}`}>{s.label}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Top Properties */}
+            {loading ? (
+              <div className="cd-skel-shimmer cd-skel-panel" />
+            ) : (
+              <div className="cd-panel">
+                <div className="cd-panel-header">
+                  <div className="cd-panel-title"><span className="cd-dot" />Top Properties</div>
+                  <span className="cd-panel-count">{popularProperties.length} listed</span>
                 </div>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#4A5568', fontSize: 11 }}>Total: <span style={{ color: '#D4AF37', fontWeight: 600 }}>{fmt(monthlyRevenue.reduce((s, m) => s + m.revenue, 0))}</span></span>
-                  <span style={{ color: '#4A5568', fontSize: 11 }}>Peak: <span style={{ color: '#D4AF37', fontWeight: 600 }}>{fmt(maxRevenue)}</span></span>
-                </div>
-              </>
+                {popularProperties.length === 0 ? (
+                  <div className="cd-empty">
+                    <div className="cd-empty-icon"><Building2 size={20} /></div>
+                    <p>No properties listed yet</p>
+                  </div>
+                ) : popularProperties.map((p, idx) => (
+                  <div key={p.id} className="cd-row">
+                    <div className="cd-row-avatar" style={{ background: p.image ? 'transparent' : '#F1F5F9', color: '#2563EB' }}>
+                      {p.image
+                        ? <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ fontSize: 11, fontWeight: 800 }}>#{idx + 1}</span>}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p className="cd-row-title">{p.title}</p>
+                      <p className="cd-row-meta">{p.location}</p>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <p className="cd-row-amount">{fmt(p.price)}</p>
+                      <p className="cd-row-views"><Eye size={10} />{p.views}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
 
+        {/* Revenue */}
+        <div className="cd-section" style={{ marginBottom: 0 }}>
+          {loading ? (
+            <div className="cd-skel-shimmer cd-skel-panel" />
+          ) : (
+            <div className="cd-panel">
+              <div className="cd-panel-header">
+                <div className="cd-panel-title"><span className="cd-dot" />Monthly Revenue</div>
+                <div className="cd-panel-count" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <BarChart3 size={13} />{monthlyRevenue.length} months
+                </div>
+              </div>
+              <div style={{ padding: '22px 20px' }}>
+                {monthlyRevenue.length === 0 ? (
+                  <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <p style={{ color: '#94A3B8', fontSize: 13 }}>No revenue data available</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 200, marginBottom: 8 }}>
+                      {monthlyRevenue.map((m, i) => {
+                        const pct = Math.max((m.revenue / maxRevenue) * 100, 4);
+                        return (
+                          <div key={i} className="cd-bar-group">
+                            <div className="cd-bar-track">
+                              <div className="cd-bar-fill" style={{ height: `${pct}%` }}>
+                                <div className="cd-bar-tip">{fmt(m.revenue)}</div>
+                              </div>
+                            </div>
+                            <span className="cd-bar-month">{m.month}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="cd-revenue-summary">
+                      <span>Total: <b>{fmt(monthlyRevenue.reduce((s, m) => s + m.revenue, 0))}</b></span>
+                      <span>Peak: <b>{fmt(maxRevenue)}</b></span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
