@@ -62,12 +62,34 @@ function getNights(checkIn: string, checkOut: string): number {
   return Math.max(1, Math.round((b.getTime() - a.getTime()) / 86_400_000));
 }
 
+/* ─── TOKENS ─────────────────────────────────────────── */
+/* Same warm-paper / brass identity as the properties page */
+const t = {
+  gold:     '#8B5E34', // brass accent
+  goldLt:   '#7A5230', // deeper brass for text on light tinted chips
+  bg:       '#FAF9F6', // page background
+  surface:  '#FFFFFF', // card background
+  surface2: '#F4F1EA', // inset surface: inputs, modal shells, info tiles
+  ink:      '#1C1917', // primary text
+  onAccent: '#FFFFFF', // text placed on solid brass/accent backgrounds
+  muted:    '#78716C',
+  border:   '#E7E2D9',
+  green:    '#2F6844',
+  red:      '#9F1D1D',
+  blue:     '#33448C',
+  orange:   '#92400E',
+} as const;
+
+const body: React.CSSProperties  = { fontFamily: 'Inter, sans-serif' };
+const serif: React.CSSProperties = { fontFamily: 'Fraunces, Georgia, serif' };
+const card: React.CSSProperties  = { backgroundColor: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 2px rgba(28,25,23,0.04)' };
+
 // ─── Status config ───────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  pending:   { label: 'Pending',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  icon: Clock       },
-  confirmed: { label: 'Confirmed', color: '#10b981', bg: 'rgba(16,185,129,0.12)',  icon: CheckCircle },
-  cancelled: { label: 'Cancelled', color: '#ef4444', bg: 'rgba(239,68,68,0.12)',   icon: XCircle     },
-  completed: { label: 'Completed', color: '#C89128', bg: 'rgba(200,145,40,0.12)',  icon: CheckCircle },
+  pending:   { label: 'Pending',   color: t.orange, icon: Clock       },
+  confirmed: { label: 'Confirmed', color: t.green,  icon: CheckCircle },
+  cancelled: { label: 'Cancelled', color: t.red,    icon: XCircle     },
+  completed: { label: 'Completed', color: t.gold,   icon: CheckCircle },
 } as const;
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -80,11 +102,12 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
 // ─── Status Badge ────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }: { status: string }) => {
   const cfg = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? {
-    label: status, color: '#6b7280', bg: 'rgba(107,114,128,0.12)', icon: Clock,
+    label: status, color: t.muted, icon: Clock,
   };
   const Icon = cfg.icon;
   return (
     <span style={{
+      ...body,
       display:        'inline-flex',
       alignItems:     'center',
       gap:            5,
@@ -94,7 +117,7 @@ const StatusBadge = ({ status }: { status: string }) => {
       fontWeight:     600,
       letterSpacing:  '0.04em',
       textTransform:  'uppercase',
-      background:     cfg.bg,
+      background:     `${cfg.color}18`,
       color:          cfg.color,
       border:         `1px solid ${cfg.color}30`,
     }}>
@@ -134,14 +157,15 @@ const StatusUpdater = ({
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
         disabled={loading}
         style={{
+          ...body,
           display:      'flex',
           alignItems:   'center',
           gap:          6,
           padding:      '6px 12px',
-          background:   loading ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)',
-          border:       '1px solid rgba(255,255,255,0.12)',
+          background:   loading ? t.surface2 : `${t.gold}18`,
+          border:       `1px solid ${t.gold}30`,
           borderRadius: 6,
-          color:        '#e8e4dc',
+          color:        t.goldLt,
           fontSize:     12,
           fontWeight:   600,
           cursor:       loading ? 'wait' : 'pointer',
@@ -160,13 +184,13 @@ const StatusUpdater = ({
             position:    'absolute',
             top:         'calc(100% + 6px)',
             right:       0,
-            background:  '#1a1a1a',
-            border:      '1px solid rgba(255,255,255,0.12)',
+            background:  t.surface,
+            border:      `1px solid ${t.border}`,
             borderRadius: 8,
             overflow:    'hidden',
             zIndex:      200,
             minWidth:    130,
-            boxShadow:   '0 8px 24px rgba(0,0,0,0.5)',
+            boxShadow:   '0 8px 24px rgba(28,25,23,0.16)',
           }}
         >
           {transitions.map((s) => {
@@ -177,6 +201,7 @@ const StatusUpdater = ({
                 key={s}
                 onClick={() => handle(s)}
                 style={{
+                  ...body,
                   display:     'flex',
                   alignItems:  'center',
                   gap:         8,
@@ -191,7 +216,7 @@ const StatusUpdater = ({
                   textAlign:   'left',
                   transition:  'background 0.15s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = cfg.bg)}
+                onMouseEnter={(e) => (e.currentTarget.style.background = `${cfg.color}18`)}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
               >
                 <Icon size={13} />
@@ -224,13 +249,13 @@ const DetailModal = ({
       gridTemplateColumns: '110px 1fr',
       gap:           12,
       padding:       '10px 0',
-      borderBottom:  '1px solid rgba(255,255,255,0.05)',
+      borderBottom:  `1px solid ${t.border}`,
       alignItems:    'start',
     }}>
-      <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontSize: 12, color: t.muted, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
         {icon}{label}
       </span>
-      <span style={{ fontSize: 14, color: '#e8e4dc' }}>{value}</span>
+      <span style={{ fontSize: 14, color: t.ink }}>{value}</span>
     </div>
   );
 
@@ -239,49 +264,49 @@ const DetailModal = ({
       style={{
         position:       'fixed',
         inset:          0,
-        background:     'rgba(0,0,0,0.85)',
+        background:     'rgba(28,25,23,0.6)',
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'center',
         zIndex:         1000,
         backdropFilter: 'blur(4px)',
+        padding:        20,
       }}
       onClick={onClose}
     >
       <div
         style={{
-          background:   '#141414',
-          border:       '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 16,
+          ...card,
           padding:      28,
           maxWidth:     520,
-          width:        '90%',
+          width:        '100%',
           maxHeight:    '85vh',
           overflow:     'auto',
           position:     'relative',
+          animation:    'fadeIn 0.25s ease',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#C89128', marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold, marginBottom: 4 }}>
               Booking #{booking.id}
             </div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, color: '#e8e4dc' }}>
+            <h2 style={{ ...serif, margin: 0, fontSize: 20, fontWeight: 600, color: t.ink }}>
               {booking.property?.title || `Property #${booking.property_id}`}
             </h2>
           </div>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 4 }}
+            style={{ background: 'none', border: 'none', color: t.muted, cursor: 'pointer', padding: 4 }}
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Status row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, padding: '12px 16px', background: t.surface2, borderRadius: 10, border: `1px solid ${t.border}` }}>
           <StatusBadge status={booking.status} />
           <StatusUpdater booking={booking} onUpdate={onUpdate} />
         </div>
@@ -290,14 +315,14 @@ const DetailModal = ({
         <div>
           {row('Property',   booking.property?.title || `#${booking.property_id}`, <Home size={12} />)}
           {row('Guest',      guest.name,  <Users size={12} />)}
-          {guest.email && row('Email',    <a href={`mailto:${guest.email}`} style={{ color: '#C89128', textDecoration: 'none' }}>{guest.email}</a>, <Mail size={12} />)}
-          {guest.phone && row('Phone',    <a href={`tel:${guest.phone}`}   style={{ color: '#C89128', textDecoration: 'none' }}>{guest.phone}</a>, <Phone size={12} />)}
+          {guest.email && row('Email',    <a href={`mailto:${guest.email}`} style={{ color: t.gold, textDecoration: 'none' }}>{guest.email}</a>, <Mail size={12} />)}
+          {guest.phone && row('Phone',    <a href={`tel:${guest.phone}`}   style={{ color: t.gold, textDecoration: 'none' }}>{guest.phone}</a>, <Phone size={12} />)}
           {row('Check-in',   new Date(booking.check_in).toLocaleDateString('en-TZ', { year: 'numeric', month: 'long', day: 'numeric' }), <Calendar size={12} />)}
           {row('Check-out',  new Date(booking.check_out).toLocaleDateString('en-TZ', { year: 'numeric', month: 'long', day: 'numeric' }), <Calendar size={12} />)}
           {row('Duration',   `${nights} night${nights !== 1 ? 's' : ''}`)}
           {row('Guests',     `${booking.guests} guest${booking.guests !== 1 ? 's' : ''}`, <Users size={12} />)}
           {row('Amount',
-            <span style={{ color: '#10b981', fontWeight: 700, fontSize: 16 }}>
+            <span style={{ ...serif, color: t.green, fontWeight: 700, fontSize: 16 }}>
               {new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0 }).format(booking.total_price)}
             </span>
           )}
@@ -369,22 +394,18 @@ const BnbBookings = () => {
   }, {} as Record<string, number>);
 
   return (
-    <div style={{
-      fontFamily:  "'DM Sans', 'Helvetica Neue', sans-serif",
-      background:  '#080808',
-      color:       '#e8e4dc',
-      minHeight:   '100vh',
-      padding:     '28px 24px',
-    }}>
+    <div style={{ padding: '28px 24px', maxWidth: 1400, margin: '0 auto', backgroundColor: t.bg, minHeight: '100vh', ...body }}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-        .bk-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 20px; cursor: pointer; transition: all 0.2s; animation: fadeIn 0.3s ease both; }
-        .bk-card:hover { background: rgba(255,255,255,0.07); border-color: rgba(201,168,76,0.3); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-        .stat-pill { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 18px; text-align: center; min-width: 90px; }
-        .filter-input { padding: 10px 14px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.05); color: #e8e4dc; font-size: 14px; outline: none; transition: border-color 0.2s; font-family: inherit; }
-        .filter-input:focus { border-color: rgba(201,168,76,0.5); }
-        .filter-input option { background: #1a1a1a; }
+        .bk-card { background: ${t.surface}; border: 1px solid ${t.border}; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; animation: fadeIn 0.3s ease both; box-shadow: 0 1px 2px rgba(28,25,23,0.04); }
+        .bk-card:hover { border-color: ${t.gold}50; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(28,25,23,0.08); }
+        .stat-pill { background: ${t.surface}; border: 1px solid ${t.border}; border-radius: 10px; padding: 12px 18px; text-align: center; min-width: 90px; }
+        .filter-input { padding: 10px 14px; border: 1px solid ${t.border}; border-radius: 8px; background: ${t.surface2}; color: ${t.ink}; font-size: 14px; outline: none; transition: border-color 0.2s; font-family: Inter, sans-serif; }
+        .filter-input:focus { border-color: ${t.gold}80; }
+        .filter-input option { background: ${t.surface}; }
       `}</style>
 
       {/* Toast */}
@@ -394,15 +415,15 @@ const BnbBookings = () => {
           top:         24,
           right:       24,
           padding:     '12px 20px',
-          background:  toast.ok ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-          border:      `1px solid ${toast.ok ? '#10b981' : '#ef4444'}40`,
+          background:  t.surface,
+          border:      `1px solid ${toast.ok ? t.green : t.red}40`,
           borderRadius: 10,
-          color:       toast.ok ? '#10b981' : '#ef4444',
+          color:       toast.ok ? t.green : t.red,
           fontSize:    14,
           fontWeight:  500,
           zIndex:      2000,
           animation:   'fadeIn 0.2s ease',
-          backdropFilter: 'blur(8px)',
+          boxShadow:   '0 8px 24px rgba(28,25,23,0.12)',
         }}>
           {toast.msg}
         </div>
@@ -410,10 +431,10 @@ const BnbBookings = () => {
 
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 4px', color: '#e8e4dc', letterSpacing: '-0.02em' }}>
+        <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, margin: '0 0 6px', color: t.ink }}>
           BnB Bookings
         </h1>
-        <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>
+        <p style={{ fontSize: 15, color: t.muted, margin: 0 }}>
           Manage all property booking requests
         </p>
       </div>
@@ -422,14 +443,14 @@ const BnbBookings = () => {
       {!loading && bookings.length > 0 && (
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
           <div className="stat-pill">
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#e8e4dc' }}>{bookings.length}</div>
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>Total</div>
+            <div style={{ ...serif, fontSize: 22, fontWeight: 700, color: t.ink }}>{bookings.length}</div>
+            <div style={{ fontSize: 11, color: t.muted, marginTop: 2 }}>Total</div>
           </div>
           {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
             counts[key] ? (
               <div key={key} className="stat-pill" style={{ borderColor: `${cfg.color}30` }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: cfg.color }}>{counts[key]}</div>
-                <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{cfg.label}</div>
+                <div style={{ ...serif, fontSize: 22, fontWeight: 700, color: cfg.color }}>{counts[key]}</div>
+                <div style={{ fontSize: 11, color: t.muted, marginTop: 2 }}>{cfg.label}</div>
               </div>
             ) : null
           ))}
@@ -437,13 +458,13 @@ const BnbBookings = () => {
       )}
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+      <div style={{ ...card, padding: '14px 16px', marginBottom: 24, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <input
           type="text"
           className="filter-input"
           placeholder="Search by property or guest…"
           value={searchTerm}
-          style={{ minWidth: 260 }}
+          style={{ minWidth: 260, flex: 1 }}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <select
@@ -460,21 +481,20 @@ const BnbBookings = () => {
         <button
           onClick={loadBookings}
           style={{
+            ...body,
             display:    'flex',
             alignItems: 'center',
             gap:        6,
             padding:    '10px 16px',
-            background: 'rgba(255,255,255,0.05)',
-            border:     '1px solid rgba(255,255,255,0.1)',
+            background: `${t.blue}18`,
+            border:     'none',
             borderRadius: 8,
-            color:      '#9ca3af',
+            color:      t.blue,
             fontSize:   14,
+            fontWeight: 500,
             cursor:     'pointer',
             transition: 'all 0.2s',
-            fontFamily: 'inherit',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#e8e4dc')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#9ca3af')}
         >
           <RefreshCw size={14} /> Refresh
         </button>
@@ -484,14 +504,14 @@ const BnbBookings = () => {
       {loading ? (
         <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
           {[0,1,2,3,4,5].map((i) => (
-            <div key={i} style={{ height: 180, borderRadius: 14, background: 'rgba(255,255,255,0.03)', animation: 'fadeIn 0.3s ease both', animationDelay: `${i * 0.05}s` }} />
+            <div key={i} style={{ height: 180, borderRadius: 12, background: `linear-gradient(90deg, ${t.surface2} 25%, #FFFFFF 50%, ${t.surface2} 75%)`, backgroundSize: '400% 100%', animation: 'shimmer 1.4s ease infinite', border: `1px solid ${t.border}` }} />
           ))}
         </div>
       ) : bookings.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '80px 24px', color: '#6b7280' }}>
-          <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>📋</div>
-          <div style={{ fontSize: 18, fontWeight: 600, color: '#9ca3af', marginBottom: 6 }}>No bookings found</div>
-          <div style={{ fontSize: 14 }}>Bookings will appear here once guests submit requests.</div>
+        <div style={{ ...card, textAlign: 'center', padding: '80px 24px', animation: 'fadeIn 0.4s ease' }}>
+          <Calendar size={40} style={{ color: t.muted, marginBottom: 16 }} />
+          <div style={{ ...serif, fontSize: 20, fontWeight: 600, color: t.ink, marginBottom: 8 }}>No bookings found</div>
+          <div style={{ fontSize: 14, color: t.muted }}>Bookings will appear here once guests submit requests.</div>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
@@ -509,10 +529,10 @@ const BnbBookings = () => {
                 {/* Card Top */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: '#C89128', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {booking.property?.title || `Property #${booking.property_id}`}
                     </div>
-                    <div style={{ fontSize: 13, color: '#9ca3af', display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <div style={{ fontSize: 13, color: t.muted, display: 'flex', alignItems: 'center', gap: 5 }}>
                       <Users size={12} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guest.name}</span>
                     </div>
@@ -529,7 +549,7 @@ const BnbBookings = () => {
                       <a
                         href={`mailto:${guest.email}`}
                         onClick={(e) => e.stopPropagation()}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#6b7280', textDecoration: 'none', background: 'rgba(255,255,255,0.04)', padding: '3px 8px', borderRadius: 6 }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: t.muted, textDecoration: 'none', background: t.surface2, padding: '3px 8px', borderRadius: 6 }}
                       >
                         <Mail size={10} />{guest.email}
                       </a>
@@ -538,7 +558,7 @@ const BnbBookings = () => {
                       <a
                         href={`tel:${guest.phone}`}
                         onClick={(e) => e.stopPropagation()}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#6b7280', textDecoration: 'none', background: 'rgba(255,255,255,0.04)', padding: '3px 8px', borderRadius: 6 }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: t.muted, textDecoration: 'none', background: t.surface2, padding: '3px 8px', borderRadius: 6 }}
                       >
                         <Phone size={10} />{guest.phone}
                       </a>
@@ -552,9 +572,9 @@ const BnbBookings = () => {
                     { label: 'Check-in',  value: formatDate(booking.check_in)  },
                     { label: 'Check-out', value: formatDate(booking.check_out) },
                   ].map(({ label, value }) => (
-                    <div key={label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '8px 10px' }}>
-                      <div style={{ fontSize: 10, color: '#6b7280', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
-                      <div style={{ fontSize: 13, color: '#e8e4dc', fontWeight: 500 }}>{value}</div>
+                    <div key={label} style={{ background: t.surface2, borderRadius: 8, padding: '8px 10px', border: `1px solid ${t.border}` }}>
+                      <div style={{ fontSize: 10, color: t.muted, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+                      <div style={{ fontSize: 13, color: t.ink, fontWeight: 500 }}>{value}</div>
                     </div>
                   ))}
                 </div>
@@ -562,17 +582,17 @@ const BnbBookings = () => {
                 {/* Footer */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: '#10b981' }}>
+                    <div style={{ ...serif, fontSize: 18, fontWeight: 700, color: t.green }}>
                       {formatCurrency(booking.total_price)}
                     </div>
-                    <div style={{ fontSize: 11, color: '#6b7280' }}>{nights} night{nights !== 1 ? 's' : ''} · {booking.guests} guest{booking.guests !== 1 ? 's' : ''}</div>
+                    <div style={{ fontSize: 11, color: t.muted }}>{nights} night{nights !== 1 ? 's' : ''} · {booking.guests} guest{booking.guests !== 1 ? 's' : ''}</div>
                   </div>
                   <StatusBadge status={booking.status} />
                 </div>
 
                 {/* Special requests */}
                 {booking.special_requests && booking.special_requests.length > 0 && (
-                  <div style={{ marginTop: 10, padding: '7px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 7, fontSize: 12, color: '#6b7280', display: 'flex', gap: 6 }}>
+                  <div style={{ marginTop: 10, padding: '7px 10px', background: t.surface2, borderRadius: 7, fontSize: 12, color: t.muted, display: 'flex', gap: 6, border: `1px solid ${t.border}` }}>
                     <MessageSquare size={12} style={{ flexShrink: 0, marginTop: 1 }} />
                     <span>{booking.special_requests.join(', ')}</span>
                   </div>

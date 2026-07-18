@@ -124,11 +124,9 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     bnb_owner: [
       { name: 'Overview',          icon: Home,          href: ''                    },
       { name: 'My BNB Properties', icon: Hotel,         href: 'bnb-properties'      },
-      { name: 'Add Property',      icon: Plus,          href: 'bnb-properties/add'  },
       { name: 'Bookings',          icon: Calendar,      href: 'bnb-bookings'        },
       { name: 'Reviews',           icon: Star,          href: 'bnb-reviews'         },
       { name: 'Analytics',         icon: BarChart3,     href: 'bnb-analytics'       },
-      { name: 'Messages',          icon: MessageSquare, href: 'messages'            },
       { name: 'Settings',          icon: Settings,      href: 'settings'            },
     ],
     commercial: [

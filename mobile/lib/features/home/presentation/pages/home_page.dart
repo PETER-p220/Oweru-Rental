@@ -10,17 +10,19 @@ import '../../../../core/utils/property_images.dart';
 const String kApiBase     = 'https://rental.oweru.com/api';
 const String kStorageBase = 'https://rental.oweru.com';
 
-// Palette: white + slate-800
+// Palette: slate + brass gold accent
 const Color kWhite      = Color(0xFFFFFFFF);
 const Color kBg         = Color(0xFFF8FAFC); // off-white page bg
 const Color kSurface    = Color(0xFFFFFFFF); // card bg
 const Color kSlate800   = Color(0xFF1E293B); // primary text / hero bg
+const Color kSlate700   = Color(0xFF334155);
 const Color kSlate600   = Color(0xFF475569); // secondary text
 const Color kSlate400   = Color(0xFF94A3B8); // muted / hints
 const Color kSlate200   = Color(0xFFE2E8F0); // borders / dividers
 const Color kSlate100   = Color(0xFFF1F5F9); // subtle surface
 const Color kAccent     = Color(0xFF1E293B); // same as slate-800, used for buttons
-const Color kGold       = Color(0xFFC89128); // CTA accent (matches tenant theme)
+const Color kGold       = Color(0xFFC89128); // CTA / brand accent
+const Color kGoldSoft   = Color(0xFFFBF0D9); // tinted backgrounds for gold accents
 const Color kGreen      = Color(0xFF10B981); // available dot
 
 const List<String> kCommercialTypes = [
@@ -140,6 +142,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   final ScrollController _scrollCtrl = ScrollController();
 
+  // Section anchors — lets the category bar act as a smart quick-nav
+  final GlobalKey _residentialKey = GlobalKey();
+  final GlobalKey _bnbKey         = GlobalKey();
+  final GlobalKey _oweruKey       = GlobalKey();
+  final GlobalKey _commercialKey  = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -201,6 +209,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     _scrollCtrl.animateTo(0, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
   }
 
+  // Smart, incremental search: once results are showing, typing re-filters
+  // instantly; typing 2+ characters from the hero auto-activates results.
+  void _onSearchChanged(String value) {
+    if (_searchActive) {
+      setState(() {});
+    } else if (value.trim().length >= 2) {
+      _doSearch();
+    }
+  }
+
+  void _scrollToSection(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
+        alignment: 0.02,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -221,10 +251,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             if (!_searchActive) ...[
               _buildStatsBar(),
               _buildCategoryBar(),
-              _buildResidentialSection(),
-              _buildBnbSection(),
-              _buildOweruSection(),
-              _buildCommercialSection(),
+              KeyedSubtree(key: _residentialKey, child: _buildResidentialSection()),
+              KeyedSubtree(key: _bnbKey,         child: _buildBnbSection()),
+              KeyedSubtree(key: _oweruKey,       child: _buildOweruSection()),
+              KeyedSubtree(key: _commercialKey,  child: _buildCommercialSection()),
               _buildCta(),
             ],
           ],
@@ -236,101 +266,137 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   // ── HERO ───────────────────────────────────────────────────────────────────
   Widget _buildHero() {
     return Container(
-      color: kSlate800,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Eyebrow
-              Row(children: [
-                _LiveDot(),
-                const SizedBox(width: 8),
-                const Text(
-                  "Africa's Premier Rental Platform",
-                  style: TextStyle(
-                    fontSize: 11, letterSpacing: 1.6,
-                    fontWeight: FontWeight.w500, color: kSlate400),
-                ),
-              ]),
-              const SizedBox(height: 28),
-              // Headline
-              RichText(
-                text: const TextSpan(
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w300, color: kWhite, height: 1.15),
-                  children: [
-                    TextSpan(text: 'Find Your\n'),
-                    TextSpan(text: 'Perfect Rental', style: TextStyle(fontWeight: FontWeight.w800)),
-                    TextSpan(text: '\nProperty'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Connect with trusted landlords and professional agents across Africa. Residential, commercial, and short-stay all in one place.',
-                style: TextStyle(
-                    fontSize: 14, height: 1.65,
-                    color: kSlate400, fontWeight: FontWeight.w400),
-              ),
-              const SizedBox(height: 24),
-              // CTA buttons
-              Row(children: [
-                Expanded(child: GestureDetector(
-                  onTap: _doSearch,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    decoration: BoxDecoration(
-                      color: kGold,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text('Browse All', style: TextStyle(color: kWhite, fontSize: 13, fontWeight: FontWeight.w700)),
-                      SizedBox(width: 6),
-                      Icon(Icons.arrow_forward_rounded, size: 15, color: kWhite),
-                    ]),
-                  ),
-                )),
-                const SizedBox(width: 10),
-                Expanded(child: GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/register'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white24),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text('Create Account', style: TextStyle(color: kWhite, fontSize: 13, fontWeight: FontWeight.w600)),
-                      SizedBox(width: 4),
-                      Icon(Icons.chevron_right_rounded, size: 16, color: Colors.white70),
-                    ]),
-                  ),
-                )),
-              ]),
-              const SizedBox(height: 28),
-              // Trust chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(children: [
-                  _trustChip(Icons.verified_user_outlined, 'Verified landlords'),
-                  const SizedBox(width: 16),
-                  _trustChip(Icons.schedule_rounded, '24hr response'),
-                  const SizedBox(width: 16),
-                  _trustChip(Icons.trending_up_rounded, '1,200+ listings'),
-                ]),
-              ),
-              const SizedBox(height: 40),
-              // Search card
-              _buildSearchCard(),
-              const SizedBox(height: 0),
-            ],
+      decoration: const BoxDecoration(color: kSlate800),
+      clipBehavior: Clip.hardEdge,
+      child: Stack(
+        children: [
+          // Ambient warmth — the one deliberate decorative flourish on the page
+          Positioned(
+            top: -70, right: -60,
+            child: _glow(220, kGold.withValues(alpha: 0.22)),
           ),
-        ),
+          Positioned(
+            bottom: -50, left: -40,
+            child: _glow(160, kGold.withValues(alpha: 0.10)),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 48, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Eyebrow
+                  Row(children: [
+                    _LiveDot(),
+                    const SizedBox(width: 8),
+                    const Text(
+                      "Africa's Premier Rental Platform",
+                      style: TextStyle(
+                        fontSize: 11, letterSpacing: 1.6,
+                        fontWeight: FontWeight.w500, color: kSlate400),
+                    ),
+                  ]),
+                  const SizedBox(height: 28),
+                  // Headline
+                  RichText(
+                    text: const TextSpan(
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.w300, color: kWhite, height: 1.15),
+                      children: [
+                        TextSpan(text: 'Find Your\n'),
+                        TextSpan(text: 'Perfect Rental', style: TextStyle(fontWeight: FontWeight.w800)),
+                        TextSpan(text: '\nProperty'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: 46, height: 3,
+                    decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(2)),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Connect with trusted landlords and professional agents across Africa. Residential, commercial, and short-stay all in one place.',
+                    style: TextStyle(
+                        fontSize: 14, height: 1.65,
+                        color: kSlate400, fontWeight: FontWeight.w400),
+                  ),
+                  const SizedBox(height: 24),
+                  // CTA buttons
+                  Row(children: [
+                    Expanded(child: _Tappable(
+                      onTap: _doSearch,
+                      borderRadius: BorderRadius.circular(8),
+                      splashColor: kSlate800.withValues(alpha: 0.15),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        decoration: BoxDecoration(
+                          color: kGold,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(color: kGold.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 8)),
+                          ],
+                        ),
+                        child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Text('Browse All', style: TextStyle(color: kWhite, fontSize: 13, fontWeight: FontWeight.w700)),
+                          SizedBox(width: 6),
+                          Icon(Icons.arrow_forward_rounded, size: 15, color: kWhite),
+                        ]),
+                      ),
+                    )),
+                    const SizedBox(width: 10),
+                    Expanded(child: _Tappable(
+                      onTap: () => Navigator.pushNamed(context, '/register'),
+                      borderRadius: BorderRadius.circular(8),
+                      splashColor: kWhite.withValues(alpha: 0.08),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white24),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Text('Create Account', style: TextStyle(color: kWhite, fontSize: 13, fontWeight: FontWeight.w600)),
+                          SizedBox(width: 4),
+                          Icon(Icons.chevron_right_rounded, size: 16, color: Colors.white70),
+                        ]),
+                      ),
+                    )),
+                  ]),
+                  const SizedBox(height: 28),
+                  // Trust chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(children: [
+                      _trustChip(Icons.verified_user_outlined, 'Verified landlords'),
+                      const SizedBox(width: 16),
+                      _trustChip(Icons.schedule_rounded, '24hr response'),
+                      const SizedBox(width: 16),
+                      _trustChip(Icons.trending_up_rounded, '1,200+ listings'),
+                    ]),
+                  ),
+                  const SizedBox(height: 40),
+                  // Search card
+                  _buildSearchCard(),
+                  const SizedBox(height: 0),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  Widget _glow(double size, Color color) => IgnorePointer(
+    child: Container(
+      width: size, height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0.0)]),
+      ),
+    ),
+  );
 
   Widget _trustChip(IconData icon, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
     Icon(icon, size: 13, color: kWhite),
@@ -363,6 +429,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             controller: _searchCtrl,
             hint: 'Location or property name…',
             onSubmit: _doSearch,
+            onChanged: _onSearchChanged,
           ),
           const SizedBox(height: 10),
           Row(children: [
@@ -392,8 +459,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
-            child: GestureDetector(
+            child: _Tappable(
               onTap: _doSearch,
+              borderRadius: BorderRadius.circular(10),
+              splashColor: kWhite.withValues(alpha: 0.15),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
@@ -429,10 +498,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   // ── STATS BAR ──────────────────────────────────────────────────────────────
   Widget _buildStatsBar() {
     const stats = [
-      ('1,200+', 'LISTINGS'),
-      ('500+', 'LANDLORDS'),
-      ('98%', 'SATISFACTION'),
-      ('24hr', 'RESPONSE'),
+      ('1,200+', 'LISTINGS', Icons.home_work_outlined),
+      ('500+', 'LANDLORDS', Icons.groups_outlined),
+      ('98%', 'SATISFACTION', Icons.emoji_events_outlined),
+      ('24hr', 'RESPONSE', Icons.bolt_outlined),
     ];
     return Container(
       color: kSlate800,
@@ -448,6 +517,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
               ),
               child: Column(children: [
+                Icon(e.value.$3, size: 16, color: kGold),
+                const SizedBox(height: 8),
                 Text(e.value.$1,
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700,
                         color: kWhite, letterSpacing: -0.5)),
@@ -464,34 +535,42 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  // ── CATEGORY QUICK-LINKS ──────────────────────────────────────────────────
+  // ── CATEGORY QUICK-LINKS (tap to jump to a section) ──────────────────────
   Widget _buildCategoryBar() {
-    const cats = [
-      (Icons.apartment_outlined, 'Residential'),
-      (Icons.storefront_outlined, 'Commercial'),
-      (Icons.hotel_outlined, 'Short Stay'),
-      (Icons.verified_outlined, 'Oweru'),
+    final cats = [
+      (Icons.apartment_outlined,  'Residential', _residentialKey),
+      (Icons.storefront_outlined, 'Commercial',  _commercialKey),
+      (Icons.hotel_outlined,      'Short Stay',  _bnbKey),
+      (Icons.verified_outlined,   'Oweru',       _oweruKey),
     ];
     return Container(
       color: kWhite,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
       child: Row(
         children: cats.map((c) => Expanded(
-          child: Column(children: [
-            Container(
-              width: 48, height: 48,
-              decoration: BoxDecoration(
-                color: kSlate100,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(c.$1, size: 20, color: kSlate800),
+          child: _Tappable(
+            onTap: () => _scrollToSection(c.$3),
+            borderRadius: BorderRadius.circular(14),
+            splashColor: kGold.withValues(alpha: 0.12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+              child: Column(children: [
+                Container(
+                  width: 48, height: 48,
+                  decoration: BoxDecoration(
+                    color: kSlate100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(c.$1, size: 20, color: kSlate800),
+                ),
+                const SizedBox(height: 6),
+                Text(c.$2,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                        color: kSlate600, letterSpacing: 0.3)),
+              ]),
             ),
-            const SizedBox(height: 6),
-            Text(c.$2,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                    color: kSlate600, letterSpacing: 0.3)),
-          ]),
+          ),
         )).toList(),
       ),
     );
@@ -514,8 +593,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700,
                     color: kSlate800, letterSpacing: -0.5)),
           ])),
-          GestureDetector(
+          _Tappable(
             onTap: _clearSearch,
+            borderRadius: BorderRadius.circular(8),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
@@ -542,7 +622,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       child: Column(children: [
         Container(
           width: 72, height: 72,
-          decoration: BoxDecoration(color: kSlate100, shape: BoxShape.circle),
+          decoration: const BoxDecoration(color: kSlate100, shape: BoxShape.circle),
           child: const Icon(Icons.search_off, size: 32, color: kSlate400),
         ),
         const SizedBox(height: 16),
@@ -552,8 +632,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         const Text('Try a different location or adjust filters.',
             style: TextStyle(fontSize: 13, color: kSlate400)),
         const SizedBox(height: 20),
-        GestureDetector(
+        _Tappable(
           onTap: _clearSearch,
+          borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
@@ -654,7 +735,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ].map((item) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(children: [
-            const Icon(Icons.check_circle_outline, size: 16, color: kSlate800),
+            const Icon(Icons.check_circle_outline, size: 16, color: kGold),
             const SizedBox(width: 12),
             Text(item, style: const TextStyle(fontSize: 14, color: kSlate700)),
           ]),
@@ -728,6 +809,35 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// SHARED TAP-FEEDBACK WRAPPER (adds ripple/highlight to any tappable block)
+// ═════════════════════════════════════════════════════════════════════════════
+class _Tappable extends StatelessWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final BorderRadius borderRadius;
+  final Color splashColor;
+  const _Tappable({
+    required this.child,
+    required this.onTap,
+    this.borderRadius = const BorderRadius.all(Radius.circular(10)),
+    this.splashColor = const Color(0x14000000),
+  });
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    borderRadius: borderRadius,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: borderRadius,
+      splashColor: splashColor,
+      highlightColor: splashColor,
+      child: child,
+    ),
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // SECTION WRAPPER
 // ═════════════════════════════════════════════════════════════════════════════
 class _Section extends StatelessWidget {
@@ -754,7 +864,7 @@ class _Section extends StatelessWidget {
     final bg       = bgColor ?? kWhite;
     final textClr  = dark ? kWhite  : kSlate800;
     final subClr   = dark ? kSlate400 : kSlate600;
-    final tagClr   = dark ? kSlate400 : kSlate400;
+    const tagClr   = kSlate400;
 
     return Container(
       color: bg,
@@ -762,10 +872,14 @@ class _Section extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(tag.toUpperCase(),
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                    letterSpacing: 2.5, color: tagClr)),
-            const SizedBox(height: 8),
+            Row(children: [
+              Container(width: 4, height: 13, decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 8),
+              Text(tag.toUpperCase(),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                      letterSpacing: 2.5, color: tagClr)),
+            ]),
+            const SizedBox(height: 10),
             Text(title,
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700,
                     letterSpacing: -0.8, height: 1.1, color: textClr)),
@@ -776,16 +890,21 @@ class _Section extends StatelessWidget {
           ])),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(width: 12),
-            GestureDetector(
+            _Tappable(
               onTap: onAction,
-              child: Row(children: [
-                Text(actionLabel!,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                        color: dark ? kWhite : kSlate800)),
-                const SizedBox(width: 4),
-                Icon(Icons.arrow_forward, size: 13,
-                    color: dark ? kWhite : kSlate800),
-              ]),
+              borderRadius: BorderRadius.circular(6),
+              splashColor: (dark ? kWhite : kSlate800).withValues(alpha: 0.1),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Row(children: [
+                  Text(actionLabel!,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                          color: dark ? kWhite : kSlate800)),
+                  const SizedBox(width: 4),
+                  Icon(Icons.arrow_forward, size: 13,
+                      color: dark ? kWhite : kSlate800),
+                ]),
+              ),
             ),
           ],
         ]),
@@ -824,13 +943,17 @@ class _PropCard extends StatelessWidget {
         ? formatPaymentPeriodLabel(paymentDurationMonths(p['payment_duration_months']))
         : priceSuffix;
 
-    return GestureDetector(
+    return _Tappable(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
           color: kSurface,
           border: Border.all(color: kSlate200),
           borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 14, offset: const Offset(0, 6)),
+          ],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // Image
@@ -850,7 +973,7 @@ class _PropCard extends StatelessWidget {
                     : _ImgPlaceholder(Icons.home_outlined),
               ),
               if (p['featured'] == true || p['featured'] == 1)
-                Positioned(top: 10, left: 10,
+                const Positioned(top: 10, left: 10,
                     child: _Chip(label: 'Featured', bg: kSlate800, fg: kWhite)),
               if (badge != null)
                 Positioned(top: 10, right: 10,
@@ -887,8 +1010,10 @@ class _PropCard extends StatelessWidget {
                   Text(suffix,
                       style: const TextStyle(fontSize: 10, color: kSlate400)),
                 ]),
-                GestureDetector(
+                _Tappable(
                   onTap: onAction,
+                  borderRadius: BorderRadius.circular(8),
+                  splashColor: kWhite.withValues(alpha: 0.15),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                     decoration: BoxDecoration(
@@ -929,8 +1054,10 @@ class _CommCard extends StatelessWidget {
         ? formatPaymentPeriodLabel(months)
         : (pt == 'yearly' ? '/yr' : pt == 'sale' ? '' : '/mo');
 
-    return GestureDetector(
+    return _Tappable(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      splashColor: kWhite.withValues(alpha: 0.1),
       child: Container(
         decoration: BoxDecoration(
           color: kWhite.withValues(alpha: 0.08),
@@ -986,7 +1113,7 @@ class _CommCard extends StatelessWidget {
                 Wrap(spacing: 5, runSpacing: 5, children: [
                   if (p['area'] != null) _Tag(label: '${p['area']} m²'),
                   if ((p['parking_spaces'] ?? 0) > 0) _Tag(label: '${p['parking_spaces']} Parking'),
-                  if (p['furnished'] == true) _Tag(label: 'Furnished'),
+                  if (p['furnished'] == true) const _Tag(label: 'Furnished'),
                 ]),
               ],
               const SizedBox(height: 12),
@@ -999,8 +1126,9 @@ class _CommCard extends StatelessWidget {
                   Text(sfx.isEmpty ? 'For Sale' : sfx,
                       style: const TextStyle(fontSize: 10, color: kSlate400)),
                 ]),
-                GestureDetector(
+                _Tappable(
                   onTap: onTap,
+                  borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                     decoration: BoxDecoration(
@@ -1116,65 +1244,27 @@ class _LiveDotState extends State<_LiveDot> with SingleTickerProviderStateMixin 
   );
 }
 
-class _TrustChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _TrustChip({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-    decoration: BoxDecoration(
-      color: kWhite.withValues(alpha: 0.06),
-      border: Border.all(color: kWhite.withValues(alpha: 0.1)),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 12, color: kSlate400),
-      const SizedBox(width: 6),
-      Text(label, style: const TextStyle(fontSize: 11, color: kSlate400, fontWeight: FontWeight.w500)),
-    ]),
-  );
-}
-
 class _SolidButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   const _SolidButton({required this.label, required this.onTap});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => _Tappable(
     onTap: onTap,
+    borderRadius: BorderRadius.circular(10),
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
       decoration: BoxDecoration(
-        color: kWhite,
+        color: kGold,
         borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(color: kGold.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 8)),
+        ],
       ),
       child: Text(label,
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-              color: kSlate800, letterSpacing: 0.3)),
-    ),
-  );
-}
-
-class _OutlineButtonLight extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _OutlineButtonLight({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
-      decoration: BoxDecoration(
-        border: Border.all(color: kWhite.withValues(alpha: 0.2)),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(label,
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500,
-              color: kWhite.withValues(alpha: 0.8))),
+              color: kWhite, letterSpacing: 0.3)),
     ),
   );
 }
@@ -1183,13 +1273,20 @@ class _CleanSearchInput extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final VoidCallback onSubmit;
-  const _CleanSearchInput({required this.controller, required this.hint, required this.onSubmit});
+  final ValueChanged<String>? onChanged;
+  const _CleanSearchInput({
+    required this.controller,
+    required this.hint,
+    required this.onSubmit,
+    this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) => TextField(
     controller: controller,
     style: const TextStyle(color: kSlate800, fontSize: 13),
     onSubmitted: (_) => onSubmit(),
+    onChanged: onChanged,
     decoration: InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: kSlate400, fontSize: 13),
@@ -1197,12 +1294,13 @@ class _CleanSearchInput extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border:        OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate200)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate200)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate800)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kGold, width: 1.4)),
       prefixIcon: const Icon(Icons.search, size: 16, color: kSlate400),
       suffixIcon: ValueListenableBuilder(
         valueListenable: controller,
         builder: (_, val, _) => val.text.isNotEmpty
             ? IconButton(icon: const Icon(Icons.close, size: 13, color: kSlate400),
+                tooltip: 'Clear search text',
                 onPressed: () => controller.clear())
             : const SizedBox.shrink(),
       ),
@@ -1226,7 +1324,7 @@ class _CleanDropdown extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border:        OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate200)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate200)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kSlate800)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: kGold, width: 1.4)),
     ),
     icon: const Icon(Icons.keyboard_arrow_down, color: kSlate400, size: 18),
     items: items.entries.map((e) => DropdownMenuItem(
@@ -1238,7 +1336,7 @@ class _CleanDropdown extends StatelessWidget {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// SKELETON GRID
+// SKELETON GRID — sweeping shimmer instead of a flat fade
 // ═════════════════════════════════════════════════════════════════════════════
 class _SkeletonGrid extends StatefulWidget {
   final int count;
@@ -1250,27 +1348,39 @@ class _SkeletonGridState extends State<_SkeletonGrid> with SingleTickerProviderS
   late AnimationController _ctrl;
   @override void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat(reverse: true);
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
+      ..repeat();
   }
   @override void dispose() { _ctrl.dispose(); super.dispose(); }
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(builder: (ctx, constraints) {
     final cols  = constraints.maxWidth > 560 ? 2 : 1;
     final itemW = (constraints.maxWidth - (cols - 1) * 14) / cols;
-    return FadeTransition(
-      opacity: Tween(begin: 0.3, end: 0.7).animate(_ctrl),
-      child: Wrap(
-        spacing: 14, runSpacing: 14,
-        children: List.generate(widget.count, (i) => Container(
-          width: itemW, height: 280,
-          decoration: BoxDecoration(
-            color: widget.dark ? kWhite.withValues(alpha: 0.06) : kSlate100,
-            border: Border.all(color: widget.dark ? kWhite.withValues(alpha: 0.08) : kSlate200),
-            borderRadius: BorderRadius.circular(14),
-          ),
-        )),
-      ),
+    final baseColor = widget.dark ? kWhite.withValues(alpha: 0.06) : kSlate100;
+    final highlight  = widget.dark ? kWhite.withValues(alpha: 0.16) : kWhite;
+    final borderClr  = widget.dark ? kWhite.withValues(alpha: 0.08) : kSlate200;
+    return Wrap(
+      spacing: 14, runSpacing: 14,
+      children: List.generate(widget.count, (i) => AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, child) {
+          final t = (_ctrl.value + (i * 0.15)) % 1.0;
+          return Container(
+            width: itemW, height: 280,
+            decoration: BoxDecoration(
+              border: Border.all(color: borderClr),
+              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                begin: Alignment(-1 + t * 3, 0),
+                end: Alignment(0 + t * 3, 0),
+                colors: [baseColor, highlight, baseColor],
+                stops: const [0.35, 0.5, 0.65],
+              ),
+            ),
+          );
+        },
+      )),
     );
   });
 }
@@ -1381,30 +1491,30 @@ class _BookingFormState extends State<_BookingForm> {
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     border:        OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kSlate200)),
     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kSlate200)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kSlate800)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kGold, width: 1.4)),
   );
 
-  Widget _datePicker(String label, DateTime? value, VoidCallback onTap) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: kSlate100,
-            border: Border.all(color: kSlate200),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(children: [
-            Icon(Icons.calendar_today_outlined, size: 13, color: kSlate400),
-            const SizedBox(width: 8),
-            Text(
-              value == null ? label : '${value.day}/${value.month}/${value.year}',
-              style: TextStyle(fontSize: 13,
-                  color: value == null ? kSlate400 : kSlate800),
-            ),
-          ]),
+  Widget _datePicker(String label, DateTime? value, VoidCallback onTap) => _Tappable(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(8),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: kSlate100,
+        border: Border.all(color: kSlate200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(children: [
+        const Icon(Icons.calendar_today_outlined, size: 13, color: kSlate400),
+        const SizedBox(width: 8),
+        Text(
+          value == null ? label : '${value.day}/${value.month}/${value.year}',
+          style: TextStyle(fontSize: 13,
+              color: value == null ? kSlate400 : kSlate800),
         ),
-      );
+      ]),
+    ),
+  );
 
   Future<DateTime?> _pickDate(DateTime first) => showDatePicker(
     context: context,
@@ -1419,14 +1529,17 @@ class _BookingFormState extends State<_BookingForm> {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Book Stay',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kSlate800)),
+          const Text('Book Stay',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kSlate800)),
           const SizedBox(height: 2),
           Text(widget.property['title'] ?? '',
               style: const TextStyle(fontSize: 13, color: kSlate600)),
         ])),
-        IconButton(onPressed: widget.onClose,
-            icon: const Icon(Icons.close, color: kSlate600, size: 20)),
+        IconButton(
+          onPressed: widget.onClose,
+          tooltip: 'Close',
+          icon: const Icon(Icons.close, color: kSlate600, size: 20),
+        ),
       ]),
       const SizedBox(height: 20),
       const Divider(color: kSlate200, height: 1),
@@ -1462,8 +1575,8 @@ class _BookingFormState extends State<_BookingForm> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: kSlate100,
-            border: Border.all(color: kSlate200),
+            color: kGoldSoft,
+            border: Border.all(color: kGold.withValues(alpha: 0.35)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -1476,8 +1589,9 @@ class _BookingFormState extends State<_BookingForm> {
       ],
       const SizedBox(height: 20),
       Row(children: [
-        Expanded(child: GestureDetector(
+        Expanded(child: _Tappable(
           onTap: widget.onClose,
+          borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
@@ -1489,8 +1603,10 @@ class _BookingFormState extends State<_BookingForm> {
           ),
         )),
         const SizedBox(width: 10),
-        Expanded(flex: 2, child: GestureDetector(
+        Expanded(flex: 2, child: _Tappable(
           onTap: _loading ? null : _submit,
+          borderRadius: BorderRadius.circular(8),
+          splashColor: kWhite.withValues(alpha: 0.15),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
@@ -1506,8 +1622,3 @@ class _BookingFormState extends State<_BookingForm> {
     ]);
   }
 }
-
-// ═════════════════════════════════════════════════════════════════════════
-// MISSING COLOUR — kSlate700 used in CTA list
-// ═════════════════════════════════════════════════════════════════════════════
-const Color kSlate700 = Color(0xFF334155);

@@ -9,30 +9,32 @@ import {
 import Api from '../../services/api';
 
 /* ─── TOKENS ─────────────────────────────────────────── */
+/* Same warm-paper / brass identity as the tenant dashboard */
 const t = {
-  gold:   '#C89128',
-  goldLt: '#D4A843',
-  dark:   '#080808',
-  dark2:  '#0e0e0e',
-  dark3:  '#141414',
-  cream:  '#e8e4dc',
-  muted:  '#7a7060',
-  border: 'rgba(200,145,40,0.12)',
-  green:  '#10b981',
-  red:    '#ef4444',
-  blue:   '#38bdf8',
-  orange: '#f59e0b',
+  gold:     '#8B5E34', // brass accent (was bright gold, now matches tenant dashboard)
+  goldLt:   '#7A5230', // deeper brass for text on light tinted chips
+  bg:       '#FAF9F6', // page background
+  surface:  '#FFFFFF', // card background
+  surface2: '#F4F1EA', // inset surface: inputs, modal shells, info tiles
+  ink:      '#1C1917', // primary text
+  onAccent: '#FFFFFF', // text placed on solid brass/accent backgrounds
+  muted:    '#78716C',
+  border:   '#E7E2D9',
+  green:    '#2F6844',
+  red:      '#9F1D1D',
+  blue:     '#33448C',
+  orange:   '#92400E',
 } as const;
 
-const body: React.CSSProperties   = { fontFamily: 'DM Sans, sans-serif' };
-const serif: React.CSSProperties  = { fontFamily: 'Cormorant Garamond, Georgia, serif' };
-const card: React.CSSProperties   = { backgroundColor: t.dark3, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden' };
+const body: React.CSSProperties   = { fontFamily: 'Inter, sans-serif' };
+const serif: React.CSSProperties  = { fontFamily: 'Fraunces, Georgia, serif' };
+const card: React.CSSProperties   = { backgroundColor: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 2px rgba(28,25,23,0.04)' };
 const btn: React.CSSProperties    = { ...body, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 16px', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer', border: 'none', transition: 'all 0.2s' };
 
 const BASE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace('/api', '');
 
 /* ─── IMAGE UTILITIES ───────────────────────────────── */
-const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Crect width='600' height='400' fill='%23141414'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='DM Sans' font-size='18' fill='%23C89128'%3ENo Image%3C/text%3E%3C/svg%3E`;
+const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Crect width='600' height='400' fill='%23F4F1EA'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Inter' font-size='18' fill='%238B5E34'%3ENo Image%3C/text%3E%3C/svg%3E`;
 
 function resolveUrl(path: string): string {
   if (!path?.trim()) return PLACEHOLDER;
@@ -100,7 +102,7 @@ function LazyImg({ src, alt, style }: { src: string; alt: string; style?: React.
       {!loaded && !error && (
         <div style={{
           position: 'absolute', inset: 0,
-          background: `linear-gradient(90deg, ${t.dark3} 25%, #1e1e1e 50%, ${t.dark3} 75%)`,
+          background: `linear-gradient(90deg, ${t.surface2} 25%, #FFFFFF 50%, ${t.surface2} 75%)`,
           backgroundSize: '400% 100%',
           animation: 'shimmer 1.4s ease infinite',
           borderRadius: 'inherit',
@@ -110,7 +112,7 @@ function LazyImg({ src, alt, style }: { src: string; alt: string; style?: React.
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backgroundColor: t.dark3, borderRadius: 'inherit',
+          backgroundColor: t.surface2, borderRadius: 'inherit',
         }}>
           <ImageIcon size={32} style={{ color: t.muted }} />
         </div>
@@ -144,7 +146,7 @@ function ImageCarousel({ images, title }: { images: string[]; title: string }) {
   const [idx, setIdx] = useState(0);
   if (images.length === 0 || images[0] === PLACEHOLDER) {
     return (
-      <div style={{ width: '100%', height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: t.dark3, border: `2px dashed ${t.border}`, borderRadius: 8 }}>
+      <div style={{ width: '100%', height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface2, border: `2px dashed ${t.border}`, borderRadius: 8 }}>
         <ImageIcon size={40} style={{ color: t.muted }} />
       </div>
     );
@@ -175,7 +177,7 @@ function ImageCarousel({ images, title }: { images: string[]; title: string }) {
 
 /* ─── SKELETON CARD ─────────────────────────────────── */
 function SkeletonCard() {
-  const shimmer = { background: `linear-gradient(90deg, ${t.dark3} 25%, #1e1e1e 50%, ${t.dark3} 75%)`, backgroundSize: '400% 100%', animation: 'shimmer 1.4s ease infinite', borderRadius: 6 } as React.CSSProperties;
+  const shimmer = { background: `linear-gradient(90deg, ${t.surface2} 25%, #FFFFFF 50%, ${t.surface2} 75%)`, backgroundSize: '400% 100%', animation: 'shimmer 1.4s ease infinite', borderRadius: 6 } as React.CSSProperties;
   return (
     <div style={{ ...card, padding: 16 }}>
       <div style={{ ...shimmer, height: 220, marginBottom: 16, borderRadius: 8 }} />
@@ -258,19 +260,21 @@ export default function BnbProperties() {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: 1400, margin: '0 auto', ...body }}>
+    <div style={{ padding: '24px', maxWidth: 1400, margin: '0 auto', backgroundColor: t.bg, ...body }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap');`}</style>
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.cream, margin: '0 0 6px' }}>BNB Properties</h1>
+          <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.ink, margin: '0 0 6px' }}>BNB Properties</h1>
           <p style={{ fontSize: 15, color: t.muted, margin: 0 }}>
             {loading ? 'Loading…' : `${properties.length} listing${properties.length !== 1 ? 's' : ''}`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.dark }}><Plus size={15}/>Add Property</button>
-          <button onClick={handleExport}           style={{ ...btn, backgroundColor: `${t.green}20`, color: t.green }}><Download size={15}/>Export</button>
-          <button onClick={load}                   style={{ ...btn, backgroundColor: `${t.blue}20`, color: t.blue }}><RefreshCw size={15}/>Refresh</button>
+          <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.onAccent }}><Plus size={15}/>Add Property</button>
+          <button onClick={handleExport}           style={{ ...btn, backgroundColor: `${t.green}18`, color: t.green }}><Download size={15}/>Export</button>
+          <button onClick={load}                   style={{ ...btn, backgroundColor: `${t.blue}18`, color: t.blue }}><RefreshCw size={15}/>Refresh</button>
         </div>
       </div>
 
@@ -283,11 +287,11 @@ export default function BnbProperties() {
             placeholder="Search properties…"
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
-            style={{ ...body, width: '100%', padding: '9px 12px 9px 36px', backgroundColor: '#0e0e0e', border: `1px solid ${t.border}`, borderRadius: 8, color: t.cream, fontSize: 14, boxSizing: 'border-box' }}
+            style={{ ...body, width: '100%', padding: '9px 12px 9px 36px', backgroundColor: t.surface2, border: `1px solid ${t.border}`, borderRadius: 8, color: t.ink, fontSize: 14, boxSizing: 'border-box' }}
           />
         </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          style={{ ...body, padding: '9px 12px', backgroundColor: '#0e0e0e', border: `1px solid ${t.border}`, borderRadius: 8, color: t.cream, fontSize: 14 }}>
+          style={{ ...body, padding: '9px 12px', backgroundColor: t.surface2, border: `1px solid ${t.border}`, borderRadius: 8, color: t.ink, fontSize: 14 }}>
           <option value="all">All Status</option>
           <option value="available">Available</option>
           <option value="occupied">Occupied</option>
@@ -302,9 +306,9 @@ export default function BnbProperties() {
         ) : properties.length === 0 ? (
           <div style={{ ...card, gridColumn: '1/-1', textAlign: 'center', padding: 60, animation: 'fadeIn 0.4s ease' }}>
             <Home size={48} style={{ color: t.muted, marginBottom: 16 }} />
-            <div style={{ ...serif, fontSize: 20, color: t.cream, marginBottom: 8 }}>No properties found</div>
+            <div style={{ ...serif, fontSize: 20, color: t.ink, marginBottom: 8 }}>No properties found</div>
             <div style={{ color: t.muted, marginBottom: 24 }}>Start by adding your first listing</div>
-            <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.dark }}><Plus size={15}/>Add Property</button>
+            <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.onAccent }}><Plus size={15}/>Add Property</button>
           </div>
         ) : (
           properties.map((p: any) => (
@@ -344,13 +348,13 @@ function PropertyCard({ property: p, onView }: { property: any; onView: () => vo
         </div>
 
         {p.average_rating && (
-          <div style={{ position: 'absolute', top: 20, left: 20, display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 20, color: t.gold, fontSize: 12, fontWeight: 600 }}>
-            <Star size={12} fill={t.gold}/>{p.average_rating.toFixed(1)}
+          <div style={{ position: 'absolute', top: 20, left: 20, display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 20, color: '#F4D794', fontSize: 12, fontWeight: 600 }}>
+            <Star size={12} fill="#F4D794"/>{p.average_rating.toFixed(1)}
           </div>
         )}
 
         {images.length > 1 && (
-          <div style={{ position: 'absolute', bottom: 8, right: 20, fontSize: 11, color: 'rgba(255,255,255,0.7)', background: 'rgba(0,0,0,0.5)', padding: '2px 7px', borderRadius: 10 }}>
+          <div style={{ position: 'absolute', bottom: 8, right: 20, fontSize: 11, color: 'rgba(255,255,255,0.85)', background: 'rgba(0,0,0,0.5)', padding: '2px 7px', borderRadius: 10 }}>
             {images.length} photos
           </div>
         )}
@@ -358,7 +362,7 @@ function PropertyCard({ property: p, onView }: { property: any; onView: () => vo
 
       {/* Body */}
       <div style={{ padding: '14px 14px 6px', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <h3 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.cream, margin: 0, lineHeight: 1.25 }}>{p.title}</h3>
+        <h3 style={{ ...serif, fontSize: 18, fontWeight: 600, color: t.ink, margin: 0, lineHeight: 1.25 }}>{p.title}</h3>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.muted, fontSize: 13 }}>
           <MapPin size={13}/>{p.location}
@@ -370,7 +374,7 @@ function PropertyCard({ property: p, onView }: { property: any; onView: () => vo
             { icon: <Bath size={13}/>, label: `${p.bathrooms} bath${p.bathrooms !== 1 ? 's' : ''}` },
             { icon: <Users size={13}/>, label: `${p.bnb_details?.max_guests ?? p.max_guests ?? 2} guests` },
           ].map(({ icon, label }, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, color: t.cream, fontSize: 13 }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, color: t.ink, fontSize: 13 }}>
               <span style={{ color: t.muted }}>{icon}</span>{label}
             </div>
           ))}
@@ -384,7 +388,7 @@ function PropertyCard({ property: p, onView }: { property: any; onView: () => vo
               </span>
             ))}
             {enabledAmenities.length > 4 && (
-              <span style={{ padding: '3px 8px', backgroundColor: `${t.border}`, borderRadius: 5, fontSize: 11, color: t.muted }}>+{enabledAmenities.length - 4}</span>
+              <span style={{ padding: '3px 8px', backgroundColor: t.border, borderRadius: 5, fontSize: 11, color: t.muted }}>+{enabledAmenities.length - 4}</span>
             )}
           </div>
         )}
@@ -418,11 +422,11 @@ function DetailModal({ property: p, onClose }: { property: any; onClose: () => v
     : (p.amenities ?? []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20, backdropFilter: 'blur(4px)' }}>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28,25,23,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20, backdropFilter: 'blur(4px)' }}>
       <div style={{ ...card, maxWidth: 860, width: '100%', maxHeight: '88vh', overflowY: 'auto', animation: 'fadeIn 0.25s ease' }}>
-        <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${t.border}`, position: 'sticky', top: 0, backgroundColor: t.dark3, zIndex: 1 }}>
+        <div style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${t.border}`, position: 'sticky', top: 0, backgroundColor: t.surface, zIndex: 1 }}>
           <div>
-            <h2 style={{ ...serif, fontSize: 22, fontWeight: 600, color: t.cream, margin: 0 }}>{p.title}</h2>
+            <h2 style={{ ...serif, fontSize: 22, fontWeight: 600, color: t.ink, margin: 0 }}>{p.title}</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.muted, fontSize: 13, marginTop: 4 }}><MapPin size={13}/>{p.location}</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: t.muted, cursor: 'pointer', padding: 4 }}><XCircle size={22}/></button>
@@ -466,9 +470,9 @@ function DetailModal({ property: p, onClose }: { property: any; onClose: () => v
               { label: 'Check-in', value: p.bnb_details?.check_in_time ?? p.check_in_time ?? '15:00' },
               { label: 'Check-out', value: p.bnb_details?.check_out_time ?? p.check_out_time ?? '11:00' },
             ].map(({ label, value }) => (
-              <div key={label} style={{ backgroundColor: t.dark2, borderRadius: 8, padding: '12px 14px', border: `1px solid ${t.border}` }}>
+              <div key={label} style={{ backgroundColor: t.surface2, borderRadius: 8, padding: '12px 14px', border: `1px solid ${t.border}` }}>
                 <div style={{ fontSize: 11, color: t.muted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
-                <div style={{ fontSize: 14, color: t.cream, fontWeight: 500 }}>{value}</div>
+                <div style={{ fontSize: 14, color: t.ink, fontWeight: 500 }}>{value}</div>
               </div>
             ))}
           </div>
@@ -490,7 +494,7 @@ function DetailModal({ property: p, onClose }: { property: any; onClose: () => v
           {/* Description */}
           <div>
             <h3 style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, margin: '0 0 8px' }}>Description</h3>
-            <p style={{ color: t.cream, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{p.description}</p>
+            <p style={{ color: t.ink, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{p.description}</p>
           </div>
         </div>
       </div>
@@ -557,16 +561,16 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
   };
 
   const inp = (style?: React.CSSProperties): React.CSSProperties => ({
-    ...body, width: '100%', padding: '10px 12px', backgroundColor: t.dark3, border: `1px solid ${t.border}`,
-    borderRadius: 8, color: t.cream, fontSize: 14, boxSizing: 'border-box', ...style,
+    ...body, width: '100%', padding: '10px 12px', backgroundColor: t.surface2, border: `1px solid ${t.border}`,
+    borderRadius: 8, color: t.ink, fontSize: 14, boxSizing: 'border-box', ...style,
   });
-  const lbl: React.CSSProperties = { display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 500, color: t.cream };
+  const lbl: React.CSSProperties = { display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 500, color: t.ink };
 
   const amenityOptions = ['WiFi','Kitchen','Parking','Air Conditioning','Heating','Washer','Dryer','TV','Workspace','Pool','Gym','Pet Friendly'];
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, backdropFilter: 'blur(4px)' }}>
-      <div style={{ backgroundColor: t.dark2, borderRadius: 14, padding: 28, maxWidth: 780, maxHeight: '90vh', overflowY: 'auto', width: '100%', border: `1px solid ${t.border}` }}>
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28,25,23,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, backdropFilter: 'blur(4px)' }}>
+      <div style={{ backgroundColor: t.surface, borderRadius: 14, padding: 28, maxWidth: 780, maxHeight: '90vh', overflowY: 'auto', width: '100%', border: `1px solid ${t.border}`, boxShadow: '0 24px 48px rgba(28,25,23,0.18)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
           <h2 style={{ ...serif, fontSize: 22, color: t.gold, margin: 0 }}>Add New Property</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: t.muted, cursor: 'pointer' }}><XCircle size={20}/></button>
@@ -640,7 +644,7 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
             onMouseEnter={e => { e.currentTarget.style.borderColor = t.gold; e.currentTarget.style.backgroundColor = `${t.gold}12`; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.backgroundColor = `${t.gold}08`; }}>
             <ImageIcon size={28} style={{ color: t.gold, marginBottom: 6 }}/>
-            <div style={{ color: t.cream, fontSize: 13, fontWeight: 500 }}>Click to upload images</div>
+            <div style={{ color: t.ink, fontSize: 13, fontWeight: 500 }}>Click to upload images</div>
             <div style={{ color: t.muted, fontSize: 11, marginTop: 2 }}>JPG, PNG, GIF — max 5MB each</div>
           </label>
           {previews.length > 0 && (
@@ -660,7 +664,7 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
           <label style={lbl}>Amenities</label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {amenityOptions.map(a => (
-              <label key={a} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: t.cream }}>
+              <label key={a} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: t.ink }}>
                 <input type="checkbox" checked={form.amenities.includes(a)} onChange={e => set('amenities', e.target.checked ? [...form.amenities, a] : form.amenities.filter(x => x !== a))} style={{ accentColor: t.gold }}/>
                 {a}
               </label>
@@ -668,7 +672,7 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
           </div>
         </div>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, cursor: 'pointer', fontSize: 13, color: t.cream }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, cursor: 'pointer', fontSize: 13, color: t.ink }}>
           <input type="checkbox" checked={form.instant_book} onChange={e => set('instant_book', e.target.checked)} style={{ accentColor: t.gold }}/>
           Enable Instant Booking
         </label>
@@ -678,8 +682,8 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
         )}
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ ...btn, backgroundColor: 'transparent', border: `1px solid ${t.border}`, color: t.cream }}>Cancel</button>
-          <button onClick={submit} disabled={loading} style={{ ...btn, backgroundColor: t.gold, color: t.dark, opacity: loading ? 0.7 : 1 }}>
+          <button onClick={onClose} style={{ ...btn, backgroundColor: 'transparent', border: `1px solid ${t.border}`, color: t.ink }}>Cancel</button>
+          <button onClick={submit} disabled={loading} style={{ ...btn, backgroundColor: t.gold, color: t.onAccent, opacity: loading ? 0.7 : 1 }}>
             {loading ? 'Creating…' : 'Create Property'}
           </button>
         </div>
