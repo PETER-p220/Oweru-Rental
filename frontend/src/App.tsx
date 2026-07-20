@@ -19,7 +19,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import RouteGuard from './components/RouteGuard';
-import I18nDomSync from './components/I18nDomSync';
 
 // Tenant pages
 import Payments from './pages/tenant/Payments';
@@ -296,7 +295,6 @@ function App() {
       <LanguageProvider>
       <AuthProvider>
         <Router>
-          <I18nDomSync />
           <Routes>
             {/* Dashboard redirect - redirects based on user role */}
             <Route path="/dashboard" element={<DashboardRedirect />} />

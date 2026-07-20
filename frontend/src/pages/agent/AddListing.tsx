@@ -4,6 +4,11 @@ import { Building, Camera, MapPin, Home, Save, ArrowLeft, FileText, X, User, Pho
 import Api from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PAYMENT_DURATION_OPTIONS, formatPaymentPeriodLabel, periodRentTotal } from '../../utils/paymentDuration';
+import {
+  isAllowedPropertyImage,
+  PROPERTY_IMAGE_ACCEPT,
+  PROPERTY_IMAGE_TYPE_ERROR,
+} from '../../utils/propertyImages';
 
 interface PropertyData {
   title: string; description: string; price: number; payment_duration_months: number; location: string;
@@ -60,7 +65,10 @@ const AddListing: React.FC = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const valid = files.filter(f => {
-      if (!f.type.startsWith('image/')) return false;
+      if (!isAllowedPropertyImage(f)) {
+        setError(`${f.name}: ${PROPERTY_IMAGE_TYPE_ERROR}`);
+        return false;
+      }
       if (f.size > 2 * 1024 * 1024) { setError(`${f.name} exceeds 2MB.`); return false; }
       return true;
     });
@@ -71,6 +79,7 @@ const AddListing: React.FC = () => {
       reader.onload = (e) => setImagePreviews(prev => [...prev, e.target?.result as string]);
       reader.readAsDataURL(f);
     });
+    e.target.value = '';
   };
 
   const removeImage = (i: number) => {
@@ -133,7 +142,12 @@ const AddListing: React.FC = () => {
         setTimeout(() => navigate(user?.userType === 'agent' ? '/dashboard/agent/my-listings' : '/dashboard/landlord/my-properties'), 2200);
       } else throw new Error('Failed');
     } catch (e: any) {
-      setError(e.message || 'Failed to create listing.');
+      const laravelErrors = e?.response?.data?.errors;
+      if (laravelErrors) {
+        setError(Object.values(laravelErrors).flat().join(' '));
+      } else {
+        setError(e?.response?.data?.message || e.message || 'Failed to create listing.');
+      }
     } finally { setLoading(false); }
   };
 
@@ -402,7 +416,7 @@ const AddListing: React.FC = () => {
               <div className="al-sec-title">{t('agent.listing.propertyImages')}</div>
             </div>
             <div className="al-sec-body">
-              <input type="file" multiple accept="image/*" onChange={handleImageUpload} style={{display:'none'}} id="image-upload" />
+              <input type="file" multiple accept={PROPERTY_IMAGE_ACCEPT} onChange={handleImageUpload} style={{display:'none'}} id="image-upload" />
               <label htmlFor="image-upload" className="al-upload">
                 <Camera size={38} style={{color:'var(--gold)',marginBottom:12,opacity:.85}} />
                 <div style={{fontFamily:'var(--sans)',fontSize:16,fontWeight:600,color:'var(--n9)',marginBottom:5}}>{t('agent.listing.uploadImages')}</div>
