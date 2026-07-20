@@ -79,7 +79,13 @@ class PaymentController extends Controller
      */
     public function processPaymentSplit(Payment $payment): void
     {
-        app(PaymentSplitService::class)->processPaymentSplit($payment);
+        $splitter = app(PaymentSplitService::class);
+        if ($payment->type === 'site_visit') {
+            $splitter->processSiteVisitSplit($payment);
+
+            return;
+        }
+        $splitter->processPaymentSplit($payment);
     }
 
     /**

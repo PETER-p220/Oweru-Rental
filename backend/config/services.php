@@ -47,6 +47,13 @@ return [
         'landlord_oweru_fee_months' => (float) env('RENT_LANDLORD_OWERU_FEE_MONTHS', 1),
     ],
 
+    /** Site visit fee (temporary test default 200 TZS; production was 20_000) */
+    'site_visit' => [
+        'fee' => (int) env('SITE_VISIT_FEE', 200),
+        'oweru_share' => (float) env('SITE_VISIT_OWERU_SHARE', 0.5),
+        'agent_share' => (float) env('SITE_VISIT_AGENT_SHARE', 0.5),
+    ],
+
     'selcom' => [
         'vendor_id' => env('SELCOM_VENDOR_ID'),
         'api_key' => env('SELCOM_API_KEY'),

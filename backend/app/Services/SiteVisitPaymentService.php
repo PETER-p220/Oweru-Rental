@@ -9,7 +9,13 @@ use Illuminate\Support\Facades\Log;
 
 class SiteVisitPaymentService
 {
-    public const SERVICE_FEE = 20000;
+    public static function serviceFee(): int
+    {
+        return (int) config('services.site_visit.fee', 200);
+    }
+
+    /** @deprecated Use serviceFee() — kept for references */
+    public const SERVICE_FEE = 200;
 
     public function __construct(
         private SelcomPaymentService $selcom,
@@ -51,7 +57,7 @@ class SiteVisitPaymentService
         $orderId = 'SV-' . $property->id . '-' . $user->id . '-' . time();
 
         $result = $this->selcom->initiate([
-            'amount' => self::SERVICE_FEE,
+            'amount' => self::serviceFee(),
             'phone_number' => $phoneNumber,
             'provider' => strtoupper($provider),
             'customer_email' => $user->email ?: "{$user->id}@oweru.com",
@@ -69,7 +75,7 @@ class SiteVisitPaymentService
         $payload = [
             'owner_id' => $property->owner_id,
             'message' => "Site visit request for {$property->title}",
-            'service_fee' => self::SERVICE_FEE,
+            'service_fee' => self::serviceFee(),
             'payment_status' => 'pending',
             'payment_method' => strtolower($provider),
             'transaction_id' => $orderId,
@@ -166,7 +172,7 @@ class SiteVisitPaymentService
 
         $application->update([
             'payment_status' => 'paid',
-            'service_fee' => self::SERVICE_FEE,
+            'service_fee' => self::serviceFee(),
         ]);
 
         $this->alerts->handleSiteVisitPaid($application->fresh(['property', 'user']));

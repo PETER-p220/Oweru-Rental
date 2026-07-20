@@ -250,10 +250,10 @@ class PaymentAlertService
             return;
         }
 
-        $amount = (float) ($application->service_fee ?: SiteVisitPaymentService::SERVICE_FEE);
+        $amount = (float) ($application->service_fee ?: SiteVisitPaymentService::serviceFee());
         $reference = (string) ($application->transaction_id ?: ('SV-APP-' . $application->id));
 
-        $this->recordCompletedPayment(
+        $payment = $this->recordCompletedPayment(
             $tenant,
             $property,
             $amount,
@@ -264,8 +264,20 @@ class PaymentAlertService
                 'application_id' => $application->id,
                 'payment_method' => $application->payment_method,
                 'source' => 'site_visit_payment_service',
+                'provider' => strtoupper((string) ($application->payment_method ?? 'TIGO')),
             ],
         );
+
+        if ($payment && $property->agent_id) {
+            try {
+                app(PaymentSplitService::class)->processSiteVisitSplit($payment);
+            } catch (\Throwable $e) {
+                Log::warning('Site visit payment split failed', [
+                    'payment_id' => $payment->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         $this->notifyStakeholders(
             $property,

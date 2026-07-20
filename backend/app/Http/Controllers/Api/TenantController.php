@@ -1301,7 +1301,7 @@ class TenantController extends Controller
                 $alerts->recordCompletedPayment(
                     $user,
                     $property,
-                    (float) ($application->service_fee ?: SiteVisitPaymentService::SERVICE_FEE),
+                    (float) ($application->service_fee ?: SiteVisitPaymentService::serviceFee()),
                     'site_visit',
                     (string) $application->transaction_id,
                     'Site visit fee — ' . ($property->title ?? 'Property'),

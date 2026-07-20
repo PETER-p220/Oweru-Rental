@@ -13,6 +13,7 @@ import { paymentConfirmationMessage, parsePaymentStatus } from '../utils/payment
 import PropertyThumbnail from '../components/PropertyThumbnail';
 import { getStorageOrigin } from '../utils/propertyImages';
 import { formatPaymentPeriodLabel, periodRentTotal } from '../utils/paymentDuration';
+import { formatSiteVisitFee } from '../constants/siteVisitFee';
 
 /* ─── Types ─── */
 interface Pagination { current_page: number; last_page: number; per_page: number; total: number; }
@@ -868,7 +869,7 @@ const ApplyModal = ({ property, requiresFee, processing, onClose, onProceed }: {
       {requiresFee ? (
         <>
           <div className="fee-block">
-            <div className="fee-amount">TZS 20,000</div>
+            <div className="fee-amount">{formatSiteVisitFee()}</div>
             <div className="fee-label">Site visit fee · non-refundable</div>
           </div>
           <p style={{ fontFamily: 'var(--sans)', fontSize: 12, color: 'blue', lineHeight: 1.65 }}>
@@ -907,11 +908,11 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
         <X size={15} />
       </button>
       <div className="m-head-title">Complete Payment</div>
-      <div className="m-head-sub">Secure checkout · TZS 20,000</div>
+      <div className="m-head-sub">Secure checkout · {formatSiteVisitFee()}</div>
     </div>
     <div className="m-body">
       <div className="fee-block">
-        <div className="fee-amount">TZS 20,000</div>
+        <div className="fee-amount">{formatSiteVisitFee()}</div>
         <div className="fee-label">Site visit fee · non-refundable</div>
       </div>
       <label className="field-label">Mobile Money Provider</label>
@@ -953,7 +954,7 @@ const PaymentModal = ({ processing, onClose, onPay, phoneNumber, setPhoneNumber,
       >
         {processing
           ? <><Loader2 size={14} style={{ animation: 'spin .8s linear infinite' }} />Processing…</>
-          : <>Pay TZS 20,000 <ArrowRight size={14} /></>
+          : <>Pay {formatSiteVisitFee()} <ArrowRight size={14} /></>
         }
       </button>
     </div>
