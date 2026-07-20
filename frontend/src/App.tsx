@@ -16,8 +16,10 @@ import LandlordDashboard from './pages/LandlordDashboard';
 import SettingsPage from './pages/Settings';
 import DashboardLayout, { type UserRole } from './components/DashboardLayout';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import RouteGuard from './components/RouteGuard';
+import I18nDomSync from './components/I18nDomSync';
 
 // Tenant pages
 import Payments from './pages/tenant/Payments';
@@ -291,8 +293,10 @@ const DashboardRedirect = () => {
 function App() {
   return (
     <ThemeProvider>
+      <LanguageProvider>
       <AuthProvider>
         <Router>
+          <I18nDomSync />
           <Routes>
             {/* Dashboard redirect - redirects based on user role */}
             <Route path="/dashboard" element={<DashboardRedirect />} />
@@ -313,6 +317,7 @@ function App() {
           </Routes>
         </Router>
       </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

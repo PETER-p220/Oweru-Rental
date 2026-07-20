@@ -3,12 +3,15 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronRight, Phone, Mail, MapPin } from 'lucide-react';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import ThemeToggle from './ThemeToggle';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const STRIP_H = 36;
 const NAV_H   = 64;
 const SCROLL_THRESHOLD = 20;
 
 const Header = () => {
+  const { t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
   const location = useLocation();
@@ -23,10 +26,10 @@ const Header = () => {
   useEffect(() => { setIsMenuOpen(false); }, [location]);
 
   const navLinks = [
-    { label: 'Home',       to: '/'           },
-    { label: 'Properties', to: '/properties' },
-    { label: 'About',      to: '/about'      },
-    { label: 'Contact',    to: '/contact'    },
+    { label: t('nav.home'),       to: '/'           },
+    { label: t('nav.properties'), to: '/properties' },
+    { label: t('nav.about'),      to: '/about'      },
+    { label: t('nav.contact'),    to: '/contact'    },
   ];
 
   const isActive = (to: string) =>
@@ -252,10 +255,11 @@ const Header = () => {
             </ul>
 
             <div className="hdr-actions">
+              <LanguageSwitcher variant="dark" />
               <ThemeToggle />
-              <Link to="/login"    className="hdr-login">Login</Link>
+              <Link to="/login"    className="hdr-login">{t('nav.login')}</Link>
               <Link to="/register" className="hdr-register">
-                Register <ChevronRight size={12} />
+                {t('nav.register')} <ChevronRight size={12} />
               </Link>
             </div>
 
@@ -290,9 +294,10 @@ const Header = () => {
           ))}
         </nav>
         <div className="drw-actions">
+          <LanguageSwitcher variant="dark" />
           <ThemeToggle />
-          <Link to="/login"    className="drw-login"    onClick={() => setIsMenuOpen(false)}>Login</Link>
-          <Link to="/register" className="drw-register" onClick={() => setIsMenuOpen(false)}>Create Account</Link>
+          <Link to="/login"    className="drw-login"    onClick={() => setIsMenuOpen(false)}>{t('nav.login')}</Link>
+          <Link to="/register" className="drw-register" onClick={() => setIsMenuOpen(false)}>{t('common.createAccount')}</Link>
         </div>
         <div className="drw-contact">
           <a href="tel:+255711890764"   className="drw-citem"><Phone size={11} /> +255 711 890 764</a>

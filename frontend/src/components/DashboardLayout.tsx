@@ -10,6 +10,8 @@ import {
   Calendar, Hotel, Briefcase, Activity,
 } from 'lucide-react';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -56,6 +58,7 @@ const T = {
 };
 
 const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
+  const { t, tx } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate    = useNavigate();
   const { pathname } = useLocation();
@@ -188,7 +191,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const dashboardRoot = `/dashboard/${userType}`;
   const navItems      = navigation[userType] ?? navigation.tenant;
   const sections      = sectionMap[userType]  ?? sectionMap.tenant;
-  const label         = roleLabel[userType]   ?? 'User';
+  const label         = tx(roleLabel[userType]   ?? 'User');
 
   const getFullPath = (href: string) => {
     if (href === '') return dashboardRoot;
@@ -480,7 +483,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               if (!items.length) return null;
               return (
                 <div key={section.label}>
-                  <div className="dl-nav-section">{section.label}</div>
+                  <div className="dl-nav-section">{tx(section.label)}</div>
                   {items.map(item => (
                     <Link
                       key={item.name}
@@ -491,7 +494,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
                       <span className="dl-nav-icon">
                         <item.icon size={14} />
                       </span>
-                      {item.name}
+                      {tx(item.name)}
                       {item.badge && <span className="dl-nav-badge">{item.badge}</span>}
                     </Link>
                   ))}
@@ -524,7 +527,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
               <Menu size={15} />
             </button>
             <nav className="dl-breadcrumb">
-              <Link to={dashboardRoot} className="dl-bc-home">Dashboard</Link>
+              <Link to={dashboardRoot} className="dl-bc-home">{t('nav.dashboard')}</Link>
               {title && title !== 'Dashboard' && (
                 <>
                   <ChevronRight size={9} className="dl-bc-sep" style={{ color: T.slate600 }} />
@@ -535,23 +538,24 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
           </div>
 
           <div className="dl-topbar-right">
+            <LanguageSwitcher variant="light" />
             {/* Role pill — slate only */}
             <span className="dl-topbar-role">
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: T.gold, boxShadow: T.goldGlow, flexShrink: 0, animation: 'dot-pulse 2.5s ease-in-out infinite' }} />
               {label}
             </span>
             <div className="dl-topbar-divider" />
-            <Link to={`${dashboardRoot}/messages`} className="dl-topbar-btn" title="Messages">
+            <Link to={`${dashboardRoot}/messages`} className="dl-topbar-btn" title={t('nav.messages')}>
               <MessageSquare size={14} />
             </Link>
-            <Link to={`${dashboardRoot}/notifications`} className="dl-topbar-btn" title="Notifications">
+            <Link to={`${dashboardRoot}/notifications`} className="dl-topbar-btn" title={t('nav.notifications')}>
               <Bell size={14} />
             </Link>
             <div className="dl-topbar-divider" />
-            <Link to={`${dashboardRoot}/settings`} className="dl-topbar-btn" title="Settings">
+            <Link to={`${dashboardRoot}/settings`} className="dl-topbar-btn" title={t('nav.settings')}>
               <Settings size={14} />
             </Link>
-            <button className="dl-topbar-btn dl-logout-btn" onClick={handleLogout} title="Sign out">
+            <button className="dl-topbar-btn dl-logout-btn" onClick={handleLogout} title={t('nav.signOut')}>
               <LogOut size={14} />
             </button>
           </div>

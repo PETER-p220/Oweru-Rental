@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building, Camera, MapPin, Home, Save, ArrowLeft, FileText, X, User, Phone, CheckCircle } from 'lucide-react';
+import { Building, Camera, MapPin, Home, Save, ArrowLeft, FileText, X, User, Phone, CheckCircle, Video } from 'lucide-react';
 import Api from '../../services/api';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { PAYMENT_DURATION_OPTIONS, formatPaymentPeriodLabel, periodRentTotal } from '../../utils/paymentDuration';
 
 interface PropertyData {
@@ -13,6 +14,7 @@ interface PropertyData {
 
 const AddListing: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,6 +27,8 @@ const AddListing: React.FC = () => {
   });
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadedVideos, setUploadedVideos] = useState<File[]>([]);
+  const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -60,7 +64,7 @@ const AddListing: React.FC = () => {
       if (f.size > 2 * 1024 * 1024) { setError(`${f.name} exceeds 2MB.`); return false; }
       return true;
     });
-    if (valid.length + uploadedImages.length > 6) { setError('Max 6 images allowed'); return; }
+    if (valid.length + uploadedImages.length > 10) { setError(t('agent.listing.maxImages')); return; }
     setUploadedImages(prev => [...prev, ...valid]);
     valid.forEach(f => {
       const reader = new FileReader();
@@ -72,6 +76,34 @@ const AddListing: React.FC = () => {
   const removeImage = (i: number) => {
     setUploadedImages(uploadedImages.filter((_, idx) => idx !== i));
     setImagePreviews(imagePreviews.filter((_, idx) => idx !== i));
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const valid = files.filter(f => {
+      if (!f.type.startsWith('video/')) return false;
+      if (f.size > 50 * 1024 * 1024) {
+        setError(`${f.name} ${t('agent.listing.videoTooLarge')}`);
+        return false;
+      }
+      return true;
+    });
+    if (valid.length + uploadedVideos.length > 3) {
+      setError(t('agent.listing.maxVideos'));
+      return;
+    }
+    setUploadedVideos(prev => [...prev, ...valid]);
+    valid.forEach(f => {
+      setVideoPreviews(prev => [...prev, URL.createObjectURL(f)]);
+    });
+    e.target.value = '';
+  };
+
+  const removeVideo = (i: number) => {
+    const preview = videoPreviews[i];
+    if (preview) URL.revokeObjectURL(preview);
+    setUploadedVideos(uploadedVideos.filter((_, idx) => idx !== i));
+    setVideoPreviews(videoPreviews.filter((_, idx) => idx !== i));
   };
 
   const validateForm = () => {
@@ -94,6 +126,7 @@ const AddListing: React.FC = () => {
       const fd = new FormData();
       Object.keys(formData).forEach(k => { if (k !== 'images') fd.append(k, String(formData[k as keyof PropertyData])); });
       uploadedImages.forEach((f, i) => fd.append(`images[${i}]`, f));
+      uploadedVideos.forEach((f, i) => fd.append(`videos[${i}]`, f));
       const res = user?.userType === 'agent' ? await Api.agentCreateProperty(fd) : await Api.createProperty(fd);
       if (res.data) {
         setSuccess(true);
@@ -186,6 +219,8 @@ const AddListing: React.FC = () => {
         .al-img-del{position:absolute;top:7px;right:7px;background:rgba(9,15,29,.8);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--cream);transition:background .2s;}
         .al-img-del:hover{background:rgba(239,68,68,.85);}
         .al-img-lbl{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(9,15,29,.85),transparent);color:var(--cream);padding:8px 10px;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans);}
+        .al-vid-item{position:relative;border-radius:10px;overflow:hidden;background:#F8FAFC;border:1px solid #E2E8F0;}
+        .al-vid-item video{width:100%;height:140px;object-fit:cover;display:block;}
 
         /* Error */
         .al-err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:var(--err);padding:13px 16px;border-radius:10px;font-family:var(--sans);font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
@@ -364,14 +399,14 @@ const AddListing: React.FC = () => {
           <div className="al-sec">
             <div className="al-sec-head">
               <div className="al-sec-icon"><Camera size={16}/></div>
-              <div className="al-sec-title">Property Images</div>
+              <div className="al-sec-title">{t('agent.listing.propertyImages')}</div>
             </div>
             <div className="al-sec-body">
               <input type="file" multiple accept="image/*" onChange={handleImageUpload} style={{display:'none'}} id="image-upload" />
               <label htmlFor="image-upload" className="al-upload">
                 <Camera size={38} style={{color:'var(--gold)',marginBottom:12,opacity:.85}} />
-                <div style={{fontFamily:'var(--sans)',fontSize:16,fontWeight:600,color:'var(--cream)',marginBottom:5}}>Click to upload images</div>
-                <div style={{fontFamily:'var(--sans)',fontSize:13,color:'var(--slate)'}}>PNG, JPG up to 2MB · Max 6 images</div>
+                <div style={{fontFamily:'var(--sans)',fontSize:16,fontWeight:600,color:'var(--n9)',marginBottom:5}}>{t('agent.listing.uploadImages')}</div>
+                <div style={{fontFamily:'var(--sans)',fontSize:13,color:'var(--slate)'}}>{t('agent.listing.uploadImagesHint')}</div>
               </label>
               {imagePreviews.length > 0 ? (
                 <div className="al-img-grid">
@@ -384,8 +419,39 @@ const AddListing: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div style={{color:'var(--slate)',fontSize:13,textAlign:'center',padding:'14px 20px',background:'var(--n9)',border:'1px solid var(--bdr)',borderRadius:8,fontFamily:'var(--sans)'}}>
-                  No images yet. Add at least one to showcase your property.
+                <div style={{color:'var(--slate)',fontSize:13,textAlign:'center',padding:'14px 20px',background:'#F8FAFC',border:'1px solid #E2E8F0',borderRadius:8,fontFamily:'var(--sans)'}}>
+                  {t('agent.listing.noImages')}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Videos */}
+          <div className="al-sec">
+            <div className="al-sec-head">
+              <div className="al-sec-icon"><Video size={16}/></div>
+              <div className="al-sec-title">{t('agent.listing.propertyVideos')}</div>
+            </div>
+            <div className="al-sec-body">
+              <input type="file" multiple accept="video/*" onChange={handleVideoUpload} style={{display:'none'}} id="video-upload" />
+              <label htmlFor="video-upload" className="al-upload">
+                <Video size={38} style={{color:'var(--gold)',marginBottom:12,opacity:.85}} />
+                <div style={{fontFamily:'var(--sans)',fontSize:16,fontWeight:600,color:'var(--n9)',marginBottom:5}}>{t('agent.listing.uploadVideos')}</div>
+                <div style={{fontFamily:'var(--sans)',fontSize:13,color:'var(--slate)'}}>{t('agent.listing.uploadVideosHint')}</div>
+              </label>
+              {videoPreviews.length > 0 ? (
+                <div className="al-img-grid">
+                  {videoPreviews.map((src, i) => (
+                    <div key={src} className="al-vid-item">
+                      <video src={src} muted playsInline />
+                      <button type="button" onClick={() => removeVideo(i)} className="al-img-del" style={{ top: 7, right: 7 }}><X size={12}/></button>
+                      <div className="al-img-lbl">{uploadedVideos[i]?.name || `Video ${i + 1}`}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{color:'var(--slate)',fontSize:13,textAlign:'center',padding:'14px 20px',background:'#F8FAFC',border:'1px solid #E2E8F0',borderRadius:8,fontFamily:'var(--sans)'}}>
+                  {t('agent.listing.noVideos')}
                 </div>
               )}
             </div>

@@ -88,6 +88,8 @@ class OwnerController extends Controller
             'agent_id'    => 'sometimes|exists:users,id',
             'images'      => 'sometimes|array',
             'images.*'    => 'image|mimes:jpeg,png,jpg,gif|max:5048',
+            'videos'      => 'sometimes|array',
+            'videos.*'    => 'file|mimes:mp4,webm,mov,avi|max:51200',
         ]);
 
         if ($validator->fails()) {
@@ -107,6 +109,19 @@ class OwnerController extends Controller
             }
         }
 
+        $videoPaths = [];
+        if ($request->hasFile('videos')) {
+            $directory = public_path('storage/properties/videos');
+            if (! is_dir($directory)) {
+                mkdir($directory, 0755, true);
+            }
+            foreach ($request->file('videos') as $video) {
+                $videoName = time().'_'.uniqid().'.'.$video->getClientOriginalExtension();
+                $video->move($directory, $videoName);
+                $videoPaths[] = 'storage/properties/videos/'.$videoName;
+            }
+        }
+
         $property = Property::create([
             'title'       => $request->title,
             'description' => $request->description,
@@ -119,6 +134,7 @@ class OwnerController extends Controller
             'bathrooms'   => $request->bathrooms,
             'area'        => $request->area,
             'images'      => $imagePaths,
+            'videos'      => $videoPaths,
             'amenities'   => $request->amenities ?? [],
             'featured'    => $request->boolean('featured', false),
             'available'   => true,

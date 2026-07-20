@@ -74,6 +74,8 @@ class AgentController extends Controller
             'owner_id'       => 'required|exists:users,id',
             'images'         => 'sometimes|array',
             'images.*'       => 'image|mimes:jpeg,png,jpg,gif|max:5048',
+            'videos'         => 'sometimes|array',
+            'videos.*'       => 'file|mimes:mp4,webm,mov,avi|max:51200',
             'amenities'      => 'sometimes|array',
             'amenities.*'    => 'string|max:100',
             'landlord_name'  => 'sometimes|string|max:255',
@@ -92,6 +94,19 @@ class AgentController extends Controller
             foreach ($request->file('images') as $image) {
                 $path = $image->store('properties', 'public');
                 $imagePaths[] = $path;
+            }
+        }
+
+        $videoPaths = [];
+        if ($request->hasFile('videos')) {
+            $directory = public_path('storage/properties/videos');
+            if (! is_dir($directory)) {
+                mkdir($directory, 0755, true);
+            }
+            foreach ($request->file('videos') as $video) {
+                $videoName = time().'_'.uniqid().'.'.$video->getClientOriginalExtension();
+                $video->move($directory, $videoName);
+                $videoPaths[] = 'storage/properties/videos/'.$videoName;
             }
         }
 
@@ -127,6 +142,7 @@ class AgentController extends Controller
             'landlord_name'  => $request->landlord_name,
             'landlord_phone' => $request->landlord_phone,
             'images'         => $imagePaths,
+            'videos'         => $videoPaths,
             'amenities'      => $amenities,
         ]);
 

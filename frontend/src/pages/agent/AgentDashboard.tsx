@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Api from '../../services/api';
-import { descriptionStyle, formatCurrency, headingStyle, pageStyle, panelStyle, sectionTitleStyle, statCardStyle, statGridStyle, statLabelStyle, statValueStyle, tableStyle, tableWrapStyle, tdStyle, thStyle } from './agentPageStyles';
+import { useLanguage } from '../../contexts/LanguageContext';
+import LeadsAndVisitorsSection from './LeadsAndVisitorsSection';
+import {
+  agentEyebrowStyle,
+  agentHeaderInnerStyle,
+  agentSubtitleStyle,
+  agentTitleStyle,
+  agentWorkspace,
+  lightTdStyle,
+  lightThStyle,
+} from './agentWorkspaceTheme';
+import { formatCurrency } from './agentPageStyles';
 
-const AgentDashboard = () => { 
+const AgentDashboard = () => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState<any>(null);
   const [listings, setListings] = useState<any[]>([]);
-  const [leads, setLeads] = useState<any[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -14,41 +25,41 @@ const AgentDashboard = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const [dashboardRes, listingsRes, leadsRes] = await Promise.all([
-          Api.getAgentDashboard(), Api.getMyListings(), Api.getLeads(),
+        const [dashboardRes, listingsRes] = await Promise.all([
+          Api.getAgentDashboard(),
+          Api.getMyListings(),
         ]);
         setStats(dashboardRes.data || {});
         setListings(Array.isArray(listingsRes.data) ? listingsRes.data.slice(0, 5) : []);
-        setLeads(Array.isArray(leadsRes.data) ? leadsRes.data.slice(0, 5) : []);
       } catch (err: any) {
-        setError(err?.response?.data?.message || 'Unable to load agent dashboard.');
+        setError(err?.response?.data?.message || t('agent.dashboard.loadError'));
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, []);
+  }, [t]);
 
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#F1F5F9', color: '#0F172A', minHeight: '100vh', padding: '0' }}>
+    <div
+      style={{
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        background: agentWorkspace.pageBg,
+        color: agentWorkspace.text,
+        minHeight: '100vh',
+        padding: 0,
+      }}
+    >
       <style>{`
-        .agent-two-col {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-          gap: 20px;
-        }
         .agent-stat-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 16px;
         }
         .agent-pad { padding-left: 40px; padding-right: 40px; }
-
         @media (max-width: 900px) {
-          .agent-two-col { grid-template-columns: 1fr; }
           .agent-pad { padding-left: 20px; padding-right: 20px; }
         }
-
         @media (max-width: 640px) {
           .agent-stat-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
           .agent-pad { padding-left: 14px; padding-right: 14px; }
@@ -56,135 +67,178 @@ const AgentDashboard = () => {
         }
       `}</style>
 
-      {/* Header */}
-      <div style={{ background: '#1E293B', borderBottom: '1px solid #E2E8F0' }}>
-        <div className="agent-header-inner" style={{ maxWidth: '1280px', margin: '0 auto', padding: '52px 40px 44px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+      <div style={{ background: agentWorkspace.headerBg, borderBottom: `1px solid ${agentWorkspace.border}` }}>
+        <div className="agent-header-inner agent-pad" style={agentHeaderInnerStyle}>
           <div>
-            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '10px', fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#C89128', marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'rgba(200,145,40,0.10)', border: '1px solid rgba(200,145,40,0.28)', padding: '4px 12px' }}>
-              Agent Workspace
-            </div>
-            <h1 style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 'clamp(20px,3.5vw,28px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em', color: '#FFFFFF', margin: 0 }}>Agent Dashboard</h1>
-            <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', fontWeight: 400, color: '#94A3B8', margin: '8px 0 0' }}>
-              Your dashboard reads from the Laravel agent endpoints so listings, leads, and commissions stay aligned with the backend.
-            </p>
+            <div style={agentEyebrowStyle}>{t('agent.workspace')}</div>
+            <h1 style={agentTitleStyle}>{t('agent.dashboard.title')}</h1>
+            <p style={agentSubtitleStyle}>{t('agent.dashboard.subtitle')}</p>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="agent-pad" style={{ maxWidth: '1280px', margin: '0 auto', paddingTop: 24 }}>
+      <div className="agent-pad" style={{ maxWidth: agentWorkspace.maxContent, margin: '0 auto', paddingTop: 24 }}>
         <div className="agent-stat-grid">
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#2563eb' }} />
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Listings</div>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.total_listings || 0}</div>
-          </div>
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#16a34a' }} />
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Active Listings</div>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.active_listings || 0}</div>
-          </div>
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#d97706' }} />
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Leads</div>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : stats?.total_leads || 0}</div>
-          </div>
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: '#C89128' }} />
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, color: '#94A3B8', marginBottom: '8px', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Commissions</div>
-            <div style={{ fontSize: 'clamp(16px,3vw,28px)', fontWeight: 800, color: '#0F172A', fontFamily: "'DM Sans', system-ui, sans-serif", letterSpacing: '-0.02em' }}>{loading ? '—' : formatCurrency(stats?.total_commissions)}</div>
-          </div>
+          {[
+            { label: t('agent.dashboard.listings'), value: loading ? '—' : stats?.total_listings || 0, accent: '#2563eb' },
+            { label: t('agent.dashboard.activeListings'), value: loading ? '—' : stats?.active_listings || 0, accent: '#16a34a' },
+            { label: t('agent.dashboard.leads'), value: loading ? '—' : stats?.total_leads || 0, accent: '#d97706' },
+            {
+              label: t('agent.dashboard.commissions'),
+              value: loading ? '—' : formatCurrency(stats?.total_commissions),
+              accent: agentWorkspace.gold,
+            },
+          ].map((card) => (
+            <div
+              key={card.label}
+              style={{
+                background: agentWorkspace.cardBg,
+                border: `1px solid ${agentWorkspace.border}`,
+                borderRadius: '12px',
+                padding: '20px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: card.accent }} />
+              <div
+                style={{
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  fontWeight: 600,
+                  color: agentWorkspace.textMuted,
+                  marginBottom: '8px',
+                }}
+              >
+                {card.label}
+              </div>
+              <div
+                style={{
+                  fontSize: card.label === t('agent.dashboard.commissions') ? 'clamp(16px,3vw,28px)' : '28px',
+                  fontWeight: 800,
+                  color: agentWorkspace.text,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {card.value}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Error Message */}
       {error && (
-        <div style={{ maxWidth: '1280px', margin: '24px auto 0' }} className="agent-pad">
-          <div style={{ padding: '12px 16px', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: '8px', color: '#dc2626', fontSize: '14px' }}>
+        <div style={{ maxWidth: agentWorkspace.maxContent, margin: '24px auto 0' }} className="agent-pad">
+          <div
+            style={{
+              padding: '12px 16px',
+              background: 'rgba(220,38,38,0.08)',
+              border: '1px solid rgba(220,38,38,0.25)',
+              borderRadius: '8px',
+              color: '#dc2626',
+              fontSize: '14px',
+            }}
+          >
             {error}
           </div>
         </div>
       )}
 
-      {/* Listings + Leads */}
-      <div style={{ maxWidth: '1280px', margin: '24px auto 40px', padding: '0 20px' }}>
-        <div className="agent-two-col">
-          {/* Recent Listings */}
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
-            <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Recent Listings</h2>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={tableStyle}>
-                <thead><tr><th style={thStyle}>Property</th><th style={thStyle}>Owner</th><th style={thStyle}>Price</th></tr></thead>
-                <tbody>
-                  {listings.length === 0 ? (
-                    <tr><td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>No listings yet.</td></tr>
-                  ) : listings.map((item) => (
-                    <tr key={item.id}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 500, color: '#1e293b' }}>{item.title}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.location}</div>
+      <div
+        className="agent-pad"
+        style={{ maxWidth: agentWorkspace.maxContent, margin: '24px auto 0', paddingBottom: 24 }}
+      >
+        <div
+          style={{
+            background: agentWorkspace.cardBg,
+            border: `1px solid ${agentWorkspace.border}`,
+            borderRadius: '12px',
+            padding: '20px',
+          }}
+        >
+          <h2
+            style={{
+              margin: '0 0 16px',
+              fontSize: '18px',
+              fontWeight: 700,
+              color: agentWorkspace.text,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            {t('agent.dashboard.recentListings')}
+          </h2>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={lightThStyle}>{t('agent.dashboard.property')}</th>
+                  <th style={lightThStyle}>{t('agent.dashboard.owner')}</th>
+                  <th style={lightThStyle}>{t('agent.dashboard.price')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {listings.length === 0 ? (
+                  <tr>
+                    <td style={{ ...lightTdStyle, color: agentWorkspace.textMuted, fontStyle: 'italic' }} colSpan={3}>
+                      {t('agent.dashboard.noListings')}
+                    </td>
+                  </tr>
+                ) : (
+                  listings.map((item) => (
+                    <tr
+                      key={item.id}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#f8fafc';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <td style={lightTdStyle}>
+                        <div style={{ fontWeight: 500 }}>{item.title}</div>
+                        <div style={{ color: agentWorkspace.textMuted, fontSize: '12px', marginTop: '3px' }}>{item.location}</div>
                       </td>
-                      <td style={tdStyle}><div style={{ color: '#475569' }}>{item.owner?.first_name} {item.owner?.last_name}</div></td>
-                      <td style={{ ...tdStyle, fontWeight: 600, color: '#2563eb' }}>{formatCurrency(item.price)}</td>
+                      <td style={lightTdStyle}>
+                        <div style={{ color: agentWorkspace.textSub }}>
+                          {item.owner?.first_name} {item.owner?.last_name}
+                        </div>
+                      </td>
+                      <td style={{ ...lightTdStyle, fontWeight: 600, color: agentWorkspace.link }}>
+                        {formatCurrency(item.price)}
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
-              <Link to="/dashboard/agent/my-listings" style={{ color: '#2563eb', textDecoration: 'none', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View all listings →</Link>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-
-          {/* Recent Leads */}
-          <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px' }}>
-            <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'DM Sans', system-ui, sans-serif" }}>Recent Leads</h2>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={tableStyle}>
-                <thead><tr><th style={thStyle}>Lead</th><th style={thStyle}>Source</th><th style={thStyle}>Status</th></tr></thead>
-                <tbody>
-                  {leads.length === 0 ? (
-                    <tr><td style={{ ...tdStyle, color: '#94a3b8', fontStyle: 'italic' }} colSpan={3}>No leads yet.</td></tr>
-                  ) : leads.map((item) => (
-                    <tr key={item.id}
-                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 500, color: '#1e293b' }}>{item.name || item.user?.first_name || 'Lead'}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '3px' }}>{item.email}</div>
-                      </td>
-                      <td style={{ ...tdStyle, color: '#475569', textTransform: 'capitalize' }}>{item.source || 'website'}</td>
-                      <td style={tdStyle}><StatusBadge status={item.status || 'new'} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
-              <Link to="/dashboard/agent/leads" style={{ color: '#2563eb', textDecoration: 'none', fontSize: '13px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View all leads →</Link>
-            </div>
+          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+            <Link
+              to="/dashboard/agent/my-listings"
+              style={{
+                color: agentWorkspace.link,
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              {t('agent.dashboard.viewAllListings')}
+            </Link>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
 
-const StatusBadge = ({ status }: { status: string }) => {
-  const map: Record<string, { bg: string; color: string }> = {
-    new: { bg: '#eff6ff', color: '#2563eb' }, active: { bg: '#f0fdf4', color: '#16a34a' },
-    approved: { bg: '#f0fdf4', color: '#16a34a' }, completed: { bg: '#f0fdf4', color: '#16a34a' },
-    pending: { bg: '#fffbeb', color: '#d97706' }, processing: { bg: '#fffbeb', color: '#d97706' },
-    rejected: { bg: '#fef2f2', color: '#dc2626' }, cancelled: { bg: '#fef2f2', color: '#dc2626' },
-    failed: { bg: '#fef2f2', color: '#dc2626' },
-  };
-  const s = map[status.toLowerCase()] ?? { bg: '#f1f5f9', color: '#64748b' };
-  return (
-    <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', background: s.bg, color: s.color }}>
-      {status}
-    </span>
+      <div
+        className="agent-pad"
+        style={{ maxWidth: agentWorkspace.maxContent, margin: '0 auto', paddingBottom: 40 }}
+      >
+        <LeadsAndVisitorsSection showStats embedded maxRows={8} />
+      </div>
+    </div>
   );
 };
 

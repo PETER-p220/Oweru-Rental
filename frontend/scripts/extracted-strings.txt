@@ -1,0 +1,1547 @@
+﻿!!(c.file_url || c.file_name); const STATUS_META: Record
+!f.landlordOnly && f.type !== 'signature').length; return (
+!processing && onClose()}>
+!uploading && setShowAddModal(false)}>
+( app.status === 'pending' ? (
+('created'); const [sortOrder, setSortOrder] = useState
+('desc'); const [selectedTransaction, setSelectedTransaction] = useState
+('general'); const [settings, setSettings] = useState
+('grid'); const [selectedProperty, setSelectedProperty] = useState
+('idle'); const [pendingPaymentId, setPendingPaymentId] = useState
+('none'); const [selProp, setSelProp] = useState
+('rules'); const [rules, setRules] = useState
+('tigo'); const [payResult, setPayResult] = useState
+('tigo'); const [phoneNumber, setPhoneNumber] = useState(''); const jumpRef = useRef
+('tigo'); const [rentableProps, setRentableProps] = useState
+()); const [applications, setApplications] = useState
+(); const [furnished, setFurnished] = useState
+(); const [sourceFilter, setSourceFilter] = useState
+(EMPTY_FORM); const [formErrors, setFormErrors] = useState
+(EMPTY_FORM); const fileInputRef = useRef
+(['', '']); const [amountRange, setAmountRange] = useState
+([0, 10000000]); const [sortBy, setSortBy] = useState
+([]); const [backups, setBackups] = useState
+([]); const [bnbProperties, setBnbProperties] = useState
+([]); const [commercialProperties, setCommercialProperties] = useState
+([]); const [contracts, setContracts] = useState
+([]); const [deletedImages, setDeletedImages] = useState
+([]); const [errors, setErrors] = useState
+([]); const [imagePreviews, setImagePreviews] = useState
+([]); const [images, setImages] = useState
+([]); const [loading, setLoading] = useState(false); const [errors, setErrors] = useState
+([]); const [methods, setMethods] = useState
+([]); const [mobileChatOpen, setMobileChatOpen] = useState(false); const bottomRef = useRef
+([]); const [modal, setModal] = useState
+([]); const [monthlyRevenue, setMonthlyRevenue] = useState
+([]); const [oweruProperties, setOweruProperties] = useState
+([]); const [pagination, setPagination] = useState
+([]); const [payments, setPayments] = useState
+([]); const [popularProperties, setPopularProperties] = useState
+([]); const [previews, setPreviews] = useState
+([]); const [properties, setProperties] = useState
+([]); const [property, setProperty] = useState
+([]); const [propertyId, setPropertyId] = useState
+([]); const [selected, setSelected] = useState
+([]); const [stats, setStats] = useState
+([]); const [summary, setSummary] = useState
+([]); const [tenants, setTenants] = useState
+([]); const [topProperties, setTopProperties] = useState
+([]); const [uploadedVideos, setUploadedVideos] = useState
+([]); const [user, setUser] = useState
+([]); const [videoPreviews, setVideoPreviews] = useState
+([]); const addToast = useCallback((t: Omit
+(e.currentTarget.style.background = 'none')} >
+(e.currentTarget.style.borderColor = '#334155')} />
+(e.currentTarget.style.borderColor = '#334155')} >
+(e.currentTarget.style.borderColor = C.border)}>
+(e.currentTarget.style.color = '#94a3b8')} >
+(e.currentTarget.style.opacity = '1')}> Create one free
+(e.currentTarget.style.opacity = '1')}> Sign in
+(e.currentTarget.style.transform = 'translateY(0)')}> Continue
+(e: React.ChangeEvent
+(emptyReports()); const [recentActivity, setRecentActivity] = useState
+(getStoredUser); const [isAuthenticated, setIsAuthenticated] = useState
+(hasValidSession); const [isLoading, setIsLoading] = useState
+(null); const [activePayment, setActivePayment] = useState
+(null); const [activityByUser, setActivityByUser] = useState
+(null); const [copied, setCopied] = useState
+(null); const [formData, setFormData] = useState
+(null); const [listings, setListings] = useState
+(null); const [logs, setLogs] = useState
+(null); const [messages, setMessages] = useState
+(null); const [newImages, setNewImages] = useState
+(null); const [recentBookings, setRecentBookings] = useState
+(null); const [rejectionReasons, setRejectionReasons] = useState
+(null); const [success, setSuccess] = useState(false); const handleInputChange = (e: ChangeEvent
+(null); const [toast, setToast] = useState
+(null); const [viewMode, setViewMode] = useState
+(null); const handleChange = (e: React.ChangeEvent
+(null); const textareaRef = useRef
+(optional)
+(private reference)
+) ) : properties.length === 0 ? (
+) ); return (
+) : ( 'Submit Application' )}
+) : ( /* Empty state */
+) : ( filtered.map((item) => (
+) : ( filteredAlerts.map((alert: any) => (
+) : ( filteredPayments.map((payment: any) => (
+) : ( listings.map((item) => (
+) : ( properties.map((p: any) => (
+) : ( topProperties.map((item: any) => (
+) : applications.length === 0 ? (
+) : bookings.length === 0 ? (
+) : contracts.length === 0 ? (
+) : filtered.length === 0 ? (
+) : filtered.map(c => (
+) : filteredProperties.length === 0 ? (
+) : filteredRequests.map(request => (
+) : filteredRows.length === 0 ? (
+) : formData.file_name ? (
+) : item.rent_paid ? (
+) : items.length === 0 ? (
+) : logs.length === 0 ? (
+) : messages.map(msg => (
+) : null ))}
+) : null}
+) : oweruProperties.length === 0 ? (
+) : payments.length === 0 ? (
+) : payments.length === 0 ? ( /* Empty state ΓÇö matches _emptyState() in Dart */
+) : popularProperties.map((p, idx) => (
+) : properties.length > 0 ? (
+) : receipts.length === 0 ? (
+) : reviews.length === 0 ? (
+) : step.status === 'current' ? (
+) : tenant.digital_contracts?.[0] ? (
+) : tenants.length === 0 ? ( /* Empty state */
+) : topProperties.length === 0 ? (
+) : topProperties.map((p: any) => (
+) : users.length === 0 ? (
+) : viewMode === 'grid' ? (
+).is_primary === true || (entry as Record
+): Record
+); /* ΓöÇΓöÇ Render ΓöÇΓöÇ */ return (
+); /* ΓöÇΓöÇ Save button ΓöÇΓöÇ */ const SaveBtn = () => (
+); // Admin routes const AdminRoutes = () => (
+); // Agent routes const AgentRoutes = () => (
+); // BNB Owner routes const BnbOwnerRoutes = () => (
+); // Commercial routes const CommercialRoutes = () => (
+); // Landlord routes const LandlordRoutes = () => (
+); // Tenant routes const TenantRoutes = () => (
+); const ArrowRightIcon = () => (
+); const CheckIcon = () => (
+); const ExternalLinkIcon = () => (
+); const LinkIcon = () => (
+); const LockIcon = () => (
+); const PhoneIcon = () => (
+); const PinIcon = () => (
+); const UsersIcon = () => (
+); const WaIcon = () => (
+); const WifiOffIcon = () => (
+); if (error) return (
+); if (variant === 'icon') return (
+); return (
+); } /* ΓöÇΓöÇ Render ΓöÇΓöÇ */ return (
+); } /* ΓöÇΓöÇΓöÇ HELPERS ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */ function useDebounce
+); } // Γ£à FIX 1: removed the extra stray
+); } return
+); } return (
+); }; export const ApplicationManagement: React.FC
+); }; export const MonthlyPaymentReminder: React.FC
+); }; return (
+* Required fields. We never share your information.
++255 712 345 678
++255 XXX XXX XXX
++255 xxx xxx xxx
++255712345678
+, ac:
+, cancelled:
+, completed:
+, gym:
+, kitchen:
+, label: 'Tenant' }, }; const STATUS_CFG: Record
+, parking:
+, pending:
+, pool:
+, signature: string) => Promise
+, status: currentStatus === 'contract_active' ? 'current' : 'upcoming' } ]; return (
+, tv:
+, washer:
+, workspace:
+, }, }; const primaryActions: Record
+/ month
+/ night
+/mo
+/month
+/night
+0
+0 && property.images[0] ?
+0 && row('Requests', booking.special_requests.join(', '),
+0'; if (!formData.bathrooms || formData.bathrooms
+0) setVisible(true); }, [src]); return (
+0.00
+0712 345 678
+07XXXXXXXX
+1 ? 's' : ''}
+1 ? formatPaymentPeriodLabel(property.payment_duration_months) : '/month'}
+1 Guest
+1 Star
+1. Contact Your Landlord:
+120
+2 Guests
+2 Stars
+2. Review Lease Agreement:
+24h
+256-bit SSL Secured ┬╖ Trusted by Selcom
+256-bit SSL encrypted ┬╖ Your data is secure
+3 Guests
+3 Stars
+3. Schedule Move-in:
+4 Guests
+4 Stars
+4. Complete Tenant Profile:
+5 Stars
+5+ Guests
+50000
+500000
+500000 && price
+500K ΓÇô 1M TZS
+800000
+: allProperties.length === 0 ?
+: bnbProperties.length === 0 ?
+: commercialProperties.length === 0 ? (
+: filteredProperties.length === 0 ? (
+: isOverdue ?
+: items.length === 0 ?
+: items.map((item) => (
+: null}
+: null} Update
+: oweruProperties.length === 0 ?
+: payResult === 'waiting' ?
+: s === 'occupied' ?
+: s.n}
+; booking_trends: Array
+; case 'archived': return
+; case 'cancelled': return
+; case 'chat': return
+; case 'clipboard': return
+; case 'deposit': return
+; case 'failed': return
+; case 'fee': return
+; case 'file': return
+; case 'heart': return
+; case 'high': return
+; case 'info': return
+; case 'low': return
+; case 'medium': return
+; case 'payment': return
+; case 'pending': return
+; case 'property': return
+; case 'read': return
+; case 'rejected': return
+; case 'security': return
+; case 'system': return
+; default: return
+; if (status === 'draft') return
+; if (status === 'in_review') return
+; if (status === 'pending') return
+; if (status === 'rejected') return
+; if (type === 'error') return
+; if (type === 'warning') return
+; images: Array
+; onRefresh?: () => Promise
+; onReject: (applicationId: number, reason: string) => Promise
+; onReject: (id: number, reason: string) => Promise
+; property_performance: Array
+; return
+; } return null; }; return (
+; } } } return
+= amountRange[0] && t.amount
+= new Date(dateRange[0]) && d
+ACCOUNT
+ALERTS
+About
+About Oweru
+About this property
+Above 1M TZS
+Above TZS 1M
+Accepted Payment Methods:
+Account Settings
+Action
+Action completed!
+Actions
+Activate
+Active
+Active Tenants
+Activity
+Activity Logs
+Add First Property
+Add Images
+Add Listing
+Add New Images
+Add New Listing
+Add New Property
+Add Oweru Property
+Add Property
+Add User
+Add Videos
+Add Your First Property
+Add at least one image or video
+Add your first Oweru property to feature it on the homepage.
+Additional Information
+Address
+Address *
+Admin
+Admin Overview
+Admin ┬╖ Alerts
+Admin ┬╖ Audit Trail
+Admin ┬╖ Commission
+Admin ┬╖ Contracts
+Admin ┬╖ Finance
+Admin ┬╖ Oweru Rentals
+Admin ┬╖ Payments
+Admin ┬╖ Properties
+Admin ┬╖ System
+Admin ┬╖ System Reports
+Admin ┬╖ Users
+Admin ┬╖ Verification
+Africa's
+Africa's #1 Platform
+Africa's Premier Rental Platform
+Agent
+Agent Code:
+Agent Workspace
+Agent listings
+Agent share (70%)
+Aggregating platform metrics
+Aina ya Mkataba *
+Airtel Money
+Alert Details
+Alert ID:
+Alert Information
+Alert Reports
+Alerts Management
+All Categories
+All Commercial
+All Levels
+All Methods
+All Payments
+All Periods
+All Prices
+All Properties
+All Ratings
+All Roles
+All Severities
+All Status
+All Statuses
+All Types
+All actions
+All prices
+All types
+Amenities
+Amenities & Features
+Amount
+Amount to Pay:
+Amount:
+Analytics
+Analytics Dashboard
+Angalia
+Any special requirements or requests...
+Apartment
+Apartments, houses, studios and more across Africa.
+Applicant
+Application
+Application Already Submitted
+Application Breakdown
+Application Not Found
+Application Status
+Application Timeline
+Application Trends
+Application Under Review:
+Application and payment metrics from your tenant account.
+Application rejected.
+Application submitted successfully! You'll be notified when the owner reviews it.
+Applications
+Applications from tenants will appear here.
+Applications submitted for properties assigned to you.
+Applied
+Apply Filters
+Apply Now
+Apply for Property
+Apply for this Property
+Approve
+Approve Application
+Approve Request
+Approved
+Approving...
+Archive
+Archive Alert
+Archived
+Are you sure you want to delete
+Area (m┬▓)
+Area (sq ft) *
+Area (sq meters) *
+Area / City
+Authentication error
+Authentication events and admin actions across the platform.
+Availability & Contact
+Availability &amp; Contact
+Available
+Available From
+Available Properties
+Available for Rent
+Available for rent
+Average Booking Value
+Average Rating
+Awaiting payment
+BNB Dashboard
+BNB Management
+BNB Owner
+BNB Platform Reports
+BNB Properties
+BUSINESS INTELLIGENCE
+Back
+Back home
+Back to Dashboard
+Back to My Properties
+Back to Properties
+Background
+Badilisha Sahihi
+Bank Transfer
+Basic Information
+Bathrooms
+Bathrooms *
+Bedrooms
+Bedrooms *
+Bedrooms:
+Best Performers
+BnB Bookings
+Bonyeza kitufe hapa chini ili kutoa sahihi yako ya kidijitali. Sahihi ni
+Book Your Stay
+Book a short stay from the homepage.
+Book a stay
+Booking as a guest is fine.
+Bookings
+Bookings linked to your account. Guests can also book without logging in from the homepage.
+Bookings will appear here once guests submit requests.
+Boolean(p.agent_id); const sourceLabel: Record
+Browse All
+Browse All Properties
+Browse Properties
+Browse listings
+Browse short stays
+Business
+Business Address
+Business Description
+Business Information
+Business License
+Business Name
+Business Spaces
+COMMERCIAL PORTAL
+COMMERCIAL_TYPES.includes(p.type?.toLowerCase?.()) ?
+Call
+Cancel
+Cancel and try again
+Cancelled
+Card
+Carefully review all terms before signing.
+Cash
+Chagua faili la mkataba
+Chagua maliΓÇª
+Chagua mpangajiΓÇª
+Check In *
+Check Out *
+Check back soon for office spaces, retail, and more.
+Check your phone and enter your PIN
+Check-in
+Check-in Time
+Check-out
+Check-out Time
+Choose an option to continue
+Chora Sahihi Yako
+Chora sahihi yako kwenye sanduku hapa chini kwa kutumia kidole au panya.
+City, State
+Clear
+Clear all
+Clear filters
+Click to upload images
+Client
+Close
+Collect Rent
+Comment
+Commercial
+Commercial Portal
+Commercial Properties
+Commission
+Commission Analytics
+Commission Control
+Commission Payments
+Commission Reports
+Commission Rules
+Commission records now come from the Laravel API instead of static mock data.
+Commissions
+Company Name
+Company Profile
+Complaint
+Complete
+Complete Payment
+Complete Registration
+Complete platform metrics across users, properties, finance, contracts, and operations.
+Completed
+Completed Payment(s)
+Completed and pending payment records from your tenant account.
+Completing authentication...
+Condo
+Configure system-wide settings and preferences.
+Confirm New Password
+Confirmed
+Consider improving your application for future properties
+Contact
+Contact Email
+Contact Information
+Contact Landlord
+Contact Phone
+Contact support
+Continue
+Continue Lease
+Continue browsing
+Continue browsing for other available properties
+Continue with Google
+Contract
+Contract Details
+Contract Info
+Contract Reports
+Contracts Management
+Conversion
+Cookie Policy
+Coordinate with your landlord for move-in dates and key collection.
+Copied!
+Copy
+Copy link
+Create Account
+Create Backup
+Create Listing
+Create Property
+Create a Free Account
+Create a free account
+Created:
+Creating Listing...
+Creating accountΓÇª
+CreatingΓÇª
+Critical
+Current Images
+Current Password (required to save changes)
+Current Status:
+Current Tenant
+Custom Report
+Daily
+Danger Zone
+Dar es Salaam
+Dar es Salaam, Africa
+Dar es Salaam, Masaki
+Dar es Salaam, Tanzania ┬╖ Est. 2024
+Dashboard
+Date
+Date:
+Debug
+Default rule shown from live commission data
+Delete
+Delete Account
+Delete Property
+Delete Transaction
+Deposit
+Describe key features, amenities, and nearby attractionsΓÇª
+Describe the property in detail...
+Describe the propertyΓÇª
+Describe your property
+Describe your property in detail...
+Describe your property, highlighting key features and amenities...
+Describe your property, including key features, amenities, and nearby attractions...
+Describe your propertyΓÇª
+Description
+Description *
+Details & reviews
+Digital Contract
+Digital Contracts
+Direct Message
+Doe
+Download
+Draft
+Due Date:
+Earned
+Edit
+Edit Profile
+Edit Property
+Edit User
+Email
+Email *
+Email Address
+Email cannot be changed from this page
+Email:
+End
+Eneo la Mpangishaji
+Ensure your contact information is up to date and be ready to respond quickly.
+Enter amount in TZS
+Enter property title
+Enter rejection reason...
+Enter your PIN to complete the payment
+Enter your full name
+Enter your mobile money number
+Enter your password
+Error
+Error Loading Applications
+Estimated Response Time:
+Exclusive Offers
+Expired
+Export
+Export CSV
+FEATURED
+FINANCE
+Facebook
+Failed
+Faili la mkataba lililopakiwa
+Feature this property
+Featured
+Featured Picks
+Featured Property
+Featured on Homepage
+Featured on homepage
+Featured properties appear at the top of search results
+Featured property (highlight in search results)
+Fee
+Fetching details from our database
+Fill in the details below to list your property.
+Financials
+Find Your
+Find residential, commercial & more
+First Month Rent:
+First Name *
+First name
+First-month and monthly rent on your linked listings
+Forgot password?
+Founded
+Frequently Asked
+Full Address
+Full Address *
+Full Name *
+Full address
+Full name
+Full street address
+Funga
+Furnished
+Furnishing
+Futa
+General Inquiry
+General Settings
+Get Started
+Get in Touch
+Ghairi
+Go
+Go to page
+Google
+Grid
+Guest reviews
+Guests
+Guests can book without an account. Log in to track the stay and leave a review later.
+Hakuna mikataba ya kidijitali
+Hakuna wapangaji waliopitishwa
+Halopesa
+Handpicked short-term rentals across Africa.
+Hati ya Mkataba *
+Hati ya mkataba ΓÇö pakua ili kusoma vizuri
+Hello, Landlord
+Hifadhi Sahihi
+High
+High Priority
+Highlighted in search results and homepage
+Hourly
+House
+How was your stay? (min 10 characters)
+I agree to the
+I already have an account
+I am aΓÇª
+I completed payment ΓÇö check again
+ID
+Identity
+Idhini
+Idhinisha Mkataba
+Imewekwa
+In Review
+Inactive
+Inakungoja idhini yako
+Inapakia mikatabaΓÇª
+InapakiaΓÇª
+InaundiaΓÇª
+InawasilishaΓÇª
+Info
+Internal admin notesΓÇª
+JPG, PNG, GIF ΓÇö max 5MB each
+John
+Join Oweru Today
+Join thousands of Africans who found their perfect rental through Oweru.
+KN 123 Street, Kigali
+Key Insights
+Kichwa cha Mkataba *
+Kigali, Rwanda
+L
+LANDLORD
+Landlord
+Landlord Details
+Landlord Information
+Landlord Name
+Landlord Phone
+Landlord Workspace
+Landlord listings
+Language
+Last 3 Months
+Last 30 days
+Last 6 Months
+Last 7 days
+Last 90 days
+Last Month
+Last Name *
+Last Updated:
+Last Year
+Last name
+Last year
+Latitude
+Leads
+Linked Owners
+List
+List your commercial space
+List your property for rent and reach potential tenants
+List your property for rent and reach potential tenants across Africa
+Listed
+Listed by Agent
+Listing Created Successfully!
+Listings
+Live Feed
+Live insights and downloadable performance reports
+Live listings assigned to your agent account.
+Loading
+Loading Applications...
+Loading Oweru propertiesΓÇª
+Loading activity logsΓÇª
+Loading analytics...
+Loading applications...
+Loading applicationsΓÇª
+Loading commission dataΓÇª
+Loading commissions...
+Loading contracts...
+Loading contractsΓÇª
+Loading listings...
+Loading notifications...
+Loading notificationsΓÇª
+Loading payment historyΓÇª
+Loading payment records...
+Loading paymentsΓÇª
+Loading payouts...
+Loading profile...
+Loading propertiesΓÇª
+Loading property details...
+Loading property...
+Loading propertyΓÇª
+Loading receipts...
+Loading reviewsΓÇª
+Loading settings...
+Loading staysΓÇª
+Loading stayΓÇª
+Loading system reportsΓÇª
+Loading system settingsΓÇª
+Loading tenantsΓÇª
+Loading transactionsΓÇª
+Loading usersΓÇª
+Loading your applications...
+Loading...
+LoadingΓÇª
+Location
+Location & Pricing
+Location *
+Location / Area
+Location Coordinates
+Location or property nameΓÇª
+Location, neighbourhood, property nameΓÇª
+Location:
+Log in
+Login
+Logout
+Longitude
+Low
+M-Pesa Africa
+Maelezo ya Mkataba
+Maintenance
+Mali / Nyumba *
+Manage all listings including Oweru Rental properties
+Manage all property booking requests
+Manage and monitor all payment transactions
+Manage and monitor all rental contracts
+Manage and review user verification requests
+Manage and track all your property leads and client inquiries.
+Manage commission rules, process payments, and track agent earnings.
+Manage homepage featured rentals ΓÇö add images, videos, and amenities.
+Manage rental applications from interested tenants
+Manage your account settings and preferences. Update your profile information below.
+Manage your commercial business information
+Manage your commercial real estate inventory
+Manage your rental journey with ease
+Manage your rental portfolio and track performance
+Manage your short-term rental properties and bookings
+Mark All Read
+Mark Paid
+Mark all read
+Mark as Paid
+Mark as Read
+Mark as read
+Master-bedroom
+Max
+Medium
+Message
+Message *
+Message to Owner (Optional)
+Message:
+Messaging
+Mikataba ya Kidijitali
+Min
+Minimum 8 characters
+Mkataba Mpya
+Mkataba huu hauna sehemu za kujaza.
+Mkataba umesainiwa na mpangaji
+Mobile Money
+Mobile Money Provider
+Mobile money registered number (Tigo, M-Pesa, Airtel, Halopesa)
+Modern Office Space in Dar
+Modern Office Space in Kigali
+Monitor and manage all financial transactions across the platform.
+Monitor and manage system alerts and notifications
+Monthly
+Monthly Applications
+Monthly Price (TZS) *
+Monthly Rent
+Monthly Rent (TZS) *
+Monthly Revenue
+Monthly rent
+Monthly rent:
+Months
+Most Inquiries
+Most Viewed
+Mpangaji *
+My Applications
+My Commissions
+My Listings
+My Properties
+My Stays
+My Tenants
+Name
+Name:
+Navigate
+New Conversation
+New Password (optional)
+New here? Sign up takes under a minute
+Next
+Next Home?
+Next Step
+Next payment due:
+No Oweru Rental properties yet
+No Payments
+No QR Codes Yet
+No action needed
+No active contract
+No activity logs for this user.
+No activity logs found.
+No alerts found
+No analytics records found.
+No application
+No applications found
+No applications found.
+No applications yet
+No applications yet. Share your property to get started!
+No bookings found
+No commercial properties available
+No commission records found.
+No completed receipts found.
+No contract
+No contracts found
+No contracts yet
+No conversation selected
+No conversations yet
+No documents submitted
+No featured properties yet.
+No images uploaded yet. Add at least one image to showcase your property.
+No listings found.
+No logs match your filters.
+No message provided.
+No messages yet. Say hello! ≡ƒæï
+No notifications yet
+No paid payouts found.
+No payment records found
+No payments found
+No payments match the selected filter.
+No payments recorded yet
+No payments yet
+No properties found
+No properties listed yet
+No properties with landlord info found.
+No properties yet
+No recent activity
+No recent bookings
+No rent payments yet
+No reports found
+No revenue data available
+No reviews found
+No saved properties
+No stays yet
+No tenants found
+No tenants matched your search.
+No tracking links found
+No transactions match your filters.
+No users found
+No verification requests found
+Not set
+Note:
+Notes
+Notes (optional)
+Notification &amp; System Toggles
+Notifications
+Number of Guests *
+OWERU
+Occupancy Rate
+Occupied
+Offered Rent (or counter-offer)
+Offered Rent:
+Office
+Office Hours
+Offices, retail spaces, warehouses, and industrial properties for your business.
+Ohio Street, Upanga
+Once confirmed, your contract will be automatically activated
+Once you delete your account, there is no going back. Please be certain.
+Open in Maps
+Open menu
+Or continue with
+Or register with
+Our
+Our Story
+Overdue Payment(s)
+Overview
+Oweru
+Oweru HQ
+Oweru Rental
+Oweru Rental Properties
+Oweru Rentals
+Oweru Special
+Oweru Special Packages
+Oweru initial platform fee (1 month, separate)
+Oweru platform fee (30%)
+Oweru?
+Owner
+Owners
+P.O. Box 7563
+PAYMENT PROVIDER
+PHONE NUMBER
+PNG, JPG up to 10MB each
+PNG, JPG up to 5MB each
+PNG, JPG ΓÇö max 5MB each
+PNG, JPG, GIF up to 10MB each ΓÇó Maximum 6 images
+PRIMARY
+Page
+Paid
+Paid At
+Paid Date:
+Paid commission payouts from the backend.
+Pakia mikataba ya kukodisha na simamia sahihi za kidijitali.
+Pakua
+Pakua hati ili kusoma maudhui yote.
+Parking Spaces
+Parties Involved
+Partnership
+Password
+Password Requirements
+Password strength
+Pay Rent
+Pay Rent Now
+Pay TZS 20,000
+Pay additional months
+Pay upcoming months and review your rent history.
+Payment
+Payment Breakdown
+Payment Details
+Payment Due
+Payment History
+Payment ID:
+Payment Initiated Successfully
+Payment Method
+Payment Method:
+Payment Not Completed
+Payment Period
+Payment Period *
+Payment Receipts
+Payment Records
+Payment Reminders
+Payment initiated! Check your phone for payment prompt.
+Payment period:
+Payment prompt will be sent to your phone shortly. Please:
+Payments Management
+Payout History
+Payouts
+Peak Month
+Peak:
+Pending
+Perfect Rental
+Performance and revenue metrics from the Laravel agent analytics endpoint.
+Performance metrics for your portfolio
+Phone
+Phone *
+Phone Number
+Phone Number *
+Phone:
+Please provide a reason for rejecting this application.
+Please try again or return to the listings.
+Please wait while we fetch your applications.
+Popular Properties
+Portfolio-first workflow
+Powered by Selcom ┬╖ 256-bit encrypted
+Powered by Selcom ┬╖ Oweru
+Premium
+Premium Short Stay
+Premium properties handpicked by Oweru.
+Prev
+Previous
+Price
+Price ($) *
+Price (TZS)
+Price Type
+Price per Night (TZS) *
+Price:
+Price: High ΓåÆ Low
+Price: Low ΓåÆ High
+Pricing & Size
+Pricing &amp; Size
+Privacy Policy
+Proceed to Payment
+Processing...
+ProcessingΓÇª
+Promise
+Properties
+Properties Management
+Properties saved from your tenant account.
+Properties where landlord contact details have been recorded.
+Properties with Info
+Properties you save will appear here.
+Property
+Property Applications
+Property Details
+Property Features
+Property Hub.
+Property Images
+Property Listing
+Property Management
+Property Rent Amount
+Property Reports
+Property Status
+Property Title
+Property Title *
+Property Type
+Property Type *
+Property Videos
+Property:
+QR Code
+QR Codes
+QR codes will appear here once your listings are active.
+Quick Actions
+Quick Generate
+Rating
+Reach out to discuss next steps and signing the lease agreement.
+Read
+Ready
+Ready for backend wiring
+Ready to Find Your
+Ready to experience
+Real Estate Management
+Reason:
+Receipt
+Recent Activity
+Recent Activity Logs
+Recent Applications
+Recent Bookings
+Recent Payments
+Recently Listed
+Redefined.
+Redirecting in
+Redirecting to your listings...
+Redirecting to your listingsΓÇª
+Refine
+Refresh
+Refund
+Refunded
+Register
+Reject
+Reject Application
+Reject Request
+Rejected
+Rejecting...
+Rejection reason (required to reject)...
+Rejection reasonΓÇª
+Related Information
+Remember me
+Remove
+Rent
+Rent Amount:
+Rent Collection
+Rent Paid Successfully
+Rent Payment
+Rent Payments
+Rent paid
+Rent payments will appear here.
+Rental Applications
+Rental Workflow Progress
+Rented
+Repeat your password
+Reply
+Reports &amp; Analytics
+Request Info
+Residential
+Resolved
+Response
+Response Promise
+Response:
+Retry
+Revenue
+Revenue Trend
+Review
+Review Actions
+Review Details
+Review and manage rental applications
+Review property applications and take approve or reject actions directly from your dashboard.
+Review stay
+Review the feedback provided and address any concerns
+Reviews
+Reviews from guests will appear here
+Role
+SAHIHI YA KIDIJITALI
+SECURE PAYMENT
+Saved Listings
+Saved Properties
+SavingΓÇª
+Schedule a Viewing
+Search
+Search Properties
+Search Results
+Search alerts...
+Search by name or emailΓÇª
+Search by name, email or typeΓÇª
+Search by name, property or email...
+Search by property or applicantΓÇª
+Search by property or guestΓÇª
+Search by title or locationΓÇª
+Search listings...
+Search logsΓÇª
+Search name, email, phoneΓÇª
+Search notifications...
+Search notificationsΓÇª
+Search payments...
+Search properties or locations...
+Search properties...
+Search propertiesΓÇª
+Search property, location, landlord name or phone...
+Search reports...
+Search reviewsΓÇª
+Search saved propertiesΓÇª
+Search tenant, property, landlordΓÇª
+Search tenant, property, or reference...
+Search transactionsΓÇª
+Search user, action, description...
+SearchΓÇª
+Secure checkout ┬╖ TZS 20,000
+Security
+Security Settings
+See all commercial
+See all residential
+Sehemu Nyingine
+Select Period
+Select Report Type
+Select a conversation from the sidebar or start a new one.
+Select a subject
+Selected role
+Send Message
+Send Us a
+Service Charge:
+Services
+Severity
+Severity:
+Share & Track
+Short Stay
+Shortcuts
+Showing
+Sign
+Sign In
+Sign In Required
+Sign Out
+Sign in as
+Sign in to Book Visit
+Sign in to my account
+Sign in to your Oweru account to continue.
+Signatures
+Signing inΓÇª
+Single room
+Single-room
+Site visit fee ┬╖ non-refundable
+Site visit fees, first-month rent, and monthly rent will appear here after you pay.
+Smart Real Estate,
+Special Requests (Optional)
+Special requests (optional)
+Start
+Start by adding your first listing
+Start exploring properties and submit your first application.
+Stats
+Status
+Status Breakdown
+Status:
+Status: All
+Stay updated on contracts, applications, and messages.
+Stay updated with applications, payments, and important events
+Step 1 of 3
+Step 2 of 3
+Step 3 of 3
+Story
+Studio
+Subject *
+Submit Application
+Submitted Documents
+Submitting...
+Suspend
+Suspended
+Switch Account
+System
+System Backups
+System Logs
+System Settings
+System policy
+TZS 20,000
+TZS 500K ΓÇô 1M
+TZS per month
+Taarifa za Mpangaji
+Tancot House, Dar es Salaam
+Tancot House, Posta
+Tancot House, Posta ┬╖ Dar es Salaam
+Technical Support
+Tell the owner/dalali about yourself, why you'd be a good tenant, etc.
+Tell us how we can helpΓÇª
+Tenant
+Tenant Access Required
+Tenant Dashboard
+Tenant Workspace
+Tenant name, propertyΓÇª
+Tenant's Message
+Tenant:
+Terminated
+Terms & Conditions
+Terms of Service
+Thank you ΓÇö your message has been received. We'll be in touch within 24 hours.
+The application you're looking for could not be found or may have been removed.
+The site visit fee was not received
+This Month
+This action cannot be undone.
+Tigo Pesa
+Timestamps
+Title
+Title *
+Title:
+To make
+Toa Sahihi Yako
+Top Performer
+Top Performing Properties
+Top Properties
+Top Property
+Total
+Total Amount
+Total Amount Due
+Total Amount Due:
+Total Amount:
+Total Bookings
+Total Clicks
+Total Earned
+Total Links
+Total Paid
+Total Revenue
+Total Shares
+Total:
+Track all rent and site-visit payments
+Track and manage all your rental applications
+Track live payment records and collection stats
+Track performance and make data-driven decisions
+Track your earnings and commission payments from property deals.
+Track your rental application and payment status
+Tracking URL
+Traditional Contract
+Transaction Details
+Transaction ID:
+Transaction Reports
+Transactions
+Try Again
+Try a different location or adjust your filters.
+Try a different search term.
+Try adjusting your filters or add a new user.
+Try adjusting your filters or generate a new report
+Try adjusting your filters or search terms.
+Try adjusting your filters, or add your first property to get started.
+Tuma
+Tuma kwa Mpangaji
+Type
+Type a messageΓÇª
+Type:
+Unda Mkataba
+Unda Mkataba Mpya
+Unda Mkataba wa Kidijitali
+Unda Mkataba wa Kwanza
+Unda mkataba wako wa kwanza wa kidijitali kwa mpangaji wako.
+Under 500K TZS
+Under TZS 500K
+Unfurnished
+Unread
+Upcoming Payment(s)
+Update Property
+Update your profile with accurate information
+Update your profile with current contact information.
+Upload Images
+Upload Images (up to 6 images)
+Upload Videos
+User
+User Info
+User Management
+User Reports
+User:
+Users
+Usually 2-3 business days.
+Vacation
+Vacation Rentals
+Values
+Verification
+Verification Details
+Verification Management
+Verification Pending
+Verification Reports
+Verified Platform ┬╖ Africa
+View
+View All
+View Application
+View Details
+View My Applications
+View Property
+View Tenants ΓåÆ
+View all listings
+View all ΓåÆ
+View full details & reviews
+View, fill, and sign your rental contracts online
+Villa
+Visible to tenants searching for rentals
+Visit Our
+Visiting
+Wait for the USSD/SMS prompt on your phone
+Waiting for Payment
+Wallet
+Warning
+Wasilisha Mkataba
+Weekly
+Welcome back
+What Drives Us
+What You Can Do:
+WhatsApp
+When tenants make payments, they will appear here.
+When tenants pay first-month or additional months on your listings, records appear here.
+Why We Exist
+With Owners
+Withdrawal
+Yes, Delete
+You can offer the same amount or negotiate
+You don't have any pending or completed payments yet.
+You need an account to book a site visit and connect with agents.
+You need to be signed in to apply for this property.
+You'll be notified about contracts, applications, and messages here.
+Your Favourites
+Your Message:
+Your application for
+Your application is currently being reviewed by the landlord.
+Your business account is under review. This usually takes 1-3 business days.
+Your full name
+Your name
+Your payment history will appear here once transactions are made.
+alike.
+and
+app.id.toString() === applicationId); return (
+ba
+bd
+c.status === 'approved').length, }; return (
+c.status === 'pending').reduce((sum, c) => sum + c.amount, 0); return (
+c.status === 'pending_signature'); return (
+clearInterval(timer); }, [navigate]); const errorConfigs: Record
+contact@company.com
+contact@company.rw
+downloadContract(contract.id, contract.file_name || 'contract.pdf')} >
+downloadQR(pid, item.property.title)} className="qr-btn qr-btn-dl">
+e.g. 0712 345 678
+e.g. Luxury Beach Villa
+e.g., +255 123 456 789 or 0123 456 789
+e.g., 0712 345 678
+e.g., 34 Toure Drive, Masaki
+e.g., 800000
+e.g., Dar es Salaam, Masaki
+e.g., John Smith
+e.g., Masaki, Dar es Salaam
+e.g., Modern 2-Bedroom Apartment in Masaki
+e.g., Modern 2-Bedroom in Masaki
+e.g., Modern 2BR Apartment in Masaki
+e.key === 'Enter' && handleJump()} />
+e.stopPropagation()}>
+e.target === e.currentTarget && setReviewFor(null)}>
+f.type !== 'signature'); const [fieldValues, setFieldValues] = useState
+fieldValues[f.id]?.trim()); return (
+handleApprove(app.id)}>
+handleApprovePayment(payment.id)} >
+handleArchive(item.id)} title="Archive">
+handleArchive(item.id)}>
+handleDelete(item.id)} title="Delete">
+handleDelete(item.id)}>
+handleDelete(p.id)} className="action-btn action-del">
+handleDeleteBackup(b.id)}>
+handleDeleteTransaction(selectedTransaction.id)} >
+handleDownload(receipt.id)}> Download
+handleDownload(selectedTransaction)}>
+handleDownload(txn)}>
+handleDownloadBackup(b)}>
+handleMarkAsPaid(payment.id)} >
+handleMarkRead(item.id)}>
+handleReject(app.id)}>
+handleSaveProperty(e, p.id)} />
+handleStatusChange(txn.id, 'completed')}>
+handleWhatsApp(item)} className="sat-btn sat-btn-wa">
+has been submitted.
+i !== amenityId) : [...p.amenities, amenityId] })); const handleImageUpload = (e: React.ChangeEvent
+i !== index) })); }; const handleVideoUpload = (e: React.ChangeEvent
+i.qr).length; return (
+idx !== i)); }; const handleVideoUpload = (e: React.ChangeEvent
+info@oweru.com
+john@example.com
+kabla ya kuwasilisha mkataba.
+l.action).filter(Boolean))); return (
+lazima
+listings found
+loadProperties(currentPage)} title="Refresh">
+loadProperties(currentPage)}>Retry
+msg ?
+m┬▓
+name@email.com
+navigate('/dashboard/commercial/my-properties')}> Cancel
+navigate(-1), unknown: () => navigate(-1), }; const secondaryActions: Record
+new Date(p.due_date) >= new Date()).length > 0 && (
+obs.disconnect(); }, [src]); return (
+of
+onDownload(contract.id, contract.file_name || 'mkataba.pdf')} >
+onPay(item.id)}>
+openDeleteModal(txn)}>
+openDetailModal(txn)}>
+openPayModal(nextPending)}> Pay Now
+or
+p.id === c.property_id); return (
+p.status === 'completed'); const overduePayments = pendingPayments.filter(p => new Date(p.due_date)
+payResult !== 'waiting' && closePaymentModal()}>
+per night
+properties
+props
+quality housing
+r.status === 'in_review').length, }; if (loading) return (
+removeExistingImage(img.id)}>
+removeImage(i)} className="al-img-del">
+removeImage(i)}>
+removeNewImage(i)}>
+s + m.revenue, 0))}
+s === 'available' ?
+s.n; const current = step === s.n; return (
+setActiveSection(isOpen ? null : section.title)} >
+setBedrooms(e.target.value ? parseInt(e.target.value) : undefined)}>
+setField('property_id', e.target.value)} required>
+setField('tenant_id', e.target.value)} required>
+setHover(null)} >
+setIsExpanded(!isExpanded)} className="w-full text-left p-4" >
+setIsMenuOpen(false)}>
+setIsMenuOpen(false)}>Create Account
+setIsMenuOpen(false)}>Login
+setIsMenuOpen(true)} aria-label="Open menu">
+setOpenFaq(openFaq === i ? null : i)}>
+setPriceRange(e.target.value)}>
+setRating(n)}>
+setRatingFilter(e.target.value)} >
+setSearch(e.target.value)} />
+setSearch(e.target.value)} placeholder="Search notificationsΓÇª" />
+setSearch(e.target.value)} placeholder="Search properties or locations..." />
+setSearchSection(e.target.value)}>
+setSearchTerm('')}>
+setSearchTerm(e.target.value)} />
+setSelectedImg(i => (i + 1) % images.length); return (
+setSelectedType(e.target.value)}>
+setShowBookingModal(false)}>
+setShowDetailModal(false)}> Close
+setShowFilters(v => !v)}>
+setShowSignPad(false)} /> )}
+setShowSignPad(true)} >
+setSidebarOpen(false)} >
+setSidebarOpen(false)}>
+setSidebarOpen(true)}>
+setStatus(e.target.value)} >
+setStatusFilter(e.target.value)} >
+setStatusFilter(e.target.value)}>
+setTimeRange(e.target.value)} >
+setViewMode('grid')} title="Grid">
+setViewMode('list')} title="List">
+statusFilter === 'all' || p.status === statusFilter); /* ΓöÇΓöÇ Render ΓöÇΓöÇ */ return (
+sum + (p.amount || 0), 0))}
+tenant.digital_contracts?.[0]?.status ?? tenant.contract?.status; return (
+to track this stay under My Stays and leave a review later.
+total listings
+txns
+v).map(([k]) => k) : (p.amenities ?? []); return (
+v).slice(0, 4).map(([k]) => (
+void }) => (
+void; isDark: boolean; } const ThemeContext = createContext
+void; logout: () => void; } const AuthContext = createContext
+void; onLogin: () => void; onSignup: () => void; }) => (
+void; onProceed: () => void; }) => (
+void; onRetry: () => void }) => (
+void; onSubmit: (contractId: number, fields: Record
+void; onUpdate: (id: number, status: string) => Promise
+void; secondaryAction: () => void; icon: React.ReactNode; } const AlertTriangleIcon = () => (
+void; t: (key: string) => string; }; const LanguageContext = createContext
+void; }) => (
+www.oweru.com
+x !== id) : [...p.amenities, id], })); const handleImageUpload = (e: React.ChangeEvent
+your@email.com
+| React.TouchEvent
+| null; alerts: Record
+| null; bnb: Record
+| null; commissions: Record
+| null; contracts: Record
+| null; properties: Record
+| null; transactions: Record
+| null; verification: Record
+}, ] ).map((s, i) => (
+}, ].map(item => (
+}, ]; return (
+}, }; const STATUS_META: Record
+}, }; return (
+}; return icons[a.toLowerCase()] ??
+}[a.toLowerCase()] ??
+}[s] ??
+┬⌐ 2025 Oweru Investment Ltd. All rights reserved.
+ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó
+ΓåÉ Back to Properties
+ΓÅ│ What's Next?
+Γ£ô Application approved. Tenant will proceed with payment.
+Γ£ô Approved
+Γ£ô EMAIL
+Γ£ô PHONE
+Γ£ô Payment completed successfully
+Γ£ô Rent paid
+Γ£ô Site visit paid
+Γ£ô Verified Business
+Γ£ù Rejected
+Γ¥î Application Not Approved
+≡ƒÄë Next Steps
+≡ƒöÆ Secure:
