@@ -22,6 +22,7 @@ use App\Services\SelcomPaymentService;
 use App\Services\SiteVisitPaymentService;
 use App\Services\RentPaymentService;
 use App\Services\PaymentAlertService;
+use App\Services\SiteVisitPostPaymentService;
 use App\Services\MonthlyRentService;
 
 class TenantController extends Controller
@@ -1298,19 +1299,7 @@ class TenantController extends Controller
             }
 
             if ($application->payment_status === 'paid' && $application->transaction_id) {
-                $alerts->recordCompletedPayment(
-                    $user,
-                    $property,
-                    (float) ($application->service_fee ?: SiteVisitPaymentService::serviceFee()),
-                    'site_visit',
-                    (string) $application->transaction_id,
-                    'Site visit fee — ' . ($property->title ?? 'Property'),
-                    [
-                        'application_id' => $application->id,
-                        'payment_method' => $application->payment_method,
-                        'source' => 'application_backfill',
-                    ],
-                );
+                app(SiteVisitPostPaymentService::class)->finalize($application);
             }
 
             if ($application->rent_payment_status === 'paid' && $application->rent_transaction_id) {

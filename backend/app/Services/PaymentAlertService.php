@@ -242,41 +242,24 @@ class PaymentAlertService
      */
     public function handleSiteVisitPaid(Application $application): void
     {
+        app(SiteVisitPostPaymentService::class)->finalize($application);
+    }
+
+    /**
+     * Stakeholder alerts only (called once when payment row is first created).
+     */
+    public function handleSiteVisitPaidNotifications(
+        Application $application,
+        Payment $payment,
+        float $amount,
+        string $reference,
+    ): void {
         $application->loadMissing('property', 'user');
         $property = $application->property;
         $tenant = $application->user;
 
         if (! $property || ! $tenant) {
             return;
-        }
-
-        $amount = (float) ($application->service_fee ?: SiteVisitPaymentService::serviceFee());
-        $reference = (string) ($application->transaction_id ?: ('SV-APP-' . $application->id));
-
-        $payment = $this->recordCompletedPayment(
-            $tenant,
-            $property,
-            $amount,
-            'site_visit',
-            $reference,
-            'Site visit fee — ' . ($property->title ?? 'Property'),
-            [
-                'application_id' => $application->id,
-                'payment_method' => $application->payment_method,
-                'source' => 'site_visit_payment_service',
-                'provider' => strtoupper((string) ($application->payment_method ?? 'TIGO')),
-            ],
-        );
-
-        if ($payment && $property->agent_id) {
-            try {
-                app(PaymentSplitService::class)->processSiteVisitSplit($payment);
-            } catch (\Throwable $e) {
-                Log::warning('Site visit payment split failed', [
-                    'payment_id' => $payment->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
         }
 
         $this->notifyStakeholders(

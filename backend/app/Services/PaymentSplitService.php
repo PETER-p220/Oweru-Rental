@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Log;
 class PaymentSplitService
 {
     /**
-     * Site visit fee: 50% Oweru, 50% agent (configurable via SITE_VISIT_* env).
+     * Site visit fee: tenant pays via Oweru checkout (Oweru share stays on merchant).
+     * Disburse only the agent share to the listing agent's phone.
      */
     public function processSiteVisitSplit(Payment $payment): void
     {
@@ -32,10 +33,9 @@ class PaymentSplitService
             }
 
             $recipient = User::find($property->agent_id);
-            $adminPhone = config('services.oweru.admin_phone');
 
-            if (! $recipient?->phone || ! $adminPhone) {
-                Log::error('Site visit split skipped: missing agent or admin phone', [
+            if (! $recipient?->phone) {
+                Log::error('Site visit split skipped: agent phone not set on user profile', [
                     'payment_id' => $payment->id,
                     'agent_id' => $property->agent_id,
                 ]);
@@ -46,7 +46,7 @@ class PaymentSplitService
             $totalAmount = (float) $payment->amount;
             $oweruShare = (float) config('services.site_visit.oweru_share', 0.5);
             $agentShare = (float) config('services.site_visit.agent_share', 0.5);
-            $adminAmount = round($totalAmount * $oweruShare);
+            $oweruRetainedAmount = round($totalAmount * $oweruShare);
             $recipientAmount = round($totalAmount * $agentShare);
 
             $baseUrl = rtrim((string) config('services.oweru.checkout_url', 'https://api.selcom.oweru.com/api/checkout'), '/');
@@ -61,25 +61,24 @@ class PaymentSplitService
             $metadata = $payment->metadata ?? [];
             $provider = $metadata['provider'] ?? strtoupper((string) ($metadata['payment_method'] ?? 'TIGO'));
 
-            $this->initiateSplitPayment($payment, $adminAmount, $adminPhone, 'admin', $provider, $baseUrl, $appKey);
             $this->initiateSplitPayment($payment, $recipientAmount, $recipient->phone, 'agent', $provider, $baseUrl, $appKey);
 
             $payment->update([
                 'metadata' => array_merge($metadata, [
                     'payment_split' => true,
                     'split_processed_at' => now()->toIso8601String(),
-                    'admin_amount' => $adminAmount,
+                    'oweru_retained_amount' => $oweruRetainedAmount,
                     'recipient_amount' => $recipientAmount,
                     'recipient_type' => 'agent',
                     'listing_type' => 'site_visit',
-                    'split_model' => '50_50_test',
+                    'split_model' => 'oweru_merchant_plus_agent_payout',
                 ]),
             ]);
 
             Log::info('Site visit payment split processed', [
                 'payment_id' => $payment->id,
                 'total_amount' => $totalAmount,
-                'admin_amount' => $adminAmount,
+                'oweru_retained_amount' => $oweruRetainedAmount,
                 'agent_amount' => $recipientAmount,
             ]);
         } catch (\Exception $e) {
@@ -270,7 +269,23 @@ class PaymentSplitService
                     'provider_used' => $selcomProvider,
                     'original_provider' => $provider,
                 ]);
+            } else {
+                Log::error('Split wallet-payment failed', [
+                    'recipient_type' => $recipientType,
+                    'phone' => $phone,
+                    'order_id' => $splitOrderId,
+                    'status' => $payResponse->status(),
+                    'body' => $payResponse->body(),
+                ]);
             }
+        } else {
+            Log::error('Split create-order-minimal failed', [
+                'recipient_type' => $recipientType,
+                'phone' => $phone,
+                'order_id' => $splitOrderId,
+                'status' => $createResponse->status(),
+                'body' => $createResponse->body(),
+            ]);
         }
     }
 

@@ -419,6 +419,11 @@ class AgentController extends Controller
     {
         $user = Auth::user();
 
+        if ($this->leadTablesAvailable()) {
+            app(\App\Services\SiteVisitPostPaymentService::class)
+                ->reconcilePaidApplicationsForAgent($user->id);
+        }
+
         $leads = Lead::with('property', 'user')
             ->where('agent_id', $user->id)
             ->orderBy('created_at', 'desc')
@@ -700,7 +705,7 @@ class AgentController extends Controller
         }
 
         $user = Auth::user();
-        $types = ['rent', 'first_month_rent', 'monthly_rent', 'rent_payment'];
+        $types = ['rent', 'first_month_rent', 'monthly_rent', 'rent_payment', 'site_visit'];
 
         $payments = Payment::with(['user', 'property'])
             ->where(function ($q) use ($user) {
@@ -762,7 +767,7 @@ class AgentController extends Controller
         }
 
         $user = Auth::user();
-        $types = ['rent', 'first_month_rent', 'monthly_rent', 'rent_payment'];
+        $types = ['rent', 'first_month_rent', 'monthly_rent', 'rent_payment', 'site_visit'];
         $base = Payment::where(function ($q) use ($user) {
             $q->where('agent_id', $user->id)
                 ->orWhereHas('property', fn ($pq) => $pq->where('agent_id', $user->id));

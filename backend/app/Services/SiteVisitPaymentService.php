@@ -156,7 +156,14 @@ class SiteVisitPaymentService
             ->first();
 
         if (! $application || $application->payment_status === 'paid') {
-            return false;
+            if ($application) {
+                app(SiteVisitPostPaymentService::class)->finalize(
+                    $application->fresh(['property', 'user']),
+                    $meta,
+                );
+            }
+
+            return $application !== null;
         }
 
         $this->confirmPayment($application, $meta);
@@ -166,16 +173,17 @@ class SiteVisitPaymentService
 
     public function confirmPayment(Application $application, array $meta = []): void
     {
-        if ($application->payment_status === 'paid') {
-            return;
+        if ($application->payment_status !== 'paid') {
+            $application->update([
+                'payment_status' => 'paid',
+                'service_fee' => self::serviceFee(),
+            ]);
         }
 
-        $application->update([
-            'payment_status' => 'paid',
-            'service_fee' => self::serviceFee(),
-        ]);
-
-        $this->alerts->handleSiteVisitPaid($application->fresh(['property', 'user']));
+        app(SiteVisitPostPaymentService::class)->finalize(
+            $application->fresh(['property', 'user']),
+            $meta,
+        );
 
         Log::info('Site visit payment confirmed', [
             'application_id' => $application->id,

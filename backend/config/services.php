@@ -47,7 +47,7 @@ return [
         'landlord_oweru_fee_months' => (float) env('RENT_LANDLORD_OWERU_FEE_MONTHS', 1),
     ],
 
-    /** Site visit fee (temporary test default 200 TZS; production was 20_000) */
+    /** Site visit: fee split is accounting only for Oweru (merchant); agent share is paid out via wallet. */
     'site_visit' => [
         'fee' => (int) env('SITE_VISIT_FEE', 200),
         'oweru_share' => (float) env('SITE_VISIT_OWERU_SHARE', 0.5),
