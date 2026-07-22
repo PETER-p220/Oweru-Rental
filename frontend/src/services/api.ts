@@ -166,8 +166,15 @@ class Api {
   static async login(email: string, password: string, userType: string) {
     return this.request<LoginResponse>('login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, user_type: userType }),
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password, user_type: userType }),
     });
+  }
+
+  static async checkEmailAvailability(email: string) {
+    const q = encodeURIComponent(email.trim().toLowerCase());
+    return this.request<{ available: boolean; reason?: string; message?: string }>(
+      `auth/check-email?email=${q}`,
+    );
   }
 
   static async register(userData: {

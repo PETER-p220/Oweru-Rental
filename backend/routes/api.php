@@ -25,6 +25,7 @@ use App\Http\Controllers\MessageController;
 // ─────────────────────────────────────────────────────────────────────────────
 
 Route::post('/register', [AuthController::class, 'register']);
+Route::get('/auth/check-email', [AuthController::class, 'checkEmailAvailability']);
 Route::post('/login',    [AuthController::class, 'login']);
 Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:sanctum');
 

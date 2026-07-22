@@ -58,7 +58,7 @@ export function parseAuthError(err: unknown, fallbackEmail?: string): ParsedAuth
       return {
         variant: 'exists',
         title: 'You already have an account',
-        messages: ['This email is registered on Oweru. Sign in to continue, or reset your password if needed.'],
+        messages: ['This email is registered on Oweru. Signing out only ends your session — it does not delete the account. Sign in with this email, or register with a different one.'],
         emailForLogin: emailHint,
       };
     }

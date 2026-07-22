@@ -25,7 +25,7 @@ const Register = () => {
   const [step,                setStep]                = useState(1);
 
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, logout, isAuthenticated, user } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -56,7 +56,34 @@ const Register = () => {
     return errs.length === 0;
   };
 
-  const handleNext = () => { if (validateStep1()) { setStep(2); setFieldErrors([]); setAlert(null); } };
+  const handleNext = async () => {
+    if (!validateStep1()) return;
+    setFieldErrors([]);
+    setAlert(null);
+    try {
+      const check = await Api.checkEmailAvailability(formData.email);
+      const data = check.data as { available?: boolean; reason?: string; message?: string };
+      if (data?.available === false && data.reason === 'taken') {
+        setAlert({
+          variant: 'exists',
+          title: 'You already have an account',
+          messages: [
+            data.message ||
+              'This email is already registered. Sign in instead, or use another email address.',
+          ],
+          emailForLogin: formData.email.trim().toLowerCase(),
+        });
+        return;
+      }
+      if (data?.available === false) {
+        setFieldErrors([data.message || 'Enter a valid email address.']);
+        return;
+      }
+      setStep(2);
+    } catch {
+      setStep(2);
+    }
+  };
   const handleBack = () => { setStep(1); setFieldErrors([]); setAlert(null); };
 
   const handleGoogleRegister = async () => {
@@ -260,6 +287,16 @@ const Register = () => {
                 {step === 1 ? 'Enter your details to get started with Oweru.' : 'Set a strong password to protect your workspace.'}
               </p>
             </div>
+
+            {isAuthenticated && user?.email && (
+              <div style={{ marginBottom: 16, padding: '12px 14px', background: '#EFF6FF', border: '1px solid rgba(37,99,235,0.2)', borderRadius: 10, fontSize: 13, color: '#1E40AF', lineHeight: 1.5 }}>
+                You are still signed in as <strong>{user.email}</strong>. To register someone else,{' '}
+                <button type="button" onClick={() => { logout(); setAlert(null); }} style={{ background: 'none', border: 'none', color: GOLD, fontWeight: 700, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+                  sign out first
+                </button>
+                , or use a different email below.
+              </div>
+            )}
 
             {/* Alerts */}
             {alert && (

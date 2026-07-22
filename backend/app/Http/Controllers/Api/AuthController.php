@@ -20,6 +20,10 @@ class AuthController extends Controller
 {
     public function register(Request $request): JsonResponse
     {
+        $request->merge([
+            'email' => strtolower(trim((string) $request->email)),
+        ]);
+
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
@@ -35,6 +39,13 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Validation failed',
                 'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        if (User::whereRaw('LOWER(email) = ?', [strtolower($request->email)])->exists()) {
+            return response()->json([
+                'message' => 'This email is already registered. Please sign in instead.',
+                'errors'  => ['email' => ['This email is already registered. Please sign in instead.']],
             ], 422);
         }
 
@@ -56,6 +67,41 @@ class AuthController extends Controller
                 'token' => $token,
             ],
         ], 201);
+    }
+
+    /**
+     * Check if an email can be used for a new account (public, no auth).
+     */
+    public function checkEmailAvailability(Request $request): JsonResponse
+    {
+        $email = strtolower(trim((string) $request->query('email', '')));
+
+        $validator = Validator::make(['email' => $email], [
+            'email' => ['required', 'string', 'max:255', new RegistrationEmail()],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'available' => false,
+                'reason' => 'invalid',
+                'message' => $validator->errors()->first('email'),
+            ]);
+        }
+
+        $exists = User::whereRaw('LOWER(email) = ?', [$email])->exists();
+
+        if ($exists) {
+            return response()->json([
+                'available' => false,
+                'reason' => 'taken',
+                'message' => 'This email already has an Oweru account. Signing out does not remove it — please sign in, or use a different email.',
+            ]);
+        }
+
+        return response()->json([
+            'available' => true,
+            'message' => 'Email is available.',
+        ]);
     }
 
     public function login(Request $request): JsonResponse

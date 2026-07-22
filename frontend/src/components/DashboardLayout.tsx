@@ -12,6 +12,7 @@ import {
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useLanguage } from '../contexts/LanguageContext';
+import { TOKEN_KEY } from '../services/api';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -62,7 +63,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate    = useNavigate();
   const { pathname } = useLocation();
-  const { user }    = useAuth();
+  const { user, logout: authLogout } = useAuth();
 
   const userType: UserRole = (
     user?.userType || user?.user_type || user?.role || user?.userRole || 'tenant'
@@ -212,10 +213,13 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/api/logout`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`, 'Content-Type': 'application/json' },
       });
     } catch (e) { console.error('Logout error:', e); }
-    finally { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/login'); }
+    finally {
+      authLogout();
+      navigate('/login');
+    }
   };
 
   return (
