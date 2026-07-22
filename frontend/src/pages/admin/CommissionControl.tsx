@@ -31,7 +31,14 @@ const statusColor = (s: string) =>
   ({ paid: C.green, approved: C.blue, pending: C.amber, cancelled: C.red }[s] ?? C.textMuted);
 
 const typeColor = (t: string) =>
-  ({ rent: C.green, sale: C.blue, referral: C.purple }[t] ?? C.textMuted);
+  ({ rent: C.green, site_visit: C.purple, sale: C.blue, referral: C.purple }[t] ?? C.textMuted);
+
+const SplitBar = ({ agentPct, oweruPct }: { agentPct: number; oweruPct: number }) => (
+  <div style={{ display: 'flex', height: 8, borderRadius: 99, overflow: 'hidden', background: 'rgba(148,163,184,0.2)', marginTop: 10 }}>
+    <div style={{ width: `${agentPct}%`, background: C.green }} title={`Agent ${agentPct}%`} />
+    <div style={{ width: `${oweruPct}%`, background: C.gold }} title={`Oweru ${oweruPct}%`} />
+  </div>
+);
 
 const normalizeCommissionPayment = (payment: any): CommissionPayment => ({
   id: payment.id,
@@ -39,6 +46,8 @@ const normalizeCommissionPayment = (payment: any): CommissionPayment => ({
   property: payment.property,
   type: payment.type,
   amount: Number(payment.amount || 0),
+  grossAmount: Number(payment.gross_amount ?? payment.grossAmount ?? payment.amount ?? 0),
+  oweruAmount: Number(payment.oweru_amount ?? payment.oweruAmount ?? 0),
   percentage: Number(payment.percentage || 0),
   status: payment.status,
   dueDate: payment.dueDate || payment.due_date,
@@ -57,6 +66,7 @@ const CommissionControl = () => {
   const [rules, setRules] = useState<CommissionRule[]>([]);
   const [payments, setPayments] = useState<CommissionPayment[]>([]);
   const [stats, setStats] = useState<CommissionStats | null>(null);
+  const [distribution, setDistribution] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState<CommissionPayment | null>(null);
@@ -68,20 +78,33 @@ const CommissionControl = () => {
     try {
       setLoading(true);
 
-      const [rulesRes, paymentsRes, statsRes] = await Promise.all([
+      const [rulesRes, paymentsRes, statsRes, distRes] = await Promise.all([
         Api.getCommissionRules(),
         Api.getCommissionPayments(),
         Api.getCommissionStats(),
+        Api.getCommissionDistribution(),
       ]);
 
       if (rulesRes.data) {
-        setRules(rulesRes.data);
+        setRules(
+          (rulesRes.data || []).map((r: any) => ({
+            ...r,
+            isActive: r.is_active ?? r.isActive ?? true,
+            appliesTo: r.applies_to ?? r.appliesTo,
+            userType: r.user_type ?? r.userType,
+            agentShare: r.agent_share ?? r.agentShare,
+            oweruShare: r.oweru_share ?? r.oweruShare,
+          })),
+        );
       }
       if (paymentsRes.data) {
         setPayments(paymentsRes.data.map(normalizeCommissionPayment));
       }
       if (statsRes.data) {
         setStats(statsRes.data);
+      }
+      if (distRes.data) {
+        setDistribution(distRes.data);
       }
     } catch (e) {
       console.error('Failed to load commission data:', e);
@@ -216,7 +239,7 @@ const CommissionControl = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: 0 }}>Commission Rules</h3>
             <div style={{ ...body, fontSize: 12, color: C.textMuted }}>
-              Default rule shown from live commission data
+              Platform policy (from config)
             </div>
           </div>
 
@@ -253,26 +276,31 @@ const CommissionControl = () => {
                     {rule.description}
                   </p>
 
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 8 }}>
                     {[
-                      { icon: Percent,   label: rule.type === 'percentage' ? `${rule.value}%` : fmt(rule.value) },
-                      rule.minAmount ? { icon: DollarSign, label: `Min: ${fmt(rule.minAmount)}` }  : null,
-                      rule.maxAmount ? { icon: DollarSign, label: `Max: ${fmt(rule.maxAmount)}` }  : null,
-                      { icon: User,      label: rule.userType },
-                      { icon: Target,    label: rule.appliesTo },
-                    ].filter(Boolean).map(({ icon: Icon, label }: any) => (
+                      { icon: Percent, label: `Agent ${rule.agentShare ?? rule.agent_share ?? rule.value}%` },
+                      { icon: Percent, label: `Oweru ${rule.oweruShare ?? rule.oweru_share ?? (100 - Number(rule.value || 0))}%` },
+                      { icon: Target, label: rule.appliesTo ?? rule.applies_to },
+                      { icon: User, label: rule.userType ?? rule.user_type },
+                    ].map(({ icon: Icon, label }) => (
                       <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: C.textMuted }}>
                         <Icon size={12} /> {label}
                       </span>
                     ))}
                   </div>
+                  {(rule.agentShare != null || rule.agent_share != null) && (
+                    <SplitBar
+                      agentPct={Number(rule.agentShare ?? rule.agent_share ?? rule.value ?? 0)}
+                      oweruPct={Number(rule.oweruShare ?? rule.oweru_share ?? 0)}
+                    />
+                  )}
 
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                     <span style={{ ...pill(rule.isActive ? C.green : C.textMuted), fontSize: 11 }}>
                       System policy
                     </span>
                     <span style={{ ...body, fontSize: 12, color: C.textMuted }}>
-                      This default rule is derived from live commission records and is read-only here.
+                      Totals on Analytics tab reflect completed payments using these rates.
                     </span>
                   </div>
                 </div>
@@ -327,7 +355,10 @@ const CommissionControl = () => {
                         {payment.agent.name}
                       </h4>
                       <p style={{ ...body, fontSize: 12, color: C.textMuted, margin: '0 0 6px' }}>
-                        {payment.property.title}
+                        {payment.property.title} · Agent share {fmt(payment.amount)}
+                        {payment.oweruAmount > 0 && (
+                          <> · Oweru {fmt(payment.oweruAmount)}</>
+                        )}
                       </p>
                       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: C.textMuted }}>
@@ -406,6 +437,35 @@ const CommissionControl = () => {
       {activeTab === 'analytics' && (
         <div style={{ ...card, padding: '22px 24px' }}>
           <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: '0 0 22px' }}>Commission Analytics</h3>
+
+          {distribution?.totals && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16, marginBottom: 24 }}>
+              {[
+                { key: 'site_visit', title: 'Site visit (50 / 50)', accent: C.purple },
+                { key: 'rental', title: 'Rental (70% agent / 30% Oweru)', accent: C.green },
+              ].map(({ key, title, accent }) => {
+                const block = distribution.totals[key] || { gross: 0, agent: 0, oweru: 0, count: 0 };
+                return (
+                  <div key={key} style={{ border: '1px solid rgba(37,99,235,0.08)', borderRadius: 8, padding: 18 }}>
+                    <div style={{ ...body, fontSize: 13, fontWeight: 600, color: accent, marginBottom: 12 }}>{title}</div>
+                    <div style={{ ...body, fontSize: 12, color: C.textMuted, marginBottom: 4 }}>{block.count} payment(s)</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', ...body, fontSize: 12, marginBottom: 6 }}>
+                      <span>Gross collected</span>
+                      <strong style={{ color: C.text }}>{fmt(block.gross)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', ...body, fontSize: 12, marginBottom: 6 }}>
+                      <span>Agent share</span>
+                      <strong style={{ color: C.green }}>{fmt(block.agent)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', ...body, fontSize: 12 }}>
+                      <span>Oweru share</span>
+                      <strong style={{ color: C.gold }}>{fmt(block.oweru)}</strong>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 20 }}>
 

@@ -102,24 +102,32 @@ class RentalWorkflowService
     }
 
     /**
-     * Step 4: Allocate commissions to agent
+     * Step 4: Allocate commissions to agent (70% rent / 50% site visit from config).
      */
-    public function allocateCommission(Payment $payment, float $commissionPercentage = 10): Commission
+    public function allocateCommission(Payment $payment): Commission
     {
-        if (!$payment->agent_id) {
+        if (! $payment->agent_id) {
             throw new \Exception('No agent associated with this payment');
         }
 
-        $commissionAmount = ($payment->amount * $commissionPercentage) / 100;
+        $share = app(CommissionShareService::class);
+        $pct = $share->agentCommissionPercentage($payment);
+        if ($pct === null) {
+            throw new \Exception('No commission rate configured for this payment type');
+        }
 
-        return Commission::create([
-            'agent_id' => $payment->agent_id,
-            'property_id' => $payment->property_id,
-            'payment_id' => $payment->id,
-            'amount' => $commissionAmount,
-            'percentage' => $commissionPercentage,
-            'status' => 'pending',
-        ]);
+        $commissionAmount = round(((float) $payment->amount * $pct) / 100, 2);
+
+        return Commission::updateOrCreate(
+            ['payment_id' => $payment->id],
+            [
+                'agent_id' => $payment->agent_id,
+                'property_id' => $payment->property_id,
+                'amount' => $commissionAmount,
+                'percentage' => $pct,
+                'status' => 'pending',
+            ],
+        );
     }
 
     /**

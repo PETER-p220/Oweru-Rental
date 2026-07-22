@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Services\ActivityLogService;
+use App\Services\CommissionShareService;
 
 class AdminController extends Controller
 {
@@ -813,24 +814,117 @@ class AdminController extends Controller
 
     public function getCommissionRules(Request $request): JsonResponse
     {
-        $avg = $this->hasTables(['commissions'])
-            ? round((float) Commission::whereNotNull('percentage')->avg('percentage'), 2)
-            : 5.0;
+        $siteAgent = (float) config('services.site_visit.agent_share', 0.5) * 100;
+        $siteOweru = (float) config('services.site_visit.oweru_share', 0.5) * 100;
+        $rentAgent = (float) config('services.rent_fees.agent_recipient_share', 0.70) * 100;
+        $rentOweru = (float) config('services.rent_fees.agent_oweru_share', 0.30) * 100;
 
-        return response()->json(['data' => [[
-            'id' => 1,
-            'name' => 'Standard Rental Commission',
-            'description' => 'Default commission policy inferred from recorded agent commissions.',
-            'type' => 'percentage',
-            'value' => $avg > 0 ? $avg : 5,
-            'min_amount' => null,
-            'max_amount' => null,
-            'applies_to' => 'rent',
-            'user_type' => 'agent',
-            'is_active' => true,
-            'created_at' => now()->toISOString(),
-            'updated_at' => now()->toISOString(),
-        ]]]);
+        return response()->json(['data' => [
+            [
+                'id' => 1,
+                'name' => 'Site visit service charge',
+                'description' => 'Agent-listed properties: site visit fee split between Oweru (merchant) and listing agent.',
+                'type' => 'split',
+                'value' => $siteAgent,
+                'oweru_share' => $siteOweru,
+                'agent_share' => $siteAgent,
+                'min_amount' => (int) config('services.site_visit.fee', 200),
+                'max_amount' => null,
+                'applies_to' => 'site_visit',
+                'user_type' => 'agent',
+                'is_active' => true,
+                'created_at' => now()->toISOString(),
+                'updated_at' => now()->toISOString(),
+            ],
+            [
+                'id' => 2,
+                'name' => 'Agent rental commission',
+                'description' => 'First month and monthly rent on agent-listed properties: agent vs Oweru platform share.',
+                'type' => 'split',
+                'value' => $rentAgent,
+                'oweru_share' => $rentOweru,
+                'agent_share' => $rentAgent,
+                'min_amount' => null,
+                'max_amount' => null,
+                'applies_to' => 'rental',
+                'user_type' => 'agent',
+                'is_active' => true,
+                'created_at' => now()->toISOString(),
+                'updated_at' => now()->toISOString(),
+            ],
+        ]]);
+    }
+
+    public function getCommissionDistribution(Request $request): JsonResponse
+    {
+        if (! $this->hasTables(['payments'])) {
+            return response()->json(['data' => [
+                'totals' => [
+                    'site_visit' => ['gross' => 0, 'agent' => 0, 'oweru' => 0, 'count' => 0],
+                    'rental' => ['gross' => 0, 'agent' => 0, 'oweru' => 0, 'count' => 0],
+                ],
+                'recent' => [],
+            ]]);
+        }
+
+        $share = app(CommissionShareService::class);
+        $totals = [
+            'site_visit' => ['gross' => 0.0, 'agent' => 0.0, 'oweru' => 0.0, 'count' => 0],
+            'rental' => ['gross' => 0.0, 'agent' => 0.0, 'oweru' => 0.0, 'count' => 0],
+        ];
+
+        $payments = Payment::query()
+            ->whereIn('status', ['completed', 'paid'])
+            ->whereIn('type', array_merge(['site_visit'], CommissionShareService::RENT_TYPES))
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->limit(500)
+            ->get();
+
+        $recent = [];
+
+        foreach ($payments as $payment) {
+            $split = $share->splitAmounts($payment);
+            $key = $share->categoryKey($payment);
+            if (! isset($totals[$key])) {
+                continue;
+            }
+
+            $totals[$key]['gross'] += $split['gross'];
+            $totals[$key]['agent'] += $split['agent'];
+            $totals[$key]['oweru'] += $split['oweru'];
+            $totals[$key]['count']++;
+
+            if (count($recent) < 25) {
+                $recent[] = [
+                    'payment_id' => $payment->id,
+                    'type' => $payment->type,
+                    'category' => $key,
+                    'gross' => $split['gross'],
+                    'agent_amount' => $split['agent'],
+                    'oweru_amount' => $split['oweru'],
+                    'agent_rate' => round($split['agent_rate'] * 100, 1),
+                    'oweru_rate' => round($split['oweru_rate'] * 100, 1),
+                    'reference' => $payment->reference,
+                    'paid_at' => optional($payment->paid_at ?? $payment->created_at)?->toISOString(),
+                ];
+            }
+        }
+
+        return response()->json(['data' => [
+            'totals' => $totals,
+            'recent' => $recent,
+            'policy' => [
+                'site_visit' => [
+                    'agent_percent' => (float) config('services.site_visit.agent_share', 0.5) * 100,
+                    'oweru_percent' => (float) config('services.site_visit.oweru_share', 0.5) * 100,
+                ],
+                'rental' => [
+                    'agent_percent' => (float) config('services.rent_fees.agent_recipient_share', 0.70) * 100,
+                    'oweru_percent' => (float) config('services.rent_fees.agent_oweru_share', 0.30) * 100,
+                ],
+            ],
+        ]]);
     }
 
     public function getCommissionPayments(Request $request): JsonResponse
@@ -843,6 +937,13 @@ class AdminController extends Controller
             ->latest()
             ->get()
             ->map(function (Commission $commission) {
+                $payment = $commission->payment;
+                $split = $payment
+                    ? app(CommissionShareService::class)->splitAmounts($payment)
+                    : ['gross' => (float) $commission->amount, 'oweru' => 0.0, 'agent' => (float) $commission->amount];
+
+                $paymentType = $payment?->type ?? ($commission->percentage >= 45 && $commission->percentage <= 55 ? 'site_visit' : 'rent');
+
                 return [
                     'id' => $commission->id,
                     'agent' => [
@@ -857,7 +958,9 @@ class AdminController extends Controller
                         'address' => $commission->property?->address ?? $commission->property?->location,
                         'price' => (float) ($commission->property?->price ?? 0),
                     ],
-                    'type' => 'rent',
+                    'type' => $paymentType === 'site_visit' ? 'site_visit' : 'rent',
+                    'gross_amount' => (float) ($split['gross'] ?? $commission->amount),
+                    'oweru_amount' => (float) ($split['oweru'] ?? 0),
                     'amount' => (float) $commission->amount,
                     'percentage' => (float) ($commission->percentage ?? 0),
                     'status' => $commission->status,
@@ -889,6 +992,24 @@ class AdminController extends Controller
             ->orderByDesc('total_earned')
             ->first();
 
+        $distribution = ['site_visit' => ['oweru' => 0, 'agent' => 0], 'rental' => ['oweru' => 0, 'agent' => 0]];
+        if ($this->hasTables(['payments'])) {
+            $share = app(CommissionShareService::class);
+            Payment::whereIn('status', ['completed', 'paid'])
+                ->whereIn('type', array_merge(['site_visit'], CommissionShareService::RENT_TYPES))
+                ->chunk(200, function ($chunk) use ($share, &$distribution) {
+                    foreach ($chunk as $payment) {
+                        $split = $share->splitAmounts($payment);
+                        $key = $share->categoryKey($payment);
+                        if (! isset($distribution[$key])) {
+                            continue;
+                        }
+                        $distribution[$key]['agent'] += $split['agent'];
+                        $distribution[$key]['oweru'] += $split['oweru'];
+                    }
+                });
+        }
+
         return response()->json(['data' => [
             'totalCommissions' => Commission::count(),
             'pendingCommissions' => Commission::where('status', 'pending')->count(),
@@ -896,6 +1017,7 @@ class AdminController extends Controller
             'paidCommissions' => Commission::where('status', 'paid')->count(),
             'totalAmount' => (float) Commission::sum('amount'),
             'avgCommissionRate' => round((float) Commission::avg('percentage'), 2),
+            'distribution' => $distribution,
             'topEarner' => [
                 'name' => $topEarner?->agent?->fullName() ?? 'N/A',
                 'totalEarned' => (float) ($topEarner?->total_earned ?? 0),

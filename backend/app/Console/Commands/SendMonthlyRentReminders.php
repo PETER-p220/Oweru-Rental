@@ -3,83 +3,53 @@
 namespace App\Console\Commands;
 
 use App\Models\Payment;
-use App\Models\Tenant;
+use App\Services\CommissionShareService;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
-use Carbon\Carbon;
 
 class SendMonthlyRentReminders extends Command
 {
     protected $signature = 'reminders:send-monthly-rent';
-    protected $description = 'Send monthly rent payment reminders to tenants';
 
-    private $notificationService;
+    protected $description = 'Send 10-day rent period reminders (email + in-app) to tenants';
 
-    public function __construct(NotificationService $notificationService)
-    {
+    public function __construct(
+        private NotificationService $notificationService,
+    ) {
         parent::__construct();
-        $this->notificationService = $notificationService;
     }
 
     public function handle(): int
     {
-        $this->info('Starting monthly rent reminder process...');
+        $this->info('Checking pending rent payments due in 10 days…');
 
-        try {
-            // Get all pending monthly rent payments due within the next 7 days
-            $upcomingPayments = Payment::where('type', 'monthly_rent')
-                ->where('status', 'pending')
-                ->whereNull('is_reminder_sent')
-                ->orWhere('is_reminder_sent', false)
-                ->whereBetween('due_date', [
-                    now(),
-                    now()->addDays(7)
-                ])
-                ->with('tenant', 'property')
-                ->get();
+        $dueOn = now()->addDays(10)->toDateString();
+        $rentTypes = CommissionShareService::RENT_TYPES;
 
-            $this->info("Found {$upcomingPayments->count()} payments due within 7 days");
+        $payments = Payment::query()
+            ->whereIn('type', $rentTypes)
+            ->where('status', 'pending')
+            ->whereDate('due_date', $dueOn)
+            ->with(['user', 'property', 'tenant'])
+            ->get();
 
-            foreach ($upcomingPayments as $payment) {
-                if (!$payment->tenant) {
-                    continue;
+        $this->info("Found {$payments->count()} payment(s) with due date {$dueOn}");
+
+        $sent = 0;
+        foreach ($payments as $payment) {
+            try {
+                if ($this->notificationService->sendTenDayRentPeriodReminder($payment)) {
+                    $sent++;
+                    $email = $payment->user?->email ?? 'unknown';
+                    $this->info("10-day reminder sent for payment #{$payment->id} ({$email})");
                 }
-
-                try {
-                    $this->notificationService->sendMonthlyReminder($payment->tenant, $payment);
-                    $this->info("Reminder sent for tenant: {$payment->tenant->user->email}");
-                } catch (\Exception $e) {
-                    $this->error("Failed to send reminder for payment {$payment->id}: {$e->getMessage()}");
-                }
+            } catch (\Exception $e) {
+                $this->error("Failed payment #{$payment->id}: {$e->getMessage()}");
             }
-
-            // Also send reminders for overdue payments
-            $overduePayments = Payment::where('type', 'monthly_rent')
-                ->where('status', 'pending')
-                ->where('due_date', '<', now())
-                ->with('tenant', 'property')
-                ->get();
-
-            $this->info("Found {$overduePayments->count()} overdue payments");
-
-            foreach ($overduePayments as $payment) {
-                if (!$payment->tenant) {
-                    continue;
-                }
-
-                try {
-                    $this->notificationService->sendMonthlyReminder($payment->tenant, $payment);
-                    $this->info("Overdue reminder sent for tenant: {$payment->tenant->user->email}");
-                } catch (\Exception $e) {
-                    $this->error("Failed to send overdue reminder for payment {$payment->id}: {$e->getMessage()}");
-                }
-            }
-
-            $this->info('Monthly rent reminder process completed successfully.');
-            return 0;
-        } catch (\Exception $e) {
-            $this->error('Error in reminder process: ' . $e->getMessage());
-            return 1;
         }
+
+        $this->info("Done. Sent {$sent} reminder(s).");
+
+        return 0;
     }
 }

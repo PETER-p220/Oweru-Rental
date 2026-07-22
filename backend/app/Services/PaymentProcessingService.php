@@ -204,6 +204,15 @@ class PaymentProcessingService
                         'workflow_status' => 'payment_completed',
                     ]);
                 }
+            } elseif (in_array($payment->type, ['monthly_rent', 'rent', 'rent_payment'], true) && $payment->agent_id) {
+                try {
+                    $this->rentalWorkflowService->allocateCommission($payment);
+                } catch (\Exception $e) {
+                    Log::warning('Commission allocation skipped for rent payment', [
+                        'payment_id' => $payment->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             app(PaymentAlertService::class)->handleMonthlyPaymentCompleted($payment->fresh(['property', 'user']));

@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Mail\RentDueReminderMail;
 use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class NotificationService
 {
@@ -88,40 +90,123 @@ class NotificationService
     }
 
     /**
-     * Send monthly rent reminder
+     * Ten-day reminder before the next rental period payment is due (email + in-app).
+     */
+    public function sendTenDayRentPeriodReminder(Payment $payment): bool
+    {
+        $payment->loadMissing('property', 'user');
+        $user = $payment->user;
+        $property = $payment->property;
+
+        if (! $user || ! $property || ! $payment->due_date) {
+            return false;
+        }
+
+        $metadata = $payment->metadata ?? [];
+        if (! empty($metadata['reminder_10d_sent_at'])) {
+            return false;
+        }
+
+        $daysUntilDue = (int) now()->startOfDay()->diffInDays($payment->due_date->copy()->startOfDay(), false);
+        if ($daysUntilDue !== 10) {
+            return false;
+        }
+
+        $dueAmount = number_format((float) $payment->amount, 0);
+        $dueDate = $payment->due_date->format('d M Y');
+        $periodLabel = $payment->due_date->format('F Y');
+        $tenantName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: ($user->email ?? 'Tenant');
+
+        $title = 'Rent period ending in 10 days';
+        $message = "Your next rent for {$property->title} ({$periodLabel}) is TZS {$dueAmount}, due on {$dueDate}. "
+            . 'Pay on time to continue your rental without interruption.';
+
+        Notification::create([
+            'user_id' => $user->id,
+            'title' => $title,
+            'message' => $message,
+            'type' => 'rent_period_reminder',
+        ]);
+
+        if ($user->email) {
+            try {
+                Mail::to($user->email)->send(new RentDueReminderMail([
+                    'tenant_name' => $tenantName,
+                    'property_title' => $property->title ?? 'Your property',
+                    'amount' => $dueAmount,
+                    'due_date' => $dueDate,
+                    'days_remaining' => 10,
+                    'period_label' => $periodLabel,
+                ]));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send rent reminder email', [
+                    'payment_id' => $payment->id,
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $payment->update([
+            'metadata' => array_merge($metadata, [
+                'reminder_10d_sent_at' => now()->toIso8601String(),
+            ]),
+        ]);
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('payments', 'is_reminder_sent')) {
+            $payment->update(['is_reminder_sent' => true]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Send monthly rent reminder (legacy / overdue path).
      */
     public function sendMonthlyReminder(Payment $payment): void
     {
-        $tenant = Tenant::find($payment->tenant_id);
-        if (!$tenant) return;
+        $user = $payment->user;
+        if (! $user) {
+            $tenant = $payment->tenant_id ? Tenant::find($payment->tenant_id) : null;
+            $user = $tenant?->user;
+        }
+        if (! $user || ! $payment->due_date) {
+            return;
+        }
 
-        $daysUntilDue = now()->diffInDays($payment->due_date, false);
-        $dueAmount = number_format($payment->amount, 2);
+        $property = $payment->property;
+        if (! $property) {
+            return;
+        }
+
+        $daysUntilDue = now()->startOfDay()->diffInDays($payment->due_date->copy()->startOfDay(), false);
+        $dueAmount = number_format((float) $payment->amount, 0);
         $dueDate = $payment->due_date->format('d M Y');
 
-        $title = '📅 Monthly Rent Reminder';
-        $message = "Your monthly rent payment of Tsh $dueAmount for {$tenant->property->title} is due on $dueDate.";
+        $title = 'Monthly rent reminder';
+        $message = "Your monthly rent payment of Tsh {$dueAmount} for {$property->title} is due on {$dueDate}.";
 
         if ($daysUntilDue > 0) {
             $message .= " ({$daysUntilDue} days remaining)";
         } elseif ($daysUntilDue === 0) {
-            $title = '⏰ Rent Due Today';
-            $message = "Your monthly rent payment of Tsh $dueAmount for {$tenant->property->title} is due TODAY.";
-        } elseif ($daysUntilDue < 0) {
-            $title = '⚠️ Overdue Payment';
-            $message = "Your monthly rent payment of Tsh $dueAmount for {$tenant->property->title} is OVERDUE since $dueDate. " .
-                      "Please make payment immediately.";
+            $title = 'Rent due today';
+            $message = "Your monthly rent payment of Tsh {$dueAmount} for {$property->title} is due TODAY.";
+        } else {
+            $title = 'Overdue rent payment';
+            $message = "Your monthly rent payment of Tsh {$dueAmount} for {$property->title} is OVERDUE since {$dueDate}. "
+                . 'Please pay immediately.';
         }
 
         Notification::create([
-            'user_id' => $tenant->user_id,
+            'user_id' => $user->id,
             'title' => $title,
             'message' => $message,
             'type' => 'rent_reminder',
         ]);
 
-        // Mark reminder as sent
-        $payment->update(['is_reminder_sent' => true]);
+        if (\Illuminate\Support\Facades\Schema::hasColumn('payments', 'is_reminder_sent')) {
+            $payment->update(['is_reminder_sent' => true]);
+        }
     }
 
     /**

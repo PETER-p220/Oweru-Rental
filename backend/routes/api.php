@@ -385,6 +385,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Commission Control
         Route::get('/admin/commission/rules',                            [AdminController::class, 'getCommissionRules']);
+        Route::get('/admin/commission/distribution',                      [AdminController::class, 'getCommissionDistribution']);
         Route::get('/admin/commission/payments',                         [AdminController::class, 'getCommissionPayments']);
         Route::get('/admin/commission/stats',                            [AdminController::class, 'getCommissionStats']);
         Route::patch('/admin/commission/payments/{commission}/status',   [AdminController::class, 'updateCommissionPaymentStatus']);

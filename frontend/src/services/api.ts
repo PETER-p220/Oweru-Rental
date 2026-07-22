@@ -344,6 +344,7 @@ class Api {
   // ── Admin – Commission ──────────────────────────────────────────────────────
 
   static async getCommissionRules()    { return this.request<any[]>('admin/commission/rules'); }
+  static async getCommissionDistribution() { return this.request<any>('admin/commission/distribution'); }
   static async getCommissionPayments() { return this.request<any[]>('admin/commission/payments'); }
   static async getCommissionStats()    { return this.request<any>('admin/commission/stats'); }
   static async updateCommissionPaymentStatus(id: number, status: string) {

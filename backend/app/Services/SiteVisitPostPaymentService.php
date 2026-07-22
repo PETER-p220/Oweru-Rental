@@ -142,8 +142,13 @@ class SiteVisitPostPaymentService
             return;
         }
 
-        $agentShare = (float) config('services.site_visit.agent_share', 0.5);
-        $amount = round((float) $payment->amount * $agentShare, 2);
+        $share = app(CommissionShareService::class);
+        $pct = $share->agentCommissionPercentage($payment);
+        if ($pct === null) {
+            return;
+        }
+
+        $amount = round((float) $payment->amount * ($pct / 100), 2);
         $splitDone = (bool) (($payment->metadata ?? [])['payment_split'] ?? false);
 
         Commission::updateOrCreate(
@@ -152,7 +157,7 @@ class SiteVisitPostPaymentService
                 'agent_id' => $property->agent_id,
                 'property_id' => $property->id,
                 'amount' => $amount,
-                'percentage' => round($agentShare * 100, 2),
+                'percentage' => $pct,
                 'status' => $splitDone ? 'paid' : 'pending',
                 'paid_at' => $splitDone ? now() : null,
             ],
