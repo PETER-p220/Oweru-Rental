@@ -146,6 +146,7 @@ const Register = () => {
   const handleBack = () => { setStep(1); setFieldErrors([]); setAlert(null); };
 
   const handleGoogleRegister = () => {
+    logout();
     window.location.href = Api.getGoogleRegisterUrl(formData.userType);
   };
 

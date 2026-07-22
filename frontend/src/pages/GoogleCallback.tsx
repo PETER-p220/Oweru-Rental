@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Api, { TOKEN_KEY } from '../services/api';
 
 const GoogleCallback = () => {
   const [searchParams] = useSearchParams();
@@ -11,30 +12,31 @@ const GoogleCallback = () => {
     const token = searchParams.get('token');
     const userType = searchParams.get('user_type');
 
-    if (token && userType) {
-      // Store the token
-      localStorage.setItem('TOKEN_KEY', token);
-      
-      // Get user data from backend
-      fetch('https://rental.oweru.com/api/user', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      })
-        .then(res => res.json())
-        .then(data => {
-          const user = data.data;
-          login(user, token);
-          navigate(`/dashboard/${userType}`);
-        })
-        .catch(err => {
-          console.error('Failed to fetch user data:', err);
-          navigate('/login');
-        });
-    } else {
-      navigate('/login');
+    if (!token || !userType) {
+      navigate('/login', { replace: true });
+      return;
     }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        localStorage.setItem(TOKEN_KEY, token);
+        const response = await Api.getUser();
+        if (cancelled) return;
+        const user = response.data;
+        login(user, token);
+        navigate(`/dashboard/${userType}`, { replace: true });
+      } catch (err) {
+        console.error('Failed to complete Google sign-in:', err);
+        localStorage.removeItem(TOKEN_KEY);
+        if (!cancelled) navigate('/login', { replace: true });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams, navigate, login]);
 
   return (

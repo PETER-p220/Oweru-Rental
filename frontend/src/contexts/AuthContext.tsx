@@ -83,6 +83,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsAuthenticated(false);
     localStorage.removeItem('user');
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('TOKEN_KEY');
   };
 
   const value: AuthContextType = {

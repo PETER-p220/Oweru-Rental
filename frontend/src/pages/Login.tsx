@@ -15,7 +15,7 @@ const Login = () => {
   const [remember, setRemember]         = useState(false);
   const [searchParams] = useSearchParams();
   const navigate  = useNavigate();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
 
   useEffect(() => {
     const prefill = searchParams.get('email');
@@ -28,6 +28,7 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleGoogleLogin = () => {
+    logout();
     window.location.href = Api.getGoogleAuthUrl(formData.userType);
   };
 

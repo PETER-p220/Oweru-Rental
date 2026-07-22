@@ -10,6 +10,7 @@ use App\Rules\RegistrationEmail;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -271,6 +272,46 @@ class AuthController extends Controller
             ?? $request->ip();
     }
 
+    /** @return array{user_type: string, auth_type: string} */
+    private function storeGoogleOAuthIntent(string $userType, string $authType): string
+    {
+        $key = Str::random(48);
+        Cache::put("google_oauth:{$key}", [
+            'user_type' => $userType,
+            'auth_type' => $authType,
+        ], now()->addMinutes(15));
+
+        return $key;
+    }
+
+    /** @return array{user_type: string, auth_type: string} */
+    private function resolveGoogleOAuthIntent(?string $state): array
+    {
+        $fallback = ['user_type' => 'tenant', 'auth_type' => 'login'];
+
+        if (!$state || !is_string($state)) {
+            return $fallback;
+        }
+
+        $cached = Cache::pull("google_oauth:{$state}");
+        if (is_array($cached) && isset($cached['auth_type'], $cached['user_type'])) {
+            return [
+                'user_type' => (string) $cached['user_type'],
+                'auth_type' => (string) $cached['auth_type'],
+            ];
+        }
+
+        $decoded = json_decode($state, true);
+        if (is_array($decoded) && isset($decoded['auth_type'])) {
+            return [
+                'user_type' => (string) ($decoded['user_type'] ?? 'tenant'),
+                'auth_type' => (string) $decoded['auth_type'],
+            ];
+        }
+
+        return $fallback;
+    }
+
     private function redirectAuthError(string $error, ?string $message = null): RedirectResponse
     {
         $frontendUrl = rtrim((string) config('app.frontend_url', 'https://rental.oweru.com'), '/');
@@ -287,11 +328,11 @@ class AuthController extends Controller
     public function redirectToGoogle(Request $request): RedirectResponse|JsonResponse
     {
         $userType = $request->query('user_type', 'tenant');
-        $state = json_encode(['user_type' => $userType, 'auth_type' => 'login']);
+        $state = $this->storeGoogleOAuthIntent($userType, 'login');
 
         $url = Socialite::driver('google')
             ->stateless()
-            ->with(['state' => $state])
+            ->with(['state' => $state, 'prompt' => 'select_account'])
             ->redirect()
             ->getTargetUrl();
 
@@ -305,11 +346,11 @@ class AuthController extends Controller
     public function redirectToGoogleRegister(Request $request): RedirectResponse|JsonResponse
     {
         $userType = $request->query('user_type', 'tenant');
-        $state = json_encode(['user_type' => $userType, 'auth_type' => 'register']);
+        $state = $this->storeGoogleOAuthIntent($userType, 'register');
 
         $url = Socialite::driver('google')
             ->stateless()
-            ->with(['state' => $state])
+            ->with(['state' => $state, 'prompt' => 'select_account'])
             ->redirect()
             ->getTargetUrl();
 
@@ -325,12 +366,11 @@ class AuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
             
-            // Try to get auth type from state parameter
             $state = $request->query('state');
-            $stateData = $state ? json_decode($state, true) : [];
-            
-            $userType = $stateData['user_type'] ?? session('google_user_type', 'tenant');
-            $authType = $stateData['auth_type'] ?? session('google_auth_type', 'login');
+            $stateData = $this->resolveGoogleOAuthIntent(is_string($state) ? $state : null);
+
+            $userType = $stateData['user_type'];
+            $authType = $stateData['auth_type'];
             
             $user = User::where('email', $googleUser->email)->first();
             
