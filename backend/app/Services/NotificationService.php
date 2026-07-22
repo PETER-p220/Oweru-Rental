@@ -3,90 +3,165 @@
 namespace App\Services;
 
 use App\Mail\RentDueReminderMail;
+use App\Mail\SystemNotificationMail;
 use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 
 class NotificationService
 {
     /**
+     * In-app notification + optional email (when SMTP/real mailer is configured).
+     */
+    public function notifyUser(
+        int|User $user,
+        string $title,
+        string $message,
+        string $type = 'general',
+        bool $sendEmail = true,
+    ): ?Notification {
+        $user = $user instanceof User ? $user : User::find($user);
+        if (! $user) {
+            return null;
+        }
+
+        try {
+            $notification = Notification::create([
+                'user_id' => $user->id,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to create in-app notification', [
+                'user_id' => $user->id,
+                'type' => $type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        if ($sendEmail) {
+            $this->sendNotificationEmail($user, $title, $message);
+        }
+
+        return $notification;
+    }
+
+    public function emailNotificationsEnabled(): bool
+    {
+        if (! config('mail.notifications_enabled', true)) {
+            return false;
+        }
+
+        $mailer = config('mail.default', 'log');
+
+        return ! in_array($mailer, ['log', 'array'], true);
+    }
+
+    public function sendNotificationEmail(User $user, string $title, string $message): void
+    {
+        if (! $this->emailNotificationsEnabled() || ! $user->email) {
+            return;
+        }
+
+        $name = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'there';
+        $frontend = rtrim((string) config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/');
+
+        try {
+            Mail::to($user->email)->send(new SystemNotificationMail([
+                'recipient_name' => $name,
+                'title' => $title,
+                'message' => $message,
+                'action_url' => $frontend ?: null,
+            ]));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send notification email', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'type' => $title,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Send payment confirmation notification
      */
-    public function sendPaymentConfirmation(Payment $payment): Notification
+    public function sendPaymentConfirmation(Payment $payment): ?Notification
     {
         $user = User::find($payment->user_id);
         $property = $payment->property;
+        if (! $user || ! $property) {
+            return null;
+        }
 
         $amount = number_format($payment->amount, 2);
         $title = 'Payment Confirmed';
         $message = "Your payment of Tsh $amount for {$property->title} has been successfully processed.";
 
         if ($payment->type === 'first_month_rent') {
-            $message .= " Your lease will be activated shortly.";
+            $message .= ' Your lease will be activated shortly.';
         } elseif ($payment->type === 'monthly_rent') {
             $nextDueDate = $payment->due_date?->addMonth()->format('d M Y');
             $message .= " Your next payment is due on $nextDueDate.";
         }
 
-        return Notification::create([
-            'user_id' => $payment->user_id,
-            'title' => $title,
-            'message' => $message,
-            'type' => 'payment_confirmation',
-        ]);
+        return $this->notifyUser($user, $title, $message, 'payment_confirmation');
     }
 
     /**
      * Send application approved notification
      */
-    public function sendApplicationApproved($application): Notification
+    public function sendApplicationApproved($application): ?Notification
     {
         $property = $application->property;
         $rentAmount = number_format($application->offered_rent ?? $property->price, 2);
 
-        return Notification::create([
-            'user_id' => $application->user_id,
-            'title' => 'Application Approved 🎉',
-            'message' => "Great news! Your application for {$property->title} has been approved by the owner. " .
-                        "You need to pay the first month's rent (Tsh $rentAmount) to activate your lease.",
-            'type' => 'application_approved',
-        ]);
+        return $this->notifyUser(
+            $application->user_id,
+            'Application Approved',
+            "Great news! Your application for {$property->title} has been approved. "
+            . "Pay the first month's rent (Tsh $rentAmount) to activate your lease.",
+            'application_approved',
+        );
     }
 
     /**
      * Send application rejected notification
      */
-    public function sendApplicationRejected($application): Notification
+    public function sendApplicationRejected($application): ?Notification
     {
         $property = $application->property;
 
-        return Notification::create([
-            'user_id' => $application->user_id,
-            'title' => 'Application Rejected',
-            'message' => "Unfortunately, your application for {$property->title} has been rejected. " .
-                        "Feel free to apply for other properties on our platform.",
-            'type' => 'application_rejected',
-        ]);
+        return $this->notifyUser(
+            $application->user_id,
+            'Application Rejected',
+            "Your application for {$property->title} was rejected. "
+            . 'You can apply for other properties on Oweru Rental.',
+            'application_rejected',
+        );
     }
 
     /**
      * Send contract activated notification
      */
-    public function sendContractActivated(Tenant $tenant): Notification
+    public function sendContractActivated(Tenant $tenant): ?Notification
     {
         $property = $tenant->property;
         $moveInDate = $tenant->lease_start_date?->format('d M Y') ?? now()->format('d M Y');
 
-        return Notification::create([
-            'user_id' => $tenant->user_id,
-            'title' => 'Contract Activated ✅',
-            'message' => "Congratulations! Your rental contract for {$property->title} is now active. " .
-                        "Your lease starts from $moveInDate.",
-            'type' => 'contract_activated',
-        ]);
+        return $this->notifyUser(
+            $tenant->user_id,
+            'Contract Activated',
+            "Your rental contract for {$property->title} is now active. Lease starts {$moveInDate}.",
+            'contract_activated',
+        );
     }
 
     /**
@@ -121,14 +196,9 @@ class NotificationService
         $message = "Your next rent for {$property->title} ({$periodLabel}) is TZS {$dueAmount}, due on {$dueDate}. "
             . 'Pay on time to continue your rental without interruption.';
 
-        Notification::create([
-            'user_id' => $user->id,
-            'title' => $title,
-            'message' => $message,
-            'type' => 'rent_period_reminder',
-        ]);
+        $this->notifyUser($user, $title, $message, 'rent_period_reminder', false);
 
-        if ($user->email) {
+        if ($user->email && $this->emailNotificationsEnabled()) {
             try {
                 Mail::to($user->email)->send(new RentDueReminderMail([
                     'tenant_name' => $tenantName,
@@ -153,7 +223,7 @@ class NotificationService
             ]),
         ]);
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('payments', 'is_reminder_sent')) {
+        if (Schema::hasColumn('payments', 'is_reminder_sent')) {
             $payment->update(['is_reminder_sent' => true]);
         }
 
@@ -197,14 +267,9 @@ class NotificationService
                 . 'Please pay immediately.';
         }
 
-        Notification::create([
-            'user_id' => $user->id,
-            'title' => $title,
-            'message' => $message,
-            'type' => 'rent_reminder',
-        ]);
+        $this->notifyUser($user, $title, $message, 'rent_reminder');
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('payments', 'is_reminder_sent')) {
+        if (Schema::hasColumn('payments', 'is_reminder_sent')) {
             $payment->update(['is_reminder_sent' => true]);
         }
     }
@@ -212,65 +277,58 @@ class NotificationService
     /**
      * Send payment failed notification
      */
-    public function sendPaymentFailed(Payment $payment): Notification
+    public function sendPaymentFailed(Payment $payment): ?Notification
     {
         $property = $payment->property;
         $amount = number_format($payment->amount, 2);
 
-        return Notification::create([
-            'user_id' => $payment->user_id,
-            'title' => 'Payment Failed ❌',
-            'message' => "Your payment of Tsh $amount for {$property->title} failed. " .
-                        "Please try again or contact support.",
-            'type' => 'payment_failed',
-        ]);
+        return $this->notifyUser(
+            $payment->user_id,
+            'Payment Failed',
+            "Your payment of Tsh $amount for {$property->title} failed. Please try again or contact support.",
+            'payment_failed',
+        );
     }
 
     /**
      * Send service charge reminder
      */
-    public function sendServiceChargeReminder(Tenant $tenant, float $serviceCharge): Notification
+    public function sendServiceChargeReminder(Tenant $tenant, float $serviceCharge): ?Notification
     {
         $amount = number_format($serviceCharge, 2);
         $property = $tenant->property;
 
-        return Notification::create([
-            'user_id' => $tenant->user_id,
-            'title' => 'Service Charge Payment',
-            'message' => "Please pay the service charge of Tsh $amount for {$property->title}. " .
-                        "This fee covers maintenance and platform services.",
-            'type' => 'service_charge_reminder',
-        ]);
+        return $this->notifyUser(
+            $tenant->user_id,
+            'Service Charge Payment',
+            "Please pay the service charge of Tsh $amount for {$property->title}.",
+            'service_charge_reminder',
+        );
     }
 
     /**
      * Send notification to property owner
      */
-    public function notifyOwner(int $ownerId, string $title, string $message, string $type = 'general'): Notification
+    public function notifyOwner(int $ownerId, string $title, string $message, string $type = 'general'): ?Notification
     {
-        return Notification::create([
-            'user_id' => $ownerId,
-            'title' => $title,
-            'message' => $message,
-            'type' => $type,
-        ]);
+        return $this->notifyUser($ownerId, $title, $message, $type);
     }
 
     /**
      * Send new application notification to owner
      */
-    public function notifyOwnerNewApplication($application): Notification
+    public function notifyOwnerNewApplication($application): ?Notification
     {
         $tenant = $application->user;
         $property = $application->property;
         $rentOffer = number_format($application->offered_rent ?? $property->price, 2);
+        $tenantName = trim(($tenant->first_name ?? '') . ' ' . ($tenant->last_name ?? '')) ?: ($tenant->email ?? 'A tenant');
 
         return $this->notifyOwner(
             $property->owner_id,
-            'New Application 📝',
-            "New rental application from {$tenant->name} for {$property->title}. " .
-            "Offered rent: Tsh $rentOffer. Review and approve/reject the application.",
-            'new_application'
+            'New Application',
+            "New rental application from {$tenantName} for {$property->title}. Offered rent: Tsh $rentOffer.",
+            'new_application',
         );
     }
 

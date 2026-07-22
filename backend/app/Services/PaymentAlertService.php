@@ -130,20 +130,15 @@ class PaymentAlertService
         }
 
         if ($options['notify_tenant'] ?? false) {
-            try {
-                Notification::create([
-                    'user_id' => $tenant->id,
-                    'title' => $options['tenant_title'] ?? 'Payment Confirmed',
-                    'message' => $options['tenant_message']
-                        ?? "Your TZS {$amountLabel} payment for {$propertyTitle} was received successfully.",
-                    'type' => $options['tenant_type'] ?? 'payment_confirmed',
-                ]);
-            } catch (\Throwable $e) {
-                Log::error('Failed to create tenant payment notification', [
-                    'user_id' => $tenant->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            $tenantTitle = $options['tenant_title'] ?? 'Payment Confirmed';
+            $tenantMessage = $options['tenant_message']
+                ?? "Your TZS {$amountLabel} payment for {$propertyTitle} was received successfully.";
+            app(NotificationService::class)->notifyUser(
+                $tenant,
+                $tenantTitle,
+                $tenantMessage,
+                $options['tenant_type'] ?? 'payment_confirmed',
+            );
         }
     }
 

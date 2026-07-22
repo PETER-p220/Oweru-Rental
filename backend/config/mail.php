@@ -115,4 +115,10 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    | When true and MAIL_MAILER is smtp/ses/postmark (not log), system notifications
+    | also send email to the user's account email address.
+    */
+    'notifications_enabled' => env('MAIL_NOTIFICATIONS_ENABLED', true),
+
 ];
