@@ -12,6 +12,65 @@ import { parseAuthError, validateRegistrationEmail, type ParsedAuthAlert } from 
 
 const GOLD = '#C89128';
 
+// ─────────────────────────────────────────────────────────────
+// IMPORTANT: InputField must live OUTSIDE the Register component.
+// Previously it was declared inside Register's function body, which
+// meant React created a brand-new component type on every render
+// (i.e. every keystroke). That forced React to unmount the old
+// <input> and mount a fresh one each time, which is why the field
+// lost focus and felt like you had to click back into it after
+// every character. Defining it here, at module scope, gives React
+// a stable component reference across renders, so the underlying
+// DOM <input> is reused and focus is preserved while typing.
+// ─────────────────────────────────────────────────────────────
+type InputFieldProps = {
+  label: string;
+  name: string;
+  type?: string;
+  placeholder?: string;
+  icon: React.ComponentType<{ size?: number }>;
+  toggle?: boolean;
+  showToggle?: boolean;
+  onToggle?: () => void;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+const InputField = ({
+  label, name, type = 'text', placeholder, icon: Icon,
+  toggle, showToggle, onToggle, value, onChange,
+}: InputFieldProps) => (
+  <div>
+    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#334155', marginBottom: '7px' }}>
+      {label}
+    </label>
+    <div style={{ position: 'relative' }}>
+      <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+        <Icon size={15} />
+      </div>
+      <input
+        type={toggle ? (showToggle ? 'text' : 'password') : type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete={type === 'password' ? 'new-password' : undefined}
+        style={{ width: '100%', padding: `11px 16px 11px ${toggle ? '42px' : '42px'}`, paddingRight: toggle ? '44px' : '16px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '9px', color: '#0F172A', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s', boxSizing: 'border-box' }}
+        onFocus={e => { e.target.style.borderColor = GOLD; e.target.style.boxShadow = `0 0 0 3px ${GOLD}18`; }}
+        onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
+      />
+      {toggle && (
+        <button type="button" onClick={onToggle}
+          style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex', alignItems: 'center', padding: '4px', transition: 'color 0.2s' }}
+          onMouseEnter={e => (e.currentTarget.style.color = GOLD)}
+          onMouseLeave={e => (e.currentTarget.style.color = '#94A3B8')}>
+          {showToggle ? <EyeOff size={15} /> : <Eye size={15} />}
+        </button>
+      )}
+    </div>
+  </div>
+);
+
 const Register = () => {
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '',
@@ -130,39 +189,6 @@ const Register = () => {
     { value: 'agent',     label: 'Agent',     desc: 'Broker listings',  color: '#2563EB' },
     { value: 'bnb_owner', label: 'BNB Owner', desc: 'I host stays',     color: '#9333EA' },
   ];
-
-  // Reusable input field
-  const InputField = ({ label, name, type = 'text', placeholder, icon: Icon, toggle, showToggle, onToggle }: any) => (
-    <div>
-      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#334155', marginBottom: '7px' }}>
-        {label}
-      </label>
-      <div style={{ position: 'relative' }}>
-        <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
-          <Icon size={15} />
-        </div>
-        <input
-          type={toggle ? (showToggle ? 'text' : 'password') : type}
-          name={name}
-          value={(formData as any)[name]}
-          onChange={handleChange}
-          placeholder={placeholder}
-          autoComplete={type === 'password' ? 'new-password' : undefined}
-          style={{ width: '100%', padding: `11px 16px 11px ${toggle ? '42px' : '42px'}`, paddingRight: toggle ? '44px' : '16px', background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: '9px', color: '#0F172A', fontSize: '14px', fontFamily: "'DM Sans', sans-serif", outline: 'none', transition: 'border-color 0.2s, box-shadow 0.2s', boxSizing: 'border-box' }}
-          onFocus={e => { e.target.style.borderColor = GOLD; e.target.style.boxShadow = `0 0 0 3px ${GOLD}18`; }}
-          onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; }}
-        />
-        {toggle && (
-          <button type="button" onClick={onToggle}
-            style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', display: 'flex', alignItems: 'center', padding: '4px', transition: 'color 0.2s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = GOLD)}
-            onMouseLeave={e => (e.currentTarget.style.color = '#94A3B8')}>
-            {showToggle ? <EyeOff size={15} /> : <Eye size={15} />}
-          </button>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'DM Sans', system-ui, sans-serif", background: '#F1F5F9' }}>
@@ -339,15 +365,15 @@ const Register = () => {
 
                 {/* Name row */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-                  <InputField label="First Name" name="firstName" placeholder="First name" icon={User} />
-                  <InputField label="Last Name"  name="lastName"  placeholder="Last name"  icon={User} />
+                  <InputField label="First Name" name="firstName" placeholder="First name" icon={User} value={formData.firstName} onChange={handleChange} />
+                  <InputField label="Last Name"  name="lastName"  placeholder="Last name"  icon={User} value={formData.lastName} onChange={handleChange} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
-                  <InputField label="Email Address" name="email" type="email" placeholder="you@gmail.com" icon={Mail} />
+                  <InputField label="Email Address" name="email" type="email" placeholder="you@gmail.com" icon={Mail} value={formData.email} onChange={handleChange} />
                   <p style={{ fontSize: 11, color: '#94A3B8', margin: '-6px 0 0', lineHeight: 1.45 }}>
                     Use a real inbox (Gmail, Outlook, Yahoo, or work email). Temporary addresses are not accepted.
                   </p>
-                  <InputField label="Phone Number"  name="phone" type="tel"   placeholder="+255 xxx xxx xxx" icon={Phone} />
+                  <InputField label="Phone Number"  name="phone" type="tel"   placeholder="+255 xxx xxx xxx" icon={Phone} value={formData.phone} onChange={handleChange} />
                 </div>
 
                 {/* Primary CTA */}
@@ -382,8 +408,8 @@ const Register = () => {
             {step === 2 && (
               <form onSubmit={handleSubmit}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
-                  <InputField label="Password" name="password" toggle onToggle={() => setShowPassword(!showPassword)} showToggle={showPassword} placeholder="Minimum 8 characters" icon={Lock} />
-                  <InputField label="Confirm Password" name="confirmPassword" toggle onToggle={() => setShowConfirmPassword(!showConfirmPassword)} showToggle={showConfirmPassword} placeholder="Repeat your password" icon={Lock} />
+                  <InputField label="Password" name="password" toggle onToggle={() => setShowPassword(!showPassword)} showToggle={showPassword} placeholder="Minimum 8 characters" icon={Lock} value={formData.password} onChange={handleChange} />
+                  <InputField label="Confirm Password" name="confirmPassword" toggle onToggle={() => setShowConfirmPassword(!showConfirmPassword)} showToggle={showConfirmPassword} placeholder="Repeat your password" icon={Lock} value={formData.confirmPassword} onChange={handleChange} />
                 </div>
 
                 {/* Password strength */}
