@@ -23,6 +23,7 @@ class NotificationService
         string $message,
         string $type = 'general',
         bool $sendEmail = true,
+        ?string $actionUrl = null,
     ): ?Notification {
         $user = $user instanceof User ? $user : User::find($user);
         if (! $user) {
@@ -47,7 +48,7 @@ class NotificationService
         }
 
         if ($sendEmail) {
-            $this->sendNotificationEmail($user, $title, $message);
+            $this->sendNotificationEmail($user, $title, $message, $actionUrl);
         }
 
         return $notification;
@@ -64,7 +65,7 @@ class NotificationService
         return ! in_array($mailer, ['log', 'array'], true);
     }
 
-    public function sendNotificationEmail(User $user, string $title, string $message): void
+    public function sendNotificationEmail(User $user, string $title, string $message, ?string $actionUrl = null): void
     {
         if (! $this->emailNotificationsEnabled() || ! $user->email) {
             return;
@@ -78,7 +79,7 @@ class NotificationService
                 'recipient_name' => $name,
                 'title' => $title,
                 'message' => $message,
-                'action_url' => $frontend ?: null,
+                'action_url' => $actionUrl ?? ($frontend ?: null),
             ]));
         } catch (\Throwable $e) {
             Log::error('Failed to send notification email', [
@@ -88,6 +89,38 @@ class NotificationService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Welcome message after a new account is created (email + in-app bell).
+     */
+    public function sendWelcomeNotification(User $user, bool $signedUpWithGoogle = false): ?Notification
+    {
+        $roleLabels = [
+            'tenant' => 'Tenant',
+            'landlord' => 'Landlord',
+            'agent' => 'Agent',
+            'bnb_owner' => 'BnB Host',
+            'commercial' => 'Commercial',
+            'admin' => 'Admin',
+        ];
+        $role = $roleLabels[$user->user_type] ?? ucfirst(str_replace('_', ' ', (string) $user->user_type));
+
+        $frontend = rtrim((string) config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/');
+        $dashboardUrl = $frontend && $user->user_type
+            ? "{$frontend}/dashboard/{$user->user_type}"
+            : $frontend;
+
+        $title = 'Welcome to Oweru';
+
+        if ($signedUpWithGoogle) {
+            $message = "Your {$role} account is ready. You signed up with Google ({$user->email}). "
+                . 'Visit your dashboard to explore listings and add your phone number in Settings when you can.';
+        } else {
+            $message = "Your {$role} account is ready. Visit your dashboard to explore properties and manage your account.";
+        }
+
+        return $this->notifyUser($user, $title, $message, 'welcome', true, $dashboardUrl ?: null);
     }
 
     /**

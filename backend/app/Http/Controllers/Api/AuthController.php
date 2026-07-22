@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\UserActivityLog;
 use App\Models\UserSession;
 use App\Rules\RegistrationEmail;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -58,6 +59,8 @@ class AuthController extends Controller
             'phone'      => $request->phone,
             'user_type'  => $request->user_type,
         ]);
+
+        app(NotificationService::class)->sendWelcomeNotification($user, false);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -400,6 +403,8 @@ class AuthController extends Controller
                     'email_verified_at' => now(),
                     'is_active' => true,
                 ]);
+
+                app(NotificationService::class)->sendWelcomeNotification($user, true);
             } else {
                 // Login flow
                 if (!$user) {
@@ -595,7 +600,9 @@ class AuthController extends Controller
                 'email_verified_at' => now(),
                 'is_active' => true,
             ]);
-            
+
+            app(NotificationService::class)->sendWelcomeNotification($user, true);
+
             $token = $user->createToken('auth_token')->plainTextToken;
             
             return response()->json([
