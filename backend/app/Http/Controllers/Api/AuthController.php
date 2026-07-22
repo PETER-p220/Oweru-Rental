@@ -284,32 +284,40 @@ class AuthController extends Controller
 
     // ── Google OAuth for Web (Redirect Flow) ─────────────────────────────────────
 
-    public function redirectToGoogle(Request $request): JsonResponse
+    public function redirectToGoogle(Request $request): RedirectResponse|JsonResponse
     {
         $userType = $request->query('user_type', 'tenant');
         $state = json_encode(['user_type' => $userType, 'auth_type' => 'login']);
-        
+
         $url = Socialite::driver('google')
             ->stateless()
             ->with(['state' => $state])
             ->redirect()
             ->getTargetUrl();
-        
-        return response()->json(['url' => $url]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['url' => $url]);
+        }
+
+        return redirect()->away($url);
     }
 
-    public function redirectToGoogleRegister(Request $request): JsonResponse
+    public function redirectToGoogleRegister(Request $request): RedirectResponse|JsonResponse
     {
         $userType = $request->query('user_type', 'tenant');
         $state = json_encode(['user_type' => $userType, 'auth_type' => 'register']);
-        
+
         $url = Socialite::driver('google')
             ->stateless()
             ->with(['state' => $state])
             ->redirect()
             ->getTargetUrl();
-        
-        return response()->json(['url' => $url]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['url' => $url]);
+        }
+
+        return redirect()->away($url);
     }
 
     public function handleGoogleCallback(Request $request): \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse

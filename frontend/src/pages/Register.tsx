@@ -86,12 +86,8 @@ const Register = () => {
   };
   const handleBack = () => { setStep(1); setFieldErrors([]); setAlert(null); };
 
-  const handleGoogleRegister = async () => {
-    try {
-      const response = await fetch(Api.getGoogleRegisterUrl(formData.userType));
-      const data = await response.json();
-      window.location.href = data.url;
-    } catch (error) { console.error('Failed to get Google register URL:', error); }
+  const handleGoogleRegister = () => {
+    window.location.href = Api.getGoogleRegisterUrl(formData.userType);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
