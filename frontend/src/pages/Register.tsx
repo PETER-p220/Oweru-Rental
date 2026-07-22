@@ -7,6 +7,8 @@ import {
 import Api, { TOKEN_KEY } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
+import AuthAlert from '../components/auth/AuthAlert';
+import { parseAuthError, validateRegistrationEmail, type ParsedAuthAlert } from '../utils/authErrors';
 
 const GOLD = '#C89128';
 
@@ -18,7 +20,8 @@ const Register = () => {
   const [showPassword,        setShowPassword]        = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading,           setIsLoading]           = useState(false);
-  const [errors,              setErrors]              = useState<string[]>([]);
+  const [fieldErrors,         setFieldErrors]         = useState<string[]>([]);
+  const [alert,               setAlert]               = useState<ParsedAuthAlert | null>(null);
   const [step,                setStep]                = useState(1);
 
   const navigate = useNavigate();
@@ -34,9 +37,11 @@ const Register = () => {
     const errs: string[] = [];
     if (!formData.firstName.trim()) errs.push('First name is required');
     if (!formData.lastName.trim())  errs.push('Last name is required');
-    if (!formData.email.trim())     errs.push('Email address is required');
+    const emailCheck = validateRegistrationEmail(formData.email);
+    if (!emailCheck.ok) errs.push(emailCheck.message);
     if (!formData.phone.trim())     errs.push('Phone number is required');
-    setErrors(errs);
+    setFieldErrors(errs);
+    setAlert(null);
     return errs.length === 0;
   };
 
@@ -46,12 +51,13 @@ const Register = () => {
     if (formData.password.length < 8)                   errs.push('Password must be at least 8 characters');
     if (formData.password !== formData.confirmPassword) errs.push('Passwords do not match');
     if (!formData.agreeToTerms)                         errs.push('You must agree to the Terms & Privacy Policy');
-    setErrors(errs);
+    setFieldErrors(errs);
+    setAlert(null);
     return errs.length === 0;
   };
 
-  const handleNext = () => { if (validateStep1()) { setStep(2); setErrors([]); } };
-  const handleBack = () => { setStep(1); setErrors([]); };
+  const handleNext = () => { if (validateStep1()) { setStep(2); setFieldErrors([]); setAlert(null); } };
+  const handleBack = () => { setStep(1); setFieldErrors([]); setAlert(null); };
 
   const handleGoogleRegister = async () => {
     try {
@@ -64,11 +70,11 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateStep2()) return;
-    setIsLoading(true); setErrors([]);
+    setIsLoading(true); setFieldErrors([]); setAlert(null);
     try {
       const response = await Api.register({
         first_name: formData.firstName, last_name: formData.lastName,
-        email: formData.email, password: formData.password,
+        email: formData.email.trim().toLowerCase(), password: formData.password,
         password_confirmation: formData.confirmPassword,
         phone: formData.phone, user_type: formData.userType,
       });
@@ -77,13 +83,12 @@ const Register = () => {
       localStorage.setItem(TOKEN_KEY, token);
       login(user, token);
       navigate(`/dashboard/${user.userType}`);
-    } catch (err: any) {
-      const laravelErrors = err?.response?.data?.errors;
-      if (laravelErrors) {
-        setErrors(Object.values(laravelErrors).flat() as string[]);
-      } else {
-        setErrors([err?.response?.data?.message || err?.message || 'Registration failed. Please try again.']);
+    } catch (err: unknown) {
+      const parsed = parseAuthError(err, formData.email);
+      if (parsed.variant === 'exists') {
+        setStep(1);
       }
+      setAlert(parsed);
     } finally { setIsLoading(false); }
   };
 
@@ -256,10 +261,18 @@ const Register = () => {
               </p>
             </div>
 
-            {/* Errors */}
-            {errors.length > 0 && (
+            {/* Alerts */}
+            {alert && (
+              <AuthAlert
+                variant={alert.variant}
+                title={alert.title}
+                messages={alert.messages}
+                emailForLogin={alert.emailForLogin}
+              />
+            )}
+            {fieldErrors.length > 0 && !alert && (
               <div style={{ background: '#FFF1F2', border: '1px solid rgba(220,38,38,0.22)', borderRadius: '10px', padding: '13px 14px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {errors.map((e, i) => (
+                {fieldErrors.map((e, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: '#DC2626', lineHeight: 1.4 }}>
                     <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
                     <span>{e}</span>
@@ -297,7 +310,10 @@ const Register = () => {
                   <InputField label="Last Name"  name="lastName"  placeholder="Last name"  icon={User} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
-                  <InputField label="Email Address" name="email" type="email" placeholder="name@email.com" icon={Mail} />
+                  <InputField label="Email Address" name="email" type="email" placeholder="you@gmail.com" icon={Mail} />
+                  <p style={{ fontSize: 11, color: '#94A3B8', margin: '-6px 0 0', lineHeight: 1.45 }}>
+                    Use a real inbox (Gmail, Outlook, Yahoo, or work email). Temporary addresses are not accepted.
+                  </p>
                   <InputField label="Phone Number"  name="phone" type="tel"   placeholder="+255 xxx xxx xxx" icon={Phone} />
                 </div>
 

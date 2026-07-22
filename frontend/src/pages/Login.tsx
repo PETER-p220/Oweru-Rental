@@ -1,18 +1,28 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import Api, { TOKEN_KEY } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
+import AuthAlert from '../components/auth/AuthAlert';
+import { parseLoginError, type ParsedAuthAlert } from '../utils/authErrors';
 
 const Login = () => {
   const [formData, setFormData]         = useState({ email: '', password: '', userType: 'tenant' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading]       = useState(false);
-  const [error, setError]               = useState('');
+  const [alert, setAlert]               = useState<ParsedAuthAlert | null>(null);
   const [remember, setRemember]         = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate  = useNavigate();
   const { login } = useAuth();
+
+  useEffect(() => {
+    const prefill = searchParams.get('email');
+    if (prefill) {
+      setFormData((prev) => ({ ...prev, email: prefill }));
+    }
+  }, [searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -30,17 +40,17 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setAlert(null);
     try {
-      const response = await Api.login(formData.email, formData.password, formData.userType);
+      const response = await Api.login(formData.email.trim(), formData.password, formData.userType);
       const { user, token } = response.data as any;
       if (!user || !token) throw new Error('Invalid response from server');
       localStorage.removeItem('user');
       localStorage.setItem(TOKEN_KEY, token);
       login(user, token);
       navigate(`/dashboard/${user.userType}`);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Invalid email or password. Please try again.');
+    } catch (err: unknown) {
+      setAlert(parseLoginError(err));
     } finally {
       setIsLoading(false);
     }
@@ -203,11 +213,13 @@ const Login = () => {
             </div>
 
             {/* Error */}
-            {error && (
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', background: '#FFF1F2', border: '1px solid rgba(220,38,38,0.22)', borderRadius: '10px', padding: '13px 14px', marginBottom: '20px' }}>
-                <AlertCircle size={15} style={{ color: '#DC2626', flexShrink: 0, marginTop: '1px' }} />
-                <span style={{ fontSize: '13px', color: '#DC2626', lineHeight: 1.5 }}>{error}</span>
-              </div>
+            {alert && (
+              <AuthAlert
+                variant={alert.variant}
+                title={alert.title}
+                messages={alert.messages}
+                emailForLogin={alert.emailForLogin}
+              />
             )}
 
             {/* Form */}

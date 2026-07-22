@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserActivityLog;
 use App\Models\UserSession;
+use App\Rules\RegistrationEmail;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
 
@@ -20,10 +23,12 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
-            'email'      => 'required|string|email|max:255|unique:users',
+            'email'      => ['required', 'string', 'max:255', new RegistrationEmail(), Rule::unique('users', 'email')],
             'password'   => 'required|string|min:8|confirmed',
             'phone'      => 'required|string|max:20',
             'user_type'  => 'required|in:tenant,landlord,agent,bnb_owner,commercial',
+        ], [
+            'email.unique' => 'This email is already registered. Please sign in instead.',
         ]);
 
         if ($validator->fails()) {
@@ -220,6 +225,17 @@ class AuthController extends Controller
             ?? $request->ip();
     }
 
+    private function redirectAuthError(string $error, ?string $message = null): RedirectResponse
+    {
+        $frontendUrl = rtrim((string) config('app.frontend_url', 'https://rental.oweru.com'), '/');
+        $query = http_build_query(array_filter([
+            'error' => $error,
+            'message' => $message,
+        ]));
+
+        return redirect()->away("{$frontendUrl}/auth/error?{$query}");
+    }
+
     // ── Google OAuth for Web (Redirect Flow) ─────────────────────────────────────
 
     public function redirectToGoogle(Request $request): JsonResponse
@@ -265,21 +281,14 @@ class AuthController extends Controller
             $user = User::where('email', $googleUser->email)->first();
             
             if ($authType === 'register') {
-                // Registration flow
-                // Check if user already exists with this Google ID (any user type)
                 $existingUser = User::where('google_id', $googleUser->id)->first();
                 if ($existingUser) {
-                    return response()->json([
-                        'message' => 'This Google account is already registered. Please login instead.',
-                    ], 400);
+                    return $this->redirectAuthError('email_already_registered', 'This Google account is already registered.');
                 }
-                
-                // Also check by email to prevent duplicate accounts
+
                 $existingEmailUser = User::where('email', $googleUser->email)->first();
                 if ($existingEmailUser) {
-                    return response()->json([
-                        'message' => 'This email is already registered. Please login instead.',
-                    ], 400);
+                    return $this->redirectAuthError('email_already_registered', 'This email is already registered.');
                 }
                 
                 $nameParts = explode(' ', $googleUser->name, 2);

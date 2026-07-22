@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-type ErrorKey = 'user_not_found' | 'account_inactive' | 'wrong_user_type' | 'auth_failed' | 'unknown';
+type ErrorKey = 'user_not_found' | 'account_inactive' | 'wrong_user_type' | 'auth_failed' | 'email_already_registered' | 'unknown';
 
 interface ErrorConfig {
   title: string;
@@ -133,6 +133,15 @@ const AuthError = () => {
       secondaryLabel: 'Sign in with email',
       icon: <WifiOffIcon />,
     },
+    email_already_registered: {
+      title: 'Account already exists',
+      message: message || 'This email is already registered on Oweru.',
+      detail:
+        'Sign in with your password or Google using the same email. If you forgot your password, use Forgot password on the login page.',
+      primaryLabel: 'Go to sign in',
+      secondaryLabel: 'Create account with another email',
+      icon: <UsersIcon />,
+    },
     unknown: {
       title: 'Something went wrong',
       message: 'An unexpected error occurred during authentication.',
@@ -149,6 +158,7 @@ const AuthError = () => {
     account_inactive: () => navigate('/contact'),
     wrong_user_type: () => navigate('/login'),
     auth_failed: () => navigate(-1),
+    email_already_registered: () => navigate('/login'),
     unknown: () => navigate(-1),
   };
 
@@ -157,6 +167,7 @@ const AuthError = () => {
     account_inactive: () => navigate('/login'),
     wrong_user_type: () => navigate('/register'),
     auth_failed: () => navigate('/login'),
+    email_already_registered: () => navigate('/register'),
     unknown: () => navigate('/login'),
   };
 
