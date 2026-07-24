@@ -207,6 +207,13 @@ class BnbBookingController extends Controller
     public function initiatePayment(Request $request, BnbBooking $booking): JsonResponse
     {
         $user = Auth::user();
+        if (! $user) {
+            return response()->json([
+                'message' => 'Please sign in to complete payment.',
+                'requires_auth' => true,
+            ], 401);
+        }
+
         if ((int) $booking->guest_id !== (int) $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -258,7 +265,15 @@ class BnbBookingController extends Controller
 
     public function checkPaymentStatus(string $orderId): JsonResponse
     {
-        $result = app(BnbPaymentService::class)->checkStatus($orderId, Auth::user());
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json([
+                'message' => 'Please sign in to check payment status.',
+                'requires_auth' => true,
+            ], 401);
+        }
+
+        $result = app(BnbPaymentService::class)->checkStatus($orderId, $user);
 
         if (! ($result['success'] ?? false)) {
             return response()->json([

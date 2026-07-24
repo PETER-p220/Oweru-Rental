@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin, Star, Users, Calendar, CreditCard, Smartphone } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { getMyStaysPath } from '../../utils/bnbNav';
 import { usePaymentPolling } from '../../hooks/usePaymentPolling';
 
 const GOLD = '#C89128';
@@ -114,6 +115,14 @@ const BnbPropertyDetail = () => {
     },
   );
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setStep('form');
+      setBookingId(null);
+      setPendingOrderId('');
+    }
+  }, [isAuthenticated]);
+
   const redirectToAuth = () => {
     const returnUrl = encodeURIComponent(`/bnb/${id}`);
     navigate(`/login?redirect=${returnUrl}`);
@@ -159,6 +168,10 @@ const BnbPropertyDetail = () => {
   };
 
   const handlePay = async () => {
+    if (!isAuthenticated) {
+      redirectToAuth();
+      return;
+    }
     if (!bookingId) return;
     setPaying(true);
     setError('');
@@ -185,7 +198,12 @@ const BnbPropertyDetail = () => {
       setStatusMessage(res.message || `Approve the ${provider.toUpperCase()} prompt on your phone.`);
       setStep('pending');
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Payment failed');
+      const msg = err?.response?.data?.message || err?.message || 'Payment failed';
+      if (err?.response?.status === 401 || err?.response?.data?.requires_auth) {
+        redirectToAuth();
+        return;
+      }
+      setError(msg);
       setStep('failed');
     } finally {
       setPaying(false);
@@ -271,18 +289,29 @@ const BnbPropertyDetail = () => {
               <span style={{ color: '#64748B', fontSize: 13 }}> / night</span>
             </div>
 
-            {!isAuthenticated && step === 'form' && (
-              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 13, color: '#92400E' }}>
-                Sign in or create an account to book and pay securely.
-                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                  <Link to={`/login?redirect=${encodeURIComponent(`/bnb/${id}`)}`} style={{ color: GOLD, fontWeight: 700 }}>Sign in</Link>
-                  <span>·</span>
-                  <Link to={`/register?redirect=${encodeURIComponent(`/bnb/${id}`)}`} style={{ color: GOLD, fontWeight: 700 }}>Create account</Link>
+            {!isAuthenticated ? (
+              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: 20, textAlign: 'center' }}>
+                <h3 style={{ margin: '0 0 8px', fontSize: 16, color: '#0F172A' }}>Sign in to book & pay</h3>
+                <p style={{ fontSize: 13, color: '#92400E', lineHeight: 1.5, marginBottom: 16 }}>
+                  BnB bookings and payments are only available for signed-in Oweru accounts.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <Link
+                    to={`/login?redirect=${encodeURIComponent(`/bnb/${id}`)}`}
+                    className="bnb-submit"
+                    style={{ display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '24px' }}
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    to={`/register?redirect=${encodeURIComponent(`/bnb/${id}`)}`}
+                    style={{ fontSize: 13, color: GOLD, fontWeight: 700, textDecoration: 'none' }}
+                  >
+                    Create a free account
+                  </Link>
                 </div>
               </div>
-            )}
-
-            {step === 'form' && (
+            ) : step === 'form' ? (
               <form onSubmit={handleCreateBooking}>
                 <input required className="bnb-inp" placeholder="Full name" value={booking.customer_name} onChange={(e) => setBooking((p) => ({ ...p, customer_name: e.target.value }))} />
                 <input required type="email" className="bnb-inp" placeholder="Email" value={booking.customer_email} onChange={(e) => setBooking((p) => ({ ...p, customer_email: e.target.value }))} />
@@ -310,12 +339,12 @@ const BnbPropertyDetail = () => {
                 {error && <div style={{ color: '#DC2626', fontSize: 13, marginBottom: 10 }}>{error}</div>}
 
                 <button type="submit" className="bnb-submit" disabled={submitting || nights <= 0} style={{ opacity: submitting || nights <= 0 ? 0.6 : 1 }}>
-                  {submitting ? 'Creating booking…' : isAuthenticated ? 'Continue to payment' : 'Sign in to book'}
+                  {submitting ? 'Creating booking…' : 'Continue to payment'}
                 </button>
               </form>
-            )}
+            ) : null}
 
-            {(step === 'payment' || step === 'failed') && (
+            {isAuthenticated && (step === 'payment' || step === 'failed') && (
               <div>
                 <h3 style={{ margin: '0 0 8px', fontSize: 16, color: '#0F172A' }}>Pay {fmt(total)}</h3>
                 <p style={{ fontSize: 13, color: '#64748B', marginBottom: 14 }}>Complete payment to confirm your stay.</p>
@@ -363,7 +392,7 @@ const BnbPropertyDetail = () => {
               </div>
             )}
 
-            {step === 'pending' && (
+            {isAuthenticated && step === 'pending' && (
               <div style={{ textAlign: 'center', padding: '12px 0' }}>
                 <div style={{ width: 40, height: 40, border: `3px solid ${GOLD}`, borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -373,12 +402,12 @@ const BnbPropertyDetail = () => {
               </div>
             )}
 
-            {step === 'success' && (
+            {isAuthenticated && step === 'success' && (
               <div style={{ textAlign: 'center', padding: '12px 0' }}>
                 <div style={{ fontSize: 40, marginBottom: 8 }}>✓</div>
                 <h3 style={{ margin: '0 0 8px', color: '#16A34A' }}>Booking confirmed</h3>
                 <p style={{ fontSize: 13, color: '#64748B', marginBottom: 16 }}>{statusMessage}</p>
-                <button type="button" className="bnb-submit" onClick={() => navigate('/dashboard/tenant/bnb-stays')}>
+                <button type="button" className="bnb-submit" onClick={() => navigate(getMyStaysPath(user))}>
                   View My Stays
                 </button>
               </div>

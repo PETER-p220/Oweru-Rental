@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Calendar, User, Phone, Mail, MessageSquare } from 'lucide-react';
+import { TOKEN_KEY } from '../services/api';
 
 interface BookingFormProps {
   property: any;
@@ -25,46 +26,22 @@ const BookingForm = ({ property, onClose, onSuccess }: BookingFormProps) => {
     setLoading(true);
     setError('');
 
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      window.location.href = `/login?redirect=${encodeURIComponent(`/bnb/${property.id}`)}`;
+      return;
+    }
+
     try {
-      // Validate form
       if (!formData.name || !formData.email || !formData.phone || !formData.checkIn || !formData.checkOut) {
         setError('Please fill in all required fields');
         setLoading(false);
         return;
       }
 
-      // Create booking request (no authentication required)
-      const bookingData = {
-        property_id: property.id,
-        property_title: property.title,
-        customer_name: formData.name,
-        customer_email: formData.email,
-        customer_phone: formData.phone,
-        check_in: formData.checkIn,
-        check_out: formData.checkOut,
-        guest_count: parseInt(formData.guests),
-        special_requests: formData.message,
-        total_amount: calculateTotalAmount(),
-        status: 'pending'
-      };
-
-      // Call public booking API (no auth required)
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/public/bnb/book`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingData)
-      });
-
-      if (response.ok) {
-        onSuccess();
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to submit booking request');
-      }
-    } catch (err) {
-      setError('Network error. Please try again.');
+      window.location.href = `/bnb/${property.id}`;
+    } catch {
+      setError('Unable to continue. Please try again.');
     } finally {
       setLoading(false);
     }

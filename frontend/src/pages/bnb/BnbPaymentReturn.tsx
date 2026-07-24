@@ -3,13 +3,14 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePaymentPolling } from '../../hooks/usePaymentPolling';
+import { getMyStaysPath } from '../../utils/bnbNav';
 
 const GOLD = '#C89128';
 
 const BnbPaymentReturn = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const orderId = searchParams.get('order_id') || '';
   const [message, setMessage] = useState('Verifying your bank/card payment…');
   const [done, setDone] = useState(false);
@@ -65,7 +66,7 @@ const BnbPaymentReturn = () => {
             {done && (
               <button
                 type="button"
-                onClick={() => navigate('/dashboard/tenant/bnb-stays')}
+                onClick={() => navigate(getMyStaysPath(user))}
                 style={{ padding: 12, background: GOLD, border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}
               >
                 View My Stays

@@ -87,31 +87,14 @@ const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose:
     return Math.ceil((new Date(fd.check_out).getTime() - new Date(fd.check_in).getTime()) / 86400000);
   };
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
-      if (token) headers.Authorization = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/api/public/bnb/book`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          property_id: property.id,
-          property_title: property.title,
-          customer_name: fd.guest_name,
-          customer_email: fd.guest_email,
-          customer_phone: fd.guest_phone,
-          check_in: fd.check_in,
-          check_out: fd.check_out,
-          guest_count: fd.guest_count || 1,
-          special_requests: fd.special_requests,
-          total_amount: Math.max(0, nights()) * (property.price || 0),
-          status: 'pending',
-        }),
-      });
-      const d = await res.json().catch(() => ({}));
-      if (res.ok) onSuccess(d); else alert(d.message || 'Failed');
-    } catch { alert('Network error.'); } finally { setLoading(false); }
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = `/login?redirect=${encodeURIComponent(`/bnb/${property.id}`)}`;
+      return;
+    }
+    onClose();
+    window.location.href = `/bnb/${property.id}`;
   };
   const inp: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#0F172A', borderRadius: 8, fontSize: 13, marginBottom: 10, outline: 'none', fontFamily: 'inherit' };
   return (
@@ -120,7 +103,7 @@ const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose:
       <form onSubmit={handleSubmit}>
         <h2 style={{ color: '#0F172A', marginBottom: 4, fontSize: 20, fontWeight: 700, fontFamily: 'inherit' }}>Book {property.title}</h2>
         <p style={{ color: '#64748B', fontSize: 13, marginBottom: 12 }}>{property.location}</p>
-        <p style={{ color: '#94A3B8', fontSize: 12, marginBottom: 14 }}>Guests can book without an account. Log in to track the stay and leave a review later.</p>
+        <p style={{ color: '#94A3B8', fontSize: 12, marginBottom: 14 }}>Sign in to book and pay securely on the property page.</p>
         <input required style={inp} placeholder="Your name" value={fd.guest_name} onChange={e => setFd(p => ({ ...p, guest_name: e.target.value }))} />
         <input required type="email" style={inp} placeholder="Email" value={fd.guest_email} onChange={e => setFd(p => ({ ...p, guest_email: e.target.value }))} />
         <input required style={inp} placeholder="Phone" value={fd.guest_phone} onChange={e => setFd(p => ({ ...p, guest_phone: e.target.value }))} />
@@ -200,6 +183,15 @@ const Home = () => {
 
   // ── Optimized: fetch residential first, then defer secondary sections ─────
   useEffect(() => { loadInitialData(); }, []);
+
+  useEffect(() => {
+    if (window.location.hash === '#bnb') {
+      const t = window.setTimeout(() => {
+        document.getElementById('bnb')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 400);
+      return () => window.clearTimeout(t);
+    }
+  }, []);
 
   const loadBnbProperties = useCallback(async (): Promise<any[]> => {
     const parseList = (payload: unknown): any[] => {

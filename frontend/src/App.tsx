@@ -226,6 +226,7 @@ const BnbOwnerRoutes = () => (
         <Route path="" element={<BnbDashboard />} />
         <Route path="bnb-properties" element={<BnbProperties />} />
         <Route path="bnb-properties/add" element={<BnbProperties />} />
+        <Route path="bnb-stays" element={<MyBnbStays />} />
         <Route path="bnb-bookings" element={<BnbBookings />} />
         <Route path="bnb-reviews" element={<BnbReviews />} />
         <Route path="bnb-analytics" element={<BnbAnalytics />} />

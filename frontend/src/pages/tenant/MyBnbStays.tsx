@@ -125,7 +125,7 @@ const MyBnbStays = () => {
           </div>
           <h1 style={{ margin: 0, color: '#fff', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 800 }}>My Stays</h1>
           <p style={{ margin: '8px 0 0', color: '#94A3B8', fontSize: 13, lineHeight: 1.5 }}>
-            Bookings linked to your account. Guests can also book without logging in from the homepage.
+            Your BnB bookings and payments. Browse stays from the sidebar or book a new stay below.
           </p>
           <div className="stays-stats">
             {[

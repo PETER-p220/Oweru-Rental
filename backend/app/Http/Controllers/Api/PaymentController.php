@@ -9,6 +9,7 @@ use App\Services\PaymentProcessingService;
 use App\Services\PaymentSplitService;
 use App\Services\SelcomPaymentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
@@ -24,6 +25,14 @@ class PaymentController extends Controller
      */
     public function initiateMobileMoney(Request $request)
     {
+        if (! Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please sign in to make a payment.',
+                'requires_auth' => true,
+            ], 401);
+        }
+
         try {
             $validated = $request->validate([
                 'amount'         => 'required|numeric|min:100',
@@ -38,6 +47,7 @@ class PaymentController extends Controller
             ]);
 
             $validated['provider'] = strtoupper($validated['provider']);
+            $validated['tenant_id'] = (int) Auth::id();
 
             $result = app(SelcomPaymentService::class)->initiate($validated);
 
