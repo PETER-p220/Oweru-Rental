@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import AuthAlert from '../components/auth/AuthAlert';
 import { parseAuthError, validateRegistrationEmail, type ParsedAuthAlert } from '../utils/authErrors';
+import { resolveDashboardRedirect } from '../utils/bnbNav';
 
 const GOLD = '#C89128';
 
@@ -167,7 +168,9 @@ const Register = () => {
       localStorage.setItem(TOKEN_KEY, token);
       login(user, token);
       const redirect = searchParams.get('redirect');
-      navigate(redirect && redirect.startsWith('/') ? redirect : `/dashboard/${user.userType}`);
+      const destination = resolveDashboardRedirect(redirect, user.userType)
+        || `/dashboard/${user.userType}`;
+      navigate(destination);
     } catch (err: unknown) {
       const parsed = parseAuthError(err, formData.email);
       if (parsed.variant === 'exists') {

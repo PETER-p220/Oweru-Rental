@@ -3,7 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin, Star, Users, Calendar, CreditCard, Smartphone } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { getMyStaysPath } from '../../utils/bnbNav';
+import {
+  getBrowseBnbPath,
+  getBnbPropertyPathForLogin,
+  getMyStaysPath,
+} from '../../utils/bnbNav';
+import { DASHBOARD_LISTING_CSS } from '../../styles/dashboardListingStyles';
 import { usePaymentPolling } from '../../hooks/usePaymentPolling';
 
 const GOLD = '#C89128';
@@ -123,9 +128,10 @@ const BnbPropertyDetail = () => {
     }
   }, [isAuthenticated]);
 
+  const authRedirect = getBnbPropertyPathForLogin(id!);
+
   const redirectToAuth = () => {
-    const returnUrl = encodeURIComponent(`/bnb/${id}`);
-    navigate(`/login?redirect=${returnUrl}`);
+    navigate(`/login?redirect=${encodeURIComponent(authRedirect)}`);
   };
 
   const handleCreateBooking = async (e: React.FormEvent) => {
@@ -216,9 +222,12 @@ const BnbPropertyDetail = () => {
 
   if (!property) {
     return (
-      <div style={{ padding: 48, textAlign: 'center', fontFamily: 'DM Sans, sans-serif' }}>
-        <p style={{ color: '#DC2626' }}>{error || 'Not found'}</p>
-        <Link to="/" style={{ color: GOLD }}>Back home</Link>
+      <div className="dlp-page" style={{ padding: 48, textAlign: 'center' }}>
+        <style>{DASHBOARD_LISTING_CSS}</style>
+        <p style={{ color: '#DC2626', marginBottom: 16 }}>{error || 'Not found'}</p>
+        <button type="button" className="dlp-btn" style={{ maxWidth: 220, margin: '0 auto' }} onClick={() => navigate(getBrowseBnbPath(user))}>
+          Back to Browse BnB Stays
+        </button>
       </div>
     );
   }
@@ -226,7 +235,8 @@ const BnbPropertyDetail = () => {
   const images = property.images?.length ? property.images : [property.main_image].filter(Boolean);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F1F5F9', fontFamily: 'DM Sans, sans-serif' }}>
+    <div className="dlp-page">
+      <style>{DASHBOARD_LISTING_CSS}</style>
       <style>{`
         .bnb-detail-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 20px 48px; }
         .bnb-detail-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; align-items: start; }
@@ -261,10 +271,11 @@ const BnbPropertyDetail = () => {
 
       <div className="bnb-detail-wrap">
         <button
-          onClick={() => navigate(-1)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', marginBottom: 16, minHeight: 44, padding: '8px 0', fontFamily: 'inherit' }}
+          type="button"
+          onClick={() => navigate(getBrowseBnbPath(user))}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--slate-600)', cursor: 'pointer', marginBottom: 16, minHeight: 44, padding: '8px 0', fontFamily: 'inherit' }}
         >
-          <ArrowLeft size={16} /> Back
+          <ArrowLeft size={16} /> Back to Browse BnB Stays
         </button>
 
         <div className="bnb-detail-grid">
@@ -297,14 +308,14 @@ const BnbPropertyDetail = () => {
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <Link
-                    to={`/login?redirect=${encodeURIComponent(`/bnb/${id}`)}`}
+                    to={`/login?redirect=${encodeURIComponent(authRedirect)}`}
                     className="bnb-submit"
                     style={{ display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '24px' }}
                   >
                     Sign in
                   </Link>
                   <Link
-                    to={`/register?redirect=${encodeURIComponent(`/bnb/${id}`)}`}
+                    to={`/register?redirect=${encodeURIComponent(authRedirect)}`}
                     style={{ fontSize: 13, color: GOLD, fontWeight: 700, textDecoration: 'none' }}
                   >
                     Create a free account

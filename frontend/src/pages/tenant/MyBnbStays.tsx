@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, Hotel, MapPin, Star, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { getBrowseBnbPath } from '../../utils/bnbNav';
+import { getBrowseBnbPath, getBnbPropertyPath } from '../../utils/bnbNav';
 
 const GOLD = '#C89128';
 
@@ -167,8 +167,8 @@ const MyBnbStays = () => {
           <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
             <Hotel size={36} color="#CBD5E1" style={{ marginBottom: 12 }} />
             <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>No stays yet</div>
-            <div style={{ color: '#64748B', fontSize: 13, marginBottom: 16 }}>Book a short stay from the homepage.</div>
-            <button onClick={() => navigate('/#bnb')} style={{ padding: '12px 18px', minHeight: 44, background: GOLD, color: '#0F172A', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>
+            <div style={{ color: '#64748B', fontSize: 13, marginBottom: 16 }}>Book a short stay from Browse BnB Stays.</div>
+            <button onClick={() => navigate(getBrowseBnbPath(user))} style={{ padding: '12px 18px', minHeight: 44, background: GOLD, color: '#0F172A', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>
               Browse short stays
             </button>
           </div>
@@ -199,7 +199,7 @@ const MyBnbStays = () => {
                 </div>
                 <div className="stays-actions">
                   {b.property_id && (
-                    <Link to={`/bnb/${b.property_id}`} className="stays-btn" style={{ border: '1px solid #E2E8F0', background: '#fff', color: '#0F172A', textDecoration: 'none' }}>View</Link>
+                    <Link to={getBnbPropertyPath(user, b.property_id)} className="stays-btn" style={{ border: '1px solid #E2E8F0', background: '#fff', color: '#0F172A', textDecoration: 'none' }}>View</Link>
                   )}
                   {b.can_cancel && (
                     <button className="stays-btn" onClick={() => cancelBooking(b.id)} style={{ border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626' }}>

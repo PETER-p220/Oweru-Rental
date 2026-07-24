@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePaymentPolling } from '../../hooks/usePaymentPolling';
-import { getMyStaysPath } from '../../utils/bnbNav';
-
-const GOLD = '#C89128';
+import { getBrowseBnbPath, getMyStaysPath } from '../../utils/bnbNav';
+import { DASHBOARD_LISTING_CSS } from '../../styles/dashboardListingStyles';
 
 const BnbPaymentReturn = () => {
   const [searchParams] = useSearchParams();
@@ -39,52 +38,55 @@ const BnbPaymentReturn = () => {
     onTimeout: (msg) => setMessage(msg),
   });
 
-  if (!orderId) {
-    return (
-      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif' }}>
-        <div style={{ textAlign: 'center' }}>
-          <p>Missing payment reference.</p>
-          <Link to="/" style={{ color: GOLD }}>Go home</Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F1F5F9', fontFamily: 'DM Sans, sans-serif', padding: 24 }}>
-      <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: 32, maxWidth: 420, width: '100%', textAlign: 'center' }}>
-        {!done && !failed && (
-          <div style={{ width: 36, height: 36, border: `3px solid ${GOLD}`, borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
-        )}
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <h1 style={{ fontSize: 20, margin: '0 0 10px', color: done ? '#16A34A' : failed ? '#DC2626' : '#0F172A' }}>
-          {done ? 'Payment confirmed' : failed ? 'Payment incomplete' : 'Processing payment'}
-        </h1>
-        <p style={{ color: '#64748B', fontSize: 14, lineHeight: 1.5 }}>{message}</p>
-        {(done || failed) && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
-            {done && (
+    <div className="dlp-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <style>{DASHBOARD_LISTING_CSS}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {!orderId ? (
+        <div style={{ background: 'var(--white)', border: '1px solid var(--slate-200)', borderRadius: 12, padding: 32, textAlign: 'center', maxWidth: 420 }}>
+          <p style={{ color: 'var(--slate-600)', marginBottom: 16 }}>Missing payment reference.</p>
+          <button type="button" className="dlp-btn" style={{ maxWidth: 220, margin: '0 auto' }} onClick={() => navigate(getBrowseBnbPath(user))}>
+            Browse BnB stays
+          </button>
+        </div>
+      ) : (
+        <div style={{ background: 'var(--white)', border: '1px solid var(--slate-200)', borderRadius: 12, padding: 32, maxWidth: 420, width: '100%', textAlign: 'center' }}>
+          {!done && !failed && (
+            <div style={{ width: 36, height: 36, border: '3px solid var(--gold)', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+          )}
+          <h1 style={{ fontSize: 20, margin: '0 0 10px', color: done ? '#16A34A' : failed ? '#DC2626' : 'var(--slate-900)' }}>
+            {done ? 'Payment confirmed' : failed ? 'Payment incomplete' : 'Processing payment'}
+          </h1>
+          <p style={{ color: 'var(--slate-600)', fontSize: 14, lineHeight: 1.5 }}>{message}</p>
+          {(done || failed) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
+              {done && (
+                <button type="button" className="dlp-btn" onClick={() => navigate(getMyStaysPath(user))}>
+                  View My Stays
+                </button>
+              )}
+              {failed && (
+                <button
+                  type="button"
+                  className="dlp-btn"
+                  style={{ background: 'var(--slate-800)', color: 'var(--white)' }}
+                  onClick={() => navigate(getBrowseBnbPath(user))}
+                >
+                  Browse stays & try again
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => navigate(getMyStaysPath(user))}
-                style={{ padding: 12, background: GOLD, border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}
+                onClick={() => navigate(getBrowseBnbPath(user))}
+                style={{ background: 'none', border: 'none', color: 'var(--gold)', fontWeight: 700, cursor: 'pointer', fontSize: 13 }}
               >
-                View My Stays
+                Back to Browse BnB Stays
               </button>
-            )}
-            {failed && (
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                style={{ padding: 12, background: '#0F172A', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, cursor: 'pointer' }}
-              >
-                Try again
-              </button>
-            )}
-            <Link to="/" style={{ color: GOLD, fontSize: 13 }}>Back to home</Link>
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

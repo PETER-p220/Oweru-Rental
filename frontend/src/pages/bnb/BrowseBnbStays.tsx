@@ -2,15 +2,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Users, Star, Hotel, Loader2 } from 'lucide-react';
 import Api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { getBnbPropertyPath } from '../../utils/bnbNav';
 import { getPropertyThumbnail, normalizeBnbProperty } from '../../utils/propertyImages';
-
-const GOLD = '#C89128';
+import { DASHBOARD_LISTING_CSS } from '../../styles/dashboardListingStyles';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', maximumFractionDigits: 0 }).format(n || 0);
 
 const BrowseBnbStays = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [properties, setProperties] = useState<any[]>([]);
@@ -71,52 +73,31 @@ const BrowseBnbStays = () => {
   }, [load]);
 
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#0F172A', minHeight: '100vh' }}>
-      <style>{`
-        .bnb-browse-header { padding: 32px 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-        .bnb-browse-inner { max-width: 1200px; margin: 0 auto; }
-        .bnb-browse-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: ${GOLD}; margin-bottom: 8px; }
-        .bnb-browse-title { margin: 0; color: #fff; font-size: clamp(24px, 4vw, 32px); font-weight: 800; }
-        .bnb-browse-sub { margin: 8px 0 0; color: #94A3B8; font-size: 14px; }
-        .bnb-browse-search-wrap { margin-top: 20px; position: relative; max-width: 480px; }
-        .bnb-browse-search {
-          width: 100%; padding: 12px 16px 12px 42px; border-radius: 10px; border: 1px solid #334155;
-          background: #1E293B; color: #F8FAFC; font-size: 14px; outline: none;
-        }
-        .bnb-browse-search:focus { border-color: ${GOLD}; box-shadow: 0 0 0 3px ${GOLD}22; }
-        .bnb-browse-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #64748B; }
-        .bnb-browse-body { max-width: 1200px; margin: 0 auto; padding: 24px; }
-        .bnb-browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .bnb-browse-card {
-          background: #fff; border-radius: 14px; overflow: hidden; border: 1px solid #E2E8F0;
-          display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .bnb-browse-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(15,23,42,0.12); }
-        .bnb-browse-img { width: 100%; height: 200px; object-fit: cover; background: #E2E8F0; }
-        .bnb-browse-card-body { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-        .bnb-browse-card-title { font-size: 16px; font-weight: 700; color: #0F172A; margin: 0; }
-        .bnb-browse-loc { display: flex; align-items: center; gap: 6px; color: #64748B; font-size: 13px; }
-        .bnb-browse-meta { display: flex; gap: 12px; color: #64748B; font-size: 12px; flex-wrap: wrap; }
-        .bnb-browse-price { font-size: 18px; font-weight: 800; color: #0F172A; }
-        .bnb-browse-price span { font-size: 12px; font-weight: 500; color: #64748B; }
-        .bnb-browse-btn {
-          margin-top: auto; width: 100%; padding: 12px; border: none; border-radius: 10px;
-          background: ${GOLD}; color: #0F172A; font-weight: 700; font-size: 13px; cursor: pointer;
-        }
-        .bnb-browse-empty { text-align: center; padding: 48px 20px; color: #94A3B8; }
-      `}</style>
+    <div className="dlp-page">
+      <style>{DASHBOARD_LISTING_CSS}</style>
 
-      <div className="bnb-browse-header">
-        <div className="bnb-browse-inner">
-          <div className="bnb-browse-eyebrow">Short stays</div>
-          <h1 className="bnb-browse-title">Browse BnB Stays</h1>
-          <p className="bnb-browse-sub">
-            {loading ? 'Loading stays…' : `${properties.length} vacation rental${properties.length === 1 ? '' : 's'} available`}
-          </p>
-          <div className="bnb-browse-search-wrap">
-            <Search size={16} className="bnb-browse-search-icon" />
+      <div className="dlp-ph">
+        <div className="dlp-ph-inner">
+          <div>
+            <div className="dlp-eyebrow">Short stays</div>
+            <h1 className="dlp-title">Browse BnB Stays</h1>
+          </div>
+          <div className="dlp-meta">
+            {loading ? 'Loading stays…' : (
+              <>
+                <strong>{properties.length}</strong> vacation rental{properties.length === 1 ? '' : 's'} available
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="dlp-sb">
+        <div className="dlp-sb-inner">
+          <div className="dlp-search">
+            <span className="dlp-search-icon"><Search size={14} /></span>
             <input
-              className="bnb-browse-search"
+              className="dlp-input"
               placeholder="Search by name or location…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -125,41 +106,37 @@ const BrowseBnbStays = () => {
         </div>
       </div>
 
-      <div className="bnb-browse-body">
-        {error && (
-          <div style={{ background: '#FEE2E2', color: '#B91C1C', padding: 12, borderRadius: 10, marginBottom: 16, fontSize: 14 }}>
-            {error}
-          </div>
-        )}
+      <div className="dlp-body">
+        {error && <div className="dlp-err">{error}</div>}
 
         {loading ? (
-          <div className="bnb-browse-empty">
+          <div className="dlp-empty">
             <Loader2 size={28} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             Loading BnB properties…
           </div>
         ) : properties.length === 0 ? (
-          <div className="bnb-browse-empty">
-            <Hotel size={32} style={{ margin: '0 auto 12px', color: GOLD }} />
+          <div className="dlp-empty">
+            <Hotel size={32} style={{ margin: '0 auto 12px', color: 'var(--gold)' }} />
             <p>No BnB stays match your search right now.</p>
           </div>
         ) : (
-          <div className="bnb-browse-grid">
+          <div className="dlp-grid">
             {properties.map((p) => (
-              <article key={p.id} className="bnb-browse-card">
+              <article key={p.id} className="dlp-card">
                 <img
-                  className="bnb-browse-img"
+                  className="dlp-img"
                   src={getPropertyThumbnail(p)}
                   alt={p.title}
                   loading="lazy"
                 />
-                <div className="bnb-browse-card-body">
-                  <h2 className="bnb-browse-card-title">{p.title}</h2>
-                  <div className="bnb-browse-loc">
-                    <MapPin size={13} color={GOLD} />
+                <div className="dlp-card-body">
+                  <h2 className="dlp-card-title">{p.title}</h2>
+                  <div className="dlp-loc">
+                    <MapPin size={13} />
                     {p.location || 'Location TBC'}
                   </div>
-                  <div className="bnb-browse-meta">
+                  <div className="dlp-meta-row">
                     {p.max_guests ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <Users size={12} /> Up to {p.max_guests} guests
@@ -167,14 +144,18 @@ const BrowseBnbStays = () => {
                     ) : null}
                     {p.rating_count > 0 ? (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <Star size={12} color={GOLD} fill={GOLD} /> {p.rating_avg} ({p.rating_count})
+                        <Star size={12} color="var(--gold)" fill="var(--gold)" /> {p.rating_avg} ({p.rating_count})
                       </span>
                     ) : null}
                   </div>
-                  <div className="bnb-browse-price">
+                  <div className="dlp-price">
                     {fmt(p.price)} <span>/ night</span>
                   </div>
-                  <button type="button" className="bnb-browse-btn" onClick={() => navigate(`/bnb/${p.id}`)}>
+                  <button
+                    type="button"
+                    className="dlp-btn"
+                    onClick={() => navigate(getBnbPropertyPath(user, p.id))}
+                  >
                     View & book
                   </button>
                 </div>

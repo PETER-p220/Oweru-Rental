@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { X, Calendar, User, Phone, Mail, MessageSquare } from 'lucide-react';
 import { TOKEN_KEY } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { getBnbPropertyPath, getBnbPropertyPathForLogin } from '../utils/bnbNav';
 
 interface BookingFormProps {
   property: any;
@@ -9,6 +11,7 @@ interface BookingFormProps {
 }
 
 const BookingForm = ({ property, onClose, onSuccess }: BookingFormProps) => {
+  const { user, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,7 +31,7 @@ const BookingForm = ({ property, onClose, onSuccess }: BookingFormProps) => {
 
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
-      window.location.href = `/login?redirect=${encodeURIComponent(`/bnb/${property.id}`)}`;
+      window.location.href = `/login?redirect=${encodeURIComponent(getBnbPropertyPathForLogin(property.id))}`;
       return;
     }
 
@@ -39,7 +42,12 @@ const BookingForm = ({ property, onClose, onSuccess }: BookingFormProps) => {
         return;
       }
 
-      window.location.href = `/bnb/${property.id}`;
+      onClose();
+      if (isAuthenticated && user) {
+        window.location.href = getBnbPropertyPath(user, property.id);
+      } else {
+        window.location.href = getBnbPropertyPathForLogin(property.id);
+      }
     } catch {
       setError('Unable to continue. Please try again.');
     } finally {

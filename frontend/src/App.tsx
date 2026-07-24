@@ -33,6 +33,7 @@ import MyBnbStays from './pages/tenant/MyBnbStays';
 import BnbPropertyDetail from './pages/bnb/BnbPropertyDetail';
 import BnbPaymentReturn from './pages/bnb/BnbPaymentReturn';
 import BrowseBnbStays from './pages/bnb/BrowseBnbStays';
+import { BnbPaymentReturnPublicRedirect, BnbPropertyPublicRedirect } from './pages/bnb/BnbPublicRedirect';
 import TenantAnalyticsPage from './pages/tenant/AnalyticsPage';
 
 // Landlord pages
@@ -107,8 +108,8 @@ const PublicRoutes = () => (
         <Route path="/" element={<Home />} />
         <Route path="/properties" element={<Properties />} />
         <Route path="/property/:id" element={<PropertyDetail />} />
-        <Route path="/bnb/payment/return" element={<BnbPaymentReturn />} />
-        <Route path="/bnb/:id" element={<BnbPropertyDetail />} />
+        <Route path="/bnb/payment/return" element={<BnbPaymentReturnPublicRedirect />} />
+        <Route path="/bnb/:id" element={<BnbPropertyPublicRedirect />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
@@ -137,6 +138,8 @@ const TenantRoutes = () => (
         <Route path="payments" element={<Payments />} />
         <Route path="payment-history" element={<PaymentHistory />} />
         <Route path="browse-bnb-stays" element={<BrowseBnbStays />} />
+        <Route path="bnb-property/:id" element={<BnbPropertyDetail />} />
+        <Route path="bnb-payment-return" element={<BnbPaymentReturn />} />
         <Route path="bnb-stays" element={<MyBnbStays />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="messages" element={<Messages />} />
@@ -229,6 +232,8 @@ const BnbOwnerRoutes = () => (
         <Route path="bnb-properties" element={<BnbProperties />} />
         <Route path="bnb-properties/add" element={<BnbProperties />} />
         <Route path="browse-bnb-stays" element={<BrowseBnbStays />} />
+        <Route path="bnb-property/:id" element={<BnbPropertyDetail />} />
+        <Route path="bnb-payment-return" element={<BnbPaymentReturn />} />
         <Route path="bnb-stays" element={<MyBnbStays />} />
         <Route path="bnb-bookings" element={<BnbBookings />} />
         <Route path="bnb-reviews" element={<BnbReviews />} />

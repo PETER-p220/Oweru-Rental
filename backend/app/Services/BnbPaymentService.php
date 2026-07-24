@@ -109,6 +109,7 @@ class BnbPaymentService
         $orderId = 'BNB-' . $booking->id . '-' . time();
         $name = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Guest';
         $frontend = rtrim((string) config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/');
+        $role = $user->user_type ?? 'tenant';
 
         $result = $this->selcom->initiateHostedCheckout([
             'amount' => $amount,
@@ -117,7 +118,7 @@ class BnbPaymentService
             'customer_name' => $name,
             'order_id' => $orderId,
             'payment_type' => 'bnb_booking',
-            'return_url' => "{$frontend}/bnb/payment/return?order_id={$orderId}&booking_id={$booking->id}",
+            'return_url' => "{$frontend}/dashboard/{$role}/bnb-payment-return?order_id={$orderId}&booking_id={$booking->id}",
         ]);
 
         if (! ($result['success'] ?? false)) {
