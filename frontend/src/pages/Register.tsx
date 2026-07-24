@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Eye, EyeOff, Mail, Lock, User, Phone,
   AlertCircle, ArrowRight, ArrowLeft, Check, ShieldCheck,
@@ -84,6 +84,7 @@ const Register = () => {
   const [step,                setStep]                = useState(1);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, logout, isAuthenticated, user } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -165,7 +166,8 @@ const Register = () => {
       if (!user || !token) throw new Error('Invalid response from server');
       localStorage.setItem(TOKEN_KEY, token);
       login(user, token);
-      navigate(`/dashboard/${user.userType}`);
+      const redirect = searchParams.get('redirect');
+      navigate(redirect && redirect.startsWith('/') ? redirect : `/dashboard/${user.userType}`);
     } catch (err: unknown) {
       const parsed = parseAuthError(err, formData.email);
       if (parsed.variant === 'exists') {

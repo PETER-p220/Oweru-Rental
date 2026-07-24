@@ -23,6 +23,7 @@ class BnbBooking extends Model
         'cancellation_reason',
         'payment_status',
         'payment_method',
+        'transaction_id',
         'notes',
     ];
 

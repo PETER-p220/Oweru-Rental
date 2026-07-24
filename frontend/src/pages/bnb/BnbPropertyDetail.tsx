@@ -1,19 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, MapPin, Star, Users, Calendar } from 'lucide-react';
-import Api, { TOKEN_KEY } from '../../services/api';
+import { ArrowLeft, MapPin, Star, Users, Calendar, CreditCard, Smartphone } from 'lucide-react';
+import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePaymentPolling } from '../../hooks/usePaymentPolling';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const GOLD = '#C89128';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', maximumFractionDigits: 0 }).format(n || 0);
 
+type PayMode = 'mobile_money' | 'bank';
+type Step = 'form' | 'payment' | 'pending' | 'success' | 'failed';
+
+const PROVIDERS = [
+  { value: 'tigo', label: 'Tigo Pesa' },
+  { value: 'mpesa', label: 'M-Pesa' },
+  { value: 'airtel', label: 'Airtel Money' },
+  { value: 'halopesa', label: 'Halopesa' },
+] as const;
+
 const BnbPropertyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [property, setProperty] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,8 +36,15 @@ const BnbPropertyDetail = () => {
     guest_count: 1,
     special_requests: '',
   });
+  const [step, setStep] = useState<Step>('form');
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState('');
+  const [paying, setPaying] = useState(false);
+  const [bookingId, setBookingId] = useState<number | null>(null);
+  const [pendingOrderId, setPendingOrderId] = useState('');
+  const [paymentMode, setPaymentMode] = useState<PayMode>('mobile_money');
+  const [provider, setProvider] = useState<(typeof PROVIDERS)[number]['value']>('tigo');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -37,6 +54,7 @@ const BnbPropertyDetail = () => {
         customer_email: p.customer_email || user.email || '',
         customer_phone: p.customer_phone || user.phone || '',
       }));
+      setPhoneNumber((p) => p || user.phone || '');
     }
   }, [user]);
 
@@ -66,47 +84,111 @@ const BnbPropertyDetail = () => {
     return base + (property.cleaning_fee || 0) + (property.service_fee || 0);
   }, [property, nights]);
 
-  const handleBook = async (e: React.FormEvent) => {
+  const pollBnbPayment = useCallback(async () => {
+    if (!pendingOrderId) return { data: {} };
+    const res = await Api.checkBnbBookingPaymentStatus(pendingOrderId);
+    return {
+      data: {
+        ...(res.data || {}),
+        payment_status: res.data?.payment_status,
+        message: res.message,
+      },
+      message: res.message,
+    };
+  }, [pendingOrderId]);
+
+  usePaymentPolling(
+    step === 'pending' && !!pendingOrderId,
+    pendingOrderId,
+    pollBnbPayment,
+    {
+      onPaid: (message) => {
+        setStatusMessage(message || 'Payment confirmed. Your stay is booked.');
+        setStep('success');
+      },
+      onFailed: (message) => {
+        setError(message || 'Payment was not completed.');
+        setStep('failed');
+      },
+      onTimeout: (message) => setStatusMessage(message),
+    },
+  );
+
+  const redirectToAuth = () => {
+    const returnUrl = encodeURIComponent(`/bnb/${id}`);
+    navigate(`/login?redirect=${returnUrl}`);
+  };
+
+  const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!property) return;
+
+    if (!isAuthenticated) {
+      redirectToAuth();
+      return;
+    }
+
     setSubmitting(true);
-    setSuccess('');
     setError('');
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      };
-      if (token) headers.Authorization = `Bearer ${token}`;
-
-      const res = await fetch(`${API_BASE}/api/public/bnb/book`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          property_id: property.id,
-          property_title: property.title,
-          customer_name: booking.customer_name,
-          customer_email: booking.customer_email,
-          customer_phone: booking.customer_phone,
-          check_in: booking.check_in,
-          check_out: booking.check_out,
-          guest_count: booking.guest_count,
-          special_requests: booking.special_requests,
-          total_amount: total,
-        }),
+      const res = await Api.createBnbBooking({
+        property_id: property.id,
+        property_title: property.title,
+        customer_name: booking.customer_name,
+        customer_email: booking.customer_email,
+        customer_phone: booking.customer_phone,
+        check_in: booking.check_in,
+        check_out: booking.check_out,
+        guest_count: booking.guest_count,
+        special_requests: booking.special_requests,
+        total_amount: total,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Booking failed');
-      setSuccess(data.message || 'Booking submitted!');
-      const role = user?.userType || user?.user_type || user?.role;
-      if (token && role === 'tenant') {
-        setTimeout(() => navigate('/dashboard/tenant/bnb-stays'), 1200);
-      }
+      const data = res.data || res;
+      setBookingId(data.booking_id);
+      setStep('payment');
     } catch (err: any) {
-      setError(err.message || 'Booking failed');
+      const msg = err?.response?.data?.message || err?.message || 'Booking failed';
+      if (err?.response?.status === 401 || err?.response?.data?.requires_auth) {
+        redirectToAuth();
+        return;
+      }
+      setError(msg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePay = async () => {
+    if (!bookingId) return;
+    setPaying(true);
+    setError('');
+    try {
+      const payload = paymentMode === 'bank'
+        ? { payment_mode: 'bank' as const, phone_number: phoneNumber || booking.customer_phone }
+        : {
+            payment_mode: 'mobile_money' as const,
+            phone_number: phoneNumber || booking.customer_phone,
+            provider,
+          };
+
+      const res = await Api.initiateBnbBookingPayment(bookingId, payload);
+      const data = res.data || {};
+      const orderId = data.order_id || data.transaction_id;
+      if (!orderId) throw new Error(res.message || 'Could not start payment');
+
+      if (paymentMode === 'bank' && data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+
+      setPendingOrderId(orderId);
+      setStatusMessage(res.message || `Approve the ${provider.toUpperCase()} prompt on your phone.`);
+      setStep('pending');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Payment failed');
+      setStep('failed');
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -137,10 +219,17 @@ const BnbPropertyDetail = () => {
           margin-bottom: 10px; font-size: 14px; outline: none; box-sizing: border-box; font-family: inherit;
           min-height: 44px; background: #fff; color: #0F172A;
         }
-        .bnb-submit {
+        .bnb-submit, .bnb-pay-btn {
           width: 100%; min-height: 48px; padding: 12px; background: ${GOLD}; color: #0F172A;
           border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px;
         }
+        .bnb-mode-btn {
+          flex: 1; padding: 10px; border: 1.5px solid #E2E8F0; border-radius: 10px; background: #fff;
+          cursor: pointer; font-size: 12px; font-weight: 600; color: #475569; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .bnb-mode-btn[data-active='true'] { border-color: ${GOLD}; background: ${GOLD}12; color: #0F172A; }
+        .bnb-provider { padding: 8px 10px; border: 1px solid #E2E8F0; border-radius: 8px; background: #fff; font-size: 12px; cursor: pointer; }
+        .bnb-provider[data-active='true'] { border-color: ${GOLD}; background: ${GOLD}12; font-weight: 700; }
         @media (max-width: 860px) {
           .bnb-detail-grid { grid-template-columns: 1fr; gap: 16px; }
           .bnb-book-card { position: static; }
@@ -174,24 +263,6 @@ const BnbPropertyDetail = () => {
               )}
             </div>
             <p style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: 14 }}>{property.description}</p>
-
-            {property.reviews?.length > 0 && (
-              <div style={{ marginTop: 28 }}>
-                <h3 style={{ margin: '0 0 12px', color: '#0F172A' }}>Guest reviews</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {property.reviews.map((r: any) => (
-                    <div key={r.id} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, padding: 14 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, gap: 8, flexWrap: 'wrap' }}>
-                        <strong style={{ color: '#0F172A' }}>{r.guest_name}</strong>
-                        <span style={{ color: GOLD, fontSize: 12 }}>{'★'.repeat(r.rating)}</span>
-                      </div>
-                      <p style={{ margin: 0, color: '#64748B', fontSize: 13 }}>{r.comment}</p>
-                      {r.response && <p style={{ margin: '8px 0 0', fontSize: 12, color: '#475569', background: '#F8FAFC', padding: 8, borderRadius: 8 }}>Owner: {r.response}</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="bnb-book-card">
@@ -200,43 +271,118 @@ const BnbPropertyDetail = () => {
               <span style={{ color: '#64748B', fontSize: 13 }}> / night</span>
             </div>
 
-            {!user && (
-              <p style={{ fontSize: 12, color: '#64748B', marginBottom: 12, lineHeight: 1.5 }}>
-                Booking as a guest is fine. <Link to="/login" style={{ color: GOLD, fontWeight: 600 }}>Log in</Link> to track this stay under My Stays and leave a review later.
-              </p>
+            {!isAuthenticated && step === 'form' && (
+              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: 12, marginBottom: 14, fontSize: 13, color: '#92400E' }}>
+                Sign in or create an account to book and pay securely.
+                <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                  <Link to={`/login?redirect=${encodeURIComponent(`/bnb/${id}`)}`} style={{ color: GOLD, fontWeight: 700 }}>Sign in</Link>
+                  <span>·</span>
+                  <Link to={`/register?redirect=${encodeURIComponent(`/bnb/${id}`)}`} style={{ color: GOLD, fontWeight: 700 }}>Create account</Link>
+                </div>
+              </div>
             )}
 
-            <form onSubmit={handleBook}>
-              <input required className="bnb-inp" placeholder="Full name" value={booking.customer_name} onChange={(e) => setBooking((p) => ({ ...p, customer_name: e.target.value }))} />
-              <input required type="email" className="bnb-inp" placeholder="Email" value={booking.customer_email} onChange={(e) => setBooking((p) => ({ ...p, customer_email: e.target.value }))} />
-              <input required className="bnb-inp" placeholder="Phone" value={booking.customer_phone} onChange={(e) => setBooking((p) => ({ ...p, customer_phone: e.target.value }))} />
-              <div className="bnb-date-grid">
-                <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Check-in
-                  <input required type="date" className="bnb-inp" value={booking.check_in} onChange={(e) => setBooking((p) => ({ ...p, check_in: e.target.value }))} />
-                </label>
-                <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Check-out
-                  <input required type="date" className="bnb-inp" value={booking.check_out} onChange={(e) => setBooking((p) => ({ ...p, check_out: e.target.value }))} />
-                </label>
-              </div>
-              <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Guests
-                <input required type="number" min={1} max={property.max_guests || 20} className="bnb-inp" value={booking.guest_count} onChange={(e) => setBooking((p) => ({ ...p, guest_count: Number(e.target.value) }))} />
-              </label>
-              <textarea className="bnb-inp" style={{ minHeight: 80 }} placeholder="Special requests (optional)" value={booking.special_requests} onChange={(e) => setBooking((p) => ({ ...p, special_requests: e.target.value }))} />
-
-              {nights > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, padding: 12, background: '#F8FAFC', borderRadius: 8, gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ color: '#64748B', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={13} />{nights} nights</span>
-                  <strong style={{ color: GOLD }}>{fmt(total)}</strong>
+            {step === 'form' && (
+              <form onSubmit={handleCreateBooking}>
+                <input required className="bnb-inp" placeholder="Full name" value={booking.customer_name} onChange={(e) => setBooking((p) => ({ ...p, customer_name: e.target.value }))} />
+                <input required type="email" className="bnb-inp" placeholder="Email" value={booking.customer_email} onChange={(e) => setBooking((p) => ({ ...p, customer_email: e.target.value }))} />
+                <input required className="bnb-inp" placeholder="Phone (for payment)" value={booking.customer_phone} onChange={(e) => setBooking((p) => ({ ...p, customer_phone: e.target.value }))} />
+                <div className="bnb-date-grid">
+                  <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Check-in
+                    <input required type="date" className="bnb-inp" value={booking.check_in} onChange={(e) => setBooking((p) => ({ ...p, check_in: e.target.value }))} />
+                  </label>
+                  <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Check-out
+                    <input required type="date" className="bnb-inp" value={booking.check_out} onChange={(e) => setBooking((p) => ({ ...p, check_out: e.target.value }))} />
+                  </label>
                 </div>
-              )}
+                <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Guests
+                  <input required type="number" min={1} max={property.max_guests || 20} className="bnb-inp" value={booking.guest_count} onChange={(e) => setBooking((p) => ({ ...p, guest_count: Number(e.target.value) }))} />
+                </label>
+                <textarea className="bnb-inp" style={{ minHeight: 80 }} placeholder="Special requests (optional)" value={booking.special_requests} onChange={(e) => setBooking((p) => ({ ...p, special_requests: e.target.value }))} />
 
-              {error && <div style={{ color: '#DC2626', fontSize: 13, marginBottom: 10 }}>{error}</div>}
-              {success && <div style={{ color: '#16A34A', fontSize: 13, marginBottom: 10 }}>{success}</div>}
+                {nights > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, padding: 12, background: '#F8FAFC', borderRadius: 8 }}>
+                    <span style={{ color: '#64748B', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={13} />{nights} nights</span>
+                    <strong style={{ color: GOLD }}>{fmt(total)}</strong>
+                  </div>
+                )}
 
-              <button type="submit" className="bnb-submit" disabled={submitting || nights <= 0} style={{ opacity: submitting || nights <= 0 ? 0.6 : 1 }}>
-                {submitting ? 'Submitting…' : user ? 'Book & save to My Stays' : 'Request booking'}
-              </button>
-            </form>
+                {error && <div style={{ color: '#DC2626', fontSize: 13, marginBottom: 10 }}>{error}</div>}
+
+                <button type="submit" className="bnb-submit" disabled={submitting || nights <= 0} style={{ opacity: submitting || nights <= 0 ? 0.6 : 1 }}>
+                  {submitting ? 'Creating booking…' : isAuthenticated ? 'Continue to payment' : 'Sign in to book'}
+                </button>
+              </form>
+            )}
+
+            {(step === 'payment' || step === 'failed') && (
+              <div>
+                <h3 style={{ margin: '0 0 8px', fontSize: 16, color: '#0F172A' }}>Pay {fmt(total)}</h3>
+                <p style={{ fontSize: 13, color: '#64748B', marginBottom: 14 }}>Complete payment to confirm your stay.</p>
+
+                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                  <button type="button" className="bnb-mode-btn" data-active={paymentMode === 'mobile_money'} onClick={() => setPaymentMode('mobile_money')}>
+                    <Smartphone size={14} /> Mobile money
+                  </button>
+                  <button type="button" className="bnb-mode-btn" data-active={paymentMode === 'bank'} onClick={() => setPaymentMode('bank')}>
+                    <CreditCard size={14} /> Bank / card
+                  </button>
+                </div>
+
+                <input
+                  className="bnb-inp"
+                  placeholder="Payment phone number"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                />
+
+                {paymentMode === 'mobile_money' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                    {PROVIDERS.map((p) => (
+                      <button key={p.value} type="button" className="bnb-provider" data-active={provider === p.value} onClick={() => setProvider(p.value)}>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {paymentMode === 'bank' && (
+                  <p style={{ fontSize: 12, color: '#64748B', marginBottom: 12, lineHeight: 1.5 }}>
+                    You will be redirected to Selcom secure checkout to pay by bank transfer or card.
+                  </p>
+                )}
+
+                {error && <div style={{ color: '#DC2626', fontSize: 13, marginBottom: 10 }}>{error}</div>}
+
+                <button type="button" className="bnb-pay-btn" disabled={paying} onClick={handlePay} style={{ opacity: paying ? 0.6 : 1, marginBottom: 8 }}>
+                  {paying ? 'Processing…' : paymentMode === 'bank' ? 'Continue to bank checkout' : `Pay with ${provider.toUpperCase()}`}
+                </button>
+                <button type="button" onClick={() => { setStep('form'); setError(''); }} style={{ width: '100%', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: 13 }}>
+                  Back to dates
+                </button>
+              </div>
+            )}
+
+            {step === 'pending' && (
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                <div style={{ width: 40, height: 40, border: `3px solid ${GOLD}`, borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                <h3 style={{ margin: '0 0 8px', color: '#0F172A' }}>Waiting for payment</h3>
+                <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.5 }}>{statusMessage}</p>
+                <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 10 }}>Ref: {pendingOrderId}</p>
+              </div>
+            )}
+
+            {step === 'success' && (
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                <div style={{ fontSize: 40, marginBottom: 8 }}>✓</div>
+                <h3 style={{ margin: '0 0 8px', color: '#16A34A' }}>Booking confirmed</h3>
+                <p style={{ fontSize: 13, color: '#64748B', marginBottom: 16 }}>{statusMessage}</p>
+                <button type="button" className="bnb-submit" onClick={() => navigate('/dashboard/tenant/bnb-stays')}>
+                  View My Stays
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

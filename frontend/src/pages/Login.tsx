@@ -43,7 +43,8 @@ const Login = () => {
       localStorage.removeItem('user');
       localStorage.setItem(TOKEN_KEY, token);
       login(user, token);
-      navigate(`/dashboard/${user.userType}`);
+      const redirect = searchParams.get('redirect');
+      navigate(redirect && redirect.startsWith('/') ? redirect : `/dashboard/${user.userType}`);
     } catch (err: unknown) {
       setAlert(parseLoginError(err));
     } finally {

@@ -7,6 +7,7 @@ use App\Models\BnbBooking;
 use App\Models\BnbProperty;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\BnbPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -74,16 +75,23 @@ class BnbBookingController extends Controller
     }
 
     /**
-     * Public or authenticated booking request.
-     * Guests (no login) and logged-in users (tenant or any role) can book.
+     * Create a booking (authenticated users only). Payment is required separately.
      */
     public function store(Request $request): JsonResponse
     {
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json([
+                'message' => 'Please sign in or create an account to book this stay.',
+                'requires_auth' => true,
+            ], 401);
+        }
+
         $validator = Validator::make($request->all(), [
             'property_id' => 'required|exists:bnb_properties,id',
             'property_title' => 'nullable|string|max:255',
-            'customer_name' => 'required|string|max:255',
-            'customer_email' => 'required|email|max:255',
+            'customer_name' => 'nullable|string|max:255',
+            'customer_email' => 'nullable|email|max:255',
             'customer_phone' => 'required|string|max:20',
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
@@ -114,6 +122,12 @@ class BnbBookingController extends Controller
             ], 422);
         }
 
+        if ((int) $property->owner_id === (int) $user->id) {
+            return response()->json([
+                'message' => 'You cannot book your own property.',
+            ], 422);
+        }
+
         $guestCount = (int) ($request->guest_count ?? $request->guests ?? 1);
         if ($property->max_guests && $guestCount > (int) $property->max_guests) {
             return response()->json([
@@ -141,14 +155,17 @@ class BnbBookingController extends Controller
             ? (float) $request->total_amount
             : (float) $property->calculateTotalPrice($request->check_in, $request->check_out);
 
-        $guestUser = $this->resolveGuestUser($request);
-        $status = ($property->instant_book ?? false) ? 'confirmed' : 'pending';
+        $guestName = trim((string) ($request->customer_name ?: trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))));
+        $guestEmail = strtolower(trim((string) ($request->customer_email ?: $user->email)));
+        $guestPhone = trim((string) $request->customer_phone);
+
+        $status = 'pending';
 
         $notes = sprintf(
             'Booking by: %s (%s, %s)',
-            $request->customer_name,
-            $request->customer_email,
-            $request->customer_phone
+            $guestName ?: 'Guest',
+            $guestEmail,
+            $guestPhone
         );
 
         $special = $request->special_requests
@@ -157,7 +174,7 @@ class BnbBookingController extends Controller
 
         $bnbBooking = BnbBooking::create([
             'property_id' => $property->id,
-            'guest_id' => $guestUser?->id,
+            'guest_id' => $user->id,
             'check_in' => $request->check_in,
             'check_out' => $request->check_out,
             'guests' => $guestCount,
@@ -168,22 +185,9 @@ class BnbBookingController extends Controller
             'notes' => $notes,
         ]);
 
-        $this->notifyOwnerOfBooking($property, $bnbBooking, $request->customer_name);
-
-        if ($guestUser) {
-            $this->notifyGuest(
-                $guestUser->id,
-                'Stay request submitted',
-                "Your booking request for {$property->title} ({$request->check_in} → {$request->check_out}) was submitted.",
-                'bnb_booking_created'
-            );
-        }
-
         return response()->json([
             'success' => true,
-            'message' => $status === 'confirmed'
-                ? 'Booking confirmed! Check My Stays for details.'
-                : 'Booking request submitted. The property owner will confirm shortly.',
+            'message' => 'Booking created. Complete payment to confirm your stay.',
             'data' => [
                 'booking_id' => $bnbBooking->id,
                 'property_id' => $property->id,
@@ -192,10 +196,94 @@ class BnbBookingController extends Controller
                 'check_out' => $request->check_out,
                 'guests' => $guestCount,
                 'total_amount' => $total,
+                'total_price' => $total,
                 'status' => $status,
-                'guest_linked' => (bool) $guestUser,
+                'payment_status' => 'pending',
+                'requires_payment' => true,
             ],
         ], 201);
+    }
+
+    public function initiatePayment(Request $request, BnbBooking $booking): JsonResponse
+    {
+        $user = Auth::user();
+        if ((int) $booking->guest_id !== (int) $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'payment_mode' => 'required|in:mobile_money,bank',
+            'phone_number' => 'required_if:payment_mode,mobile_money|nullable|string|min:10|max:13',
+            'provider' => 'required_if:payment_mode,mobile_money|nullable|string|in:tigo,mpesa,airtel,halopesa,TIGO,MPESA,AIRTEL,HALOPESA,HALOPES',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $service = app(BnbPaymentService::class);
+
+        if ($request->payment_mode === 'bank') {
+            $result = $service->initiateBank(
+                $user,
+                $booking,
+                $request->phone_number ?: $user->phone,
+            );
+        } else {
+            $result = $service->initiateMobile(
+                $user,
+                $booking,
+                (string) $request->phone_number,
+                (string) $request->provider,
+            );
+        }
+
+        if (! ($result['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Payment initiation failed',
+                'data' => $result['data'] ?? null,
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+            'data' => $result['data'],
+        ]);
+    }
+
+    public function checkPaymentStatus(string $orderId): JsonResponse
+    {
+        $result = app(BnbPaymentService::class)->checkStatus($orderId, Auth::user());
+
+        if (! ($result['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'Unable to check payment status',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'] ?? null,
+            'data' => [
+                'payment_status' => $result['payment_status'],
+                'booking_id' => $result['booking_id'] ?? null,
+            ],
+        ]);
+    }
+
+    /** @deprecated Public booking removed — returns auth required */
+    public function storePublic(Request $request): JsonResponse
+    {
+        return response()->json([
+            'message' => 'Please sign in or create an account to book this stay.',
+            'requires_auth' => true,
+        ], 401);
     }
 
     /**
@@ -396,6 +484,8 @@ class BnbBookingController extends Controller
             'total_price' => (float) $booking->total_price,
             'status' => $booking->status,
             'payment_status' => $booking->payment_status,
+            'payment_method' => $booking->payment_method,
+            'transaction_id' => $booking->transaction_id,
             'special_requests' => $booking->special_requests,
             'notes' => $booking->notes,
             'cancellation_reason' => $booking->cancellation_reason,

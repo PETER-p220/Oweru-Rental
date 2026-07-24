@@ -31,6 +31,7 @@ import ApplicationStatus from './pages/tenant/ApplicationStatus';
 import TenantDigitalContractPage from './pages/tenant/DigitalContractPage';
 import MyBnbStays from './pages/tenant/MyBnbStays';
 import BnbPropertyDetail from './pages/bnb/BnbPropertyDetail';
+import BnbPaymentReturn from './pages/bnb/BnbPaymentReturn';
 import TenantAnalyticsPage from './pages/tenant/AnalyticsPage';
 
 // Landlord pages
@@ -105,6 +106,7 @@ const PublicRoutes = () => (
         <Route path="/" element={<Home />} />
         <Route path="/properties" element={<Properties />} />
         <Route path="/property/:id" element={<PropertyDetail />} />
+        <Route path="/bnb/payment/return" element={<BnbPaymentReturn />} />
         <Route path="/bnb/:id" element={<BnbPropertyDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />

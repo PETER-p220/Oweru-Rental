@@ -87,31 +87,11 @@ class SelcomPaymentService
             'no_of_items' => 1,
         ];
 
-        Log::info('Oweru create-order-minimal request', ['payload' => $createPayload]);
-
-        $createResponse = Http::withHeaders([
-            'X-App-Key' => $appKey,
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-        ])->post($baseUrl . '/create-order-minimal', $createPayload);
-
-        $createData = $createResponse->json();
-
-        if (! $createResponse->successful() || ($createData['result'] ?? '') !== 'SUCCESS') {
-            $errorDetail = $createData['detail']
-                ?? $createData['message']
-                ?? $createData['error']
-                ?? $createResponse->body()
-                ?: 'Unknown error from Oweru';
-
-            Log::error('Oweru create-order-minimal failed', [
-                'status' => $createResponse->status(),
-                'detail' => $errorDetail,
-            ]);
-
+        $createResult = $this->createOrderMinimal($createPayload);
+        if (! ($createResult['success'] ?? false)) {
             return [
                 'success' => false,
-                'message' => 'Could not create payment order: ' . $errorDetail,
+                'message' => $createResult['message'] ?? 'Could not create payment order.',
             ];
         }
 
@@ -187,6 +167,185 @@ class SelcomPaymentService
             ],
             'message' => 'Payment request sent. Please check your phone and approve the prompt.',
         ];
+    }
+
+    /**
+     * Create a Selcom/Oweru checkout order and return a hosted payment URL (card/bank).
+     *
+     * @param  array{amount:numeric,phone_number?:string,customer_email:string,customer_name:string,order_id:string,payment_type:string,return_url?:string}  $data
+     * @return array{success:bool,message?:string,data?:array<string,mixed>}
+     */
+    public function initiateHostedCheckout(array $data): array
+    {
+        $appKey = $this->appKey();
+        if (! $appKey) {
+            return [
+                'success' => false,
+                'message' => 'Payment service not configured.',
+            ];
+        }
+
+        $phone = $this->normalizePhone((string) ($data['phone_number'] ?? '255700000000'));
+        $amount = number_format((int) $data['amount'], 0, '.', '');
+        $orderId = (string) $data['order_id'];
+        $baseUrl = $this->checkoutBaseUrl();
+        $frontend = rtrim((string) config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/');
+        $returnUrl = (string) ($data['return_url'] ?? "{$frontend}/bnb/payment/return?order_id={$orderId}");
+
+        $createPayload = [
+            'order_id' => $orderId,
+            'buyer_name' => trim((string) $data['customer_name']),
+            'buyer_email' => trim((string) $data['customer_email']),
+            'buyer_phone' => $phone,
+            'amount' => $amount,
+            'currency' => 'TZS',
+            'buyer_remarks' => (string) $data['payment_type'],
+            'merchant_remarks' => 'Oweru Rental - ' . $data['payment_type'],
+            'no_of_items' => 1,
+        ];
+
+        $createResult = $this->createOrderMinimal($createPayload);
+        if (! ($createResult['success'] ?? false)) {
+            return [
+                'success' => false,
+                'message' => $createResult['message'] ?? 'Could not create payment order.',
+            ];
+        }
+
+        $checkoutUrl = $this->extractCheckoutUrl($createResult['data'] ?? [], $orderId);
+
+        if (! $checkoutUrl) {
+            $attempts = [
+                ['post', '/card-payment', [
+                    'order_id' => $orderId,
+                    'redirect_url' => $returnUrl,
+                    'return_url' => $returnUrl,
+                ]],
+                ['post', '/bank-payment', [
+                    'order_id' => $orderId,
+                    'redirect_url' => $returnUrl,
+                    'return_url' => $returnUrl,
+                ]],
+                ['post', '/create-payment-url', [
+                    'order_id' => $orderId,
+                    'redirect_url' => $returnUrl,
+                    'payment_method' => 'CARD',
+                ]],
+            ];
+
+            foreach ($attempts as [$method, $path, $payload]) {
+                $response = $method === 'get'
+                    ? Http::withHeaders(['X-App-Key' => $appKey, 'Accept' => 'application/json'])
+                        ->get($baseUrl . $path)
+                    : Http::withHeaders([
+                        'X-App-Key' => $appKey,
+                        'Content-Type' => 'application/json',
+                        'Accept' => 'application/json',
+                    ])->post($baseUrl . $path, $payload);
+
+                if (! $response->successful()) {
+                    continue;
+                }
+
+                $checkoutUrl = $this->extractCheckoutUrl($response->json() ?? [], $orderId);
+                if ($checkoutUrl) {
+                    break;
+                }
+            }
+        }
+
+        if (! $checkoutUrl) {
+            return [
+                'success' => false,
+                'message' => 'Bank/card checkout is not available right now. Please use mobile money.',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Redirecting to secure bank/card checkout.',
+            'data' => [
+                'transaction_id' => $orderId,
+                'order_id' => $orderId,
+                'checkout_url' => $checkoutUrl,
+                'payment_mode' => 'bank',
+                'status' => 'pending',
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{success:bool,message?:string,data?:array<string,mixed>}
+     */
+    private function createOrderMinimal(array $payload): array
+    {
+        $appKey = $this->appKey();
+        $baseUrl = $this->checkoutBaseUrl();
+
+        if (! $appKey) {
+            return [
+                'success' => false,
+                'message' => 'Payment service not configured.',
+            ];
+        }
+
+        Log::info('Oweru create-order-minimal request', ['payload' => $payload]);
+
+        $createResponse = Http::withHeaders([
+            'X-App-Key' => $appKey,
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ])->post($baseUrl . '/create-order-minimal', $payload);
+
+        $createData = $createResponse->json() ?? [];
+
+        if (! $createResponse->successful() || ($createData['result'] ?? '') !== 'SUCCESS') {
+            $errorDetail = $createData['detail']
+                ?? $createData['message']
+                ?? $createData['error']
+                ?? $createResponse->body()
+                ?: 'Unknown error from Oweru';
+
+            Log::error('Oweru create-order-minimal failed', [
+                'status' => $createResponse->status(),
+                'detail' => $errorDetail,
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Could not create payment order: ' . $errorDetail,
+            ];
+        }
+
+        return [
+            'success' => true,
+            'data' => $createData,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function extractCheckoutUrl(array $data, string $orderId): ?string
+    {
+        $candidates = [
+            $data['payment_gateway_url'] ?? null,
+            $data['checkout_url'] ?? null,
+            $data['payment_url'] ?? null,
+            $data['redirect_url'] ?? null,
+            $data['url'] ?? null,
+            $data['gateway_url'] ?? null,
+            is_array($data['data'] ?? null) ? ($data['data']['payment_gateway_url'] ?? $data['data']['checkout_url'] ?? $data['data']['payment_url'] ?? $data['data']['url'] ?? null) : null,
+        ];
+
+        foreach ($candidates as $url) {
+            if (is_string($url) && filter_var($url, FILTER_VALIDATE_URL)) {
+                return $url;
+            }
+        }
+
+        return null;
     }
 
     /**

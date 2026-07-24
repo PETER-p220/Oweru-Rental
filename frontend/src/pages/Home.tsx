@@ -673,7 +673,7 @@ const Home = () => {
                       <div className="prop-title">{p.title}</div>
                       <div className="prop-loc"><MapPin size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />{p.location}</div>
                       <div><span className="prop-price">{fmtPrice(p.price)}</span><span className="prop-price-sfx">/night</span></div>
-                      <button className="view-btn" onClick={() => { setSelectedProperty(p); setShowBookingModal(true); }}>Book Now</button>
+                      <button className="view-btn" onClick={() => navigate(`/bnb/${p.id}`)}>Book Now</button>
                       <button type="button" onClick={() => navigate(`/bnb/${p.id}`)} style={{ marginTop: 8, width: '100%', padding: '8px 0', background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
                         Details & reviews
                       </button>

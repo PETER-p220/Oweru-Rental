@@ -48,8 +48,8 @@ Route::post('/public/properties/{property}/leads', [AgentController::class, 'cre
 Route::get('/public/bnb/search',                          [BnbPropertyController::class, 'search']);
 Route::get('/public/bnb/properties/{property}',           [BnbPropertyController::class, 'publicShow']);
 Route::get('/public/bnb/properties/{property}/reviews',   [BnbReviewController::class, 'propertyReviews']);
-Route::post('/public/bnb/bookings',                       [BnbBookingController::class, 'store']);
-Route::post('/public/bnb/book',                           [BnbBookingController::class, 'store']);
+Route::post('/public/bnb/bookings',                       [BnbBookingController::class, 'storePublic']);
+Route::post('/public/bnb/book',                           [BnbBookingController::class, 'storePublic']);
 
 // Debug route — REMOVE IN PRODUCTION
 Route::get('/debug/properties', [PropertyController::class, 'debugProperties']);
@@ -71,6 +71,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ── Guest BNB stays (any logged-in user: tenant or normal account) ───────
     Route::get('/my/bnb/bookings',                      [BnbBookingController::class, 'myBookings']);
+    Route::post('/my/bnb/bookings',                     [BnbBookingController::class, 'store']);
+    Route::get('/my/bnb/bookings/payment/status/{orderId}', [BnbBookingController::class, 'checkPaymentStatus']);
+    Route::post('/my/bnb/bookings/{booking}/pay',       [BnbBookingController::class, 'initiatePayment']);
     Route::get('/my/bnb/bookings/{booking}',             [BnbBookingController::class, 'show']);
     Route::patch('/my/bnb/bookings/{booking}/cancel',    [BnbBookingController::class, 'cancelMine']);
     Route::get('/my/bnb/reviews',                       [BnbReviewController::class, 'myReviews']);

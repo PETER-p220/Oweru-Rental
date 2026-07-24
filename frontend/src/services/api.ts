@@ -516,11 +516,26 @@ class Api {
     return this.request<any>(`public/bnb/properties/${id}`);
   }
 
-  static async createBnbBooking(data: any) {
-    return this.request<any>('public/bnb/bookings', {
+  static async createBnbBooking(data: Record<string, unknown>) {
+    return this.request<any>('my/bnb/bookings', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  static async initiateBnbBookingPayment(bookingId: number, data: {
+    payment_mode: 'mobile_money' | 'bank';
+    phone_number?: string;
+    provider?: string;
+  }) {
+    return this.request<any>(`my/bnb/bookings/${bookingId}/pay`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  static async checkBnbBookingPaymentStatus(orderId: string) {
+    return this.request<any>(`my/bnb/bookings/payment/status/${encodeURIComponent(orderId)}`);
   }
 
   static async getMyBnbBookings(filters?: { status?: string }) {
