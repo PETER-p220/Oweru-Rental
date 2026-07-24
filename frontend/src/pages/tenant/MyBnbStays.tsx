@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, Hotel, MapPin, Star, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { getBrowseBnbPath } from '../../utils/bnbNav';
 
 const GOLD = '#C89128';
 
@@ -138,7 +139,7 @@ const MyBnbStays = () => {
                 <div style={{ fontSize: 20, fontWeight: 700, color: '#fff' }}>{s.value}</div>
               </div>
             ))}
-            <Link to="/#bnb" className="stays-cta">Book a stay</Link>
+            <Link to={getBrowseBnbPath(user)} className="stays-cta">Book a stay</Link>
           </div>
         </div>
       </div>

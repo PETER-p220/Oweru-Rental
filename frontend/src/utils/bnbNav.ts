@@ -1,5 +1,10 @@
 import type { UserRole } from '../components/DashboardLayout';
 
+export function getBrowseBnbPath(user: Parameters<typeof getDashboardRole>[0]): string {
+  return `/dashboard/${getDashboardRole(user)}/browse-bnb-stays`;
+}
+
+/** @deprecated Use getBrowseBnbPath(user) from dashboard nav */
 export const BNB_BROWSE_PATH = '/#bnb';
 
 export function getDashboardRole(user: {

@@ -13,7 +13,6 @@ import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useLanguage } from '../contexts/LanguageContext';
 import { TOKEN_KEY } from '../services/api';
-import { BNB_BROWSE_PATH } from '../utils/bnbNav';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -75,7 +74,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     tenant: [
       { name: 'Overview',          icon: Home,          href: ''                             },
       { name: 'Browse Properties', icon: Search,        href: '/dashboard/tenant/properties' },
-      { name: 'Browse BnB Stays',  icon: Hotel,         href: BNB_BROWSE_PATH                },
+      { name: 'Browse BnB Stays',  icon: Hotel,         href: 'browse-bnb-stays'             },
       { name: 'My Applications',   icon: FileText,      href: 'applications'                 },
       { name: 'Saved Properties',  icon: Star,          href: 'saved-properties'             },
       { name: 'Digital Contracts', icon: FileText,      href: 'digital-contracts'            },
@@ -130,7 +129,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     bnb_owner: [
       { name: 'Overview',          icon: Home,          href: ''                    },
       { name: 'My BNB Properties', icon: Building,      href: 'bnb-properties'      },
-      { name: 'Browse BnB Stays',  icon: Search,        href: BNB_BROWSE_PATH       },
+      { name: 'Browse BnB Stays',  icon: Search,        href: 'browse-bnb-stays'    },
       { name: 'My Stays',          icon: Calendar,      href: 'bnb-stays'           },
       { name: 'Bookings',          icon: Calendar,      href: 'bnb-bookings'        },
       { name: 'Reviews',           icon: Star,          href: 'bnb-reviews'         },
