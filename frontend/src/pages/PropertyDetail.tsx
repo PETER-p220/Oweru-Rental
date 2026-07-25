@@ -301,7 +301,6 @@ const PropertyDetail = () => {
                     <MapPin size={13} style={{ color: t.gold, flexShrink: 0 }} />
                     {property.location || property.address || 'Location not specified'}
                     {property.available !== false && <span style={pill(t.green)}>Available</span>}
-                    {property.furnished && <span style={pill(t.gold)}>Furnished</span>}
                     {hasVideos && <span style={pill(t.slate700)}>Video Tour</span>}
                   </div>
                 </div>
@@ -378,8 +377,6 @@ const PropertyDetail = () => {
                   {[
                     { label: 'Property Type', value: property.type ? property.type.charAt(0).toUpperCase() + property.type.slice(1) : 'N/A' },
                     { label: 'Availability',  value: property.available !== false ? 'Available Now' : 'Not Available', color: property.available !== false ? t.green : t.red },
-                    { label: 'Furnished',     value: property.furnished ? 'Yes' : 'No' },
-                    { label: 'Listed',        value: property.createdAt ? new Date(property.createdAt).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A' },
                   ].map(({ label, value, color }) => (
                     <div key={label} className="pd-detail-row">
                       <span style={{ ...body, fontSize: 12, color: t.slate600 }}>{label}</span>
@@ -394,23 +391,6 @@ const PropertyDetail = () => {
                     Apply for this Property
                   </button>
 
-                  <button
-                    className="pd-btn"
-                    onClick={handleToggleSave}
-                    disabled={!property}
-                    style={{
-                      ...ghostBtn(isSaved ? t.gold : t.slate600),
-                      backgroundColor: isSaved ? t.goldPale : 'transparent',
-                      borderColor: isSaved ? t.gold : t.slate200,
-                    }}
-                  >
-                    <Bookmark size={14} fill={isSaved ? 'currentColor' : 'none'} style={{ transition: 'fill .2s' }} />
-                    {isSaved ? 'Saved to My List' : 'Save Property'}
-                  </button>
-
-                  <button style={ghostBtn(t.slate900)} className="pd-btn">
-                    Schedule a Viewing
-                  </button>
                 </div>
 
                 {/* Location */}
@@ -424,19 +404,7 @@ const PropertyDetail = () => {
                   </div>
                 </div>
 
-                {/* Agent code — only if dalali exists, no contact details */}
-                {property?.dalali && (
-                  <div style={card({ padding: '16px 18px', overflow: 'visible' })}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <Shield size={13} style={{ color: t.slate600 }} />
-                      <span style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.slate600 }}>Listed by Agent</span>
-                    </div>
-                    <div style={{ ...body, fontSize: 12, color: t.slate600 }}>
-                      Agent Code: <strong style={{ color: t.gold, fontFamily: 'monospace' }}>{property.dalali?.code || 'N/A'}</strong>
-                    </div>
-                  </div>
-                )}
-
+              
                 {/* Trust row — matches Home CTA bullets */}
                 <div style={card({ padding: '16px 20px', overflow: 'visible' })}>
                   {['Verified Listing', 'Secure Application Process', 'Tenant Support 24/7'].map(item => (
