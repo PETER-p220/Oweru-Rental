@@ -608,43 +608,39 @@ class AdminController extends Controller
 
         $payments = Payment::with(['user', 'property', 'agent'])
             ->latest()
+            ->limit(500)
             ->get()
             ->map(fn (Payment $payment) => $this->transformPaymentTransaction($payment));
 
         $commissions = $this->hasTables(['commissions'])
             ? Commission::with(['agent', 'property', 'payment'])
                 ->latest()
+                ->limit(200)
                 ->get()
                 ->map(fn (Commission $commission) => $this->transformCommissionTransaction($commission))
             : collect();
 
-        $transactions = $payments->concat($commissions)
-            ->sortByDesc('createdAt')
+        $bnbBookings = $this->hasTables(['bnb_bookings'])
+            ? BnbBooking::with(['guest', 'property'])
+                ->whereNotNull('total_price')
+                ->where('total_price', '>', 0)
+                ->latest()
+                ->limit(200)
+                ->get()
+                ->map(fn (BnbBooking $booking) => $this->transformBnbBookingTransaction($booking))
+            : collect();
+
+        $transactions = $payments->concat($commissions)->concat($bnbBookings)
+            ->sortByDesc(fn (array $transaction) => $transaction['createdAt'] ?? '')
             ->values();
 
         $filtered = $transactions->filter(function (array $transaction) use ($request) {
-            if ($request->search) {
-                $search = mb_strtolower($request->search);
-                $haystack = mb_strtolower(implode(' ', [
-                    $transaction['description'] ?? '',
-                    $transaction['reference'] ?? '',
-                    $transaction['user']['name'] ?? '',
-                    $transaction['user']['email'] ?? '',
-                    $transaction['property']['title'] ?? '',
-                ]));
-
-                if (! str_contains($haystack, $search)) {
-                    return false;
-                }
-            }
-
-            if ($request->type && $request->type !== $transaction['type']) return false;
-            if ($request->status && $request->status !== $transaction['status']) return false;
-
-            return true;
+            return $this->transactionMatchesFilters($transaction, $request);
         })->values();
 
-        return response()->json(['data' => $filtered]);
+        $sorted = $this->sortTransactions($filtered, $request);
+
+        return response()->json(['data' => $sorted->values()]);
     }
 
     public function getAdminPayments(Request $request): JsonResponse
@@ -732,23 +728,48 @@ class AdminController extends Controller
         }
 
         $completedAmount = (float) Payment::where('status', 'completed')->sum('amount');
+        $bnbRevenue = $this->hasTables(['bnb_bookings'])
+            ? (float) BnbBooking::where('payment_status', 'paid')->sum('total_price')
+            : 0;
         $fees = (float) Payment::sum(DB::raw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.fees')), 0)"));
         $thisMonthRevenue = (float) Payment::where('status', 'completed')
             ->where('created_at', '>=', now()->startOfMonth())->sum('amount');
+        if ($this->hasTables(['bnb_bookings'])) {
+            $thisMonthRevenue += (float) BnbBooking::where('payment_status', 'paid')
+                ->where('created_at', '>=', now()->startOfMonth())->sum('total_price');
+        }
         $lastMonthRevenue = (float) Payment::where('status', 'completed')
             ->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])->sum('amount');
+        if ($this->hasTables(['bnb_bookings'])) {
+            $lastMonthRevenue += (float) BnbBooking::where('payment_status', 'paid')
+                ->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])->sum('total_price');
+        }
 
         $thisMonthTransactions = Payment::where('created_at', '>=', now()->startOfMonth())->count();
+        if ($this->hasTables(['bnb_bookings'])) {
+            $thisMonthTransactions += BnbBooking::where('created_at', '>=', now()->startOfMonth())->count();
+        }
         $lastMonthTransactions = Payment::whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])->count();
+        if ($this->hasTables(['bnb_bookings'])) {
+            $lastMonthTransactions += BnbBooking::whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])->count();
+        }
+
+        $bnbCount = $this->hasTables(['bnb_bookings']) ? BnbBooking::count() : 0;
+        $commissionCount = $this->hasTables(['commissions']) ? Commission::count() : 0;
 
         return response()->json(['data' => [
-            'total_transactions' => Payment::count(),
-            'total_revenue' => $completedAmount,
+            'total_transactions' => Payment::count() + $bnbCount + $commissionCount,
+            'total_revenue' => $completedAmount + $bnbRevenue,
             'total_fees' => $fees,
-            'net_revenue' => $completedAmount - $fees,
-            'pending_transactions' => Payment::where('status', 'pending')->count(),
-            'completed_transactions' => Payment::where('status', 'completed')->count(),
-            'failed_transactions' => Payment::where('status', 'failed')->count(),
+            'net_revenue' => ($completedAmount + $bnbRevenue) - $fees,
+            'pending_transactions' => Payment::where('status', 'pending')->count()
+                + ($this->hasTables(['bnb_bookings']) ? BnbBooking::where('payment_status', 'pending')->count() : 0)
+                + ($this->hasTables(['commissions']) ? Commission::where('status', 'pending')->count() : 0),
+            'completed_transactions' => Payment::where('status', 'completed')->count()
+                + ($this->hasTables(['bnb_bookings']) ? BnbBooking::where('payment_status', 'paid')->count() : 0)
+                + ($this->hasTables(['commissions']) ? Commission::where('status', 'paid')->count() : 0),
+            'failed_transactions' => Payment::where('status', 'failed')->count()
+                + ($this->hasTables(['bnb_bookings']) ? BnbBooking::where('payment_status', 'failed')->count() : 0),
             'refunded_transactions' => Payment::where('status', 'refunded')->count(),
             'avg_transaction_amount' => (float) Payment::avg('amount'),
             'revenue_this_month' => $thisMonthRevenue,
@@ -768,6 +789,19 @@ class AdminController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
+        }
+
+        if ((int) $transactionId >= 200000) {
+            $bookingId = (int) $transactionId - 200000;
+            $booking = BnbBooking::findOrFail($bookingId);
+            $paymentStatus = $this->normalizeBnbPaymentStatus($request->status);
+
+            $booking->update(['payment_status' => $paymentStatus]);
+
+            return response()->json([
+                'message' => 'BnB booking payment updated successfully',
+                'data' => $this->transformBnbBookingTransaction($booking->fresh(['guest', 'property'])),
+            ]);
         }
 
         if ((int) $transactionId >= 100000) {
@@ -802,6 +836,12 @@ class AdminController extends Controller
 
     public function deleteTransaction($transactionId): JsonResponse
     {
+        if ((int) $transactionId >= 200000) {
+            $bookingId = (int) $transactionId - 200000;
+            BnbBooking::findOrFail($bookingId)->delete();
+            return response()->json(['message' => 'BnB booking transaction deleted successfully']);
+        }
+
         if ((int) $transactionId >= 100000) {
             $commissionId = (int) $transactionId - 100000;
             Commission::findOrFail($commissionId)->delete();
@@ -1588,12 +1628,124 @@ class AdminController extends Controller
         };
     }
 
+    private function normalizeBnbPaymentStatus(string $status): string
+    {
+        return match ($status) {
+            'completed', 'paid', 'approved' => 'paid',
+            'processing' => 'pending',
+            'cancelled' => 'cancelled',
+            'refunded' => 'refunded',
+            default => $status,
+        };
+    }
+
+    private function transactionMatchesFilters(array $transaction, Request $request): bool
+    {
+        if ($request->filled('search')) {
+            $search = mb_strtolower($request->search);
+            $haystack = mb_strtolower(implode(' ', array_filter([
+                $transaction['description'] ?? '',
+                $transaction['reference'] ?? '',
+                $transaction['user']['name'] ?? '',
+                $transaction['user']['email'] ?? '',
+                $transaction['property']['title'] ?? '',
+                $transaction['source'] ?? '',
+            ])));
+
+            if (! str_contains($haystack, $search)) {
+                return false;
+            }
+        }
+
+        if ($request->filled('type') && $request->type !== 'all') {
+            if (! $this->transactionMatchesType($transaction, $request->type)) {
+                return false;
+            }
+        }
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            if (($transaction['status'] ?? '') !== $request->status) {
+                return false;
+            }
+        }
+
+        if ($request->filled('payment_method') && $request->payment_method !== 'all') {
+            $method = mb_strtolower($transaction['paymentMethod'] ?? '');
+            $filter = mb_strtolower($request->payment_method);
+            if ($method !== $filter && ! str_contains($method, $filter)) {
+                return false;
+            }
+        }
+
+        if ($request->filled('source') && $request->source !== 'all') {
+            if (($transaction['source'] ?? '') !== $request->source) {
+                return false;
+            }
+        }
+
+        if ($request->filled('date_from')) {
+            $created = Carbon::parse($transaction['createdAt'] ?? now());
+            if ($created->lt(Carbon::parse($request->date_from)->startOfDay())) {
+                return false;
+            }
+        }
+
+        if ($request->filled('date_to')) {
+            $created = Carbon::parse($transaction['createdAt'] ?? now());
+            if ($created->gt(Carbon::parse($request->date_to)->endOfDay())) {
+                return false;
+            }
+        }
+
+        if ($request->filled('amount_min') && (float) ($transaction['amount'] ?? 0) < (float) $request->amount_min) {
+            return false;
+        }
+
+        if ($request->filled('amount_max') && (float) ($transaction['amount'] ?? 0) > (float) $request->amount_max) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function transactionMatchesType(array $transaction, string $filterType): bool
+    {
+        $type = $transaction['type'] ?? '';
+
+        return match ($filterType) {
+            'rent_payment' => in_array($type, ['rent_payment', 'rent', 'first_month_rent', 'monthly_rent'], true),
+            'site_visit' => in_array($type, ['site_visit', 'visit'], true),
+            'bnb_stay' => $type === 'bnb_stay',
+            'service_fee' => in_array($type, ['service_fee', 'service_charge', 'fee'], true),
+            default => $type === $filterType,
+        };
+    }
+
+    private function sortTransactions(Collection $transactions, Request $request): Collection
+    {
+        $sortBy = $request->input('sort_by', 'created');
+        $sortOrder = $request->input('sort_order', 'desc');
+        $descending = $sortOrder !== 'asc';
+
+        return $transactions->sort(function (array $a, array $b) use ($sortBy, $descending) {
+            $cmp = match ($sortBy) {
+                'amount' => ($a['amount'] ?? 0) <=> ($b['amount'] ?? 0),
+                'status' => strcmp($a['status'] ?? '', $b['status'] ?? ''),
+                'type' => strcmp($a['type'] ?? '', $b['type'] ?? ''),
+                default => strcmp($a['createdAt'] ?? '', $b['createdAt'] ?? ''),
+            };
+
+            return $descending ? -$cmp : $cmp;
+        })->values();
+    }
+
     private function transformPaymentTransaction(Payment $payment): array
     {
         $metadata = is_array($payment->metadata) ? $payment->metadata : [];
 
         return [
             'id' => $payment->id,
+            'source' => 'payment',
             'type' => $payment->type === 'rent' ? 'rent_payment' : $payment->type,
             'amount' => (float) $payment->amount,
             'currency' => 'TZS',
@@ -1636,6 +1788,7 @@ class AdminController extends Controller
     {
         return [
             'id' => 100000 + $commission->id,
+            'source' => 'commission',
             'type' => 'commission',
             'amount' => (float) $commission->amount,
             'currency' => 'TZS',
@@ -1671,6 +1824,58 @@ class AdminController extends Controller
             'createdAt' => optional($commission->created_at)?->toISOString(),
             'updatedAt' => optional($commission->updated_at)?->toISOString(),
             'completedAt' => optional($commission->paid_at)?->toISOString(),
+        ];
+    }
+
+    private function transformBnbBookingTransaction(BnbBooking $booking): array
+    {
+        $status = match ($booking->payment_status) {
+            'paid' => 'completed',
+            'failed' => 'failed',
+            'cancelled' => 'cancelled',
+            'refunded' => 'refunded',
+            default => 'pending',
+        };
+
+        $guest = $booking->guest;
+        $property = $booking->property;
+
+        return [
+            'id' => 200000 + $booking->id,
+            'source' => 'bnb',
+            'type' => 'bnb_stay',
+            'amount' => (float) $booking->total_price,
+            'currency' => 'TZS',
+            'status' => $status,
+            'description' => 'BnB stay booking',
+            'reference' => $booking->transaction_id ?: ('BNB-' . str_pad((string) $booking->id, 5, '0', STR_PAD_LEFT)),
+            'paymentMethod' => $booking->payment_method ?: 'mobile_money',
+            'user' => [
+                'id' => $guest?->id,
+                'name' => $guest?->fullName() ?? 'Guest',
+                'email' => $guest?->email,
+                'type' => $guest?->user_type ?? 'tenant',
+            ],
+            'property' => $property ? [
+                'id' => $property->id,
+                'title' => $property->title ?? $property->name ?? 'BnB Property',
+                'address' => $property->location ?? $property->address ?? null,
+            ] : null,
+            'agent' => null,
+            'metadata' => [
+                'invoiceNumber' => null,
+                'receiptNumber' => null,
+                'transactionId' => $booking->transaction_id,
+                'gateway' => 'selcom',
+                'fees' => 0,
+                'netAmount' => (float) $booking->total_price,
+                'checkIn' => optional($booking->check_in)?->toDateString(),
+                'checkOut' => optional($booking->check_out)?->toDateString(),
+                'guests' => $booking->guests,
+            ],
+            'createdAt' => optional($booking->created_at)?->toISOString(),
+            'updatedAt' => optional($booking->updated_at)?->toISOString(),
+            'completedAt' => $booking->payment_status === 'paid' ? optional($booking->updated_at)?->toISOString() : null,
         ];
     }
 

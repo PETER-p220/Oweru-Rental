@@ -304,10 +304,28 @@ class Api {
   // ── Admin – Transactions ────────────────────────────────────────────────────
 
   static async getAdminTransactions(filters?: {
-    search?: string; type?: string; status?: string;
+    search?: string;
+    type?: string;
+    status?: string;
+    payment_method?: string;
+    source?: string;
+    date_from?: string;
+    date_to?: string;
+    amount_min?: number | string;
+    amount_max?: number | string;
+    sort_by?: string;
+    sort_order?: string;
   }) {
-    const params = new URLSearchParams(filters as any).toString();
-    return this.request<any[]>(`admin/transactions${params ? `?${params}` : ''}`);
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+          params.set(key, String(value));
+        }
+      });
+    }
+    const qs = params.toString();
+    return this.request<any[]>(`admin/transactions${qs ? `?${qs}` : ''}`);
   }
 
   static async getAdminTransactionStats() {
