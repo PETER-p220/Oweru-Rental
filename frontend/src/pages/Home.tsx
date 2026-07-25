@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getBnbPropertyPath, getBnbPropertyPathForLogin } from '../utils/bnbNav';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import { getPropertyThumbnail, PROPERTY_IMAGE_PLACEHOLDER, normalizeBnbProperty } from '../utils/propertyImages';
+import PropertyVideoBadge from '../components/PropertyVideoBadge';
 
 const _rawBase     = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const API_BASE     = _rawBase.endsWith('/') ? _rawBase.slice(0, -1) : _rawBase;
@@ -327,6 +328,7 @@ const Home = () => {
       <div className="prop-img-wrap">
         <LazyImg src={getPropertyThumbnail(p)} alt={p.title} height={200} />
         <div className="prop-img-overlay" />
+        <PropertyVideoBadge property={p} />
         {p.featured && <div className="badge-solid" style={{ position: 'absolute', top: 12, left: 12 }}>Featured</div>}
       </div>
       <div className="prop-body">
@@ -359,6 +361,7 @@ const Home = () => {
         <div className="prop-img-wrap">
           <LazyImg src={imgSrc} alt={p.title} height={200} />
           <div className="prop-img-overlay" />
+          <PropertyVideoBadge property={p} />
           {/* Type badge — top right */}
           <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(15,23,42,0.88)', color: '#FFFFFF', padding: '4px 10px', borderRadius: 6, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', backdropFilter: 'blur(8px)' }}>
             {commercialTypeLabel(p.type)}

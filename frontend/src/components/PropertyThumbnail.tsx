@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 import { getPropertyThumbnail, PROPERTY_IMAGE_PLACEHOLDER } from '../utils/propertyImages';
+import PropertyVideoBadge from './PropertyVideoBadge';
 
 type Props = {
   property: Record<string, unknown>;
@@ -23,6 +24,7 @@ const PropertyThumbnail = memo(function PropertyThumbnail({
   return (
     <>
       {!loaded && <div className="pc-img-skeleton" aria-hidden />}
+      <PropertyVideoBadge property={property} />
       <img
         src={src}
         alt={alt}

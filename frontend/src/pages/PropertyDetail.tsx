@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  MapPin, Bed, Bath, Square, Shield, CheckCircle,
-  Share2, ArrowLeft, X, Star, Bookmark,
-  ChevronLeft, ChevronRight, Home, Camera,
+  MapPin, Bed, Bath, Shield, CheckCircle,
+  ArrowLeft, X, Star, Bookmark,
+  Home,
 } from 'lucide-react';
-import type { Property } from '../types';
 import Api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatPaymentDuration, formatPaymentPeriodLabel, periodRentTotal } from '../utils/paymentDuration';
+import PropertyMediaGallery from '../components/PropertyMediaGallery';
+import { propertyHasVideos } from '../utils/propertyImages';
 
 /* ─── TOKENS — matches landlord design system ─── */
 const t = {
@@ -94,50 +95,9 @@ const PropertyDetail = () => {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
-  const VITE_STORAGE = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace('/api', '');
-  const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='600' viewBox='0 0 900 600'%3E%3Crect width='900' height='600' fill='%231E2D4A'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia' font-size='22' fill='%23C89128'%3ENo Image Available%3C/text%3E%3C/svg%3E`;
-
-  // ── Universal image resolver ─────────────────────────────────────────────────
-  // Tries every shape the backend may return:
-  //   1. property_images[] snake_case  (public API after fix)
-  //   2. propertyImages[]  camelCase   (commercial API)
-  //   3. images[]          JSON column (agent-created properties)
-  const getPropertyImageUrl = (property: any, imageIndex: number = 0): string => {
-    const si = property?.property_images;
-    if (Array.isArray(si) && si.length > 0) {
-      const p = si.find((i: any) => i.is_primary) ?? si[0];
-      const path = p?.image_path ?? p?.url ?? '';
-      if (path) return resolveUrl(path);
-    }
-    const ci = property?.propertyImages;
-    if (Array.isArray(ci) && ci.length > 0) {
-      const p = ci.find((i: any) => i.is_primary) ?? ci[0];
-      const path = p?.image_path ?? p?.url ?? '';
-      if (path) return resolveUrl(path);
-    }
-    const imgs = property?.images;
-    if (Array.isArray(imgs) && imgs.length > 0) {
-      const first = imgs[imageIndex] ?? imgs[0];
-      const path = typeof first === 'string' ? first : (first?.image_path ?? first?.url ?? '');
-      if (path) return resolveUrl(path);
-    }
-    return PLACEHOLDER;
-  };
-
-  const resolveUrl = (path: string): string => {
-    if (!path || !path.trim()) return PLACEHOLDER;
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-    if (path.startsWith('/storage/'))  return `${VITE_STORAGE}${path}`;
-    if (path.startsWith('storage/'))   return `${VITE_STORAGE}/${path}`;
-    if (path.startsWith('/'))          return `${VITE_STORAGE}${path}`;
-    return `${VITE_STORAGE}/storage/${path}`;
-  };
-
-  const [selectedImg, setSelectedImg]         = useState(0);
   const [showSignInModal, setShowSignInModal]  = useState(false);
   const [showTenantModal, setShowTenantModal]  = useState(false);
   const [isSaved, setIsSaved]                 = useState(false);
-  const [copied, setCopied]                   = useState(false);
   const [property, setProperty]               = useState<any>(null);
   const [loading, setLoading]                 = useState(true);
   const [error, setError]                     = useState('');
@@ -173,7 +133,7 @@ const PropertyDetail = () => {
 
   const features  = getFeatures(property);
   const amenities = getAmenities(property);
-  const images    = property?.images?.length > 0 ? property.images : [null];
+  const hasVideos = propertyHasVideos(property);
 
   const handleToggleSave = async () => {
     if (!property) return;
@@ -200,9 +160,6 @@ const PropertyDetail = () => {
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(price);
-
-  const prevImg = () => setSelectedImg(i => (i - 1 + images.length) % images.length);
-  const nextImg = () => setSelectedImg(i => (i + 1) % images.length);
 
   return (
     <div style={{ background: t.slate100, minHeight: '100vh', color: t.slate900 }}>
@@ -345,6 +302,7 @@ const PropertyDetail = () => {
                     {property.location || property.address || 'Location not specified'}
                     {property.available !== false && <span style={pill(t.green)}>Available</span>}
                     {property.furnished && <span style={pill(t.gold)}>Furnished</span>}
+                    {hasVideos && <span style={pill(t.slate700)}>Video Tour</span>}
                   </div>
                 </div>
               </div>
@@ -356,73 +314,9 @@ const PropertyDetail = () => {
               {/* ══ LEFT ══ */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-                {/* Gallery */}
+                {/* Gallery — images + videos */}
                 <div style={card()}>
-                  <div style={{ position: 'relative', height: 420, overflow: 'hidden', background: t.slate200 }}>
-                    <img
-                      src={getPropertyImageUrl(property, selectedImg)}
-                      alt={property.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity .3s' }}
-                      loading="lazy"
-                      decoding="async"
-                      width="1200"
-                      height="630"
-                      fetchPriority="high"
-                    />
-                    {/* Bottom gradient */}
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,.65) 0%, transparent 50%)' }} />
-
-                    {/* Arrow nav */}
-                    {images.length > 1 && (
-                      <>
-                        <button className="pd-nav-btn" onClick={prevImg} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', border: 'none' }}>
-                          <ChevronLeft size={18} />
-                        </button>
-                        <button className="pd-nav-btn" onClick={nextImg} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', border: 'none' }}>
-                          <ChevronRight size={18} />
-                        </button>
-                      </>
-                    )}
-
-                    {/* Featured badge */}
-                    {property.featured && (
-                      <div style={{ position: 'absolute', top: 14, left: 14, background: t.gold, color: t.slate900, padding: '4px 10px', borderRadius: 4, fontSize: 9, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Star size={9} fill="currentColor" /> Featured
-                      </div>
-                    )}
-
-                    {/* Image counter */}
-                    {images.length > 1 && (
-                      <div style={{ position: 'absolute', bottom: 14, right: 14, ...body, fontSize: 11, color: t.white, background: 'rgba(15,23,42,0.7)', padding: '4px 10px', borderRadius: 20, backdropFilter: 'blur(6px)' }}>
-                        <Camera size={10} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} />
-                        {selectedImg + 1} / {images.length}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Thumbnails */}
-                  {images.length > 1 && (
-                    <div style={{ display: 'flex', gap: 8, padding: '12px 14px', overflowX: 'auto', background: t.white }}>
-                      {images.map((_: any, i: number) => (
-                        <div
-                          key={i}
-                          className={`pd-thumb${selectedImg === i ? ' active' : ''}`}
-                          onClick={() => setSelectedImg(i)}
-                          style={{ width: 68, height: 48, flexShrink: 0, borderRadius: 6, overflow: 'hidden', background: t.slate200 }}
-                        >
-                          <img
-                            src={getPropertyImageUrl(property, i)}
-                            alt={`View ${i + 1}`}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                            loading="lazy"
-                            decoding="async"
-                            width="120"
-                            height="90"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <PropertyMediaGallery property={property} title={property.title} height={420} />
                 </div>
 
                 {/* Key stats */}

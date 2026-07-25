@@ -141,6 +141,8 @@ class PropertyController extends Controller
     {
         $data = $property->toArray();
         $data['thumbnail'] = $this->resolvePropertyThumbnail($property);
+        $videos = is_array($property->videos ?? null) ? $property->videos : [];
+        $data['has_videos'] = count($videos) > 0;
         unset($data['property_images'], $data['images']);
 
         if (! empty($data['description'])) {

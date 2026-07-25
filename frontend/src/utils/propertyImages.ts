@@ -15,6 +15,94 @@ export function resolvePropertyImageUrl(path: string | null | undefined): string
   return `${STORAGE_BASE}/storage/${p}`;
 }
 
+/** Build a public storage URL for a property video path. */
+export function resolvePropertyVideoUrl(path: string | null | undefined): string {
+  if (!path || !String(path).trim()) return '';
+  const p = String(path).trim();
+  if (p.startsWith('http://') || p.startsWith('https://')) return p;
+  if (p.startsWith('/storage/')) return `${STORAGE_BASE}${p}`;
+  if (p.startsWith('storage/')) return `${STORAGE_BASE}/${p}`;
+  if (p.startsWith('/')) return `${STORAGE_BASE}${p}`;
+  return `${STORAGE_BASE}/storage/${p}`;
+}
+
+export type PropertyMediaItem = { type: 'image' | 'video'; url: string };
+
+function parseVideosField(videos: unknown): unknown[] {
+  if (!videos) return [];
+  if (typeof videos === 'string') {
+    try {
+      const parsed = JSON.parse(videos);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return videos.trim() ? [videos] : [];
+    }
+  }
+  return Array.isArray(videos) ? videos : [];
+}
+
+function pathFromVideoEntry(entry: unknown): string {
+  if (!entry) return '';
+  if (typeof entry === 'string') return entry.trim();
+  if (typeof entry === 'object') {
+    const row = entry as Record<string, unknown>;
+    const path = row.video_path ?? row.path ?? row.url ?? row.src ?? row.video ?? '';
+    return String(path).trim();
+  }
+  return '';
+}
+
+/** All resolved video URLs for a property row. */
+export function getPropertyVideos(property: Record<string, unknown> | null | undefined): string[] {
+  if (!property) return [];
+  return parseVideosField(property.videos)
+    .map((entry) => resolvePropertyVideoUrl(pathFromVideoEntry(entry)))
+    .filter(Boolean);
+}
+
+/** Whether a property has at least one uploaded video. */
+export function propertyHasVideos(property: Record<string, unknown> | null | undefined): boolean {
+  if (!property) return false;
+  if (property.has_videos === true || property.has_videos === 1) return true;
+  return getPropertyVideos(property).length > 0;
+}
+
+/** All resolved image URLs for gallery/detail views. */
+export function getPropertyImageUrls(property: Record<string, unknown> | null | undefined): string[] {
+  if (!property) return [];
+
+  const urls: string[] = [];
+  const seen = new Set<string>();
+
+  const push = (path: string) => {
+    if (!path) return;
+    const url = resolvePropertyImageUrl(path);
+    if (url === PROPERTY_IMAGE_PLACEHOLDER || seen.has(url)) return;
+    seen.add(url);
+    urls.push(url);
+  };
+
+  for (const src of [property.property_images, property.propertyImages]) {
+    if (!Array.isArray(src)) continue;
+    for (const row of src) {
+      push(pathFromImageEntry(row));
+    }
+  }
+
+  for (const entry of parseImagesField(property.images)) {
+    push(pathFromImageEntry(entry));
+  }
+
+  return urls;
+}
+
+/** Combined image + video items for property detail galleries. */
+export function buildPropertyMediaGallery(property: Record<string, unknown> | null | undefined): PropertyMediaItem[] {
+  const images = getPropertyImageUrls(property).map((url) => ({ type: 'image' as const, url }));
+  const videos = getPropertyVideos(property).map((url) => ({ type: 'video' as const, url }));
+  return [...images, ...videos];
+}
+
 function parseImagesField(images: unknown): unknown[] {
   if (!images) return [];
   if (typeof images === 'string') {
