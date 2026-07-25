@@ -73,6 +73,19 @@ class OwnerController extends Controller
         ]);
     }
 
+    public function showProperty(Property $property): JsonResponse
+    {
+        $user = Auth::user();
+
+        if ($property->owner_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'data' => $property->load('agent'),
+        ]);
+    }
+
     public function createProperty(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -162,11 +175,14 @@ class OwnerController extends Controller
             'price'       => 'sometimes|numeric|min:0',
             'payment_duration_months' => 'sometimes|integer|in:1,3,6,12',
             'location'    => 'sometimes|string|max:255',
+            'address'     => 'sometimes|string|max:500',
             'type'        => 'sometimes|in:Master-bedroom,house,Single-room',
             'bedrooms'    => 'sometimes|integer|min:0',
             'bathrooms'   => 'sometimes|integer|min:0',
             'area'        => 'sometimes|integer|min:0',
             'available'   => 'sometimes|boolean',
+            'featured'    => 'sometimes|boolean',
+            'amenities'   => 'sometimes|array',
         ]);
 
         if ($validator->fails()) {
@@ -177,8 +193,8 @@ class OwnerController extends Controller
         }
 
         $property->update($request->only([
-            'title', 'description', 'price', 'payment_duration_months', 'location', 'type',
-            'bedrooms', 'bathrooms', 'area', 'available'
+            'title', 'description', 'price', 'payment_duration_months', 'location', 'address', 'type',
+            'bedrooms', 'bathrooms', 'area', 'available', 'featured', 'amenities',
         ]));
 
         return response()->json([

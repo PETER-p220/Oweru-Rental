@@ -300,6 +300,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Properties Management
         Route::get('/owner/my-properties',                   [OwnerController::class, 'getMyProperties']);
+        Route::get('/owner/properties/{property}',          [OwnerController::class, 'showProperty']);
         Route::post('/owner/properties',                     [OwnerController::class, 'createProperty']);
         Route::put('/owner/properties/{property}',           [OwnerController::class, 'updateProperty']);
         Route::delete('/owner/properties/{property}',        [OwnerController::class, 'deleteProperty']);

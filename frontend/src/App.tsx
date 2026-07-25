@@ -40,6 +40,7 @@ import TenantAnalyticsPage from './pages/tenant/AnalyticsPage';
 import MyProperties from './pages/landlord/MyProperties';
 import MyTenants from './pages/landlord/MyTenants';
 import AddProperty from './pages/landlord/AddProperty';
+import EditLandlordProperty from './pages/landlord/EditLandlordProperty';
 import EditPropertySimple from './pages/landlord/EditPropertySimple';
 import ApplicationsPage from './pages/landlord/ApplicationsPage';
 import DigitalContractPage from './pages/landlord/DigitalContractPage';
@@ -157,6 +158,7 @@ const LandlordRoutes = () => (
         <Route path="" element={<LandlordDashboard />} />
         <Route path="my-properties" element={<MyProperties />} />
         <Route path="add-property" element={<AddProperty />} />
+        <Route path="properties/:id/edit" element={<EditLandlordProperty />} />
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="digital-contracts" element={<DigitalContractPage />} />
         <Route path="tenants" element={<MyTenants />} />

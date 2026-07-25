@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Building, Plus, Search, MapPin, Bed, Bath, Square,
   Eye, Edit, Trash2, Users, Calendar, AlertCircle,
@@ -59,6 +59,7 @@ const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
 
 const MyProperties = () => {
+  const navigate = useNavigate();
   const [properties, setProperties]         = useState<Property[]>([]);
   const [stats, setStats]                   = useState<PropertyStats | null>(null);
   const [loading, setLoading]               = useState(true);
@@ -313,8 +314,8 @@ const MyProperties = () => {
 
                     {/* Edit (gold) / Delete buttons */}
                     <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: 6 }}>
-                      <button className="act-btn"
-                        onClick={() => { window.location.href = `/dashboard/landlord/properties/${property.id}/edit`; }}
+                      <button className="act-btn" type="button"
+                        onClick={() => navigate(`/dashboard/landlord/properties/${property.id}/edit`)}
                         style={{ width: 32, height: 32, borderRadius: '8px', backgroundColor: C.gold, border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(200,145,40,0.30)' }}>
                         <Edit size={13} />
                       </button>

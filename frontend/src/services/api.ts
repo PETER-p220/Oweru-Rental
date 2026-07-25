@@ -937,6 +937,10 @@ class Api {
     return this.request<any>('properties', { method: 'POST', body: JSON.stringify(data) });
   }
 
+  static async getOwnerProperty(id: number) {
+    return this.request<any>(`owner/properties/${id}`);
+  }
+
   static async updateOwnerProperty(id: number, data: any) {
     return this.request(`owner/properties/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   }
