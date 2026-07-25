@@ -230,6 +230,14 @@ export default function BnbProperties() {
   const [selected, setSelected]     = useState<any>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [showAdd, setShowAdd]       = useState(false);
+  const [showEdit, setShowEdit]     = useState(false);
+  const [editingProperty, setEditingProperty] = useState<any>(null);
+
+  const openEdit = (property: any) => {
+    setEditingProperty(property);
+    setShowEdit(true);
+    setShowDetails(false);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -312,26 +320,38 @@ export default function BnbProperties() {
           </div>
         ) : (
           properties.map((p: any) => (
-            <PropertyCard key={p.id} property={p} onView={() => { setSelected(p); setShowDetails(true); }} />
+            <PropertyCard
+              key={p.id}
+              property={p}
+              onView={() => { setSelected(p); setShowDetails(true); }}
+              onEdit={() => openEdit(p)}
+            />
           ))
         )}
       </div>
 
       {/* Detail modal */}
       {showDetails && selected && (
-        <DetailModal property={selected} onClose={() => setShowDetails(false)} />
+        <DetailModal property={selected} onClose={() => setShowDetails(false)} onEdit={() => openEdit(selected)} />
       )}
 
-      {/* Add modal */}
       {showAdd && (
-        <AddModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); load(); }} />
+        <PropertyFormModal onClose={() => setShowAdd(false)} onSuccess={() => { setShowAdd(false); load(); }} />
+      )}
+
+      {showEdit && editingProperty && (
+        <PropertyFormModal
+          property={editingProperty}
+          onClose={() => { setShowEdit(false); setEditingProperty(null); }}
+          onSuccess={() => { setShowEdit(false); setEditingProperty(null); load(); }}
+        />
       )}
     </div>
   );
 }
 
 /* ─── PROPERTY CARD ─────────────────────────────────── */
-function PropertyCard({ property: p, onView }: { property: any; onView: () => void }) {
+function PropertyCard({ property: p, onView, onEdit }: { property: any; onView: () => void; onEdit: () => void }) {
   const images = getAllImages(p);
   const enabledAmenities = p.bnb_details?.amenities_bnb
     ? Object.entries(p.bnb_details.amenities_bnb).filter(([_, v]) => v).map(([k]) => k)
@@ -406,7 +426,7 @@ function PropertyCard({ property: p, onView }: { property: any; onView: () => vo
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={onView} style={{ ...btn, padding: '7px 14px', backgroundColor: `${t.blue}18`, color: t.blue, fontSize: 13 }}><Eye size={14}/>View</button>
-          <button style={{ ...btn, padding: '7px 10px', backgroundColor: `${t.gold}18`, color: t.gold, fontSize: 13 }}><Edit size={14}/></button>
+          <button type="button" onClick={onEdit} style={{ ...btn, padding: '7px 10px', backgroundColor: `${t.gold}18`, color: t.gold, fontSize: 13 }}><Edit size={14}/></button>
         </div>
       </div>
     </div>
@@ -414,7 +434,7 @@ function PropertyCard({ property: p, onView }: { property: any; onView: () => vo
 }
 
 /* ─── DETAIL MODAL ──────────────────────────────────── */
-function DetailModal({ property: p, onClose }: { property: any; onClose: () => void }) {
+function DetailModal({ property: p, onClose, onEdit }: { property: any; onClose: () => void; onEdit: () => void }) {
   const images = getAllImages(p);
   const [imgIdx, setImgIdx] = useState(0);
   const enabledAmenities = p.bnb_details?.amenities_bnb
@@ -430,6 +450,12 @@ function DetailModal({ property: p, onClose }: { property: any; onClose: () => v
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.muted, fontSize: 13, marginTop: 4 }}><MapPin size={13}/>{p.location}</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: t.muted, cursor: 'pointer', padding: 4 }}><XCircle size={22}/></button>
+        </div>
+
+        <div style={{ padding: '0 24px 16px', display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="button" onClick={onEdit} style={{ ...btn, padding: '8px 16px', backgroundColor: `${t.gold}18`, color: t.gold, fontSize: 13 }}>
+            <Edit size={14}/> Edit Property
+          </button>
         </div>
 
         <div style={{ padding: 24 }}>
@@ -502,15 +528,80 @@ function DetailModal({ property: p, onClose }: { property: any; onClose: () => v
   );
 }
 
-/* ─── ADD MODAL ─────────────────────────────────────── */
-function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const [form, setForm] = useState({ title: '', description: '', price: '', location: '', address: '', type: 'apartment', bedrooms: '1', bathrooms: '1', max_guests: '2', min_stay: '1', check_in_time: '15:00', check_out_time: '11:00', instant_book: false, amenities: [] as string[] });
-  const [files, setFiles]       = useState<File[]>([]);
+/* ─── ADD / EDIT MODAL ──────────────────────────────── */
+const emptyForm = () => ({
+  title: '', description: '', price: '', location: '', address: '', type: 'apartment',
+  bedrooms: '1', bathrooms: '1', max_guests: '2', min_stay: '1',
+  check_in_time: '15:00', check_out_time: '11:00', instant_book: false,
+  status: 'available', amenities: [] as string[],
+});
+
+function propertyToForm(p: any) {
+  const amenities = Array.isArray(p.amenities)
+    ? p.amenities
+    : p.bnb_details?.amenities_bnb
+      ? Object.entries(p.bnb_details.amenities_bnb).filter(([, v]) => v).map(([k]) => k)
+      : [];
+
+  const time = (v: string | undefined, fallback: string) =>
+    (v ? String(v).slice(0, 5) : fallback);
+
+  return {
+    title: p.title || '',
+    description: p.description || '',
+    price: p.price != null ? String(p.price) : '',
+    location: p.location || '',
+    address: p.address || '',
+    type: p.type || 'apartment',
+    bedrooms: String(p.bedrooms ?? '1'),
+    bathrooms: String(p.bathrooms ?? '1'),
+    max_guests: String(p.bnb_details?.max_guests ?? p.max_guests ?? '2'),
+    min_stay: String(p.bnb_details?.min_stay ?? p.min_stay ?? '1'),
+    check_in_time: time(p.bnb_details?.check_in_time ?? p.check_in_time, '15:00'),
+    check_out_time: time(p.bnb_details?.check_out_time ?? p.check_out_time, '11:00'),
+    instant_book: Boolean(p.bnb_details?.instant_book ?? p.instant_book),
+    status: p.status || 'available',
+    amenities,
+  };
+}
+
+function PropertyFormModal({ property, onClose, onSuccess }: { property?: any; onClose: () => void; onSuccess: () => void }) {
+  const isEdit = Boolean(property?.id);
+  const [form, setForm] = useState(emptyForm());
+  const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [loading, setLoading]   = useState(false);
-  const [errors, setErrors]     = useState<Record<string, string>>({});
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(isEdit);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
+
+  useEffect(() => {
+    if (!isEdit || !property?.id) return;
+
+    let cancelled = false;
+    (async () => {
+      setFetching(true);
+      try {
+        const res = await Api.getBnbProperty(property.id);
+        const p = res.data || res;
+        if (cancelled) return;
+        setForm(propertyToForm(p));
+        setExistingImages(getAllImages(p).filter(img => img !== PLACEHOLDER));
+      } catch {
+        if (!cancelled) {
+          setForm(propertyToForm(property));
+          setExistingImages(getAllImages(property).filter(img => img !== PLACEHOLDER));
+          setErrors({ submit: 'Could not refresh property details. Showing cached data.' });
+        }
+      } finally {
+        if (!cancelled) setFetching(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isEdit, property?.id]);
 
   const set = (k: string, v: any) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: '' })); };
 
@@ -526,6 +617,20 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
     setFiles(f => f.filter((_, j) => j !== i));
   };
 
+  const uploadImages = async (): Promise<string[]> => {
+    if (!files.length) return [];
+    const fd = new FormData();
+    files.forEach(f => fd.append('images[]', f));
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-images`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, Accept: 'application/json' },
+      body: fd,
+    });
+    if (!res.ok) throw new Error('Image upload failed');
+    const j = await res.json();
+    return (j.images || []).map((i: any) => i.url);
+  };
+
   const submit = async () => {
     const errs: Record<string, string> = {};
     if (!form.title.trim())       errs.title       = 'Required';
@@ -536,25 +641,39 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
     setLoading(true);
+    setErrors({});
     try {
-      let images: string[] = [];
-      if (files.length) {
-        const fd = new FormData();
-        files.forEach(f => fd.append('images[]', f));
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/upload-images`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, Accept: 'application/json' },
-          body: fd,
-        });
-        if (res.ok) {
-          const j = await res.json();
-          images = j.images.map((i: any) => i.url);
-        }
+      const uploaded = await uploadImages();
+      const imageList = [...existingImages, ...uploaded];
+      const payload: Record<string, unknown> = {
+        ...form,
+        price: +form.price,
+        bedrooms: +form.bedrooms,
+        bathrooms: +form.bathrooms,
+        max_guests: +form.max_guests,
+        min_stay: +form.min_stay,
+      };
+      if (!isEdit || imageList.length) {
+        payload.images = imageList;
       }
-      await Api.createBnbProperty({ ...form, price: +form.price, bedrooms: +form.bedrooms, bathrooms: +form.bathrooms, max_guests: +form.max_guests, min_stay: +form.min_stay, images });
+
+      if (isEdit) {
+        await Api.updateBnbProperty(property.id, payload);
+      } else {
+        await Api.createBnbProperty(payload);
+      }
       onSuccess();
     } catch (err: any) {
-      setErrors(err?.response?.data?.errors ?? { submit: 'Failed to create property. Please try again.' });
+      const apiErrors = err?.response?.data?.errors;
+      if (apiErrors && typeof apiErrors === 'object') {
+        const flat: Record<string, string> = {};
+        Object.entries(apiErrors).forEach(([k, v]) => {
+          flat[k] = Array.isArray(v) ? String(v[0]) : String(v);
+        });
+        setErrors(flat);
+      } else {
+        setErrors({ submit: err?.response?.data?.message || `Failed to ${isEdit ? 'update' : 'create'} property.` });
+      }
     } finally {
       setLoading(false);
     }
@@ -572,121 +691,146 @@ function AddModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () =
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(28,25,23,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20, backdropFilter: 'blur(4px)' }}>
       <div style={{ backgroundColor: t.surface, borderRadius: 14, padding: 28, maxWidth: 780, maxHeight: '90vh', overflowY: 'auto', width: '100%', border: `1px solid ${t.border}`, boxShadow: '0 24px 48px rgba(28,25,23,0.18)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-          <h2 style={{ ...serif, fontSize: 22, color: t.gold, margin: 0 }}>Add New Property</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: t.muted, cursor: 'pointer' }}><XCircle size={20}/></button>
+          <h2 style={{ ...serif, fontSize: 22, color: t.gold, margin: 0 }}>{isEdit ? 'Edit Property' : 'Add New Property'}</h2>
+          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', color: t.muted, cursor: 'pointer' }}><XCircle size={20}/></button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-          <div>
-            <label style={lbl}>Title *</label>
-            <input value={form.title} onChange={e => set('title', e.target.value)} style={inp({ borderColor: errors.title ? t.red : t.border })} placeholder="e.g. Luxury Beach Villa"/>
-            {errors.title && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.title}</div>}
-          </div>
-          <div>
-            <label style={lbl}>Price per Night (TZS) *</label>
-            <input type="number" value={form.price} onChange={e => set('price', e.target.value)} style={inp({ borderColor: errors.price ? t.red : t.border })} placeholder="50000"/>
-            {errors.price && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.price}</div>}
-          </div>
-          <div>
-            <label style={lbl}>Location *</label>
-            <input value={form.location} onChange={e => set('location', e.target.value)} style={inp({ borderColor: errors.location ? t.red : t.border })} placeholder="Dar es Salaam, Africa"/>
-            {errors.location && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.location}</div>}
-          </div>
-          <div>
-            <label style={lbl}>Property Type</label>
-            <select value={form.type} onChange={e => set('type', e.target.value)} style={inp()}>
-              <option value="apartment">Apartment</option>
-              <option value="house">House</option>
-              <option value="villa">Villa</option>
-              <option value="studio">Studio</option>
-              <option value="condo">Condo</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={lbl}>Address *</label>
-          <input value={form.address} onChange={e => set('address', e.target.value)} style={inp({ borderColor: errors.address ? t.red : t.border })} placeholder="Full street address"/>
-          {errors.address && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.address}</div>}
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <label style={lbl}>Description *</label>
-          <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} style={{ ...inp(), resize: 'vertical', borderColor: errors.description ? t.red : t.border } as any} placeholder="Describe your property…"/>
-          {errors.description && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.description}</div>}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
-          {[['Bedrooms','bedrooms','0'],['Bathrooms','bathrooms','0'],['Max Guests','max_guests','1'],['Min Stay (nights)','min_stay','1']].map(([label, key, min]) => (
-            <div key={key}>
-              <label style={lbl}>{label}</label>
-              <input type="number" min={min} value={(form as any)[key]} onChange={e => set(key, e.target.value)} style={inp()}/>
+        {fetching ? (
+          <div style={{ textAlign: 'center', padding: '40px 0', color: t.muted }}>Loading property…</div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label style={lbl}>Title *</label>
+                <input value={form.title} onChange={e => set('title', e.target.value)} style={inp({ borderColor: errors.title ? t.red : t.border })} placeholder="e.g. Luxury Beach Villa"/>
+                {errors.title && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.title}</div>}
+              </div>
+              <div>
+                <label style={lbl}>Price per Night (TZS) *</label>
+                <input type="number" value={form.price} onChange={e => set('price', e.target.value)} style={inp({ borderColor: errors.price ? t.red : t.border })} placeholder="50000"/>
+                {errors.price && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.price}</div>}
+              </div>
+              <div>
+                <label style={lbl}>Location *</label>
+                <input value={form.location} onChange={e => set('location', e.target.value)} style={inp({ borderColor: errors.location ? t.red : t.border })} placeholder="Dar es Salaam, Africa"/>
+                {errors.location && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.location}</div>}
+              </div>
+              <div>
+                <label style={lbl}>Property Type</label>
+                <select value={form.type} onChange={e => set('type', e.target.value)} style={inp()}>
+                  <option value="apartment">Apartment</option>
+                  <option value="house">House</option>
+                  <option value="villa">Villa</option>
+                  <option value="studio">Studio</option>
+                  <option value="condo">Condo</option>
+                </select>
+              </div>
+              {isEdit && (
+                <div>
+                  <label style={lbl}>Status</label>
+                  <select value={form.status} onChange={e => set('status', e.target.value)} style={inp()}>
+                    <option value="available">Available</option>
+                    <option value="occupied">Occupied</option>
+                    <option value="maintenance">Maintenance</option>
+                  </select>
+                </div>
+              )}
             </div>
-          ))}
-        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-          <div>
-            <label style={lbl}>Check-in Time</label>
-            <input type="time" value={form.check_in_time} onChange={e => set('check_in_time', e.target.value)} style={inp()}/>
-          </div>
-          <div>
-            <label style={lbl}>Check-out Time</label>
-            <input type="time" value={form.check_out_time} onChange={e => set('check_out_time', e.target.value)} style={inp()}/>
-          </div>
-        </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={lbl}>Address *</label>
+              <input value={form.address} onChange={e => set('address', e.target.value)} style={inp({ borderColor: errors.address ? t.red : t.border })} placeholder="Full street address"/>
+              {errors.address && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.address}</div>}
+            </div>
 
-        {/* Image Upload */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={lbl}>Property Images</label>
-          <input type="file" multiple accept="image/*" id="img-up" onChange={addFiles} style={{ display: 'none' }}/>
-          <label htmlFor="img-up" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '18px', border: `2px dashed ${t.border}`, borderRadius: 8, cursor: 'pointer', backgroundColor: `${t.gold}08`, transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = t.gold; e.currentTarget.style.backgroundColor = `${t.gold}12`; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.backgroundColor = `${t.gold}08`; }}>
-            <ImageIcon size={28} style={{ color: t.gold, marginBottom: 6 }}/>
-            <div style={{ color: t.ink, fontSize: 13, fontWeight: 500 }}>Click to upload images</div>
-            <div style={{ color: t.muted, fontSize: 11, marginTop: 2 }}>JPG, PNG, GIF — max 5MB each</div>
-          </label>
-          {previews.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 72px), 1fr))', gap: 8, marginTop: 10 }}>
-              {previews.map((src, i) => (
-                <div key={i} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', height: 70 }}>
-                  <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-                  <button type="button" onClick={() => removeFile(i)} style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', width: 18, height: 18, color: '#fff', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+            <div style={{ marginBottom: 16 }}>
+              <label style={lbl}>Description *</label>
+              <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3} style={{ ...inp(), resize: 'vertical', borderColor: errors.description ? t.red : t.border } as any} placeholder="Describe your property…"/>
+              {errors.description && <div style={{ color: t.red, fontSize: 11, marginTop: 3 }}>{errors.description}</div>}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+              {[['Bedrooms','bedrooms','0'],['Bathrooms','bathrooms','0'],['Max Guests','max_guests','1'],['Min Stay (nights)','min_stay','1']].map(([label, key, min]) => (
+                <div key={key}>
+                  <label style={lbl}>{label}</label>
+                  <input type="number" min={min} value={(form as any)[key]} onChange={e => set(key, e.target.value)} style={inp()}/>
                 </div>
               ))}
             </div>
-          )}
-        </div>
 
-        {/* Amenities */}
-        <div style={{ marginBottom: 18 }}>
-          <label style={lbl}>Amenities</label>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-            {amenityOptions.map(a => (
-              <label key={a} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: t.ink }}>
-                <input type="checkbox" checked={form.amenities.includes(a)} onChange={e => set('amenities', e.target.checked ? [...form.amenities, a] : form.amenities.filter(x => x !== a))} style={{ accentColor: t.gold }}/>
-                {a}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={lbl}>Check-in Time</label>
+                <input type="time" value={form.check_in_time} onChange={e => set('check_in_time', e.target.value)} style={inp()}/>
+              </div>
+              <div>
+                <label style={lbl}>Check-out Time</label>
+                <input type="time" value={form.check_out_time} onChange={e => set('check_out_time', e.target.value)} style={inp()}/>
+              </div>
+            </div>
+
+            {existingImages.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={lbl}>Current Photos</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 72px), 1fr))', gap: 8 }}>
+                  {existingImages.map((src, i) => (
+                    <img key={i} src={src} alt="" style={{ width: '100%', height: 70, objectFit: 'cover', borderRadius: 6, border: `1px solid ${t.border}` }}/>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={lbl}>{isEdit ? 'Add More Images' : 'Property Images'}</label>
+              <input type="file" multiple accept="image/*" id="img-up" onChange={addFiles} style={{ display: 'none' }}/>
+              <label htmlFor="img-up" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '18px', border: `2px dashed ${t.border}`, borderRadius: 8, cursor: 'pointer', backgroundColor: `${t.gold}08`, transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = t.gold; e.currentTarget.style.backgroundColor = `${t.gold}12`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.backgroundColor = `${t.gold}08`; }}>
+                <ImageIcon size={28} style={{ color: t.gold, marginBottom: 6 }}/>
+                <div style={{ color: t.ink, fontSize: 13, fontWeight: 500 }}>Click to upload images</div>
+                <div style={{ color: t.muted, fontSize: 11, marginTop: 2 }}>JPG, PNG, GIF — max 5MB each</div>
               </label>
-            ))}
-          </div>
-        </div>
+              {previews.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 72px), 1fr))', gap: 8, marginTop: 10 }}>
+                  {previews.map((src, i) => (
+                    <div key={i} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', height: 70 }}>
+                      <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+                      <button type="button" onClick={() => removeFile(i)} style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', width: 18, height: 18, color: '#fff', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, cursor: 'pointer', fontSize: 13, color: t.ink }}>
-          <input type="checkbox" checked={form.instant_book} onChange={e => set('instant_book', e.target.checked)} style={{ accentColor: t.gold }}/>
-          Enable Instant Booking
-        </label>
+            <div style={{ marginBottom: 18 }}>
+              <label style={lbl}>Amenities</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {amenityOptions.map(a => (
+                  <label key={a} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: t.ink }}>
+                    <input type="checkbox" checked={form.amenities.includes(a)} onChange={e => set('amenities', e.target.checked ? [...form.amenities, a] : form.amenities.filter(x => x !== a))} style={{ accentColor: t.gold }}/>
+                    {a}
+                  </label>
+                ))}
+              </div>
+            </div>
 
-        {errors.submit && (
-          <div style={{ backgroundColor: `${t.red}18`, border: `1px solid ${t.red}40`, borderRadius: 8, padding: '10px 14px', marginBottom: 16, color: t.red, fontSize: 13 }}>{errors.submit}</div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, cursor: 'pointer', fontSize: 13, color: t.ink }}>
+              <input type="checkbox" checked={form.instant_book} onChange={e => set('instant_book', e.target.checked)} style={{ accentColor: t.gold }}/>
+              Enable Instant Booking
+            </label>
+
+            {errors.submit && (
+              <div style={{ backgroundColor: `${t.red}18`, border: `1px solid ${t.red}40`, borderRadius: 8, padding: '10px 14px', marginBottom: 16, color: t.red, fontSize: 13 }}>{errors.submit}</div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button type="button" onClick={onClose} style={{ ...btn, backgroundColor: 'transparent', border: `1px solid ${t.border}`, color: t.ink }}>Cancel</button>
+              <button type="button" onClick={submit} disabled={loading} style={{ ...btn, backgroundColor: t.gold, color: t.onAccent, opacity: loading ? 0.7 : 1 }}>
+                {loading ? (isEdit ? 'Saving…' : 'Creating…') : (isEdit ? 'Save Changes' : 'Create Property')}
+              </button>
+            </div>
+          </>
         )}
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ ...btn, backgroundColor: 'transparent', border: `1px solid ${t.border}`, color: t.ink }}>Cancel</button>
-          <button onClick={submit} disabled={loading} style={{ ...btn, backgroundColor: t.gold, color: t.onAccent, opacity: loading ? 0.7 : 1 }}>
-            {loading ? 'Creating…' : 'Create Property'}
-          </button>
-        </div>
       </div>
     </div>
   );

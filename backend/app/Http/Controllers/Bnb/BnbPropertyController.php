@@ -276,6 +276,8 @@ class BnbPropertyController extends Controller
             'safety_items' => 'sometimes|array',
             'safety_items.*' => 'string',
             'status' => ['sometimes', Rule::in(['available', 'occupied', 'maintenance'])],
+            'images' => 'sometimes|array',
+            'images.*' => 'url',
         ]);
 
         if ($validator->fails()) {

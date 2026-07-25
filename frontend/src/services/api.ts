@@ -417,10 +417,14 @@ class Api {
   // ── BNB Owner Methods ───────────────────────────────────────────────────────
 
   static async getBnbProperties(filters?: {
-    search?: string; location?: string; max_guests?: number; min_price?: number; max_price?: number;
+    search?: string; location?: string; max_guests?: number; min_price?: number; max_price?: number; status?: string;
   }) {
     const params = new URLSearchParams(filters as any).toString();
     return this.request<any[]>(`bnb/properties${params ? `?${params}` : ''}`);
+  }
+
+  static async getBnbProperty(id: number) {
+    return this.request<any>(`bnb/properties/${id}`);
   }
 
   static async createBnbProperty(data: any) {
