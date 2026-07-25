@@ -129,8 +129,6 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     bnb_owner: [
       { name: 'Overview',          icon: Home,          href: ''                    },
       { name: 'My BNB Properties', icon: Building,      href: 'bnb-properties'      },
-      { name: 'Browse BnB Stays',  icon: Search,        href: 'browse-bnb-stays'    },
-      { name: 'My Stays',          icon: Calendar,      href: 'bnb-stays'           },
       { name: 'Bookings',          icon: Calendar,      href: 'bnb-bookings'        },
       { name: 'Reviews',           icon: Star,          href: 'bnb-reviews'         },
       { name: 'Analytics',         icon: BarChart3,     href: 'bnb-analytics'       },
@@ -182,7 +180,6 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     ],
     bnb_owner: [
       { label: 'Host',       items: ['Overview','My BNB Properties','Bookings','Reviews'] },
-      { label: 'Book stays', items: ['Browse BnB Stays','My Stays'] },
       { label: 'Insights',  items: ['Analytics','Settings'] },
     ],
     commercial: [
