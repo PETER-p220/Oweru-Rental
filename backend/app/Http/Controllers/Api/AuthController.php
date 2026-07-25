@@ -113,7 +113,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email'     => 'required|email',
             'password'  => 'required',
-            'user_type' => 'required|in:tenant,landlord,agent,bnb_owner,commercial,admin',
+            'user_type' => 'sometimes|in:tenant,landlord,agent,bnb_owner,commercial,admin',
         ]);
 
         if ($validator->fails()) {
@@ -129,7 +129,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        if ($user->user_type !== $request->user_type) {
+        if ($request->filled('user_type') && $user->user_type !== $request->user_type) {
             return response()->json(['message' => 'User type mismatch'], 401);
         }
 
@@ -412,14 +412,7 @@ class AuthController extends Controller
                     $redirectUrl = "{$frontendUrl}/auth/error?error=user_not_found";
                     return redirect()->away($redirectUrl);
                 }
-                
-                // Check if user type matches - one email can only have one user type
-                if ($user->user_type !== $userType) {
-                    $frontendUrl = config('app.frontend_url', 'https://rental.oweru.com');
-                    $redirectUrl = "{$frontendUrl}/auth/error?error=wrong_user_type&registered_type={$user->user_type}";
-                    return redirect()->away($redirectUrl);
-                }
-                
+
                 if (!$user->google_id) {
                     $user->update(['google_id' => $googleUser->id]);
                 }

@@ -163,10 +163,15 @@ class Api {
 
   // ── Auth ────────────────────────────────────────────────────────────────────
 
-  static async login(email: string, password: string, userType: string) {
+  static async login(email: string, password: string, userType?: string) {
+    const body: Record<string, string> = {
+      email: email.trim().toLowerCase(),
+      password,
+    };
+    if (userType) body.user_type = userType;
     return this.request<LoginResponse>('login', {
       method: 'POST',
-      body: JSON.stringify({ email: email.trim().toLowerCase(), password, user_type: userType }),
+      body: JSON.stringify(body),
     });
   }
 
@@ -196,8 +201,9 @@ class Api {
     return this.request('logout', { method: 'POST' });
   }
 
-  static getGoogleAuthUrl(userType: string) {
-    return `${API_BASE_URL}/api/auth/google/redirect?user_type=${userType}`;
+  static getGoogleAuthUrl(userType?: string) {
+    const qs = userType ? `?user_type=${encodeURIComponent(userType)}` : '';
+    return `${API_BASE_URL}/api/auth/google/redirect${qs}`;
   }
 
   static getGoogleRegisterUrl(userType: string) {

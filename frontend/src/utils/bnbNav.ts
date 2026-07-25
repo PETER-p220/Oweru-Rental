@@ -41,3 +41,12 @@ export function resolveDashboardRedirect(
 export function getBnbPropertyPathForLogin(propertyId: number | string): string {
   return `/dashboard/tenant/bnb-property/${propertyId}`;
 }
+
+/** After login, send the user to their role dashboard (or a safe redirect). */
+export function resolvePostLoginDestination(
+  user: Parameters<typeof getDashboardRole>[0],
+  redirect: string | null,
+): string {
+  const role = getDashboardRole(user);
+  return resolveDashboardRedirect(redirect, role) || `/dashboard/${role}`;
+}

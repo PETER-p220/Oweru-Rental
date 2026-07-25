@@ -101,7 +101,7 @@ export function parseLoginError(err: unknown): ParsedAuthAlert {
     return {
       variant: 'error',
       title: 'Sign in failed',
-      messages: ['Email or password is incorrect. Check your role tab matches your account type.'],
+      messages: ['Email or password is incorrect. Please check your details and try again.'],
     };
   }
   if (status === 401 && /user type mismatch/i.test(message)) {
