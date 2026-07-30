@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Hotel, MapPin, Star, XCircle, Loader2, AlertCircle, LayoutGrid, CalendarDays } from 'lucide-react';
+import { Calendar, Hotel, MapPin, Star, XCircle, Loader2, AlertCircle, LayoutGrid, CalendarDays, MessageSquare } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { getBrowseBnbPath, getBnbPropertyPath } from '../../utils/bnbNav';
@@ -14,26 +14,45 @@ const fmt = (n: number) =>
 const fmtDate = (s?: string) =>
   s ? new Date(s).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
+const isPastCheckout = (checkOut?: string) =>
+  !!checkOut && checkOut <= new Date().toISOString().slice(0, 10);
+
 const MyBnbStays = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [myReviews, setMyReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [reviewFor, setReviewFor] = useState<any | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'reviews'>('list');
   const [highlightId, setHighlightId] = useState<number | null>(null);
+
+  const loadAllBookings = async () => {
+    try {
+      const res = await Api.getMyBnbBookings();
+      setAllBookings(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setAllBookings([]);
+    }
+  };
 
   const load = async () => {
     try {
       setLoading(true);
       setError('');
       const res = await Api.getMyBnbBookings(statusFilter !== 'all' ? { status: statusFilter } : undefined);
-      setBookings(Array.isArray(res.data) ? res.data : []);
+      const rows = Array.isArray(res.data) ? res.data : [];
+      setBookings(rows);
+      if (statusFilter === 'all') {
+        setAllBookings(rows);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Unable to load your stays.');
       setBookings([]);
@@ -42,13 +61,32 @@ const MyBnbStays = () => {
     }
   };
 
+  const loadReviews = async () => {
+    try {
+      setReviewsLoading(true);
+      const res = await Api.getMyBnbReviews();
+      setMyReviews(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setMyReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
   useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { loadReviews(); loadAllBookings(); }, []);
+
+  const reviewableStays = useMemo(
+    () => allBookings.filter((b) => b.can_review),
+    [allBookings],
+  );
 
   const stats = useMemo(() => ({
     total: bookings.length,
     upcoming: bookings.filter((b) => ['pending', 'confirmed'].includes(b.status)).length,
-    reviewable: bookings.filter((b) => b.can_review).length,
-  }), [bookings]);
+    reviewable: reviewableStays.length,
+    reviewed: myReviews.length,
+  }), [bookings, reviewableStays, myReviews]);
 
   const cancelBooking = async (id: number) => {
     if (!confirm('Cancel this booking?')) return;
@@ -76,7 +114,7 @@ const MyBnbStays = () => {
       setReviewFor(null);
       setComment('');
       setRating(5);
-      await load();
+      await Promise.all([load(), loadAllBookings(), loadReviews()]);
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Could not submit review.');
     } finally {
@@ -136,13 +174,14 @@ const MyBnbStays = () => {
           </div>
           <h1 style={{ margin: 0, color: '#fff', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: 800 }}>My Stays</h1>
           <p style={{ margin: '8px 0 0', color: '#94A3B8', fontSize: 13, lineHeight: 1.5 }}>
-            Your BnB bookings and payments. Browse stays from the sidebar or book a new stay below.
+            Your BnB bookings, payments, and reviews. Leave a review after checkout from the Reviews tab or on each stay card.
           </p>
           <div className="stays-stats">
             {[
               { label: 'Total', value: stats.total },
               { label: 'Upcoming', value: stats.upcoming },
               { label: 'To review', value: stats.reviewable },
+              { label: 'Reviewed', value: stats.reviewed },
             ].map((s) => (
               <div key={s.label} className="stays-stat">
                 <div style={{ fontSize: 10, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.label}</div>
@@ -162,8 +201,29 @@ const MyBnbStays = () => {
           <button type="button" className={`stays-view-btn${viewMode === 'calendar' ? ' active' : ''}`} onClick={() => setViewMode('calendar')}>
             <CalendarDays size={14} /> Calendar
           </button>
+          <button type="button" className={`stays-view-btn${viewMode === 'reviews' ? ' active' : ''}`} onClick={() => setViewMode('reviews')}>
+            <MessageSquare size={14} /> Reviews
+            {stats.reviewable > 0 && (
+              <span style={{ marginLeft: 4, background: GOLD, color: '#0F172A', borderRadius: 999, padding: '1px 6px', fontSize: 10, fontWeight: 800 }}>
+                {stats.reviewable}
+              </span>
+            )}
+          </button>
         </div>
 
+        {stats.reviewable > 0 && viewMode !== 'reviews' && (
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: '12px 14px', background: 'rgba(200,145,40,0.12)', border: '1px solid rgba(200,145,40,0.25)', borderRadius: 10, marginBottom: 16, fontSize: 13, color: '#92400E' }}>
+            <Star size={16} color={GOLD} />
+            <span style={{ flex: 1, minWidth: 200 }}>
+              You have {stats.reviewable} stay{stats.reviewable > 1 ? 's' : ''} ready to review.
+            </span>
+            <button type="button" onClick={() => setViewMode('reviews')} style={{ padding: '8px 12px', minHeight: 36, border: 'none', background: GOLD, color: '#0F172A', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
+              Leave a review
+            </button>
+          </div>
+        )}
+
+        {viewMode !== 'reviews' && (
         <div className="stays-filters">
           {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map((s) => (
             <button key={s} className={`stays-chip${statusFilter === s ? ' active' : ''}`} onClick={() => setStatusFilter(s)}>
@@ -171,6 +231,7 @@ const MyBnbStays = () => {
             </button>
           ))}
         </div>
+        )}
 
         {error && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 14, background: '#FEF2F2', color: '#DC2626', borderRadius: 10, marginBottom: 16, fontSize: 13 }}>
@@ -178,10 +239,81 @@ const MyBnbStays = () => {
           </div>
         )}
 
-        {loading ? (
+        {loading && viewMode !== 'reviews' ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 60, color: '#64748B', gap: 10 }}>
             <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Loading stays…
           </div>
+        ) : viewMode === 'reviews' ? (
+          reviewsLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 60, color: '#64748B', gap: 10 }}>
+              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Loading reviews…
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {reviewableStays.length > 0 && (
+                <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 16 }}>
+                  <h2 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>Ready to review</h2>
+                  <p style={{ margin: '0 0 14px', fontSize: 13, color: '#64748B' }}>These paid stays have ended — share your experience with other guests.</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {reviewableStays.map((b) => (
+                      <div key={b.id} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: 12, background: '#F8FAFC', borderRadius: 10 }}>
+                        <div style={{ flex: 1, minWidth: 180 }}>
+                          <div style={{ fontWeight: 700, color: '#0F172A' }}>{b.property?.title || 'Stay'}</div>
+                          <div style={{ fontSize: 12, color: '#64748B' }}>{fmtDate(b.check_in)} → {fmtDate(b.check_out)}</div>
+                        </div>
+                        <button type="button" className="stays-btn" onClick={() => setReviewFor(b)} style={{ border: `1px solid rgba(200,145,40,0.3)`, background: GOLD, color: '#0F172A' }}>
+                          <Star size={13} /> Write review
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: 16 }}>
+                <h2 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>Your reviews</h2>
+                <p style={{ margin: '0 0 14px', fontSize: 13, color: '#64748B' }}>
+                  Reviews appear on the property page after you submit them. You can review each paid stay once, after checkout.
+                </p>
+                {myReviews.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '28px 12px', color: '#64748B', fontSize: 13 }}>
+                    <Star size={32} color="#CBD5E1" style={{ marginBottom: 10 }} />
+                    <div style={{ fontWeight: 600, color: '#0F172A', marginBottom: 4 }}>No reviews yet</div>
+                    Complete a stay and return here after checkout to leave your first review.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {myReviews.map((r) => (
+                      <div key={r.id} style={{ padding: 14, border: '1px solid #E2E8F0', borderRadius: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+                          <div>
+                            <div style={{ fontWeight: 700, color: '#0F172A' }}>{r.property?.title || 'Property'}</div>
+                            {r.booking && (
+                              <div style={{ fontSize: 12, color: '#64748B' }}>
+                                Stay: {fmtDate(r.booking.check_in)} → {fmtDate(r.booking.check_out)}
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <Star key={n} size={14} fill={n <= r.rating ? GOLD : 'none'} color={GOLD} />
+                            ))}
+                          </div>
+                        </div>
+                        <p style={{ margin: 0, fontSize: 13, color: '#475569', lineHeight: 1.5 }}>{r.comment}</p>
+                        {r.response && (
+                          <div style={{ marginTop: 10, padding: 10, background: '#F8FAFC', borderRadius: 8, fontSize: 12, color: '#64748B' }}>
+                            <strong style={{ color: '#0F172A' }}>Host response:</strong> {r.response}
+                          </div>
+                        )}
+                        <div style={{ marginTop: 8, fontSize: 11, color: '#94A3B8' }}>{fmtDate(r.created_at)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
         ) : viewMode === 'calendar' ? (
           bookings.length === 0 ? (
             <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
@@ -243,6 +375,14 @@ const MyBnbStays = () => {
                   <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 999, background: '#F1F5F9', color: '#475569' }}>{b.status}</span>
                     <span style={{ fontWeight: 700, color: GOLD }}>{fmt(b.total_price)}</span>
+                    {b.review && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Star size={12} fill={GOLD} color={GOLD} /> Reviewed ({b.review.rating}/5)
+                      </span>
+                    )}
+                    {!b.review && b.payment_status === 'paid' && !isPastCheckout(b.check_out) && (
+                      <span style={{ fontSize: 11, color: '#64748B' }}>Review available after {fmtDate(b.check_out)}</span>
+                    )}
                   </div>
                 </div>
                 <div className="stays-actions">

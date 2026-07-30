@@ -308,6 +308,12 @@ class BnbBookingController extends Controller
     {
         $user = Auth::user();
 
+        BnbBooking::where('guest_id', $user->id)
+            ->where('payment_status', 'paid')
+            ->whereNotIn('status', ['cancelled', 'completed'])
+            ->whereDate('check_out', '<=', now()->toDateString())
+            ->update(['status' => 'completed']);
+
         $query = BnbBooking::with(['property', 'review'])
             ->where('guest_id', $user->id)
             ->orderByDesc('created_at');

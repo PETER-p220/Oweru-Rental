@@ -110,13 +110,21 @@ class BnbReviewController extends Controller
 
         $booking = BnbBooking::where('id', $request->booking_id)
             ->where('guest_id', Auth::id())
-            ->where('status', 'completed')
-            ->whereDate('check_out', '<=', now()->toDateString())
+            ->with('review')
             ->first();
 
         if (! $booking) {
             return response()->json([
-                'message' => 'You can only review properties after a completed stay linked to your account.',
+                'message' => 'Booking not found.',
+            ], 404);
+        }
+
+        $booking->markCompletedIfPastStay();
+        $booking->refresh()->load('review');
+
+        if (! $booking->canBeReviewed()) {
+            return response()->json([
+                'message' => 'You can leave a review after your paid stay ends (check-out date).',
             ], 422);
         }
 
@@ -158,7 +166,29 @@ class BnbReviewController extends Controller
             ->paginate($request->per_page ?? 20);
 
         return response()->json([
-            'data' => $reviews->items(),
+            'data' => collect($reviews->items())->map(function (BnbReview $review) {
+                return [
+                    'id' => $review->id,
+                    'property_id' => $review->property_id,
+                    'booking_id' => $review->booking_id,
+                    'rating' => (int) $review->rating,
+                    'comment' => $review->comment,
+                    'response' => $review->response,
+                    'verified' => (bool) $review->verified,
+                    'created_at' => optional($review->created_at)?->toIso8601String(),
+                    'property' => $review->property ? [
+                        'id' => $review->property->id,
+                        'title' => $review->property->title,
+                        'location' => $review->property->location,
+                        'main_image' => $review->property->main_image ?? null,
+                        'images' => $review->property->images ?? [],
+                    ] : null,
+                    'booking' => $review->booking ? [
+                        'check_in' => optional($review->booking->check_in)?->toDateString(),
+                        'check_out' => optional($review->booking->check_out)?->toDateString(),
+                    ] : null,
+                ];
+            })->values(),
             'meta' => [
                 'current_page' => $reviews->currentPage(),
                 'last_page' => $reviews->lastPage(),

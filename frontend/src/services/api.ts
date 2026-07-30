@@ -619,6 +619,10 @@ class Api {
     return this.request<any>(`my/bnb/bookings${params ? `?${params}` : ''}`);
   }
 
+  static async getMyBnbReviews() {
+    return this.request<any[]>('my/bnb/reviews');
+  }
+
   static async cancelMyBnbBooking(bookingId: number, reason?: string) {
     return this.request<any>(`my/bnb/bookings/${bookingId}/cancel`, {
       method: 'PATCH',

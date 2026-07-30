@@ -135,9 +135,39 @@ class BnbBooking extends Model
 
     public function canBeReviewed(): bool
     {
-        return $this->status === 'completed' && 
-               $this->check_out < now()->format('Y-m-d') &&
-               !$this->review;
+        if ($this->review()->exists()) {
+            return false;
+        }
+
+        if ($this->payment_status !== 'paid') {
+            return false;
+        }
+
+        if (in_array($this->status, ['cancelled'], true)) {
+            return false;
+        }
+
+        if (! $this->check_out || $this->check_out->toDateString() > now()->toDateString()) {
+            return false;
+        }
+
+        return in_array($this->status, ['confirmed', 'completed'], true);
+    }
+
+    /** Mark paid stays as completed once checkout date has passed. */
+    public function markCompletedIfPastStay(): void
+    {
+        if ($this->payment_status !== 'paid') {
+            return;
+        }
+
+        if (in_array($this->status, ['cancelled', 'completed'], true)) {
+            return;
+        }
+
+        if ($this->check_out && $this->check_out->toDateString() <= now()->toDateString()) {
+            $this->update(['status' => 'completed']);
+        }
     }
 
     public function calculateRefundAmount(): float
