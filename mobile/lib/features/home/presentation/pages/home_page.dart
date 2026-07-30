@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -25,6 +26,10 @@ const Color kGold       = Color(0xFFC89128); // CTA / brand accent
 const Color kGoldSoft   = Color(0xFFFBF0D9); // tinted backgrounds for gold accents
 const Color kGreen      = Color(0xFF10B981); // available dot
 
+// Smart price-filter bounds (TZS)
+const double kPriceFloor = 0;
+const double kPriceCeil  = 3000000;
+
 const List<String> kCommercialTypes = [
   'office', 'retail', 'warehouse', 'commercial', 'industrial'
 ];
@@ -33,6 +38,9 @@ const List<String> kCommercialTypes = [
 String fmtPrice(num price) => 'TZS ${price
     .toStringAsFixed(0)
     .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
+
+String _commas(int n) =>
+    n.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
 
 String commercialTypeLabel(String? type) {
   const map = {
@@ -45,6 +53,16 @@ String commercialTypeLabel(String? type) {
 String resolveStoragePath(String? path) => resolvePropertyImageUrl(path);
 
 String getImage(Map<String, dynamic> p) => getPropertyImageUrl(p);
+
+String _favKey(Map<String, dynamic> p) =>
+    (p['id'] ?? p['title'] ?? p.hashCode).toString();
+
+String _greeting() {
+  final h = DateTime.now().hour;
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
 
 List<Map<String, dynamic>> _extractPropertyList(dynamic payload) {
   if (payload is List) {
@@ -135,10 +153,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool _loadingOweru       = true;
   bool _loadingCommercial  = true;
 
-  final _searchCtrl     = TextEditingController();
-  String _searchSection = 'all';
-  String _priceRange    = '';
-  bool   _searchActive  = false;
+  final _searchCtrl       = TextEditingController();
+  String _searchSection   = 'all';
+  bool   _searchActive    = false;
+  bool   _showPriceFilter = false;
+  double _priceMin = kPriceFloor;
+  double _priceMax = kPriceCeil;
+  Timer? _searchDebounce;
+
+  // Smart touches: favorites, scroll-spy nav, scroll-to-top affordance
+  final Set<String> _favorites = {};
+  bool   _showScrollTop = false;
+  String _activeSection = 'residential';
 
   final ScrollController _scrollCtrl = ScrollController();
 
@@ -152,12 +178,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _loadData();
+    _scrollCtrl.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scrollCtrl.removeListener(_onScroll);
     _scrollCtrl.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -174,6 +203,36 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
+  // ── Scroll-spy + scroll-to-top ─────────────────────────────────────────────
+  void _onScroll() {
+    final showTop = _scrollCtrl.offset > 480;
+    if (showTop != _showScrollTop) setState(() => _showScrollTop = showTop);
+
+    if (_searchActive) return;
+    final sections = {
+      'residential': _residentialKey,
+      'bnb': _bnbKey,
+      'oweru': _oweruKey,
+      'commercial': _commercialKey,
+    };
+    String? closest;
+    double bestDelta = double.infinity;
+    sections.forEach((name, key) {
+      final ctx = key.currentContext;
+      if (ctx == null) return;
+      final box = ctx.findRenderObject() as RenderBox?;
+      if (box == null || !box.attached) return;
+      final top = box.localToGlobal(Offset.zero).dy;
+      if (top <= 170) {
+        final delta = (top - 170).abs();
+        if (delta < bestDelta) { bestDelta = delta; closest = name; }
+      }
+    });
+    if (closest != null && closest != _activeSection) {
+      setState(() => _activeSection = closest!);
+    }
+  }
+
   List<Map<String, dynamic>> get _searchPool {
     switch (_searchSection) {
       case 'residential': return _residential;
@@ -184,6 +243,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
+  bool get _priceFilterActive => _priceMin != kPriceFloor || _priceMax != kPriceCeil;
+
   List<Map<String, dynamic>> get _filtered {
     final term = _searchCtrl.text.toLowerCase();
     return _searchPool.where((p) {
@@ -191,35 +252,46 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           (p['title'] ?? '').toString().toLowerCase().contains(term) ||
           (p['location'] ?? '').toString().toLowerCase().contains(term) ||
           (p['address'] ?? '').toString().toLowerCase().contains(term);
+      if (!_priceFilterActive) return matchText;
       final price = num.tryParse(p['price']?.toString() ?? '0') ?? 0;
-      bool matchPrice = true;
-      if (_priceRange == '0-500')    matchPrice = price <= 500000;
-      if (_priceRange == '500-1000') matchPrice = price > 500000 && price <= 1000000;
-      if (_priceRange == '1000+')    matchPrice = price > 1000000;
+      final matchPrice = price >= _priceMin && price <= _priceMax;
       return matchText && matchPrice;
     }).toList();
   }
 
   void _clearSearch() => setState(() {
-    _searchCtrl.clear(); _searchSection = 'all'; _priceRange = ''; _searchActive = false;
+    _searchCtrl.clear();
+    _searchSection = 'all';
+    _priceMin = kPriceFloor;
+    _priceMax = kPriceCeil;
+    _showPriceFilter = false;
+    _searchActive = false;
   });
 
   void _doSearch() {
+    _searchDebounce?.cancel();
     setState(() => _searchActive = true);
     _scrollCtrl.animateTo(0, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
   }
 
   // Smart, incremental search: once results are showing, typing re-filters
-  // instantly; typing 2+ characters from the hero auto-activates results.
+  // instantly (lightly debounced); typing 2+ characters from the hero
+  // auto-activates results.
   void _onSearchChanged(String value) {
     if (_searchActive) {
-      setState(() {});
+      _searchDebounce?.cancel();
+      _searchDebounce = Timer(const Duration(milliseconds: 180), () {
+        if (mounted) setState(() {});
+      });
     } else if (value.trim().length >= 2) {
       _doSearch();
+    } else {
+      setState(() {}); // keep the live "matches so far" preview fresh
     }
   }
 
-  void _scrollToSection(GlobalKey key) {
+  void _scrollToSection(String tag, GlobalKey key) {
+    setState(() => _activeSection = tag);
     final ctx = key.currentContext;
     if (ctx != null) {
       Scrollable.ensureVisible(
@@ -231,6 +303,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     }
   }
 
+  void _toggleFavorite(Map<String, dynamic> p) {
+    final key = _favKey(p);
+    setState(() {
+      if (_favorites.contains(key)) {
+        _favorites.remove(key);
+      } else {
+        _favorites.add(key);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -240,24 +323,65 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         onLoginPressed:    () => Navigator.pushNamed(context, '/login'),
         onRegisterPressed: () => Navigator.pushNamed(context, '/register'),
       ),
-      body: SingleChildScrollView(
-        controller: _scrollCtrl,
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHero(),
-            if (_searchActive) _buildSearchResults(),
-            if (!_searchActive) ...[
-              _buildStatsBar(),
-              _buildCategoryBar(),
-              KeyedSubtree(key: _residentialKey, child: _buildResidentialSection()),
-              KeyedSubtree(key: _bnbKey,         child: _buildBnbSection()),
-              KeyedSubtree(key: _oweruKey,       child: _buildOweruSection()),
-              KeyedSubtree(key: _commercialKey,  child: _buildCommercialSection()),
-              _buildCta(),
-            ],
-          ],
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            controller: _scrollCtrl,
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHero(),
+                if (_searchActive) _buildSearchResults(),
+                if (!_searchActive) ...[
+                  _buildStatsBar(),
+                  _buildCategoryBar(),
+                  KeyedSubtree(key: _residentialKey, child: _buildResidentialSection()),
+                  KeyedSubtree(key: _bnbKey,         child: _buildBnbSection()),
+                  KeyedSubtree(key: _oweruKey,       child: _buildOweruSection()),
+                  KeyedSubtree(key: _commercialKey,  child: _buildCommercialSection()),
+                  _buildCta(),
+                ],
+              ],
+            ),
+          ),
+          _buildScrollTopFab(),
+        ],
+      ),
+    );
+  }
+
+  // ── SCROLL-TO-TOP (appears once you've travelled a screen or so) ──────────
+  Widget _buildScrollTopFab() {
+    return Positioned(
+      right: 16,
+      bottom: 24,
+      child: IgnorePointer(
+        ignoring: !_showScrollTop,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 220),
+          opacity: _showScrollTop ? 1 : 0,
+          child: AnimatedSlide(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            offset: _showScrollTop ? Offset.zero : const Offset(0, 0.3),
+            child: _Tappable(
+              onTap: () => _scrollCtrl.animateTo(0,
+                  duration: const Duration(milliseconds: 550), curve: Curves.easeOutCubic),
+              borderRadius: BorderRadius.circular(28),
+              child: Container(
+                width: 48, height: 48,
+                decoration: BoxDecoration(
+                  color: kSlate800,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 16, offset: const Offset(0, 6)),
+                  ],
+                ),
+                child: const Icon(Icons.arrow_upward_rounded, color: kWhite, size: 20),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -287,7 +411,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Eyebrow
-                  Row(children: [
+                  _Reveal(child: Row(children: [
                     _LiveDot(),
                     const SizedBox(width: 8),
                     const Text(
@@ -296,10 +420,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         fontSize: 11, letterSpacing: 1.6,
                         fontWeight: FontWeight.w500, color: kSlate400),
                     ),
-                  ]),
-                  const SizedBox(height: 28),
+                  ])),
+                  const SizedBox(height: 20),
+                  // Personalized greeting — a small, human touch of "smart"
+                  _Reveal(delayMs: 60, child: Text(
+                    '${_greeting()}. Let\'s find your next home.',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kGold, letterSpacing: 0.2),
+                  )),
+                  const SizedBox(height: 12),
                   // Headline
-                  RichText(
+                  _Reveal(delayMs: 120, child: RichText(
                     text: const TextSpan(
                       style: TextStyle(fontSize: 32, fontWeight: FontWeight.w300, color: kWhite, height: 1.15),
                       children: [
@@ -308,22 +438,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         TextSpan(text: '\nProperty'),
                       ],
                     ),
-                  ),
+                  )),
                   const SizedBox(height: 14),
-                  Container(
+                  _Reveal(delayMs: 160, child: Container(
                     width: 46, height: 3,
                     decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(2)),
-                  ),
+                  )),
                   const SizedBox(height: 16),
-                  const Text(
+                  _Reveal(delayMs: 200, child: const Text(
                     'Connect with trusted landlords and professional agents across Africa. Residential, commercial, and short-stay all in one place.',
                     style: TextStyle(
                         fontSize: 14, height: 1.65,
                         color: kSlate400, fontWeight: FontWeight.w400),
-                  ),
+                  )),
                   const SizedBox(height: 24),
                   // CTA buttons
-                  Row(children: [
+                  _Reveal(delayMs: 240, child: Row(children: [
                     Expanded(child: _Tappable(
                       onTap: _doSearch,
                       borderRadius: BorderRadius.circular(8),
@@ -362,10 +492,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ]),
                       ),
                     )),
-                  ]),
+                  ])),
                   const SizedBox(height: 28),
                   // Trust chips
-                  SingleChildScrollView(
+                  _Reveal(delayMs: 280, child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(children: [
                       _trustChip(Icons.verified_user_outlined, 'Verified landlords'),
@@ -374,10 +504,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       const SizedBox(width: 16),
                       _trustChip(Icons.trending_up_rounded, '1,200+ listings'),
                     ]),
-                  ),
+                  )),
                   const SizedBox(height: 40),
                   // Search card
-                  _buildSearchCard(),
+                  _Reveal(delayMs: 320, child: _buildSearchCard()),
                   const SizedBox(height: 0),
                 ],
               ),
@@ -406,6 +536,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   // ── SEARCH CARD ─────────────────────────────────────────────────────────────
   Widget _buildSearchCard() {
+    final liveCount = _filtered.length;
+    final showLiveCount = !_searchActive &&
+        (_searchCtrl.text.isNotEmpty || _searchSection != 'all' || _priceFilterActive);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 0),
       padding: const EdgeInsets.all(20),
@@ -445,17 +579,56 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               onChanged: (v) => setState(() => _searchSection = v!),
             )),
             const SizedBox(width: 10),
-            Expanded(child: _CleanDropdown(
-              value: _priceRange.isEmpty ? '' : _priceRange,
-              items: const {
-                '': 'Any Price',
-                '0-500': 'Under 500K',
-                '500-1000': '500K – 1M',
-                '1000+': 'Above 1M',
-              },
-              onChanged: (v) => setState(() => _priceRange = v ?? ''),
+            Expanded(child: _FilterToggleChip(
+              expanded: _showPriceFilter,
+              label: _priceFilterActive
+                  ? '${fmtPrice(_priceMin)} – ${fmtPrice(_priceMax)}'
+                  : 'Any Price',
+              active: _priceFilterActive,
+              onTap: () => setState(() => _showPriceFilter = !_showPriceFilter),
             )),
           ]),
+          // Progressive disclosure: the range slider only appears once asked for
+          AnimatedSize(
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: !_showPriceFilter
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Column(children: [
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: kGold,
+                          inactiveTrackColor: kSlate200,
+                          thumbColor: kGold,
+                          overlayColor: kGold.withValues(alpha: 0.15),
+                          valueIndicatorColor: kSlate800,
+                          rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 8),
+                        ),
+                        child: RangeSlider(
+                          values: RangeValues(_priceMin, _priceMax),
+                          min: kPriceFloor,
+                          max: kPriceCeil,
+                          divisions: 30,
+                          labels: RangeLabels(fmtPrice(_priceMin), fmtPrice(_priceMax)),
+                          onChanged: (v) => setState(() {
+                            _priceMin = v.start;
+                            _priceMax = v.end;
+                          }),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                          Text(fmtPrice(_priceMin), style: const TextStyle(fontSize: 11, color: kSlate600, fontWeight: FontWeight.w600)),
+                          Text(fmtPrice(_priceMax), style: const TextStyle(fontSize: 11, color: kSlate600, fontWeight: FontWeight.w600)),
+                        ]),
+                      ),
+                    ]),
+                  ),
+          ),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -482,7 +655,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
           ),
-          if (_searchCtrl.text.isNotEmpty || _searchSection != 'all' || _priceRange.isNotEmpty)
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: !showLiveCount
+                ? const SizedBox.shrink(key: ValueKey('no-live'))
+                : Padding(
+                    key: const ValueKey('live'),
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Center(
+                      child: Text(
+                        '$liveCount propert${liveCount == 1 ? 'y' : 'ies'} match so far',
+                        style: const TextStyle(fontSize: 11, color: kSlate400),
+                      ),
+                    ),
+                  ),
+          ),
+          if (_searchCtrl.text.isNotEmpty || _searchSection != 'all' || _priceFilterActive)
             Center(
               child: TextButton(
                 onPressed: _clearSearch,
@@ -495,13 +683,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  // ── STATS BAR ──────────────────────────────────────────────────────────────
+  // ── STATS BAR (numbers count up into place) ────────────────────────────────
   Widget _buildStatsBar() {
     const stats = [
-      ('1,200+', 'LISTINGS', Icons.home_work_outlined),
-      ('500+', 'LANDLORDS', Icons.groups_outlined),
-      ('98%', 'SATISFACTION', Icons.emoji_events_outlined),
-      ('24hr', 'RESPONSE', Icons.bolt_outlined),
+      (1200, '+',  'LISTINGS',     Icons.home_work_outlined),
+      (500,  '+',  'LANDLORDS',    Icons.groups_outlined),
+      (98,   '%',  'SATISFACTION', Icons.emoji_events_outlined),
+      (24,   'hr', 'RESPONSE',     Icons.bolt_outlined),
     ];
     return Container(
       color: kSlate800,
@@ -517,13 +705,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
               ),
               child: Column(children: [
-                Icon(e.value.$3, size: 16, color: kGold),
+                Icon(e.value.$4, size: 16, color: kGold),
                 const SizedBox(height: 8),
-                Text(e.value.$1,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700,
-                        color: kWhite, letterSpacing: -0.5)),
+                _CountUp(
+                  target: e.value.$1,
+                  suffix: e.value.$2,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700,
+                      color: kWhite, letterSpacing: -0.5),
+                ),
                 const SizedBox(height: 3),
-                Text(e.value.$2,
+                Text(e.value.$3,
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 9, letterSpacing: 0.8,
                         fontWeight: FontWeight.w500, color: kSlate400)),
@@ -535,43 +726,56 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  // ── CATEGORY QUICK-LINKS (tap to jump to a section) ──────────────────────
+  // ── CATEGORY QUICK-LINKS (tap to jump; highlights as you scroll) ───────────
   Widget _buildCategoryBar() {
     final cats = [
-      (Icons.apartment_outlined,  'Residential', _residentialKey),
-      (Icons.storefront_outlined, 'Commercial',  _commercialKey),
-      (Icons.hotel_outlined,      'Short Stay',  _bnbKey),
-      (Icons.verified_outlined,   'Oweru',       _oweruKey),
+      (Icons.apartment_outlined,  'Residential', _residentialKey, 'residential'),
+      (Icons.storefront_outlined, 'Commercial',  _commercialKey,  'commercial'),
+      (Icons.hotel_outlined,      'Short Stay',  _bnbKey,         'bnb'),
+      (Icons.verified_outlined,   'Oweru',       _oweruKey,       'oweru'),
     ];
     return Container(
       color: kWhite,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
       child: Row(
-        children: cats.map((c) => Expanded(
-          child: _Tappable(
-            onTap: () => _scrollToSection(c.$3),
-            borderRadius: BorderRadius.circular(14),
-            splashColor: kGold.withValues(alpha: 0.12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-              child: Column(children: [
-                Container(
-                  width: 48, height: 48,
-                  decoration: BoxDecoration(
-                    color: kSlate100,
-                    borderRadius: BorderRadius.circular(12),
+        children: cats.map((c) {
+          final isActive = _activeSection == c.$4;
+          return Expanded(
+            child: _Tappable(
+              onTap: () => _scrollToSection(c.$4, c.$3),
+              borderRadius: BorderRadius.circular(14),
+              splashColor: kGold.withValues(alpha: 0.12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                child: Column(children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
+                    width: 48, height: 48,
+                    decoration: BoxDecoration(
+                      color: isActive ? kSlate800 : kSlate100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(c.$1, size: 20, color: isActive ? kGold : kSlate800),
                   ),
-                  child: Icon(c.$1, size: 20, color: kSlate800),
-                ),
-                const SizedBox(height: 6),
-                Text(c.$2,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                        color: kSlate600, letterSpacing: 0.3)),
-              ]),
+                  const SizedBox(height: 6),
+                  Text(c.$2,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 10,
+                          fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                          color: isActive ? kSlate800 : kSlate600, letterSpacing: 0.3)),
+                  const SizedBox(height: 4),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    width: isActive ? 16 : 0,
+                    height: 2.5,
+                    decoration: BoxDecoration(color: kGold, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ]),
+              ),
             ),
-          ),
-        )).toList(),
+          );
+        }).toList(),
       ),
     );
   }
@@ -672,7 +876,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ? const _SkeletonGrid(dark: true)
         : _bnb.isEmpty
             ? const _EmptyState(icon: Icons.king_bed_outlined, text: 'No short-stay listings yet', dark: true)
-            : _buildPropGrid(_bnb, priceSuffix: '/night',
+            : _buildPropGrid(_bnb, priceSuffix: '/night', dark: true,
                 onAction: (p) => _showBooking(p)),
   );
 
@@ -748,6 +952,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _buildPropGrid(
     List<Map<String, dynamic>> items, {
     bool isCommercial = false,
+    bool dark = false,
     String? badge,
     String priceSuffix = '/mo',
     String actionLabel = 'View Details',
@@ -760,17 +965,26 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         spacing: 14,
         runSpacing: 14,
         children: items.map((p) {
+          final favKey = _favKey(p);
           return SizedBox(
             width: itemW,
             child: isCommercial
-                ? _CommCard(property: p, onTap: () => _navigateToProperty(p))
+                ? _CommCard(
+                    property: p,
+                    onTap: () => _navigateToProperty(p),
+                    isFavorite: _favorites.contains(favKey),
+                    onToggleFavorite: () => _toggleFavorite(p),
+                  )
                 : _PropCard(
                     property: p,
                     priceSuffix: priceSuffix,
                     badge: badge,
+                    dark: dark,
                     onTap: () => _navigateToProperty(p),
                     actionLabel: actionLabel,
                     onAction: () => onAction?.call(p),
+                    isFavorite: _favorites.contains(favKey),
+                    onToggleFavorite: () => _toggleFavorite(p),
                   ),
           );
         }).toList(),
@@ -809,9 +1023,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// SHARED TAP-FEEDBACK WRAPPER (adds ripple/highlight to any tappable block)
+// SHARED TAP-FEEDBACK WRAPPER — ripple + a subtle press-down scale
 // ═════════════════════════════════════════════════════════════════════════════
-class _Tappable extends StatelessWidget {
+class _Tappable extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
   final BorderRadius borderRadius;
@@ -824,16 +1038,94 @@ class _Tappable extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.transparent,
-    borderRadius: borderRadius,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: borderRadius,
-      splashColor: splashColor,
-      highlightColor: splashColor,
-      child: child,
+  State<_Tappable> createState() => _TappableState();
+}
+
+class _TappableState extends State<_Tappable> {
+  bool _pressed = false;
+
+  void _setPressed(bool v) {
+    if (widget.onTap == null) return;
+    setState(() => _pressed = v);
+  }
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTapDown: (_) => _setPressed(true),
+    onTapCancel: () => _setPressed(false),
+    onTapUp: (_) => _setPressed(false),
+    child: AnimatedScale(
+      scale: _pressed ? 0.97 : 1.0,
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: widget.borderRadius,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: widget.borderRadius,
+          splashColor: widget.splashColor,
+          highlightColor: widget.splashColor,
+          child: widget.child,
+        ),
+      ),
     ),
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// STAGGERED ENTRANCE — small, deliberate fade + rise; used once per hero load
+// ═════════════════════════════════════════════════════════════════════════════
+class _Reveal extends StatefulWidget {
+  final Widget child;
+  final int delayMs;
+  const _Reveal({required this.child, this.delayMs = 0});
+
+  @override
+  State<_Reveal> createState() => _RevealState();
+}
+
+class _RevealState extends State<_Reveal> {
+  bool _shown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(Duration(milliseconds: widget.delayMs), () {
+      if (mounted) setState(() => _shown = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedOpacity(
+    opacity: _shown ? 1 : 0,
+    duration: const Duration(milliseconds: 480),
+    curve: Curves.easeOut,
+    child: AnimatedSlide(
+      offset: _shown ? Offset.zero : const Offset(0, 0.08),
+      duration: const Duration(milliseconds: 480),
+      curve: Curves.easeOut,
+      child: widget.child,
+    ),
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// COUNT-UP NUMBER — used in the stats bar
+// ═════════════════════════════════════════════════════════════════════════════
+class _CountUp extends StatelessWidget {
+  final int target;
+  final String suffix;
+  final TextStyle style;
+  const _CountUp({required this.target, required this.suffix, required this.style});
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<int>(
+    tween: IntTween(begin: 0, end: target),
+    duration: const Duration(milliseconds: 1400),
+    curve: Curves.easeOutCubic,
+    builder: (context, value, child) => Text('${_commas(value)}$suffix', style: style),
   );
 }
 
@@ -916,14 +1208,93 @@ class _Section extends StatelessWidget {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// SMART FILTER TOGGLE CHIP (looks like a dropdown, expands the price slider)
+// ═════════════════════════════════════════════════════════════════════════════
+class _FilterToggleChip extends StatelessWidget {
+  final bool expanded;
+  final bool active;
+  final String label;
+  final VoidCallback onTap;
+  const _FilterToggleChip({
+    required this.expanded,
+    required this.active,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => _Tappable(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(10),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: active ? kGoldSoft : kSlate100,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: active ? kGold.withValues(alpha: 0.5) : kSlate200),
+      ),
+      child: Row(children: [
+        Expanded(
+          child: Text(label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12.5,
+                  color: active ? kSlate800 : kSlate600,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w400)),
+        ),
+        AnimatedRotation(
+          turns: expanded ? 0.5 : 0,
+          duration: const Duration(milliseconds: 220),
+          child: const Icon(Icons.keyboard_arrow_down, color: kSlate400, size: 18),
+        ),
+      ]),
+    ),
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// FAVORITE HEART — quick, tactile bookmarking with no backend round-trip
+// ═════════════════════════════════════════════════════════════════════════════
+class _FavoriteButton extends StatelessWidget {
+  final bool isFavorite;
+  final VoidCallback onTap;
+  const _FavoriteButton({required this.isFavorite, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => _Tappable(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(20),
+    child: Container(
+      width: 32, height: 32,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        shape: BoxShape.circle,
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 180),
+        transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+        child: Icon(
+          isFavorite ? Icons.favorite : Icons.favorite_border,
+          key: ValueKey(isFavorite),
+          size: 16,
+          color: isFavorite ? kGold : kWhite,
+        ),
+      ),
+    ),
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // PROPERTY CARD
 // ═════════════════════════════════════════════════════════════════════════════
 class _PropCard extends StatelessWidget {
   final Map<String, dynamic> property;
   final String priceSuffix;
   final String? badge;
+  final bool dark;
   final VoidCallback onTap, onAction;
   final String actionLabel;
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
 
   const _PropCard({
     required this.property,
@@ -931,6 +1302,9 @@ class _PropCard extends StatelessWidget {
     required this.onTap,
     required this.actionLabel,
     required this.onAction,
+    required this.isFavorite,
+    required this.onToggleFavorite,
+    this.dark = false,
     this.badge,
   });
 
@@ -943,15 +1317,24 @@ class _PropCard extends StatelessWidget {
         ? formatPaymentPeriodLabel(paymentDurationMonths(p['payment_duration_months']))
         : priceSuffix;
 
+    final surfaceColor = dark ? kWhite.withValues(alpha: 0.08) : kSurface;
+    final borderColor  = dark ? kWhite.withValues(alpha: 0.12) : kSlate200;
+    final titleColor    = dark ? kWhite : kSlate800;
+    final locationColor = kSlate400;
+    final dividerColor  = dark ? const Color(0x1FFFFFFF) : kSlate200;
+    final priceColor    = dark ? kWhite : kSlate800;
+    final btnBg   = dark ? kWhite : kSlate800;
+    final btnText = dark ? kSlate800 : kWhite;
+
     return _Tappable(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
-          color: kSurface,
-          border: Border.all(color: kSlate200),
+          color: surfaceColor,
+          border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [
+          boxShadow: dark ? null : [
             BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 14, offset: const Offset(0, 6)),
           ],
         ),
@@ -978,6 +1361,8 @@ class _PropCard extends StatelessWidget {
               if (badge != null)
                 Positioned(top: 10, right: 10,
                     child: _Chip(label: badge!, bg: kWhite, fg: kSlate800)),
+              Positioned(bottom: 10, right: 10,
+                  child: _FavoriteButton(isFavorite: isFavorite, onTap: onToggleFavorite)),
             ]),
           ),
           // Body
@@ -990,23 +1375,23 @@ class _PropCard extends StatelessWidget {
                         letterSpacing: 1.5, color: kSlate400)),
               const SizedBox(height: 4),
               Text(p['title'] ?? 'Untitled',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kSlate800),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: titleColor),
                   maxLines: 1, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 4),
               Row(children: [
-                const Icon(Icons.location_on_outlined, size: 11, color: kSlate400),
+                Icon(Icons.location_on_outlined, size: 11, color: locationColor),
                 const SizedBox(width: 3),
                 Expanded(child: Text(p['location'] ?? p['address'] ?? 'Africa',
-                    style: const TextStyle(fontSize: 11, color: kSlate400),
+                    style: TextStyle(fontSize: 11, color: locationColor),
                     maxLines: 1, overflow: TextOverflow.ellipsis)),
               ]),
               const SizedBox(height: 12),
-              const Divider(color: kSlate200, height: 1),
+              Divider(color: dividerColor, height: 1),
               const SizedBox(height: 12),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(fmtPrice(price),
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: kSlate800)),
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: priceColor)),
                   Text(suffix,
                       style: const TextStyle(fontSize: 10, color: kSlate400)),
                 ]),
@@ -1017,12 +1402,12 @@ class _PropCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                     decoration: BoxDecoration(
-                      color: kSlate800,
+                      color: btnBg,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(actionLabel,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                            color: kWhite, letterSpacing: 0.3)),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                            color: btnText, letterSpacing: 0.3)),
                   ),
                 ),
               ]),
@@ -1040,7 +1425,14 @@ class _PropCard extends StatelessWidget {
 class _CommCard extends StatelessWidget {
   final Map<String, dynamic> property;
   final VoidCallback onTap;
-  const _CommCard({required this.property, required this.onTap});
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
+  const _CommCard({
+    required this.property,
+    required this.onTap,
+    required this.isFavorite,
+    required this.onToggleFavorite,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1088,6 +1480,8 @@ class _CommCard extends StatelessWidget {
                     fg: kWhite,
                     bordered: true,
                   )),
+              Positioned(bottom: 10, right: 10,
+                  child: _FavoriteButton(isFavorite: isFavorite, onTap: onToggleFavorite)),
             ]),
           ),
           Padding(
@@ -1415,7 +1809,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// BOOKING FORM
+// BOOKING FORM — now with live, smart validation
 // ═════════════════════════════════════════════════════════════════════════════
 class _BookingForm extends StatefulWidget {
   final Map<String, dynamic> property;
@@ -1431,6 +1825,18 @@ class _BookingFormState extends State<_BookingForm> {
   DateTime? _checkIn, _checkOut;
   bool _loading = false;
 
+  static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+  @override
+  void initState() {
+    super.initState();
+    for (final c in [_nameCtrl, _emailCtrl, _phoneCtrl]) {
+      c.addListener(_refresh);
+    }
+  }
+
+  void _refresh() { if (mounted) setState(() {}); }
+
   @override void dispose() {
     _nameCtrl.dispose(); _emailCtrl.dispose();
     _phoneCtrl.dispose(); _reqCtrl.dispose();
@@ -1442,7 +1848,15 @@ class _BookingFormState extends State<_BookingForm> {
     return _checkOut!.difference(_checkIn!).inDays;
   }
 
+  bool get _canSubmit =>
+      _nameCtrl.text.trim().isNotEmpty &&
+      _emailRe.hasMatch(_emailCtrl.text.trim()) &&
+      _phoneCtrl.text.trim().isNotEmpty &&
+      _checkIn != null && _checkOut != null &&
+      _checkOut!.isAfter(_checkIn!);
+
   Future<void> _submit() async {
+    if (!_canSubmit) return;
     setState(() => _loading = true);
     try {
       final price = num.tryParse(widget.property['price']?.toString() ?? '0') ?? 0;
@@ -1484,13 +1898,13 @@ class _BookingFormState extends State<_BookingForm> {
     }
   }
 
-  InputDecoration _inp(String hint) => InputDecoration(
+  InputDecoration _inp(String hint, {bool invalid = false}) => InputDecoration(
     hintText: hint,
     hintStyle: const TextStyle(color: kSlate400, fontSize: 13),
     filled: true, fillColor: kSlate100,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    border:        OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kSlate200)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kSlate200)),
+    border:        OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: invalid ? Colors.redAccent.withValues(alpha: 0.5) : kSlate200)),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: invalid ? Colors.redAccent.withValues(alpha: 0.5) : kSlate200)),
     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kGold, width: 1.4)),
   );
 
@@ -1526,6 +1940,9 @@ class _BookingFormState extends State<_BookingForm> {
   @override
   Widget build(BuildContext context) {
     final price = num.tryParse(widget.property['price']?.toString() ?? '0') ?? 0;
+    final emailTyped = _emailCtrl.text.trim().isNotEmpty;
+    final emailInvalid = emailTyped && !_emailRe.hasMatch(_emailCtrl.text.trim());
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1549,7 +1966,12 @@ class _BookingFormState extends State<_BookingForm> {
       const SizedBox(height: 10),
       TextField(controller: _emailCtrl, keyboardType: TextInputType.emailAddress,
           style: const TextStyle(color: kSlate800, fontSize: 13),
-          decoration: _inp('Email address')),
+          decoration: _inp('Email address', invalid: emailInvalid)),
+      if (emailInvalid) Padding(
+        padding: const EdgeInsets.only(top: 4, left: 4),
+        child: Text('Enter a valid email so the owner can reach you',
+            style: TextStyle(fontSize: 11, color: Colors.redAccent.withValues(alpha: 0.8))),
+      ),
       const SizedBox(height: 10),
       TextField(controller: _phoneCtrl, keyboardType: TextInputType.phone,
           style: const TextStyle(color: kSlate800, fontSize: 13),
@@ -1558,11 +1980,14 @@ class _BookingFormState extends State<_BookingForm> {
       Row(children: [
         Expanded(child: _datePicker('Check-in', _checkIn, () async {
           final d = await _pickDate(DateTime.now());
-          if (d != null) setState(() => _checkIn = d);
+          if (d != null) setState(() {
+            _checkIn = d;
+            if (_checkOut != null && !_checkOut!.isAfter(_checkIn!)) _checkOut = null;
+          });
         })),
         const SizedBox(width: 8),
         Expanded(child: _datePicker('Check-out', _checkOut, () async {
-          final d = await _pickDate(_checkIn ?? DateTime.now());
+          final d = await _pickDate((_checkIn ?? DateTime.now()).add(const Duration(days: 1)));
           if (d != null) setState(() => _checkOut = d);
         })),
       ]),
@@ -1604,13 +2029,13 @@ class _BookingFormState extends State<_BookingForm> {
         )),
         const SizedBox(width: 10),
         Expanded(flex: 2, child: _Tappable(
-          onTap: _loading ? null : _submit,
+          onTap: (_loading || !_canSubmit) ? null : _submit,
           borderRadius: BorderRadius.circular(8),
           splashColor: kWhite.withValues(alpha: 0.15),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 13),
             decoration: BoxDecoration(
-              color: kSlate800,
+              color: (_canSubmit) ? kSlate800 : kSlate400,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(_loading ? 'Submitting…' : 'Book Now',
