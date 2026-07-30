@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Users, MessageSquare, Phone, Mail, Home, X, CheckCircle, XCircle, Clock, RefreshCw, ChevronDown, LayoutGrid, CalendarDays } from 'lucide-react';
+import { Calendar, Users, MessageSquare, Phone, Mail, Home, X, CheckCircle, XCircle, Clock, RefreshCw, ChevronDown, Eye, CalendarDays, Table2 } from 'lucide-react';
 import Api from '../../services/api';
 import BnbAvailabilityCalendar from '../../components/bnb/BnbAvailabilityCalendar';
 
@@ -121,6 +121,7 @@ const StatusBadge = ({ status }: { status: string }) => {
       background:     `${cfg.color}18`,
       color:          cfg.color,
       border:         `1px solid ${cfg.color}30`,
+      whiteSpace:     'nowrap',
     }}>
       <Icon size={11} />
       {cfg.label}
@@ -171,6 +172,7 @@ const StatusUpdater = ({
           fontWeight:   600,
           cursor:       loading ? 'wait' : 'pointer',
           transition:   'all 0.15s',
+          whiteSpace:   'nowrap',
         }}
       >
         {loading ? <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> : null}
@@ -231,7 +233,7 @@ const StatusUpdater = ({
   );
 };
 
-// ─── Detail Modal ────────────────────────────────────────────────────────────
+// ─── Detail Modal (the "card view" a row expands into) ──────────────────────
 const DetailModal = ({
   booking,
   onClose,
@@ -346,7 +348,7 @@ const BnbBookings = () => {
   const [searchTerm,     setSearchTerm]     = useState('');
   const [statusFilter,   setStatusFilter]   = useState('all');
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | ''>('');
-  const [viewMode,       setViewMode]       = useState<'list' | 'calendar'>('list');
+  const [viewMode,       setViewMode]       = useState<'table' | 'calendar'>('table');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [toast,          setToast]          = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -415,6 +417,26 @@ const BnbBookings = () => {
     return acc;
   }, {} as Record<string, number>);
 
+  const th: React.CSSProperties = {
+    textAlign:     'left',
+    padding:       '12px 14px',
+    fontSize:      11,
+    fontWeight:    700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color:         t.muted,
+    borderBottom:  `1px solid ${t.border}`,
+    whiteSpace:    'nowrap',
+  };
+
+  const td: React.CSSProperties = {
+    padding:      '14px',
+    fontSize:     13.5,
+    color:        t.ink,
+    borderBottom: `1px solid ${t.border}`,
+    verticalAlign: 'top',
+  };
+
   return (
     <div style={{ padding: '28px 24px', maxWidth: 1400, margin: '0 auto', backgroundColor: t.bg, minHeight: '100vh', ...body }}>
       <style>{`
@@ -422,12 +444,15 @@ const BnbBookings = () => {
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-        .bk-card { background: ${t.surface}; border: 1px solid ${t.border}; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; animation: fadeIn 0.3s ease both; box-shadow: 0 1px 2px rgba(28,25,23,0.04); }
-        .bk-card:hover { border-color: ${t.gold}50; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(28,25,23,0.08); }
         .stat-pill { background: ${t.surface}; border: 1px solid ${t.border}; border-radius: 10px; padding: 12px 18px; text-align: center; min-width: 90px; }
         .filter-input { padding: 10px 14px; border: 1px solid ${t.border}; border-radius: 8px; background: ${t.surface2}; color: ${t.ink}; font-size: 14px; outline: none; transition: border-color 0.2s; font-family: Inter, sans-serif; }
         .filter-input:focus { border-color: ${t.gold}80; }
         .filter-input option { background: ${t.surface}; }
+        .bk-row { transition: background 0.15s; animation: fadeIn 0.25s ease both; }
+        .bk-row:hover { background: ${t.surface2}; }
+        .bk-table { width: 100%; border-collapse: collapse; }
+        .view-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; background: ${t.gold}; border: none; border-radius: 7px; color: ${t.onAccent}; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; white-space: nowrap; font-family: Inter, sans-serif; }
+        .view-btn:hover { opacity: 0.88; }
       `}</style>
 
       {/* Toast */}
@@ -514,15 +539,15 @@ const BnbBookings = () => {
         <div style={{ display: 'flex', gap: 4, background: t.surface2, borderRadius: 8, padding: 4, border: `1px solid ${t.border}` }}>
           <button
             type="button"
-            onClick={() => setViewMode('list')}
+            onClick={() => setViewMode('table')}
             style={{
               ...body, display: 'flex', alignItems: 'center', gap: 5, padding: '8px 12px',
               border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-              background: viewMode === 'list' ? t.surface : 'transparent',
-              color: viewMode === 'list' ? t.ink : t.muted,
+              background: viewMode === 'table' ? t.surface : 'transparent',
+              color: viewMode === 'table' ? t.ink : t.muted,
             }}
           >
-            <LayoutGrid size={14} /> List
+            <Table2 size={14} /> Table
           </button>
           <button
             type="button"
@@ -582,109 +607,84 @@ const BnbBookings = () => {
       )}
 
       {/* Content */}
-      {viewMode === 'list' && loading ? (
-        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
+      {viewMode === 'table' && loading ? (
+        <div style={{ ...card }}>
           {[0,1,2,3,4,5].map((i) => (
-            <div key={i} style={{ height: 180, borderRadius: 12, background: `linear-gradient(90deg, ${t.surface2} 25%, #FFFFFF 50%, ${t.surface2} 75%)`, backgroundSize: '400% 100%', animation: 'shimmer 1.4s ease infinite', border: `1px solid ${t.border}` }} />
+            <div key={i} style={{ height: 52, background: `linear-gradient(90deg, ${t.surface2} 25%, #FFFFFF 50%, ${t.surface2} 75%)`, backgroundSize: '400% 100%', animation: 'shimmer 1.4s ease infinite', borderBottom: `1px solid ${t.border}` }} />
           ))}
         </div>
-      ) : viewMode === 'list' && bookings.length === 0 ? (
+      ) : viewMode === 'table' && bookings.length === 0 ? (
         <div style={{ ...card, textAlign: 'center', padding: '80px 24px', animation: 'fadeIn 0.4s ease' }}>
           <Calendar size={40} style={{ color: t.muted, marginBottom: 16 }} />
           <div style={{ ...serif, fontSize: 20, fontWeight: 600, color: t.ink, marginBottom: 8 }}>No bookings found</div>
           <div style={{ fontSize: 14, color: t.muted }}>Bookings will appear here once guests submit requests.</div>
         </div>
-      ) : viewMode === 'list' ? (
-        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
-          {bookings.map((booking, idx) => {
-            const guest  = getGuestInfo(booking);
-            const nights = getNights(booking.check_in, booking.check_out);
+      ) : viewMode === 'table' ? (
+        <div style={{ ...card, overflowX: 'auto' }}>
+          <table className="bk-table">
+            <thead>
+              <tr>
+                <th style={th}>Property</th>
+                <th style={th}>Guest</th>
+                <th style={th}>Check-in</th>
+                <th style={th}>Check-out</th>
+                <th style={th}>Nights</th>
+                <th style={th}>Guests</th>
+                <th style={th}>Amount</th>
+                <th style={th}>Status</th>
+                <th style={{ ...th, textAlign: 'right' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bookings.map((booking, idx) => {
+                const guest  = getGuestInfo(booking);
+                const nights = getNights(booking.check_in, booking.check_out);
 
-            return (
-              <div
-                key={booking.id}
-                className="bk-card"
-                style={{ animationDelay: `${idx * 0.04}s` }}
-                onClick={() => setSelectedBooking(booking)}
-              >
-                {/* Card Top */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ ...serif, fontSize: 16, fontWeight: 600, color: t.gold, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {booking.property?.title || `Property #${booking.property_id}`}
-                    </div>
-                    <div style={{ fontSize: 13, color: t.muted, display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Users size={12} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guest.name}</span>
-                    </div>
-                  </div>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <StatusUpdater booking={booking} onUpdate={handleStatusUpdate} />
-                  </div>
-                </div>
-
-                {/* Contact chips */}
-                {(guest.email || guest.phone) && (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-                    {guest.email && (
-                      <a
-                        href={`mailto:${guest.email}`}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: t.muted, textDecoration: 'none', background: t.surface2, padding: '3px 8px', borderRadius: 6 }}
-                      >
-                        <Mail size={10} />{guest.email}
-                      </a>
-                    )}
-                    {guest.phone && (
-                      <a
-                        href={`tel:${guest.phone}`}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: t.muted, textDecoration: 'none', background: t.surface2, padding: '3px 8px', borderRadius: 6 }}
-                      >
-                        <Phone size={10} />{guest.phone}
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {/* Dates */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                  {[
-                    { label: 'Check-in',  value: formatDate(booking.check_in)  },
-                    { label: 'Check-out', value: formatDate(booking.check_out) },
-                  ].map(({ label, value }) => (
-                    <div key={label} style={{ background: t.surface2, borderRadius: 8, padding: '8px 10px', border: `1px solid ${t.border}` }}>
-                      <div style={{ fontSize: 10, color: t.muted, marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
-                      <div style={{ fontSize: 13, color: t.ink, fontWeight: 500 }}>{value}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Footer */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ ...serif, fontSize: 18, fontWeight: 700, color: t.green }}>
+                return (
+                  <tr key={booking.id} className="bk-row" style={{ animationDelay: `${idx * 0.03}s` }}>
+                    <td style={{ ...td, maxWidth: 220 }}>
+                      <div style={{ ...serif, fontWeight: 600, color: t.gold, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {booking.property?.title || `Property #${booking.property_id}`}
+                      </div>
+                      {booking.special_requests && booking.special_requests.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 11, color: t.muted }}>
+                          <MessageSquare size={10} /> Has requests
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ ...td, maxWidth: 200 }}>
+                      <div style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guest.name}</div>
+                      {(guest.email || guest.phone) && (
+                        <div style={{ fontSize: 11.5, color: t.muted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {guest.email || guest.phone}
+                        </div>
+                      )}
+                    </td>
+                    <td style={td}>{formatDate(booking.check_in)}</td>
+                    <td style={td}>{formatDate(booking.check_out)}</td>
+                    <td style={td}>{nights}</td>
+                    <td style={td}>{booking.guests}</td>
+                    <td style={{ ...td, ...serif, fontWeight: 700, color: t.green, whiteSpace: 'nowrap' }}>
                       {formatCurrency(booking.total_price)}
-                    </div>
-                    <div style={{ fontSize: 11, color: t.muted }}>{nights} night{nights !== 1 ? 's' : ''} · {booking.guests} guest{booking.guests !== 1 ? 's' : ''}</div>
-                  </div>
-                  <StatusBadge status={booking.status} />
-                </div>
-
-                {/* Special requests */}
-                {booking.special_requests && booking.special_requests.length > 0 && (
-                  <div style={{ marginTop: 10, padding: '7px 10px', background: t.surface2, borderRadius: 7, fontSize: 12, color: t.muted, display: 'flex', gap: 6, border: `1px solid ${t.border}` }}>
-                    <MessageSquare size={12} style={{ flexShrink: 0, marginTop: 1 }} />
-                    <span>{booking.special_requests.join(', ')}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                    </td>
+                    <td style={td}><StatusBadge status={booking.status} /></td>
+                    <td style={{ ...td, textAlign: 'right' }}>
+                      <button
+                        className="view-btn"
+                        onClick={() => setSelectedBooking(booking)}
+                      >
+                        <Eye size={13} /> View
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : null}
 
-      {/* Detail Modal */}
+      {/* Detail Modal — clicking "View" opens the full card-style breakdown */}
       {selectedBooking && (
         <DetailModal
           booking={selectedBooking}

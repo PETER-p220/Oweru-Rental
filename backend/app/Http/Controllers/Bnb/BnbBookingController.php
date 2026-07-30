@@ -322,7 +322,7 @@ class BnbBookingController extends Controller
             $query->where('status', $request->status);
         }
 
-        $bookings = $query->paginate($request->per_page ?? 20);
+        $bookings = $query->paginate(min(max((int) ($request->per_page ?? 100), 1), 200));
 
         return response()->json([
             'data' => collect($bookings->items())->map(fn (BnbBooking $b) => $this->formatBooking($b))->values(),

@@ -36,7 +36,7 @@ const MyBnbStays = () => {
 
   const loadAllBookings = async () => {
     try {
-      const res = await Api.getMyBnbBookings();
+      const res = await Api.getMyBnbBookings({ per_page: 100 });
       setAllBookings(Array.isArray(res.data) ? res.data : []);
     } catch {
       setAllBookings([]);
@@ -47,7 +47,7 @@ const MyBnbStays = () => {
     try {
       setLoading(true);
       setError('');
-      const res = await Api.getMyBnbBookings(statusFilter !== 'all' ? { status: statusFilter } : undefined);
+      const res = await Api.getMyBnbBookings({ per_page: 100, ...(statusFilter !== 'all' ? { status: statusFilter } : {}) });
       const rows = Array.isArray(res.data) ? res.data : [];
       setBookings(rows);
       if (statusFilter === 'all') {

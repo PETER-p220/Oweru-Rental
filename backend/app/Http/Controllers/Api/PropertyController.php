@@ -196,21 +196,31 @@ class PropertyController extends Controller
     public function publicBnbIndex(Request $request): JsonResponse
     {
         try {
-            $properties = BnbProperty::publiclyVisible()
-                ->orderByDesc('created_at')
-                ->limit(8)
-                ->get();
+            $query = BnbProperty::publiclyVisible()->orderByDesc('created_at');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('location', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%");
+                });
+            }
+
+            $perPage = min(max((int) ($request->per_page ?? 50), 1), 100);
+            $properties = $query->limit($perPage)->get();
 
             $items = $properties
                 ->map(fn (BnbProperty $property) => $property->toPublicListingArray())
                 ->values()
                 ->all();
 
-            return response()->json($items);
+            return response()->json(['data' => $items]);
         } catch (\Exception $e) {
             Log::warning('publicBnbIndex failed', ['error' => $e->getMessage()]);
 
-            return response()->json([]);
+            return response()->json(['data' => []]);
         }
     }
 

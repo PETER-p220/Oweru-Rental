@@ -16,6 +16,8 @@ import 'notifications_page.dart';
 import 'analytics_page.dart';
 import 'application_status_page.dart';
 import 'properties_page.dart';
+import 'tenant_browse_bnb_page.dart';
+import 'tenant_my_bnb_stays_page.dart';
 import '../../../../core/utils/property_images.dart';
 import 'tenant_theme.dart';
 
@@ -82,6 +84,8 @@ class _TenantDashboardState extends State<TenantDashboard>
     {'label': 'Application Status','icon': Icons.assignment_turned_in_rounded, 'index': 9},
     {'label': 'Analytics',         'icon': Icons.analytics_rounded,            'index': 10},
     {'label': 'Settings',          'icon': Icons.tune_rounded,                 'index': 11},
+    {'label': 'Browse BnB',        'icon': Icons.bed_rounded,                  'index': 12},
+    {'label': 'My Stays',          'icon': Icons.night_shelter_rounded,        'index': 13},
   ];
 
   @override
@@ -380,6 +384,8 @@ class _TenantDashboardState extends State<TenantDashboard>
       case 9:  return const ApplicationStatusPage();
       case 10: return const TenantAnalyticsPage();
       case 11: return _settings();
+      case 12: return const TenantBrowseBnbPage();
+      case 13: return const TenantMyBnbStaysPage();
       default: return _dashboard();
     }
   }

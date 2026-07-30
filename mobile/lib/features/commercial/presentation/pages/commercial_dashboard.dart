@@ -6,6 +6,12 @@ import '../../../shared/widgets/logout_button.dart';
 import '../../../shared/services/user_service.dart';
 import '../../../shared/services/commercial_api_service.dart';
 import 'commercial_applications_page.dart';
+import 'commercial_analytics_page.dart';
+import 'commercial_reports_page.dart';
+import 'commercial_profile_page.dart';
+import 'commercial_payments_page.dart';
+import 'commercial_notifications_page.dart';
+import '../../../../shared/widgets/shared_messages_page.dart';
 import '../../../../core/utils/property_images.dart';
 import 'commercial_properties_page.dart';
 
@@ -66,10 +72,12 @@ class _CommercialDashboardState extends State<CommercialDashboard>
   ];
 
   final List<Map<String, dynamic>> _drawerItems = [
-    {'label': 'Reports',  'icon': Icons.summarize_outlined,         'index': 4},
-    {'label': 'Messages', 'icon': Icons.chat_bubble_outline_rounded, 'index': 5},
-    {'label': 'Profile',  'icon': Icons.person_outline,             'index': 6},
-    {'label': 'Settings', 'icon': Icons.tune_outlined,              'index': 7},
+    {'label': 'Reports',       'icon': Icons.summarize_outlined,            'index': 4},
+    {'label': 'Payments',      'icon': Icons.payments_outlined,             'index': 8},
+    {'label': 'Notifications', 'icon': Icons.notifications_outlined,        'index': 9},
+    {'label': 'Messages',      'icon': Icons.chat_bubble_outline_rounded,   'index': 5},
+    {'label': 'Profile',       'icon': Icons.person_outline,                'index': 6},
+    {'label': 'Settings',      'icon': Icons.tune_outlined,                 'index': 7},
   ];
 
   final Map<int, int> _bottomToPage = {0: 0, 1: 1, 2: 2, 3: 3};
@@ -99,7 +107,9 @@ class _CommercialDashboardState extends State<CommercialDashboard>
       setState(() {
         if (results[0] is Map<String, dynamic>) {
           final statsData = results[0] as Map<String, dynamic>;
-          _stats = (statsData['data'] as Map<String, dynamic>?) ?? {};
+          _stats = (statsData['stats'] as Map<String, dynamic>?) ??
+              (statsData['data'] as Map<String, dynamic>?) ??
+              {};
         }
         if (results[1] is List) _properties = (results[1] as List).cast<Map<String, dynamic>>().take(5).toList();
         if (results[2] is List) _applications = (results[2] as List).cast();
@@ -276,11 +286,13 @@ class _CommercialDashboardState extends State<CommercialDashboard>
       case 0:  return _dashboard();
       case 1:  return const CommercialPropertiesPage();
       case 2:  return const CommercialApplicationsPage();
-      case 3:  return _emptyPage('Analytics',  Icons.bar_chart_outlined,   'Analytics coming soon',   'Occupancy rates, revenue trends, and portfolio insights.');
-      case 4:  return _emptyPage('Reports',    Icons.summarize_outlined,   'No reports yet',          'Generated reports and documents will appear here.');
-      case 5:  return _emptyPage('Messages',   Icons.chat_bubble_outline_rounded, 'No messages yet', 'Conversations with tenants and agents will appear here.');
-      case 6:  return _emptyPage('Profile',    Icons.person_outline,       'Profile coming soon',     'Your business profile and credentials.');
+      case 3:  return const CommercialAnalyticsPage();
+      case 4:  return const CommercialReportsPage();
+      case 5:  return const SharedMessagesPage(role: MessagesRole.landlord, showAppBar: false);
+      case 6:  return const CommercialProfilePage();
       case 7:  return _settings();
+      case 8:  return const CommercialPaymentsPage();
+      case 9:  return const CommercialNotificationsPage();
       default: return _dashboard();
     }
   }

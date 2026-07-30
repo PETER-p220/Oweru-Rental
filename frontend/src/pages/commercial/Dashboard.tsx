@@ -89,18 +89,18 @@ const Dashboard: React.FC = () => {
         .cd-add-btn:hover { transform: translateY(-2px); background: #1E293B; box-shadow: 0 10px 24px rgba(15,23,42,0.18); }
         .verified-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; background: #ECFDF5; border: 1px solid #BBF7D0; border-radius: 20px; color: #166534; font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; }
 
-        /* ── Smart stat cards, same recipe as the tenant dashboard: tone bar + icon chip ── */
-        .cd-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-        .cd-stat { position: relative; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px 20px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; overflow: hidden; }
+        /* ── Smart stat cards — compact, professional: tone bar + icon chip ── */
+        .cd-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+        .cd-stat { position: relative; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 13px 14px; box-shadow: 0 1px 2px rgba(15,23,42,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; overflow: hidden; min-width: 0; }
         .cd-stat::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--tone-solid); }
-        .cd-stat:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(15,23,42,0.09); border-color: #CBD5E1; }
-        .cd-stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
-        .cd-stat-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--tone-bg); color: var(--tone-solid); flex-shrink: 0; }
-        .cd-stat-trend { display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; }
+        .cd-stat:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(15,23,42,0.08); border-color: #CBD5E1; }
+        .cd-stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 6px; }
+        .cd-stat-icon { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--tone-bg); color: var(--tone-solid); flex-shrink: 0; }
+        .cd-stat-trend { display: flex; align-items: center; gap: 2px; font-size: 10px; font-weight: 700; flex-shrink: 0; white-space: nowrap; }
         .cd-stat-trend.up { color: #059669; }
         .cd-stat-trend.down { color: #E11D48; }
-        .cd-stat-value { font-size: clamp(19px, 3vw, 25px); font-weight: 800; color: #0F172A; margin-bottom: 4px; letter-spacing: -0.02em; }
-        .cd-stat-label { font-size: 11.5px; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+        .cd-stat-value { font-size: clamp(15px, 1.6vw, 19px); font-weight: 800; color: #0F172A; margin-bottom: 2px; letter-spacing: -0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cd-stat-label { font-size: 10px; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .tone-blue { --tone-bg: #EFF6FF; --tone-solid: #2563EB; }
         .tone-rose { --tone-bg: #FFF1F2; --tone-solid: #E11D48; }
@@ -151,8 +151,12 @@ const Dashboard: React.FC = () => {
         /* ── Skeleton loading, same recipe as the tenant dashboard ── */
         .cd-skel-shimmer { background: linear-gradient(90deg, #E2E8F0 25%, #EDF1F5 37%, #E2E8F0 63%); background-size: 400% 100%; animation: cd-shimmer 1.4s ease infinite; border-radius: 10px; }
         @keyframes cd-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
-        .cd-skel-stat { height: 100px; border-radius: 14px; }
+        .cd-skel-stat { height: 78px; border-radius: 12px; }
         .cd-skel-panel { height: 260px; border-radius: 16px; }
+
+        @media (max-width: 1200px) {
+          .cd-stats { grid-template-columns: repeat(3, 1fr); }
+        }
 
         @media (max-width: 1024px) {
           .cd-header-inner { padding: 32px 28px 26px; }
@@ -166,13 +170,13 @@ const Dashboard: React.FC = () => {
           .cd-section { margin-bottom: 22px; }
           .cd-heading { font-size: 22px; }
 
-          .cd-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-          .cd-stat { padding: 14px 16px; border-radius: 12px; }
-          .cd-stat-top { margin-bottom: 10px; }
-          .cd-stat-icon { width: 28px; height: 28px; border-radius: 8px; }
-          .cd-stat-value { font-size: 19px; }
-          .cd-stat-label { font-size: 10.5px; }
-          .cd-skel-stat { height: 84px; }
+          .cd-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+          .cd-stat { padding: 11px 12px; border-radius: 11px; }
+          .cd-stat-top { margin-bottom: 8px; }
+          .cd-stat-icon { width: 24px; height: 24px; border-radius: 7px; }
+          .cd-stat-value { font-size: 16px; }
+          .cd-stat-label { font-size: 9.5px; }
+          .cd-skel-stat { height: 70px; }
 
           .cd-two-col { grid-template-columns: 1fr; }
           .cd-row { padding: 12px 16px; gap: 10px; }
@@ -180,7 +184,9 @@ const Dashboard: React.FC = () => {
         }
 
         @media (max-width: 380px) {
-          .cd-stats { grid-template-columns: 1fr 1fr; }
+          .cd-stats { grid-template-columns: 1fr 1fr; gap: 7px; }
+          .cd-stat { padding: 10px 11px; }
+          .cd-stat-value { font-size: 15px; }
         }
       `}</style>
 
@@ -216,9 +222,9 @@ const Dashboard: React.FC = () => {
                 return (
                   <div key={i} className={`cd-stat tone-${c.tone}`}>
                     <div className="cd-stat-top">
-                      <div className="cd-stat-icon"><Icon size={18} /></div>
+                      <div className="cd-stat-icon"><Icon size={14} /></div>
                       <span className={`cd-stat-trend ${c.up ? 'up' : 'down'}`}>
-                        {c.up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}{c.change}%
+                        {c.up ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}{c.change}%
                       </span>
                     </div>
                     <div className="cd-stat-value">{c.fmt(c.value as number)}</div>

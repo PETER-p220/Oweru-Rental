@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../shared/widgets/app_navbar.dart';
 import '../../../shared/pages/public_property_detail_page.dart';
+import '../../../tenant/presentation/pages/tenant_bnb_property_detail_page.dart';
 import '../../../../core/utils/payment_duration.dart';
 import '../../../../core/utils/property_images.dart';
 
@@ -101,11 +102,38 @@ Future<List<Map<String, dynamic>>> fetchResidential() async {
 }
 
 Future<List<Map<String, dynamic>>> fetchBnb() async {
+  Map<String, dynamic> normalizeBnb(Map<String, dynamic> p) {
+    final row = Map<String, dynamic>.from(p);
+    final thumb = getPropertyImageUrl(p);
+    if (thumb.isNotEmpty) row['thumbnail'] = thumb;
+    return row;
+  }
+
+  List<Map<String, dynamic>> parse(dynamic payload) => _extractPropertyList(payload)
+      .where((p) => p['id'] != 999)
+      .map(normalizeBnb)
+      .toList();
+
   try {
-    final r = await http.get(Uri.parse('$kApiBase/public/bnb'),
-        headers: {'Accept': 'application/json'});
-    if (r.statusCode == 200) return _extractPropertyList(jsonDecode(r.body));
-  } catch (e) { debugPrint('fetchBnb error: $e'); }
+    final primary = await http.get(
+      Uri.parse('$kApiBase/public/bnb'),
+      headers: {'Accept': 'application/json'},
+    );
+    if (primary.statusCode == 200) {
+      final list = parse(jsonDecode(primary.body));
+      if (list.isNotEmpty) return list;
+    }
+
+    final fallback = await http.get(
+      Uri.parse('$kApiBase/public/bnb/search'),
+      headers: {'Accept': 'application/json'},
+    );
+    if (fallback.statusCode == 200) {
+      return parse(jsonDecode(fallback.body));
+    }
+  } catch (e) {
+    debugPrint('fetchBnb error: $e');
+  }
   return [];
 }
 
@@ -876,8 +904,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ? const _SkeletonGrid(dark: true)
         : _bnb.isEmpty
             ? const _EmptyState(icon: Icons.king_bed_outlined, text: 'No short-stay listings yet', dark: true)
-            : _buildPropGrid(_bnb, priceSuffix: '/night', dark: true,
-                onAction: (p) => _showBooking(p)),
+            : _buildPropGrid(
+                _bnb,
+                priceSuffix: '/night',
+                dark: true,
+                actionLabel: 'Book Now',
+                onTap: (p) => _navigateToBnbProperty(p),
+                onAction: (p) => _navigateToBnbProperty(p),
+              ),
   );
 
   Widget _buildOweruSection() => _Section(
@@ -956,6 +990,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     String? badge,
     String priceSuffix = '/mo',
     String actionLabel = 'View Details',
+    void Function(Map<String, dynamic>)? onTap,
     void Function(Map<String, dynamic>)? onAction,
   }) {
     return LayoutBuilder(builder: (ctx, constraints) {
@@ -980,9 +1015,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     priceSuffix: priceSuffix,
                     badge: badge,
                     dark: dark,
-                    onTap: () => _navigateToProperty(p),
+                    onTap: () => (onTap ?? _navigateToProperty)(p),
                     actionLabel: actionLabel,
-                    onAction: () => onAction?.call(p),
+                    onAction: () => (onAction ?? onTap ?? _navigateToProperty)(p),
                     isFavorite: _favorites.contains(favKey),
                     onToggleFavorite: () => _toggleFavorite(p),
                   ),
@@ -999,25 +1034,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  void _showBooking(Map<String, dynamic> property) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 560),
-          decoration: BoxDecoration(
-            color: kWhite,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(28),
-            child: _BookingForm(property: property, onClose: () => Navigator.pop(context)),
-          ),
-        ),
-      ),
+  void _navigateToBnbProperty(Map<String, dynamic> property) {
+    final rawId = property['id'];
+    final id = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
+    if (id == null || id <= 0) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => TenantBnbPropertyDetailPage(propertyId: id)),
     );
   }
 }
@@ -1809,241 +1832,6 @@ class _EmptyState extends StatelessWidget {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// BOOKING FORM — now with live, smart validation
+// BOOKING FORM — removed; BnB bookings go through TenantBnbPropertyDetailPage
+// (same as web Home.tsx → property detail + authenticated /my/bnb/bookings)
 // ═════════════════════════════════════════════════════════════════════════════
-class _BookingForm extends StatefulWidget {
-  final Map<String, dynamic> property;
-  final VoidCallback onClose;
-  const _BookingForm({required this.property, required this.onClose});
-  @override State<_BookingForm> createState() => _BookingFormState();
-}
-class _BookingFormState extends State<_BookingForm> {
-  final _nameCtrl  = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _reqCtrl   = TextEditingController();
-  DateTime? _checkIn, _checkOut;
-  bool _loading = false;
-
-  static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-
-  @override
-  void initState() {
-    super.initState();
-    for (final c in [_nameCtrl, _emailCtrl, _phoneCtrl]) {
-      c.addListener(_refresh);
-    }
-  }
-
-  void _refresh() { if (mounted) setState(() {}); }
-
-  @override void dispose() {
-    _nameCtrl.dispose(); _emailCtrl.dispose();
-    _phoneCtrl.dispose(); _reqCtrl.dispose();
-    super.dispose();
-  }
-
-  int get _nights {
-    if (_checkIn == null || _checkOut == null) return 0;
-    return _checkOut!.difference(_checkIn!).inDays;
-  }
-
-  bool get _canSubmit =>
-      _nameCtrl.text.trim().isNotEmpty &&
-      _emailRe.hasMatch(_emailCtrl.text.trim()) &&
-      _phoneCtrl.text.trim().isNotEmpty &&
-      _checkIn != null && _checkOut != null &&
-      _checkOut!.isAfter(_checkIn!);
-
-  Future<void> _submit() async {
-    if (!_canSubmit) return;
-    setState(() => _loading = true);
-    try {
-      final price = num.tryParse(widget.property['price']?.toString() ?? '0') ?? 0;
-      final res = await http.post(
-        Uri.parse('$kApiBase/public/bnb/book'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'property_id': widget.property['id'],
-          'customer_name': _nameCtrl.text,
-          'customer_email': _emailCtrl.text,
-          'customer_phone': _phoneCtrl.text,
-          'check_in':  _checkIn?.toIso8601String(),
-          'check_out': _checkOut?.toIso8601String(),
-          'special_requests': _reqCtrl.text,
-          'total_amount': _nights * price,
-          'status': 'pending',
-        }),
-      );
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        widget.onClose();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Booking submitted! The owner will contact you soon.')));
-        }
-      } else {
-        final d = jsonDecode(res.body);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(d['message'] ?? 'Booking failed')));
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Network error.')));
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  InputDecoration _inp(String hint, {bool invalid = false}) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: kSlate400, fontSize: 13),
-    filled: true, fillColor: kSlate100,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    border:        OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: invalid ? Colors.redAccent.withValues(alpha: 0.5) : kSlate200)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: invalid ? Colors.redAccent.withValues(alpha: 0.5) : kSlate200)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kGold, width: 1.4)),
-  );
-
-  Widget _datePicker(String label, DateTime? value, VoidCallback onTap) => _Tappable(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(8),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: kSlate100,
-        border: Border.all(color: kSlate200),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(children: [
-        const Icon(Icons.calendar_today_outlined, size: 13, color: kSlate400),
-        const SizedBox(width: 8),
-        Text(
-          value == null ? label : '${value.day}/${value.month}/${value.year}',
-          style: TextStyle(fontSize: 13,
-              color: value == null ? kSlate400 : kSlate800),
-        ),
-      ]),
-    ),
-  );
-
-  Future<DateTime?> _pickDate(DateTime first) => showDatePicker(
-    context: context,
-    initialDate: first,
-    firstDate: first,
-    lastDate: DateTime.now().add(const Duration(days: 365)),
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final price = num.tryParse(widget.property['price']?.toString() ?? '0') ?? 0;
-    final emailTyped = _emailCtrl.text.trim().isNotEmpty;
-    final emailInvalid = emailTyped && !_emailRe.hasMatch(_emailCtrl.text.trim());
-
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Book Stay',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kSlate800)),
-          const SizedBox(height: 2),
-          Text(widget.property['title'] ?? '',
-              style: const TextStyle(fontSize: 13, color: kSlate600)),
-        ])),
-        IconButton(
-          onPressed: widget.onClose,
-          tooltip: 'Close',
-          icon: const Icon(Icons.close, color: kSlate600, size: 20),
-        ),
-      ]),
-      const SizedBox(height: 20),
-      const Divider(color: kSlate200, height: 1),
-      const SizedBox(height: 20),
-      TextField(controller: _nameCtrl, style: const TextStyle(color: kSlate800, fontSize: 13),
-          decoration: _inp('Your name')),
-      const SizedBox(height: 10),
-      TextField(controller: _emailCtrl, keyboardType: TextInputType.emailAddress,
-          style: const TextStyle(color: kSlate800, fontSize: 13),
-          decoration: _inp('Email address', invalid: emailInvalid)),
-      if (emailInvalid) Padding(
-        padding: const EdgeInsets.only(top: 4, left: 4),
-        child: Text('Enter a valid email so the owner can reach you',
-            style: TextStyle(fontSize: 11, color: Colors.redAccent.withValues(alpha: 0.8))),
-      ),
-      const SizedBox(height: 10),
-      TextField(controller: _phoneCtrl, keyboardType: TextInputType.phone,
-          style: const TextStyle(color: kSlate800, fontSize: 13),
-          decoration: _inp('Phone number')),
-      const SizedBox(height: 10),
-      Row(children: [
-        Expanded(child: _datePicker('Check-in', _checkIn, () async {
-          final d = await _pickDate(DateTime.now());
-          if (d != null) setState(() {
-            _checkIn = d;
-            if (_checkOut != null && !_checkOut!.isAfter(_checkIn!)) _checkOut = null;
-          });
-        })),
-        const SizedBox(width: 8),
-        Expanded(child: _datePicker('Check-out', _checkOut, () async {
-          final d = await _pickDate((_checkIn ?? DateTime.now()).add(const Duration(days: 1)));
-          if (d != null) setState(() => _checkOut = d);
-        })),
-      ]),
-      const SizedBox(height: 10),
-      TextField(controller: _reqCtrl, maxLines: 3,
-          style: const TextStyle(color: kSlate800, fontSize: 13),
-          decoration: _inp('Special requests (optional)')),
-      if (_nights > 0) ...[
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: kGoldSoft,
-            border: Border.all(color: kGold.withValues(alpha: 0.35)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text(fmtPrice(_nights * price),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kSlate800)),
-            Text('$_nights night${_nights != 1 ? 's' : ''}',
-                style: const TextStyle(fontSize: 12, color: kSlate600)),
-          ]),
-        ),
-      ],
-      const SizedBox(height: 20),
-      Row(children: [
-        Expanded(child: _Tappable(
-          onTap: widget.onClose,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 13),
-            decoration: BoxDecoration(
-              border: Border.all(color: kSlate200),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Text('Cancel', textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: kSlate600)),
-          ),
-        )),
-        const SizedBox(width: 10),
-        Expanded(flex: 2, child: _Tappable(
-          onTap: (_loading || !_canSubmit) ? null : _submit,
-          borderRadius: BorderRadius.circular(8),
-          splashColor: kWhite.withValues(alpha: 0.15),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 13),
-            decoration: BoxDecoration(
-              color: (_canSubmit) ? kSlate800 : kSlate400,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(_loading ? 'Submitting…' : 'Book Now',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kWhite)),
-          ),
-        )),
-      ]),
-    ]);
-  }
-}

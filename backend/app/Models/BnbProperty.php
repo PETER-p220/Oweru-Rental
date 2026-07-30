@@ -113,6 +113,7 @@ class BnbProperty extends Model
             'thumbnail'      => $thumbnail,
             'images'         => $images,
             'average_rating' => round((float) ($this->average_rating ?? 0), 1) ?: null,
+            'reviews_count' => (int) $this->reviews()->whereNotNull('comment')->count(),
             'status'         => $this->status,
             'created_at'     => $this->created_at?->toIso8601String(),
             'updated_at'     => $this->updated_at?->toIso8601String(),
@@ -191,7 +192,10 @@ class BnbProperty extends Model
 
     public function getTotalRevenueAttribute()
     {
-        return $this->bookings()->where('status', 'confirmed')->sum('total_price');
+        return $this->bookings()
+            ->where('payment_status', 'paid')
+            ->whereNotIn('status', ['cancelled'])
+            ->sum('total_price');
     }
 
     public function getOccupancyRateAttribute()

@@ -614,13 +614,16 @@ class Api {
     return this.request<any>(`my/bnb/bookings/payment/status/${encodeURIComponent(orderId)}`);
   }
 
-  static async getMyBnbBookings(filters?: { status?: string }) {
-    const params = new URLSearchParams(filters as any).toString();
-    return this.request<any>(`my/bnb/bookings${params ? `?${params}` : ''}`);
+  static async getMyBnbBookings(filters?: { status?: string; per_page?: number }) {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.per_page) params.set('per_page', String(filters.per_page));
+    const q = params.toString();
+    return this.request<any>(`my/bnb/bookings${q ? `?${q}` : ''}`);
   }
 
-  static async getMyBnbReviews() {
-    return this.request<any[]>('my/bnb/reviews');
+  static async getMyBnbReviews(perPage = 100) {
+    return this.request<any[]>(`my/bnb/reviews?per_page=${perPage}`);
   }
 
   static async cancelMyBnbBooking(bookingId: number, reason?: string) {

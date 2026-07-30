@@ -5,6 +5,10 @@ import '../../../shared/services/bnb_api_service.dart';
 import 'bnb_bookings_page.dart';
 import 'bnb_properties_page.dart';
 import 'bnb_reviews_page.dart';
+import 'bnb_analytics_page.dart';
+import '../../../tenant/presentation/pages/tenant_browse_bnb_page.dart';
+import '../../../tenant/presentation/pages/tenant_my_bnb_stays_page.dart';
+import '../../../../shared/widgets/shared_messages_page.dart';
 
 const Color kGold = Color(0xFFC89128);
 const Color kBg = Color(0xFF0A0F1E);
@@ -45,6 +49,8 @@ class _BnbDashboardState extends State<BnbDashboard> {
     {'label': 'Reviews', 'icon': Icons.star, 'index': 4},
     {'label': 'Analytics', 'icon': Icons.analytics, 'index': 5},
     {'label': 'Messages', 'icon': Icons.mail, 'index': 6},
+    {'label': 'Browse BnB', 'icon': Icons.bed_rounded, 'index': 8},
+    {'label': 'My Stays', 'icon': Icons.night_shelter_rounded, 'index': 9},
     {'label': 'Settings', 'icon': Icons.settings, 'index': 7},
   ];
 
@@ -271,6 +277,8 @@ class _BnbDashboardState extends State<BnbDashboard> {
       case 5: return _buildAnalyticsContent();
       case 6: return _buildMessagesContent();
       case 7: return _buildSettingsContent();
+      case 8: return const TenantBrowseBnbPage();
+      case 9: return const TenantMyBnbStaysPage();
       default: return _buildDashboardContent();
     }
   }
@@ -506,8 +514,8 @@ class _BnbDashboardState extends State<BnbDashboard> {
   Widget _buildBookingsContent() => const BnbBookingsPage();
   Widget _buildEarningsContent() => _emptyDark('Earnings', Icons.attach_money, 'No earnings data', 'Your payout history and earnings breakdown will show here.');
   Widget _buildReviewsContent() => const BnbReviewsPage();
-  Widget _buildAnalyticsContent() => _emptyDark('Analytics', Icons.analytics, 'Analytics coming soon', 'Occupancy rates, booking trends, and revenue insights.');
-  Widget _buildMessagesContent() => _emptyDark('Messages', Icons.mail, 'No messages yet', 'Guest conversations and notifications will appear here.');
+  Widget _buildAnalyticsContent() => const BnbAnalyticsPage();
+  Widget _buildMessagesContent() => const SharedMessagesPage(role: MessagesRole.landlord, showAppBar: false);
   Widget _buildSettingsContent() {
     return ListView(
       padding: const EdgeInsets.all(16),

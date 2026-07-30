@@ -60,7 +60,18 @@ class BnbPropertyController extends Controller
         $properties = $query->paginate($request->per_page ?? 10);
 
         return response()->json([
-            'data' => $properties->items(),
+            'data' => collect($properties->items())->map(function (BnbProperty $property) {
+                $row = $property->toArray();
+                $row['average_rating'] = round((float) $property->average_rating, 1);
+                $row['reviews_count'] = (int) $property->reviews_count;
+                $images = $property->toPublicListingArray()['images'] ?? [];
+                $row['main_image'] = $images[0] ?? null;
+                if (empty($row['images']) && ! empty($images)) {
+                    $row['images'] = $images;
+                }
+
+                return $row;
+            })->values(),
             'meta' => [
                 'current_page' => $properties->currentPage(),
                 'last_page' => $properties->lastPage(),
@@ -328,10 +339,16 @@ class BnbPropertyController extends Controller
         $totalProperties = $properties->count();
         $activeListings = $properties->where('status', 'available')->count();
         $totalBookings = $properties->sum(function ($property) {
-            return $property->bookings()->count();
+            return $property->bookings()
+                ->where('payment_status', 'paid')
+                ->whereNotIn('status', ['cancelled'])
+                ->count();
         });
         $totalRevenue = $properties->sum(function ($property) {
-            return $property->bookings()->sum('total_price');
+            return (float) $property->bookings()
+                ->where('payment_status', 'paid')
+                ->whereNotIn('status', ['cancelled'])
+                ->sum('total_price');
         });
         
         // Calculate average occupancy rate
@@ -364,6 +381,16 @@ class BnbPropertyController extends Controller
         $query = BnbProperty::publiclyVisible()
             ->orderByDesc('created_at');
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%");
+            });
+        }
+
         if ($request->has('location')) {
             $query->where('location', 'like', '%' . $request->location . '%');
         }
@@ -380,16 +407,34 @@ class BnbPropertyController extends Controller
             $query->where('type', $request->type);
         }
 
-        if ($request->has('max_guests')) {
-            $query->where('max_guests', '>=', $request->max_guests);
+        $guests = (int) ($request->input('guests') ?: $request->input('max_guests') ?: 0);
+        if ($guests > 0) {
+            $query->where('max_guests', '>=', $guests);
         }
 
-        $items = $query->limit(8)->get()
+        if ($request->filled('check_in') && $request->filled('check_out')) {
+            $checkIn = $request->check_in;
+            $checkOut = $request->check_out;
+            $query->whereDoesntHave('bookings', function ($q) use ($checkIn, $checkOut) {
+                $q->whereIn('status', ['pending', 'confirmed'])
+                    ->where('check_in', '<', $checkOut)
+                    ->where('check_out', '>', $checkIn);
+            });
+        }
+
+        $perPage = min(max((int) ($request->per_page ?? 50), 1), 100);
+        $properties = $query->limit($perPage)->get()
             ->map(fn (BnbProperty $property) => $property->toPublicListingArray())
             ->values()
             ->all();
 
-        return response()->json($items);
+        return response()->json([
+            'data' => $properties,
+            'meta' => [
+                'total' => count($properties),
+                'per_page' => $perPage,
+            ],
+        ]);
     }
 
     /**

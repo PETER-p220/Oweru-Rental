@@ -163,7 +163,7 @@ class BnbReviewController extends Controller
         $reviews = BnbReview::with(['property', 'booking'])
             ->where('guest_id', Auth::id())
             ->orderByDesc('created_at')
-            ->paginate($request->per_page ?? 20);
+            ->paginate(min(max((int) ($request->per_page ?? 100), 1), 200));
 
         return response()->json([
             'data' => collect($reviews->items())->map(function (BnbReview $review) {
