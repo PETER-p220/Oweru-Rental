@@ -385,6 +385,36 @@ class Api {
     });
   }
 
+  static async getCommissionReportPreview(date?: string) {
+    const q = date ? `?date=${encodeURIComponent(date)}` : '';
+    return this.request<any>(`admin/commission/reports/preview${q}`);
+  }
+
+  static async downloadCommissionReportPdf(date?: string): Promise<Blob> {
+    const q = date ? `?date=${encodeURIComponent(date)}` : '';
+    const url = `${API_BASE_URL}/api/admin/commission/reports/pdf${q}`;
+    const token = localStorage.getItem(TOKEN_KEY);
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/pdf',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!response.ok) {
+      let errorBody: any = {};
+      try { errorBody = await response.json(); } catch { /* ignore */ }
+      throw { response: { data: errorBody, status: response.status } };
+    }
+    return response.blob();
+  }
+
+  static async sendCommissionReportEmail(date?: string) {
+    return this.request<any>('admin/commission/reports/send', {
+      method: 'POST',
+      body: JSON.stringify(date ? { date } : {}),
+    });
+  }
+
   // ── Admin – Settings ────────────────────────────────────────────────────────
 
   static async getSystemSettings() {
@@ -542,6 +572,24 @@ class Api {
 
   static async getBnbPropertyDetails(id: number) {
     return this.request<any>(`public/bnb/properties/${id}`);
+  }
+
+  static async getBnbPropertyAvailability(propertyId: number, params?: { month?: string; from?: string; to?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.month) queryParams.set('month', params.month);
+    if (params?.from) queryParams.set('from', params.from);
+    if (params?.to) queryParams.set('to', params.to);
+    const q = queryParams.toString();
+    return this.request<any>(`public/bnb/properties/${propertyId}/availability${q ? `?${q}` : ''}`);
+  }
+
+  static async getBnbOwnerPropertyAvailability(propertyId: number, params?: { month?: string; from?: string; to?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.month) queryParams.set('month', params.month);
+    if (params?.from) queryParams.set('from', params.from);
+    if (params?.to) queryParams.set('to', params.to);
+    const q = queryParams.toString();
+    return this.request<any>(`bnb/properties/${propertyId}/availability${q ? `?${q}` : ''}`);
   }
 
   static async createBnbBooking(data: Record<string, unknown>) {

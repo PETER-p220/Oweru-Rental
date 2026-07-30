@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   DollarSign, Eye, Calendar,
   CheckCircle, User, FileText, Percent, Target,
-  Award, Trophy, Calculator, X,
+  Award, Trophy, Calculator, X, Download, Mail, RefreshCw,
 } from 'lucide-react';
 import Api from '../../services/api';
 import {
@@ -61,8 +61,14 @@ const normalizeCommissionPayment = (payment: any): CommissionPayment => ({
 /* ══════════════════════════════════════════════════════════
    COMPONENT
 ══════════════════════════════════════════════════════════ */
+const yesterdayIso = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+};
+
 const CommissionControl = () => {
-  const [activeTab, setActiveTab] = useState<'rules' | 'payments' | 'analytics'>('rules');
+  const [activeTab, setActiveTab] = useState<'rules' | 'payments' | 'analytics' | 'reports'>('rules');
   const [rules, setRules] = useState<CommissionRule[]>([]);
   const [payments, setPayments] = useState<CommissionPayment[]>([]);
   const [stats, setStats] = useState<CommissionStats | null>(null);
@@ -71,8 +77,34 @@ const CommissionControl = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState<CommissionPayment | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [reportDate, setReportDate] = useState(yesterdayIso);
+  const [reportPreview, setReportPreview] = useState<any>(null);
+  const [reportRecipient, setReportRecipient] = useState('');
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportAction, setReportAction] = useState<'idle' | 'pdf' | 'email'>('idle');
+  const [reportMessage, setReportMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
   useEffect(() => { loadCommissionData(); }, [activeTab]);
+
+  const loadReportPreview = async (date = reportDate) => {
+    try {
+      setReportLoading(true);
+      setReportMessage(null);
+      const res = await Api.getCommissionReportPreview(date);
+      const payload = res.data || {};
+      setReportPreview(payload.report || payload);
+      setReportRecipient(payload.recipient || '');
+    } catch (e) {
+      console.error('Failed to load report preview:', e);
+      setReportMessage({ text: 'Could not load report preview.', ok: false });
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'reports') loadReportPreview();
+  }, [activeTab, reportDate]);
 
   const loadCommissionData = async () => {
     try {
@@ -149,6 +181,40 @@ const CommissionControl = () => {
     setSelectedPayment(null);
   };
 
+  const handleDownloadReport = async () => {
+    try {
+      setReportAction('pdf');
+      setReportMessage(null);
+      const blob = await Api.downloadCommissionReportPdf(reportDate);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `oweru-commission-report-${reportDate}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setReportMessage({ text: 'PDF downloaded.', ok: true });
+    } catch (e) {
+      console.error('PDF download failed:', e);
+      setReportMessage({ text: 'Failed to download PDF.', ok: false });
+    } finally {
+      setReportAction('idle');
+    }
+  };
+
+  const handleSendReportEmail = async () => {
+    try {
+      setReportAction('email');
+      setReportMessage(null);
+      const res = await Api.sendCommissionReportEmail(reportDate);
+      setReportMessage({ text: res.message || 'Report emailed successfully.', ok: true });
+    } catch (e: any) {
+      console.error('Send report failed:', e);
+      setReportMessage({ text: e?.response?.data?.message || 'Failed to send report email.', ok: false });
+    } finally {
+      setReportAction('idle');
+    }
+  };
+
   /* ── Loading ── */
   if (loading) {
     return (
@@ -214,7 +280,7 @@ const CommissionControl = () => {
 
       {/* ── Tab toggle ── */}
       <div style={{ ...card, padding: 4, marginBottom: 20, display: 'flex', gap: 4 }}>
-        {(['rules', 'payments', 'analytics'] as const).map((tab) => (
+        {(['rules', 'payments', 'analytics', 'reports'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -228,7 +294,7 @@ const CommissionControl = () => {
               textTransform: 'capitalize', letterSpacing: '0.04em',
             }}
           >
-            {tab === 'rules' ? 'Rules' : tab === 'payments' ? 'Payments' : 'Analytics'}
+            {tab === 'rules' ? 'Rules' : tab === 'payments' ? 'Payments' : tab === 'analytics' ? 'Analytics' : 'Daily Reports'}
           </button>
         ))}
       </div>
@@ -533,6 +599,149 @@ const CommissionControl = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ══ REPORTS TAB ══ */}
+      {activeTab === 'reports' && (
+        <div style={{ ...card, padding: '22px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: '0 0 6px' }}>Daily Commission Reports</h3>
+              <p style={{ ...body, fontSize: 13, color: C.textMuted, margin: 0, maxWidth: 560 }}>
+                Site visit and rental commission splits for Oweru and dalali (agents). A PDF is emailed to Oweru every morning; you can preview, download, or resend here.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" style={ghostBtn(C.textMuted)} className="cc-btn" onClick={() => loadReportPreview()} disabled={reportLoading}>
+                <RefreshCw size={13} /> Refresh
+              </button>
+              <button type="button" style={solidBtn} className="cc-btn" onClick={handleDownloadReport} disabled={reportAction !== 'idle' || reportLoading}>
+                <Download size={13} /> {reportAction === 'pdf' ? 'Downloading…' : 'Download PDF'}
+              </button>
+              <button type="button" style={solidBtn} className="cc-btn" onClick={handleSendReportEmail} disabled={reportAction !== 'idle' || reportLoading}>
+                <Mail size={13} /> {reportAction === 'email' ? 'Sending…' : 'Email report'}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
+            <div>
+              <label style={labelCss}>Report date</label>
+              <input
+                type="date"
+                className="admin-input"
+                style={inputCss}
+                value={reportDate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setReportDate(e.target.value)}
+              />
+            </div>
+            {reportRecipient && (
+              <div style={{ ...body, fontSize: 12, color: C.textMuted, paddingBottom: 10 }}>
+                Scheduled recipient: <strong style={{ color: C.text }}>{reportRecipient}</strong>
+              </div>
+            )}
+          </div>
+
+          {reportMessage && (
+            <div style={{
+              padding: '10px 14px', borderRadius: 8, marginBottom: 16, fontSize: 13,
+              background: reportMessage.ok ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+              color: reportMessage.ok ? C.green : C.red,
+              border: `1px solid ${reportMessage.ok ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}`,
+            }}>
+              {reportMessage.text}
+            </div>
+          )}
+
+          {reportLoading ? (
+            <div style={{ textAlign: 'center', padding: 40, color: C.textMuted, ...body, fontSize: 13 }}>Loading report…</div>
+          ) : reportPreview ? (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12, marginBottom: 22 }}>
+                {[
+                  { label: 'Site visits', value: reportPreview.site_visits?.totals?.count ?? 0, sub: fmt(reportPreview.site_visits?.totals?.gross ?? 0) },
+                  { label: 'Rentals paid', value: reportPreview.rentals?.totals?.count ?? 0, sub: fmt(reportPreview.rentals?.totals?.gross ?? 0) },
+                  { label: 'Oweru share', value: fmt(reportPreview.grand_totals?.oweru ?? 0), sub: 'Platform' },
+                  { label: 'Dalali share', value: fmt(reportPreview.grand_totals?.agent ?? 0), sub: 'Agents' },
+                ].map(({ label, value, sub }) => (
+                  <div key={label} style={{ ...statCard, padding: '14px 16px' }}>
+                    <div style={{ ...labelStyle, marginBottom: 4 }}>{label}</div>
+                    <div style={{ ...body, fontSize: 18, fontWeight: 700, color: C.text }}>{value}</div>
+                    <div style={{ ...body, fontSize: 11, color: C.textMuted, marginTop: 2 }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {reportPreview.agent_breakdown?.length > 0 && (
+                <div style={{ marginBottom: 22 }}>
+                  <h4 style={{ ...body, fontSize: 14, fontWeight: 600, color: C.text, margin: '0 0 10px' }}>Dalali breakdown</h4>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', ...body, fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#1e293b', color: '#fff' }}>
+                          {['Agent', 'Code', 'Site visit', 'Rental', 'Total'].map((h) => (
+                            <th key={h} style={{ textAlign: h === 'Agent' || h === 'Code' ? 'left' : 'right', padding: '8px 10px' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportPreview.agent_breakdown.map((row: any) => (
+                          <tr key={row.code} style={{ borderBottom: `1px solid rgba(37,99,235,0.08)` }}>
+                            <td style={{ padding: '8px 10px' }}>{row.agent}</td>
+                            <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 11 }}>{row.code}</td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right' }}>{fmt(row.site_visit_commission)}</td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right' }}>{fmt(row.rental_commission)}</td>
+                            <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700 }}>{fmt(row.total)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {[
+                { title: 'Site visit payments', rows: reportPreview.site_visits?.rows ?? [] },
+                { title: 'Rental payments', rows: reportPreview.rentals?.rows ?? [] },
+              ].map(({ title, rows }) => (
+                rows.length > 0 ? (
+                  <div key={title} style={{ marginBottom: 20 }}>
+                    <h4 style={{ ...body, fontSize: 14, fontWeight: 600, color: C.text, margin: '0 0 10px' }}>{title}</h4>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', ...body, fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc' }}>
+                            {['Ref', 'Property', 'Agent', 'Gross', 'Oweru', 'Dalali', 'Paid'].map((h) => (
+                              <th key={h} style={{ textAlign: h.includes('Gross') || h.includes('Oweru') || h.includes('Dalali') ? 'right' : 'left', padding: '8px 10px', color: C.textMuted, fontWeight: 600 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((row: any) => (
+                            <tr key={row.reference} style={{ borderBottom: `1px solid rgba(37,99,235,0.06)` }}>
+                              <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 11 }}>{row.reference}</td>
+                              <td style={{ padding: '8px 10px' }}>{row.property}</td>
+                              <td style={{ padding: '8px 10px' }}>{row.agent}</td>
+                              <td style={{ padding: '8px 10px', textAlign: 'right' }}>{fmt(row.gross)}</td>
+                              <td style={{ padding: '8px 10px', textAlign: 'right' }}>{fmt(row.oweru)}</td>
+                              <td style={{ padding: '8px 10px', textAlign: 'right' }}>{fmt(row.agent_amount)}</td>
+                              <td style={{ padding: '8px 10px', fontSize: 11, color: C.textMuted }}>{row.paid_at}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null
+              ))}
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: 40, color: C.textMuted, ...body, fontSize: 13 }}>
+              No report data for this date.
+            </div>
+          )}
         </div>
       )}
 

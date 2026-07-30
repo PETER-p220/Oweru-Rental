@@ -193,7 +193,7 @@ const Register = () => {
     { value: 'tenant',    label: 'Tenant',    desc: 'Looking to rent',  color: '#16A34A' },
     { value: 'landlord',  label: 'Landlord',  desc: 'I own property',   color: '#C89128' },
     { value: 'agent',     label: 'Agent',     desc: 'Broker listings',  color: '#2563EB' },
-    { value: 'bnb_owner', label: 'BNB Owner', desc: 'I host stays',     color: '#9333EA' },
+    { value: 'bnb_owner', label: 'Short Stay (Hotels, Guests, Apartments)', desc: 'I host stays',     color: '#9333EA' },
   ];
 
   return (

@@ -47,6 +47,7 @@ Route::post('/public/properties/{property}/leads', [AgentController::class, 'cre
 // Public BNB routes — MUST be outside auth middleware
 Route::get('/public/bnb/search',                          [BnbPropertyController::class, 'search']);
 Route::get('/public/bnb/properties/{property}',           [BnbPropertyController::class, 'publicShow']);
+Route::get('/public/bnb/properties/{property}/availability', [BnbPropertyController::class, 'publicAvailability']);
 Route::get('/public/bnb/properties/{property}/reviews',   [BnbReviewController::class, 'propertyReviews']);
 Route::post('/public/bnb/bookings',                       [BnbBookingController::class, 'storePublic']);
 Route::post('/public/bnb/book',                           [BnbBookingController::class, 'storePublic']);
@@ -394,6 +395,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/commission/payments',                         [AdminController::class, 'getCommissionPayments']);
         Route::get('/admin/commission/stats',                            [AdminController::class, 'getCommissionStats']);
         Route::patch('/admin/commission/payments/{commission}/status',   [AdminController::class, 'updateCommissionPaymentStatus']);
+        Route::get('/admin/commission/reports/preview',                  [AdminController::class, 'getCommissionReportPreview']);
+        Route::get('/admin/commission/reports/pdf',                      [AdminController::class, 'downloadCommissionReportPdf']);
+        Route::post('/admin/commission/reports/send',                    [AdminController::class, 'sendCommissionReportEmail']);
 
         // System Settings
         Route::get('/admin/settings', [AdminController::class, 'getSettings']);
@@ -425,6 +429,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/bnb/properties',               [BnbPropertyController::class, 'index']);
         Route::post('/bnb/properties',              [BnbPropertyController::class, 'store']);
         Route::get('/bnb/properties/{property}',    [BnbPropertyController::class, 'show']);
+        Route::get('/bnb/properties/{property}/availability', [BnbPropertyController::class, 'ownerAvailability']);
         Route::put('/bnb/properties/{property}',    [BnbPropertyController::class, 'update']);
         Route::delete('/bnb/properties/{property}', [BnbPropertyController::class, 'destroy']);
         Route::get('/bnb/analytics',                [BnbPropertyController::class, 'analytics']);

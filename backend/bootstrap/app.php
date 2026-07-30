@@ -43,4 +43,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('reminders:send-monthly-rent')->dailyAt('08:00');
+        $reportTime = config('services.oweru.daily_report_time', '07:00');
+        $schedule->command('reports:send-daily-commissions')->dailyAt($reportTime);
     })->create();

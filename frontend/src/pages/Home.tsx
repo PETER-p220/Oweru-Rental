@@ -7,7 +7,7 @@ import {
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import Api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { getBnbPropertyPath, getBnbPropertyPathForLogin } from '../utils/bnbNav';
+import { getPublicBnbPropertyPath } from '../utils/bnbNav';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import { getPropertyThumbnail, PROPERTY_IMAGE_PLACEHOLDER, normalizeBnbProperty } from '../utils/propertyImages';
 import PropertyVideoBadge from '../components/PropertyVideoBadge';
@@ -93,11 +93,11 @@ const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose:
     e.preventDefault();
     const token = localStorage.getItem('token');
     if (!token) {
-      window.location.href = `/login?redirect=${encodeURIComponent(`/bnb/${property.id}`)}`;
+      window.location.href = `/login?redirect=${encodeURIComponent(getPublicBnbPropertyPath(property.id))}`;
       return;
     }
     onClose();
-    window.location.href = `/bnb/${property.id}`;
+    window.location.href = getPublicBnbPropertyPath(property.id);
   };
   const inp: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#0F172A', borderRadius: 8, fontSize: 13, marginBottom: 10, outline: 'none', fontFamily: 'inherit' };
   return (
@@ -128,7 +128,7 @@ const BookingForm = ({ property, onClose, onSuccess }: { property: any; onClose:
             {loading ? 'Submitting…' : 'Book Now'}
           </button>
         </div>
-        <button type="button" onClick={() => { onClose(); window.location.href = `/bnb/${property.id}`; }} style={{ width: '100%', marginTop: 10, padding: 10, background: 'transparent', border: 'none', color: '#64748B', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
+        <button type="button" onClick={() => { onClose(); window.location.href = getPublicBnbPropertyPath(property.id); }} style={{ width: '100%', marginTop: 10, padding: 10, background: 'transparent', border: 'none', color: '#64748B', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
           View full details & reviews
         </button>
       </form>
@@ -670,8 +670,8 @@ const Home = () => {
                       <div className="prop-title">{p.title}</div>
                       <div className="prop-loc"><MapPin size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />{p.location}</div>
                       <div><span className="prop-price">{fmtPrice(p.price)}</span><span className="prop-price-sfx">/night</span></div>
-                      <button className="view-btn" onClick={() => navigate(`/bnb/${p.id}`)}>Book Now</button>
-                      <button type="button" onClick={() => navigate(`/bnb/${p.id}`)} style={{ marginTop: 8, width: '100%', padding: '8px 0', background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
+                      <button className="view-btn" onClick={() => navigate(getPublicBnbPropertyPath(p.id))}>Book Now</button>
+                      <button type="button" onClick={() => navigate(getPublicBnbPropertyPath(p.id))} style={{ marginTop: 8, width: '100%', padding: '8px 0', background: 'transparent', border: 'none', color: 'var(--slate)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>
                         Details & reviews
                       </button>
                     </div>

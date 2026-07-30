@@ -9,6 +9,11 @@ export function getDashboardRole(user: {
   return role as UserRole;
 }
 
+/** Public property detail URL (no login required) */
+export function getPublicBnbPropertyPath(propertyId: number | string): string {
+  return `/bnb/${propertyId}`;
+}
+
 export function getBrowseBnbPath(user: Parameters<typeof getDashboardRole>[0]): string {
   return `/dashboard/${getDashboardRole(user)}/browse-bnb-stays`;
 }
@@ -37,9 +42,9 @@ export function resolveDashboardRedirect(
   return redirect.replace(/^\/dashboard\/[^/]+/, `/dashboard/${userType}`);
 }
 
-/** Default tenant path for pre-login redirects */
+/** After login, return here (public property page) */
 export function getBnbPropertyPathForLogin(propertyId: number | string): string {
-  return `/dashboard/tenant/bnb-property/${propertyId}`;
+  return getPublicBnbPropertyPath(propertyId);
 }
 
 /** After login, send the user to their role dashboard (or a safe redirect). */
@@ -47,6 +52,9 @@ export function resolvePostLoginDestination(
   user: Parameters<typeof getDashboardRole>[0],
   redirect: string | null,
 ): string {
+  if (redirect && !redirect.startsWith('/dashboard/')) {
+    return redirect;
+  }
   const role = getDashboardRole(user);
   return resolveDashboardRedirect(redirect, role) || `/dashboard/${role}`;
 }

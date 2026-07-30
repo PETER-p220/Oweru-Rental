@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Users, MessageSquare, Phone, Mail, Home, X, CheckCircle, XCircle, Clock, RefreshCw, ChevronDown } from 'lucide-react';
+import { Calendar, Users, MessageSquare, Phone, Mail, Home, X, CheckCircle, XCircle, Clock, RefreshCw, ChevronDown, LayoutGrid, CalendarDays } from 'lucide-react';
 import Api from '../../services/api';
+import BnbAvailabilityCalendar from '../../components/bnb/BnbAvailabilityCalendar';
 
 interface Booking {
   id: number;
@@ -340,9 +341,12 @@ const DetailModal = ({
 // ─── Main Component ──────────────────────────────────────────────────────────
 const BnbBookings = () => {
   const [bookings,       setBookings]       = useState<Booking[]>([]);
+  const [properties,     setProperties]     = useState<Array<{ id: number; title: string }>>([]);
   const [loading,        setLoading]        = useState(true);
   const [searchTerm,     setSearchTerm]     = useState('');
   const [statusFilter,   setStatusFilter]   = useState('all');
+  const [selectedPropertyId, setSelectedPropertyId] = useState<number | ''>('');
+  const [viewMode,       setViewMode]       = useState<'list' | 'calendar'>('list');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [toast,          setToast]          = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -354,14 +358,32 @@ const BnbBookings = () => {
   const loadBookings = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await Api.getBnbBookings({ search: searchTerm, status: statusFilter });
+      const response = await Api.getBnbBookings({
+        search: searchTerm,
+        status: statusFilter,
+        property_id: selectedPropertyId ? Number(selectedPropertyId) : undefined,
+      });
       setBookings(response.data || []);
     } catch (error) {
       console.error('Failed to load bookings:', error);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, selectedPropertyId]);
+
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        const res = await Api.getBnbProperties();
+        const items = (res.data || []).map((p: any) => ({ id: p.id, title: p.title }));
+        setProperties(items);
+        if (items.length === 1) setSelectedPropertyId(items[0].id);
+      } catch (e) {
+        console.error('Failed to load BnB properties:', e);
+      }
+    };
+    loadProperties();
+  }, []);
 
   useEffect(() => { loadBookings(); }, [loadBookings]);
 
@@ -478,6 +500,43 @@ const BnbBookings = () => {
           <option value="cancelled">Cancelled</option>
           <option value="completed">Completed</option>
         </select>
+        <select
+          className="filter-input"
+          value={selectedPropertyId}
+          onChange={(e) => setSelectedPropertyId(e.target.value ? Number(e.target.value) : '')}
+          style={{ minWidth: 200 }}
+        >
+          <option value="">All properties</option>
+          {properties.map((p) => (
+            <option key={p.id} value={p.id}>{p.title}</option>
+          ))}
+        </select>
+        <div style={{ display: 'flex', gap: 4, background: t.surface2, borderRadius: 8, padding: 4, border: `1px solid ${t.border}` }}>
+          <button
+            type="button"
+            onClick={() => setViewMode('list')}
+            style={{
+              ...body, display: 'flex', alignItems: 'center', gap: 5, padding: '8px 12px',
+              border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+              background: viewMode === 'list' ? t.surface : 'transparent',
+              color: viewMode === 'list' ? t.ink : t.muted,
+            }}
+          >
+            <LayoutGrid size={14} /> List
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('calendar')}
+            style={{
+              ...body, display: 'flex', alignItems: 'center', gap: 5, padding: '8px 12px',
+              border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+              background: viewMode === 'calendar' ? t.surface : 'transparent',
+              color: viewMode === 'calendar' ? t.ink : t.muted,
+            }}
+          >
+            <CalendarDays size={14} /> Calendar
+          </button>
+        </div>
         <button
           onClick={loadBookings}
           style={{
@@ -500,20 +559,42 @@ const BnbBookings = () => {
         </button>
       </div>
 
+      {/* Owner calendar */}
+      {viewMode === 'calendar' && (
+        <div style={{ ...card, padding: 20, marginBottom: 24 }}>
+          <h2 style={{ ...serif, fontSize: 20, fontWeight: 600, margin: '0 0 6px', color: t.ink }}>Live booking calendar</h2>
+          <p style={{ fontSize: 14, color: t.muted, margin: '0 0 16px' }}>
+            See confirmed and pending stays update in real time — the same view guests see when booking.
+          </p>
+          {selectedPropertyId ? (
+            <BnbAvailabilityCalendar
+              propertyId={Number(selectedPropertyId)}
+              mode="owner"
+              accent={t.gold}
+              refreshIntervalMs={30000}
+            />
+          ) : (
+            <div style={{ padding: 24, textAlign: 'center', color: t.muted, fontSize: 14, background: t.surface2, borderRadius: 10, border: `1px dashed ${t.border}` }}>
+              Select a property above to open its availability calendar.
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Content */}
-      {loading ? (
+      {viewMode === 'list' && loading ? (
         <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
           {[0,1,2,3,4,5].map((i) => (
             <div key={i} style={{ height: 180, borderRadius: 12, background: `linear-gradient(90deg, ${t.surface2} 25%, #FFFFFF 50%, ${t.surface2} 75%)`, backgroundSize: '400% 100%', animation: 'shimmer 1.4s ease infinite', border: `1px solid ${t.border}` }} />
           ))}
         </div>
-      ) : bookings.length === 0 ? (
+      ) : viewMode === 'list' && bookings.length === 0 ? (
         <div style={{ ...card, textAlign: 'center', padding: '80px 24px', animation: 'fadeIn 0.4s ease' }}>
           <Calendar size={40} style={{ color: t.muted, marginBottom: 16 }} />
           <div style={{ ...serif, fontSize: 20, fontWeight: 600, color: t.ink, marginBottom: 8 }}>No bookings found</div>
           <div style={{ fontSize: 14, color: t.muted }}>Bookings will appear here once guests submit requests.</div>
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
           {bookings.map((booking, idx) => {
             const guest  = getGuestInfo(booking);

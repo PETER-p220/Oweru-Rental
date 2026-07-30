@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Carbon;
 
 class BnbPropertyController extends Controller
 {
@@ -389,5 +390,108 @@ class BnbPropertyController extends Controller
             ->all();
 
         return response()->json($items);
+    }
+
+    /**
+     * Public availability calendar data (blocked dates; no guest PII).
+     */
+    public function publicAvailability(Request $request, BnbProperty $property): JsonResponse
+    {
+        if (($property->status ?? '') === 'maintenance') {
+            return response()->json(['message' => 'Property is temporarily unavailable'], 404);
+        }
+
+        return response()->json([
+            'data' => $this->buildAvailabilityPayload($request, $property, false),
+        ]);
+    }
+
+    /**
+     * Owner availability with booking details (guest names for confirmed stays).
+     */
+    public function ownerAvailability(Request $request, BnbProperty $property): JsonResponse
+    {
+        if ($property->owner_id !== Auth::id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'data' => $this->buildAvailabilityPayload($request, $property, true),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildAvailabilityPayload(Request $request, BnbProperty $property, bool $includeDetails): array
+    {
+        $month = $request->input('month');
+        if ($month && preg_match('/^\d{4}-\d{2}$/', $month)) {
+            $start = Carbon::parse($month . '-01')->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+        } else {
+            $start = Carbon::parse($request->input('from', now()->startOfMonth()->toDateString()))->startOfDay();
+            $end = Carbon::parse($request->input('to', now()->endOfMonth()->toDateString()))->endOfDay();
+        }
+
+        $bookings = $property->bookings()
+            ->with('guest:id,first_name,last_name,email')
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->where('check_in', '<', $end->copy()->addDay()->toDateString())
+            ->where('check_out', '>', $start->toDateString())
+            ->orderBy('check_in')
+            ->get();
+
+        $blockedDates = [];
+        $dateStatus = [];
+
+        foreach ($bookings as $booking) {
+            $cursor = Carbon::parse($booking->check_in)->startOfDay();
+            $checkout = Carbon::parse($booking->check_out)->startOfDay();
+
+            while ($cursor->lt($checkout)) {
+                $key = $cursor->toDateString();
+                if ($cursor->betweenIncluded($start->copy()->startOfDay(), $end->copy()->startOfDay())) {
+                    $blockedDates[] = $key;
+                    if ($booking->status === 'confirmed' || ! isset($dateStatus[$key])) {
+                        $dateStatus[$key] = $booking->status;
+                    }
+                }
+                $cursor->addDay();
+            }
+        }
+
+        $blockedDates = array_values(array_unique($blockedDates));
+        sort($blockedDates);
+
+        return [
+            'property_id' => $property->id,
+            'from' => $start->toDateString(),
+            'to' => $end->toDateString(),
+            'month' => $start->format('Y-m'),
+            'blocked_dates' => $blockedDates,
+            'date_status' => $dateStatus,
+            'bookings' => $bookings->map(function ($booking) use ($includeDetails) {
+                $row = [
+                    'id' => $booking->id,
+                    'check_in' => optional($booking->check_in)?->toDateString(),
+                    'check_out' => optional($booking->check_out)?->toDateString(),
+                    'status' => $booking->status,
+                    'payment_status' => $booking->payment_status,
+                    'guests' => (int) $booking->guests,
+                ];
+
+                if ($includeDetails) {
+                    $guest = $booking->guest;
+                    $row['guest_name'] = $guest
+                        ? (trim(($guest->first_name ?? '') . ' ' . ($guest->last_name ?? '')) ?: 'Guest')
+                        : 'Guest';
+                }
+
+                return $row;
+            })->values()->all(),
+            'min_stay' => (int) ($property->min_stay ?? 1),
+            'synced_at' => now()->toIso8601String(),
+        ];
     }
 }

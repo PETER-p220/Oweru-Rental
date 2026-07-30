@@ -33,7 +33,7 @@ import MyBnbStays from './pages/tenant/MyBnbStays';
 import BnbPropertyDetail from './pages/bnb/BnbPropertyDetail';
 import BnbPaymentReturn from './pages/bnb/BnbPaymentReturn';
 import BrowseBnbStays from './pages/bnb/BrowseBnbStays';
-import { BnbPaymentReturnPublicRedirect, BnbPropertyPublicRedirect } from './pages/bnb/BnbPublicRedirect';
+import { BnbPaymentReturnPublicRedirect } from './pages/bnb/BnbPublicRedirect';
 import TenantAnalyticsPage from './pages/tenant/AnalyticsPage';
 
 // Landlord pages
@@ -110,7 +110,7 @@ const PublicRoutes = () => (
         <Route path="/properties" element={<Properties />} />
         <Route path="/property/:id" element={<PropertyDetail />} />
         <Route path="/bnb/payment/return" element={<BnbPaymentReturnPublicRedirect />} />
-        <Route path="/bnb/:id" element={<BnbPropertyPublicRedirect />} />
+        <Route path="/bnb/:id" element={<BnbPropertyDetail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />

@@ -21,7 +21,11 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Services\ActivityLogService;
+use App\Services\CommissionReportService;
 use App\Services\CommissionShareService;
+use App\Mail\DailyCommissionReportMail;
+use Illuminate\Support\Facades\Mail;
+use Symfony\Component\HttpFoundation\Response;
 
 class AdminController extends Controller
 {
@@ -1116,6 +1120,70 @@ class AdminController extends Controller
                 'created_at' => optional($commission->created_at)?->toISOString(),
                 'updated_at' => optional($commission->updated_at)?->toISOString(),
             ],
+        ]);
+    }
+
+    public function getCommissionReportPreview(Request $request, CommissionReportService $reports): JsonResponse
+    {
+        $date = Carbon::parse(
+            $request->input('date', now()->subDay()->toDateString())
+        )->startOfDay();
+
+        $report = $reports->buildDailyReport($date);
+
+        return response()->json([
+            'data' => [
+                'report' => $report,
+                'recipient' => $reports->reportRecipient(),
+                'filename' => $reports->reportFilename($date),
+            ],
+        ]);
+    }
+
+    public function downloadCommissionReportPdf(Request $request, CommissionReportService $reports): Response
+    {
+        $date = Carbon::parse(
+            $request->input('date', now()->subDay()->toDateString())
+        )->startOfDay();
+
+        $report = $reports->buildDailyReport($date);
+        $pdf = $reports->renderPdf($report);
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $reports->reportFilename($date) . '"',
+        ]);
+    }
+
+    public function sendCommissionReportEmail(Request $request, CommissionReportService $reports): JsonResponse
+    {
+        if (! config('mail.notifications_enabled', true)) {
+            return response()->json([
+                'message' => 'Mail notifications are disabled. Enable MAIL_NOTIFICATIONS_ENABLED in your environment.',
+            ], 422);
+        }
+
+        $date = Carbon::parse(
+            $request->input('date', now()->subDay()->toDateString())
+        )->startOfDay();
+
+        $report = $reports->buildDailyReport($date);
+        $pdf = $reports->renderPdf($report);
+        $filename = $reports->reportFilename($date);
+        $recipient = $reports->reportRecipient();
+
+        try {
+            Mail::to($recipient)->send(new DailyCommissionReportMail($report, $pdf, $filename));
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Failed to send report email: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => "Commission report for {$date->toDateString()} sent to {$recipient}.",
+            'recipient' => $recipient,
+            'filename' => $filename,
         ]);
     }
 

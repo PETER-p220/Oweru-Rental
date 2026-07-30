@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Hotel, MapPin, Star, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Calendar, Hotel, MapPin, Star, XCircle, Loader2, AlertCircle, LayoutGrid, CalendarDays } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { getBrowseBnbPath, getBnbPropertyPath } from '../../utils/bnbNav';
+import { getBrowseBnbPath, getPublicBnbPropertyPath } from '../../utils/bnbNav';
+import GuestBookingsCalendar from '../../components/bnb/GuestBookingsCalendar';
 
 const GOLD = '#C89128';
 
@@ -24,6 +25,8 @@ const MyBnbStays = () => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [highlightId, setHighlightId] = useState<number | null>(null);
 
   const load = async () => {
     try {
@@ -117,6 +120,13 @@ const MyBnbStays = () => {
           .stays-btn { flex: 1 1 auto; }
           .stays-thumb { width: 64px !important; height: 64px !important; }
         }
+        .stays-view-toggle { display: flex; gap: 4; background: #E2E8F0; border-radius: 8px; padding: 4px; margin-bottom: 16px; width: fit-content; }
+        .stays-view-btn {
+          display: inline-flex; align-items: center; gap: 5; padding: 8px 12px; border: none; border-radius: 6px;
+          font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; color: #64748B;
+        }
+        .stays-view-btn.active { background: #fff; color: #0F172A; box-shadow: 0 1px 2px rgba(15,23,42,0.08); }
+        .stays-cal-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px; margin-bottom: 16px; }
       `}</style>
 
       <div className="stays-header">
@@ -145,6 +155,15 @@ const MyBnbStays = () => {
       </div>
 
       <div className="stays-body">
+        <div className="stays-view-toggle">
+          <button type="button" className={`stays-view-btn${viewMode === 'list' ? ' active' : ''}`} onClick={() => setViewMode('list')}>
+            <LayoutGrid size={14} /> List
+          </button>
+          <button type="button" className={`stays-view-btn${viewMode === 'calendar' ? ' active' : ''}`} onClick={() => setViewMode('calendar')}>
+            <CalendarDays size={14} /> Calendar
+          </button>
+        </div>
+
         <div className="stays-filters">
           {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map((s) => (
             <button key={s} className={`stays-chip${statusFilter === s ? ' active' : ''}`} onClick={() => setStatusFilter(s)}>
@@ -163,6 +182,31 @@ const MyBnbStays = () => {
           <div style={{ display: 'flex', justifyContent: 'center', padding: 60, color: '#64748B', gap: 10 }}>
             <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Loading stays…
           </div>
+        ) : viewMode === 'calendar' ? (
+          bookings.length === 0 ? (
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
+              <Calendar size={36} color="#CBD5E1" style={{ marginBottom: 12 }} />
+              <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>No stays on your calendar yet</div>
+              <div style={{ color: '#64748B', fontSize: 13, marginBottom: 16 }}>Book a short stay to see your trips here.</div>
+              <button onClick={() => navigate(getBrowseBnbPath(user))} style={{ padding: '12px 18px', minHeight: 44, background: GOLD, color: '#0F172A', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>
+                Browse short stays
+              </button>
+            </div>
+          ) : (
+            <div className="stays-cal-card">
+              <h2 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>Your stay calendar</h2>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: '#64748B' }}>All your BnB bookings in one view — tap a stay to highlight it in the list.</p>
+              <GuestBookingsCalendar
+                bookings={bookings}
+                accent={GOLD}
+                selectedBookingId={highlightId}
+                onSelectBooking={(b) => {
+                  setHighlightId(b.id);
+                  setViewMode('list');
+                }}
+              />
+            </div>
+          )
         ) : bookings.length === 0 ? (
           <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
             <Hotel size={36} color="#CBD5E1" style={{ marginBottom: 12 }} />
@@ -175,7 +219,11 @@ const MyBnbStays = () => {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {bookings.map((b) => (
-              <div key={b.id} className="stays-card">
+              <div
+                key={b.id}
+                className="stays-card"
+                style={highlightId === b.id ? { borderColor: GOLD, boxShadow: `0 0 0 1px ${GOLD}` } : undefined}
+              >
                 <div className="stays-thumb" style={{ width: 72, height: 72, borderRadius: 12, background: '#F1F5F9', overflow: 'hidden', flexShrink: 0 }}>
                   {(b.property?.main_image || b.property?.images?.[0]) ? (
                     <img src={b.property.main_image || b.property.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -199,7 +247,7 @@ const MyBnbStays = () => {
                 </div>
                 <div className="stays-actions">
                   {b.property_id && (
-                    <Link to={getBnbPropertyPath(user, b.property_id)} className="stays-btn" style={{ border: '1px solid #E2E8F0', background: '#fff', color: '#0F172A', textDecoration: 'none' }}>View</Link>
+                    <Link to={getPublicBnbPropertyPath(b.property_id)} className="stays-btn" style={{ border: '1px solid #E2E8F0', background: '#fff', color: '#0F172A', textDecoration: 'none' }}>View</Link>
                   )}
                   {b.can_cancel && (
                     <button className="stays-btn" onClick={() => cancelBooking(b.id)} style={{ border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626' }}>

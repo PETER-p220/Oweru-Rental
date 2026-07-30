@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useMatch } from 'react-router-dom';
 import { ArrowLeft, MapPin, Star, Users, Calendar, CreditCard, Smartphone } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getBrowseBnbPath,
-  getBnbPropertyPathForLogin,
   getMyStaysPath,
+  getPublicBnbPropertyPath,
 } from '../../utils/bnbNav';
 import { DASHBOARD_LISTING_CSS } from '../../styles/dashboardListingStyles';
+import BnbAvailabilityCalendar from '../../components/bnb/BnbAvailabilityCalendar';
 import { usePaymentPolling } from '../../hooks/usePaymentPolling';
 
 const GOLD = '#C89128';
@@ -29,6 +30,7 @@ const PROVIDERS = [
 const BnbPropertyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isPublicPage = !!useMatch('/bnb/:id');
   const { user, isAuthenticated } = useAuth();
   const [property, setProperty] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -128,11 +130,21 @@ const BnbPropertyDetail = () => {
     }
   }, [isAuthenticated]);
 
-  const authRedirect = getBnbPropertyPathForLogin(id!);
+  const authRedirect = getPublicBnbPropertyPath(id!);
 
   const redirectToAuth = () => {
     navigate(`/login?redirect=${encodeURIComponent(authRedirect)}`);
   };
+
+  const goBack = () => {
+    if (isPublicPage) {
+      navigate('/#bnb');
+    } else {
+      navigate(getBrowseBnbPath(user));
+    }
+  };
+
+  const backLabel = isPublicPage ? 'Back to short stays' : 'Back to Browse BnB Stays';
 
   const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,8 +237,8 @@ const BnbPropertyDetail = () => {
       <div className="dlp-page" style={{ padding: 48, textAlign: 'center' }}>
         <style>{DASHBOARD_LISTING_CSS}</style>
         <p style={{ color: '#DC2626', marginBottom: 16 }}>{error || 'Not found'}</p>
-        <button type="button" className="dlp-btn" style={{ maxWidth: 220, margin: '0 auto' }} onClick={() => navigate(getBrowseBnbPath(user))}>
-          Back to Browse BnB Stays
+        <button type="button" className="dlp-btn" style={{ maxWidth: 220, margin: '0 auto' }} onClick={goBack}>
+          {backLabel}
         </button>
       </div>
     );
@@ -272,10 +284,10 @@ const BnbPropertyDetail = () => {
       <div className="bnb-detail-wrap">
         <button
           type="button"
-          onClick={() => navigate(getBrowseBnbPath(user))}
+          onClick={goBack}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--slate-600)', cursor: 'pointer', marginBottom: 16, minHeight: 44, padding: '8px 0', fontFamily: 'inherit' }}
         >
-          <ArrowLeft size={16} /> Back to Browse BnB Stays
+          <ArrowLeft size={16} /> {backLabel}
         </button>
 
         <div className="bnb-detail-grid">
@@ -291,7 +303,15 @@ const BnbPropertyDetail = () => {
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Star size={13} color={GOLD} fill={GOLD} />{property.rating_avg} ({property.rating_count})</span>
               )}
             </div>
-            <p style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: 14 }}>{property.description}</p>
+            <p style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: 14, marginBottom: 20 }}>{property.description}</p>
+
+            <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: 20 }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: '#0F172A' }}>Availability</h3>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: '#64748B' }}>
+                Live calendar — booked dates update automatically as guests reserve this stay.
+              </p>
+              <BnbAvailabilityCalendar propertyId={property.id} mode="guest" accent={GOLD} refreshIntervalMs={45000} />
+            </div>
           </div>
 
           <div className="bnb-book-card">
@@ -327,14 +347,32 @@ const BnbPropertyDetail = () => {
                 <input required className="bnb-inp" placeholder="Full name" value={booking.customer_name} onChange={(e) => setBooking((p) => ({ ...p, customer_name: e.target.value }))} />
                 <input required type="email" className="bnb-inp" placeholder="Email" value={booking.customer_email} onChange={(e) => setBooking((p) => ({ ...p, customer_email: e.target.value }))} />
                 <input required className="bnb-inp" placeholder="Phone (for payment)" value={booking.customer_phone} onChange={(e) => setBooking((p) => ({ ...p, customer_phone: e.target.value }))} />
-                <div className="bnb-date-grid">
-                  <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Check-in
-                    <input required type="date" className="bnb-inp" value={booking.check_in} onChange={(e) => setBooking((p) => ({ ...p, check_in: e.target.value }))} />
-                  </label>
-                  <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Check-out
-                    <input required type="date" className="bnb-inp" value={booking.check_out} onChange={(e) => setBooking((p) => ({ ...p, check_out: e.target.value }))} />
-                  </label>
+
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, marginBottom: 8 }}>Select dates on the calendar</div>
+                  <BnbAvailabilityCalendar
+                    propertyId={property.id}
+                    mode="guest"
+                    accent={GOLD}
+                    checkIn={booking.check_in}
+                    checkOut={booking.check_out}
+                    refreshIntervalMs={45000}
+                    onRangeChange={(checkIn, checkOut) => setBooking((p) => ({ ...p, check_in: checkIn, check_out: checkOut }))}
+                  />
+                  {(booking.check_in || booking.check_out) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+                      <div style={{ fontSize: 12, color: '#475569' }}>
+                        <span style={{ fontWeight: 700, color: '#64748B' }}>Check-in: </span>
+                        {booking.check_in || '—'}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#475569' }}>
+                        <span style={{ fontWeight: 700, color: '#64748B' }}>Check-out: </span>
+                        {booking.check_out || '—'}
+                      </div>
+                    </div>
+                  )}
                 </div>
+
                 <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Guests
                   <input required type="number" min={1} max={property.max_guests || 20} className="bnb-inp" value={booking.guest_count} onChange={(e) => setBooking((p) => ({ ...p, guest_count: Number(e.target.value) }))} />
                 </label>
