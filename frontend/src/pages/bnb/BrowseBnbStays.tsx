@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Users, Star, Hotel, Loader2 } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { getPublicBnbPropertyPath } from '../../utils/bnbNav';
+import { resolveBnbPropertyPath } from '../../utils/bnbNav';
 import { getPropertyThumbnail, normalizeBnbProperty } from '../../utils/propertyImages';
 import { DASHBOARD_LISTING_CSS } from '../../styles/dashboardListingStyles';
 
@@ -12,7 +12,7 @@ const fmt = (n: number) =>
 
 const BrowseBnbStays = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [properties, setProperties] = useState<any[]>([]);
@@ -154,7 +154,7 @@ const BrowseBnbStays = () => {
                   <button
                     type="button"
                     className="dlp-btn"
-                    onClick={() => navigate(getPublicBnbPropertyPath(p.id))}
+                    onClick={() => navigate(resolveBnbPropertyPath(user, p.id, isAuthenticated))}
                   >
                     View & book
                   </button>

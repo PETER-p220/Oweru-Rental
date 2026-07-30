@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Calendar, User, Phone, Mail, MessageSquare } from 'lucide-react';
 import { TOKEN_KEY } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { getPublicBnbPropertyPath } from '../utils/bnbNav';
+import { resolveBnbPropertyPath } from '../utils/bnbNav';
 
 interface BookingFormProps {
   property: any;
@@ -29,9 +29,11 @@ const BookingForm = ({ property, onClose, onSuccess }: BookingFormProps) => {
     setLoading(true);
     setError('');
 
+    const propertyPath = resolveBnbPropertyPath(user, property.id, isAuthenticated);
+
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
-      window.location.href = `/login?redirect=${encodeURIComponent(getPublicBnbPropertyPath(property.id))}`;
+      window.location.href = `/login?redirect=${encodeURIComponent(propertyPath)}`;
       return;
     }
 
@@ -43,7 +45,7 @@ const BookingForm = ({ property, onClose, onSuccess }: BookingFormProps) => {
       }
 
       onClose();
-      window.location.href = getPublicBnbPropertyPath(property.id);
+      window.location.href = propertyPath;
     } catch {
       setError('Unable to continue. Please try again.');
     } finally {

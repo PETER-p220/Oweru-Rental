@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, Hotel, MapPin, Star, XCircle, Loader2, AlertCircle, LayoutGrid, CalendarDays } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { getBrowseBnbPath, getPublicBnbPropertyPath } from '../../utils/bnbNav';
+import { getBrowseBnbPath, getBnbPropertyPath } from '../../utils/bnbNav';
 import GuestBookingsCalendar from '../../components/bnb/GuestBookingsCalendar';
 
 const GOLD = '#C89128';
@@ -247,7 +247,7 @@ const MyBnbStays = () => {
                 </div>
                 <div className="stays-actions">
                   {b.property_id && (
-                    <Link to={getPublicBnbPropertyPath(b.property_id)} className="stays-btn" style={{ border: '1px solid #E2E8F0', background: '#fff', color: '#0F172A', textDecoration: 'none' }}>View</Link>
+                    <Link to={getBnbPropertyPath(user, b.property_id)} className="stays-btn" style={{ border: '1px solid #E2E8F0', background: '#fff', color: '#0F172A', textDecoration: 'none' }}>View</Link>
                   )}
                   {b.can_cancel && (
                     <button className="stays-btn" onClick={() => cancelBooking(b.id)} style={{ border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626' }}>

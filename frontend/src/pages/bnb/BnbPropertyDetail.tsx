@@ -5,6 +5,7 @@ import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   getBrowseBnbPath,
+  getBnbPropertyPath,
   getMyStaysPath,
   getPublicBnbPropertyPath,
   saveBnbBookingDraft,
@@ -133,6 +134,11 @@ const BnbPropertyDetail = () => {
   );
 
   useEffect(() => {
+    if (authLoading || !isAuthenticated || !user || !id || !isPublicPage) return;
+    navigate(getBnbPropertyPath(user, id), { replace: true });
+  }, [authLoading, isAuthenticated, user, id, isPublicPage, navigate]);
+
+  useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated && (step === 'payment' || step === 'pending')) {
       setStep('form');
@@ -141,7 +147,9 @@ const BnbPropertyDetail = () => {
     }
   }, [authLoading, isAuthenticated, step]);
 
-  const authRedirect = getPublicBnbPropertyPath(id!);
+  const authRedirect = isPublicPage
+    ? getPublicBnbPropertyPath(id!)
+    : getBnbPropertyPath(user, id!);
 
   const redirectToAuth = (draft?: BnbBookingDraft) => {
     if (id) {

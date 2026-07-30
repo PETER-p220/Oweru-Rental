@@ -14,6 +14,18 @@ export function getPublicBnbPropertyPath(propertyId: number | string): string {
   return `/bnb/${propertyId}`;
 }
 
+/** Dashboard path when signed in; public path for guests */
+export function resolveBnbPropertyPath(
+  user: Parameters<typeof getDashboardRole>[0] | null | undefined,
+  propertyId: number | string,
+  isAuthenticated = !!user,
+): string {
+  if (isAuthenticated) {
+    return getBnbPropertyPath(user, propertyId);
+  }
+  return getPublicBnbPropertyPath(propertyId);
+}
+
 export function getBrowseBnbPath(user: Parameters<typeof getDashboardRole>[0]): string {
   return `/dashboard/${getDashboardRole(user)}/browse-bnb-stays`;
 }
@@ -42,7 +54,7 @@ export function resolveDashboardRedirect(
   return redirect.replace(/^\/dashboard\/[^/]+/, `/dashboard/${userType}`);
 }
 
-/** After login, return here (public property page) */
+/** Pre-login redirect target (rewritten to dashboard after sign-in) */
 export function getBnbPropertyPathForLogin(propertyId: number | string): string {
   return getPublicBnbPropertyPath(propertyId);
 }
@@ -52,8 +64,14 @@ export function resolvePostLoginDestination(
   user: Parameters<typeof getDashboardRole>[0],
   redirect: string | null,
 ): string {
-  if (redirect && !redirect.startsWith('/dashboard/')) {
-    return redirect;
+  if (redirect) {
+    const publicBnb = redirect.match(/^\/bnb\/(\d+)\/?$/);
+    if (publicBnb) {
+      return getBnbPropertyPath(user, publicBnb[1]);
+    }
+    if (!redirect.startsWith('/dashboard/')) {
+      return redirect;
+    }
   }
   const role = getDashboardRole(user);
   return resolveDashboardRedirect(redirect, role) || `/dashboard/${role}`;
