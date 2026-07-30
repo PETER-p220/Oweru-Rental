@@ -66,6 +66,20 @@ const BnbDashboard = () => {
   };
 
   const fmtCurrency = (n: number) => new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+  const fmtCompactCurrency = (n: number) => {
+    const abs = Math.abs(n);
+    if (abs >= 1_000_000) {
+      const v = n / 1_000_000;
+      const formatted = v % 1 === 0 ? v.toFixed(0) : v.toFixed(1);
+      return `TZS ${formatted}M`;
+    }
+    if (abs >= 1_000) {
+      const v = n / 1_000;
+      const formatted = v % 1 === 0 ? v.toFixed(0) : v.toFixed(1);
+      return `TZS ${formatted}k`;
+    }
+    return fmtCurrency(n);
+  };
   const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-TZ', { year: 'numeric', month: 'short', day: 'numeric' });
   const statusColor = (s: string) => ({ confirmed: t.green, pending: t.amber, cancelled: t.red, completed: t.sky }[s] ?? t.muted);
   const statusIcon = (s: string) => ({ confirmed: <CheckCircle size={14} />, pending: <Clock size={14} />, cancelled: <XCircle size={14} />, completed: <Award size={14} /> }[s] ?? <AlertCircle size={14} />);
@@ -193,7 +207,7 @@ const BnbDashboard = () => {
         {[
           { label: 'Total Properties', value: stats.totalProperties,           icon: Home,        color: t.gold   },
           { label: 'Total Bookings',   value: stats.totalBookings,             icon: Calendar,    color: t.blue   },
-          { label: 'Total Revenue',    value: fmtCurrency(stats.totalRevenue), icon: DollarSign,  color: t.green  },
+          { label: 'Total Revenue',    value: fmtCompactCurrency(stats.totalRevenue), icon: DollarSign,  color: t.green  },
           { label: 'Occupancy Rate',   value: `${stats.occupancyRate}%`,       icon: TrendingUp,  color: t.gold   },
           { label: 'Average Rating',   value: stats.averageRating.toFixed(1),  icon: Star,        color: t.orange },
           { label: 'Active Listings',  value: stats.activeListings,            icon: CheckCircle, color: t.green  },
@@ -239,7 +253,7 @@ const BnbDashboard = () => {
                     </div>
                   </div>
                   <div className="bnb-booking-right">
-                    <div className="bnb-booking-price">{fmtCurrency(b.total_price)}</div>
+                    <div className="bnb-booking-price">{fmtCompactCurrency(b.total_price)}</div>
                     <div className="bnb-booking-status" style={{ color: statusColor(b.status) }}>{statusIcon(b.status)} {b.status}</div>
                   </div>
                 </div>
