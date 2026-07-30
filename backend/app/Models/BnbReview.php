@@ -28,7 +28,6 @@ class BnbReview extends Model
         'verified' => 'boolean',
         'helpful_count' => 'integer',
         'response_date' => 'datetime',
-        'private_feedback' => 'text',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
