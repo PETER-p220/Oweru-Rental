@@ -58,3 +58,42 @@ export function resolvePostLoginDestination(
   const role = getDashboardRole(user);
   return resolveDashboardRedirect(redirect, role) || `/dashboard/${role}`;
 }
+
+export interface BnbBookingDraft {
+  booking: {
+    customer_name: string;
+    customer_email: string;
+    customer_phone: string;
+    check_in: string;
+    check_out: string;
+    guest_count: number;
+    special_requests: string;
+  };
+  resumePayment?: boolean;
+}
+
+export function bnbBookingDraftKey(propertyId: number | string): string {
+  return `bnb_booking_draft_${propertyId}`;
+}
+
+export function saveBnbBookingDraft(propertyId: number | string, draft: BnbBookingDraft): void {
+  try {
+    sessionStorage.setItem(bnbBookingDraftKey(propertyId), JSON.stringify(draft));
+  } catch {
+    /* ignore quota errors */
+  }
+}
+
+export function loadBnbBookingDraft(propertyId: number | string): BnbBookingDraft | null {
+  try {
+    const raw = sessionStorage.getItem(bnbBookingDraftKey(propertyId));
+    if (!raw) return null;
+    return JSON.parse(raw) as BnbBookingDraft;
+  } catch {
+    return null;
+  }
+}
+
+export function clearBnbBookingDraft(propertyId: number | string): void {
+  sessionStorage.removeItem(bnbBookingDraftKey(propertyId));
+}

@@ -26,7 +26,15 @@ const Login = () => {
   const [remember, setRemember] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login, logout } = useAuth();
+  const { login, logout, isAuthenticated, user, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (isAuthenticated && user) {
+      const destination = resolvePostLoginDestination(user, searchParams.get('redirect'));
+      navigate(destination, { replace: true });
+    }
+  }, [authLoading, isAuthenticated, user, searchParams, navigate]);
 
   useEffect(() => {
     const prefill = searchParams.get('email');

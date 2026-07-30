@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useMatch } from 'react-router-dom';
 import { ArrowLeft, MapPin, Star, Users, Calendar, CreditCard, Smartphone } from 'lucide-react';
 import Api from '../../services/api';
@@ -7,6 +7,10 @@ import {
   getBrowseBnbPath,
   getMyStaysPath,
   getPublicBnbPropertyPath,
+  saveBnbBookingDraft,
+  loadBnbBookingDraft,
+  clearBnbBookingDraft,
+  type BnbBookingDraft,
 } from '../../utils/bnbNav';
 import { DASHBOARD_LISTING_CSS } from '../../styles/dashboardListingStyles';
 import BnbAvailabilityCalendar from '../../components/bnb/BnbAvailabilityCalendar';
@@ -31,7 +35,8 @@ const BnbPropertyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isPublicPage = !!useMatch('/bnb/:id');
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [resumingBooking, setResumingBooking] = useState(false);
   const [property, setProperty] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,6 +58,11 @@ const BnbPropertyDetail = () => {
   const [provider, setProvider] = useState<(typeof PROVIDERS)[number]['value']>('tigo');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
+  const draftHandledRef = useRef(false);
+
+  useEffect(() => {
+    draftHandledRef.current = false;
+  }, [id]);
 
   useEffect(() => {
     if (user) {
@@ -123,18 +133,87 @@ const BnbPropertyDetail = () => {
   );
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (authLoading) return;
+    if (!isAuthenticated && (step === 'payment' || step === 'pending')) {
       setStep('form');
       setBookingId(null);
       setPendingOrderId('');
     }
-  }, [isAuthenticated]);
+  }, [authLoading, isAuthenticated, step]);
 
   const authRedirect = getPublicBnbPropertyPath(id!);
 
-  const redirectToAuth = () => {
+  const redirectToAuth = (draft?: BnbBookingDraft) => {
+    if (id) {
+      saveBnbBookingDraft(id, draft ?? { booking, resumePayment: true });
+    }
     navigate(`/login?redirect=${encodeURIComponent(authRedirect)}`);
   };
+
+  const computeTotal = useCallback((bookingData: typeof booking) => {
+    if (!property || !bookingData.check_in || !bookingData.check_out) return 0;
+    const n = Math.max(0, Math.ceil(
+      (new Date(bookingData.check_out).getTime() - new Date(bookingData.check_in).getTime()) / 86400000,
+    ));
+    if (n <= 0) return 0;
+    return n * (property.price || 0) + (property.cleaning_fee || 0) + (property.service_fee || 0);
+  }, [property]);
+
+  const createBookingRequest = useCallback(async (bookingData: typeof booking) => {
+    if (!property) throw new Error('Property not loaded');
+
+    const res = await Api.createBnbBooking({
+      property_id: property.id,
+      property_title: property.title,
+      customer_name: bookingData.customer_name,
+      customer_email: bookingData.customer_email,
+      customer_phone: bookingData.customer_phone,
+      check_in: bookingData.check_in,
+      check_out: bookingData.check_out,
+      guest_count: bookingData.guest_count,
+      special_requests: bookingData.special_requests,
+      total_amount: computeTotal(bookingData),
+    });
+
+    const data = res.data || res;
+    const newBookingId = data.booking_id ?? data.id;
+    if (!newBookingId) throw new Error('Could not create booking');
+    setBookingId(newBookingId);
+    setStep('payment');
+    clearBnbBookingDraft(property.id);
+  }, [property, computeTotal]);
+
+  useEffect(() => {
+    if (draftHandledRef.current) return;
+    if (authLoading || !isAuthenticated || !property || !id) return;
+
+    const draft = loadBnbBookingDraft(id);
+    if (!draft) return;
+
+    draftHandledRef.current = true;
+    setBooking((prev) => ({ ...prev, ...draft.booking }));
+
+    if (!draft.resumePayment || !draft.booking.check_in || !draft.booking.check_out) {
+      clearBnbBookingDraft(id);
+      return;
+    }
+
+    clearBnbBookingDraft(id);
+    setResumingBooking(true);
+    setError('');
+
+    createBookingRequest(draft.booking)
+      .catch((err: any) => {
+        const msg = err?.response?.data?.message || err?.message || 'Booking failed';
+        if (err?.response?.status === 401 || err?.response?.data?.requires_auth) {
+          setError('Your session expired. Please sign in again to continue.');
+          saveBnbBookingDraft(id, draft);
+          return;
+        }
+        setError(msg);
+      })
+      .finally(() => setResumingBooking(false));
+  }, [authLoading, isAuthenticated, property, id, createBookingRequest]);
 
   const goBack = () => {
     if (isPublicPage) {
@@ -150,33 +229,26 @@ const BnbPropertyDetail = () => {
     e.preventDefault();
     if (!property) return;
 
+    if (nights <= 0 || !booking.check_in || !booking.check_out) {
+      setError('Please select check-in and check-out dates on the calendar.');
+      return;
+    }
+
     if (!isAuthenticated) {
-      redirectToAuth();
+      setError('');
+      redirectToAuth({ booking, resumePayment: true });
       return;
     }
 
     setSubmitting(true);
     setError('');
     try {
-      const res = await Api.createBnbBooking({
-        property_id: property.id,
-        property_title: property.title,
-        customer_name: booking.customer_name,
-        customer_email: booking.customer_email,
-        customer_phone: booking.customer_phone,
-        check_in: booking.check_in,
-        check_out: booking.check_out,
-        guest_count: booking.guest_count,
-        special_requests: booking.special_requests,
-        total_amount: total,
-      });
-      const data = res.data || res;
-      setBookingId(data.booking_id);
-      setStep('payment');
+      await createBookingRequest(booking);
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Booking failed';
       if (err?.response?.status === 401 || err?.response?.data?.requires_auth) {
-        redirectToAuth();
+        setError('Your session expired. Please sign in again to continue.');
+        redirectToAuth({ booking, resumePayment: true });
         return;
       }
       setError(msg);
@@ -187,7 +259,7 @@ const BnbPropertyDetail = () => {
 
   const handlePay = async () => {
     if (!isAuthenticated) {
-      redirectToAuth();
+      redirectToAuth({ booking, resumePayment: true });
       return;
     }
     if (!bookingId) return;
@@ -218,7 +290,8 @@ const BnbPropertyDetail = () => {
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Payment failed';
       if (err?.response?.status === 401 || err?.response?.data?.requires_auth) {
-        redirectToAuth();
+        setError('Your session expired. Please sign in again to complete payment.');
+        saveBnbBookingDraft(id!, { booking, resumePayment: true });
         return;
       }
       setError(msg);
@@ -320,29 +393,13 @@ const BnbPropertyDetail = () => {
               <span style={{ color: '#64748B', fontSize: 13 }}> / night</span>
             </div>
 
-            {!isAuthenticated ? (
-              <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 12, padding: 20, textAlign: 'center' }}>
-                <h3 style={{ margin: '0 0 8px', fontSize: 16, color: '#0F172A' }}>Sign in to book & pay</h3>
-                <p style={{ fontSize: 13, color: '#92400E', lineHeight: 1.5, marginBottom: 16 }}>
-                  BnB bookings and payments are only available for signed-in Oweru accounts.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <Link
-                    to={`/login?redirect=${encodeURIComponent(authRedirect)}`}
-                    className="bnb-submit"
-                    style={{ display: 'block', textAlign: 'center', textDecoration: 'none', lineHeight: '24px' }}
-                  >
-                    Sign in
-                  </Link>
-                  <Link
-                    to={`/register?redirect=${encodeURIComponent(authRedirect)}`}
-                    style={{ fontSize: 13, color: GOLD, fontWeight: 700, textDecoration: 'none' }}
-                  >
-                    Create a free account
-                  </Link>
-                </div>
+            {!isAuthenticated && step === 'form' && (
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 12px', marginBottom: 14, fontSize: 12, color: '#64748B', lineHeight: 1.5 }}>
+                Browse freely — sign in only when you continue to payment.
               </div>
-            ) : step === 'form' ? (
+            )}
+
+            {step === 'form' ? (
               <form onSubmit={handleCreateBooking}>
                 <input required className="bnb-inp" placeholder="Full name" value={booking.customer_name} onChange={(e) => setBooking((p) => ({ ...p, customer_name: e.target.value }))} />
                 <input required type="email" className="bnb-inp" placeholder="Email" value={booking.customer_email} onChange={(e) => setBooking((p) => ({ ...p, customer_email: e.target.value }))} />
@@ -387,9 +444,22 @@ const BnbPropertyDetail = () => {
 
                 {error && <div style={{ color: '#DC2626', fontSize: 13, marginBottom: 10 }}>{error}</div>}
 
-                <button type="submit" className="bnb-submit" disabled={submitting || nights <= 0} style={{ opacity: submitting || nights <= 0 ? 0.6 : 1 }}>
-                  {submitting ? 'Creating booking…' : 'Continue to payment'}
+                <button type="submit" className="bnb-submit" disabled={submitting || resumingBooking || nights <= 0} style={{ opacity: submitting || resumingBooking || nights <= 0 ? 0.6 : 1 }}>
+                  {submitting || resumingBooking
+                    ? 'Preparing booking…'
+                    : isAuthenticated
+                      ? 'Continue to payment'
+                      : 'Sign in to continue to payment'}
                 </button>
+
+                {!isAuthenticated && (
+                  <p style={{ margin: '10px 0 0', fontSize: 12, color: '#64748B', textAlign: 'center' }}>
+                    No account?{' '}
+                    <Link to={`/register?redirect=${encodeURIComponent(authRedirect)}`} style={{ color: GOLD, fontWeight: 700, textDecoration: 'none' }}>
+                      Create one free
+                    </Link>
+                  </p>
+                )}
               </form>
             ) : null}
 
