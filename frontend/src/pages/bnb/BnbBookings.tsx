@@ -682,7 +682,7 @@ const BnbBookings = () => {
             );
           })}
         </div>
-      )}
+      ) : null}
 
       {/* Detail Modal */}
       {selectedBooking && (
