@@ -14,6 +14,10 @@ const fmt = (n: number) =>
 const fmtDate = (s?: string) =>
   s ? new Date(s).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
+const stayStatusLabel = (b: { status?: string; payment_status?: string; status_label?: string }) =>
+  b.status_label
+  || (b.payment_status === 'paid' ? (b.status === 'confirmed' ? 'Confirmed' : 'Paid') : 'Awaiting payment');
+
 const isPastCheckout = (checkOut?: string) =>
   !!checkOut && checkOut <= new Date().toISOString().slice(0, 10);
 
@@ -373,7 +377,7 @@ const MyBnbStays = () => {
                     <span>{b.guests} guest{b.guests > 1 ? 's' : ''}</span>
                   </div>
                   <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 999, background: '#F1F5F9', color: '#475569' }}>{b.status}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 999, background: '#F1F5F9', color: '#475569' }}>{stayStatusLabel(b)}</span>
                     <span style={{ fontWeight: 700, color: GOLD }}>{fmt(b.total_price)}</span>
                     {b.review && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B', display: 'inline-flex', alignItems: 'center', gap: 4 }}>

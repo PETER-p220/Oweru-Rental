@@ -13,6 +13,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const SESSION_RECHECK_MS = 30 * 60 * 1000; // 30 minutes
+
 function normalizeStoredUser(raw: Record<string, unknown>): User {
   const userType = (raw.userType ?? raw.user_type ?? 'tenant') as User['user_type'];
 
@@ -23,6 +25,10 @@ function normalizeStoredUser(raw: Record<string, unknown>): User {
     firstName: (raw.firstName ?? raw.first_name ?? '') as string,
     lastName: (raw.lastName ?? raw.last_name ?? '') as string,
   };
+}
+
+function isUnauthorizedError(err: unknown): boolean {
+  return (err as { response?: { status?: number } })?.response?.status === 401;
 }
 
 const getStoredUser = (): User | null => {
@@ -48,6 +54,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(hasValidSession);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const validatingRef = useRef(false);
+  const lastValidatedAt = useRef(0);
+  const redirectingRef = useRef(false);
 
   const clearSession = useCallback(() => {
     setUser(null);
@@ -56,11 +64,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem(TOKEN_KEY);
   }, []);
 
-  const validateSession = useCallback(async () => {
+  const redirectToLogin = useCallback(() => {
+    if (redirectingRef.current) return;
+    const path = window.location.pathname + window.location.search;
+    if (path.startsWith('/login') || path.startsWith('/register')) return;
+
+    redirectingRef.current = true;
+    window.location.href = `/login?redirect=${encodeURIComponent(path)}&session=expired`;
+  }, []);
+
+  const validateSession = useCallback(async (force = false) => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
       clearSession();
       return false;
+    }
+
+    const now = Date.now();
+    if (!force && now - lastValidatedAt.current < SESSION_RECHECK_MS) {
+      return true;
     }
 
     try {
@@ -69,36 +91,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(normalized);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(normalized));
+      lastValidatedAt.current = now;
       return true;
-    } catch {
-      clearSession();
+    } catch (err: unknown) {
+      if (isUnauthorizedError(err)) {
+        clearSession();
+        redirectToLogin();
+      }
+      // Network/server errors: keep existing session — do not log the user out.
       return false;
     }
-  }, [clearSession]);
+  }, [clearSession, redirectToLogin]);
 
   const logout = useCallback(() => {
     Api.logout().catch(() => {});
     clearSession();
+    lastValidatedAt.current = 0;
   }, [clearSession]);
 
   useEffect(() => {
     Api.setUnauthorizedHandler(() => {
       clearSession();
-      const path = window.location.pathname + window.location.search;
-      if (!path.startsWith('/login') && !path.startsWith('/register')) {
-        window.location.href = `/login?redirect=${encodeURIComponent(path)}&session=expired`;
-      }
+      redirectToLogin();
     });
 
     return () => Api.setUnauthorizedHandler(null);
-  }, [clearSession]);
+  }, [clearSession, redirectToLogin]);
 
   useEffect(() => {
     if (validatingRef.current) return;
     validatingRef.current = true;
 
     (async () => {
-      await validateSession();
+      await validateSession(true);
       setIsLoading(false);
       validatingRef.current = false;
     })();
@@ -107,12 +132,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const onFocus = () => {
       if (!localStorage.getItem(TOKEN_KEY)) return;
-      validateSession().catch(() => clearSession());
+      validateSession(false);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        onFocus();
+      }
     };
 
     window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [validateSession, clearSession]);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [validateSession]);
 
   const login = (userData: User, token: string) => {
     const normalized = normalizeStoredUser(userData as unknown as Record<string, unknown>);
@@ -120,6 +156,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(normalized));
     localStorage.setItem(TOKEN_KEY, token);
+    lastValidatedAt.current = Date.now();
+    redirectingRef.current = false;
   };
 
   const value: AuthContextType = {

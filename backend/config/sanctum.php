@@ -47,7 +47,9 @@ return [
     |
     */
 
-    'expiration' => null,
+    'expiration' => env('SANCTUM_EXPIRATION') !== null && env('SANCTUM_EXPIRATION') !== ''
+        ? (int) env('SANCTUM_EXPIRATION')
+        : null,
 
     /*
     |--------------------------------------------------------------------------

@@ -100,7 +100,9 @@ class AuthenticatedHttp {
       if (response.statusCode == 401) {
         await _maybeHandleUnauthorized(response);
       }
-    } catch (_) {}
+    } catch (_) {
+      // Keep session on network errors.
+    }
 
     return false;
   }

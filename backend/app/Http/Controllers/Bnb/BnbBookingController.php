@@ -313,6 +313,8 @@ class BnbBookingController extends Controller
     {
         $user = Auth::user();
 
+        app(BnbPaymentService::class)->syncPendingPaymentsForGuest((int) $user->id);
+
         BnbBooking::where('guest_id', $user->id)
             ->where('payment_status', 'paid')
             ->whereNotIn('status', ['cancelled', 'completed'])
@@ -510,6 +512,7 @@ class BnbBookingController extends Controller
             'total_price' => (float) $booking->total_price,
             'status' => $booking->status,
             'payment_status' => $booking->payment_status,
+            'status_label' => $this->bookingStatusLabel($booking),
             'payment_method' => $booking->payment_method,
             'transaction_id' => $booking->transaction_id,
             'special_requests' => $booking->special_requests,
@@ -539,6 +542,26 @@ class BnbBookingController extends Controller
                 'comment' => $booking->review->comment,
             ] : null,
         ];
+    }
+
+    private function bookingStatusLabel(BnbBooking $booking): string
+    {
+        if ($booking->status === 'cancelled') {
+            return 'Cancelled';
+        }
+
+        if ($booking->payment_status !== 'paid') {
+            return match ($booking->payment_status) {
+                'failed' => 'Payment failed',
+                default => 'Awaiting payment',
+            };
+        }
+
+        return match ($booking->status) {
+            'confirmed' => 'Confirmed',
+            'completed' => 'Completed',
+            default => 'Paid',
+        };
     }
 
     private function parseGuestNameFromNotes(?string $notes): string

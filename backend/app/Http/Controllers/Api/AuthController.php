@@ -62,7 +62,7 @@ class AuthController extends Controller
 
         app(NotificationService::class)->sendWelcomeNotification($user, false);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $this->issueAuthToken($user, $request);
 
         return response()->json([
             'message' => 'Registration successful',
@@ -611,7 +611,7 @@ class AuthController extends Controller
 
             app(NotificationService::class)->sendWelcomeNotification($user, true);
 
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $this->issueAuthToken($user, $request);
             
             return response()->json([
                 'message' => 'Registration successful',

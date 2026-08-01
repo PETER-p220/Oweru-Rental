@@ -204,29 +204,11 @@ class BnbPaymentService
 
         $booking->refresh();
 
-        if ($booking->status === 'cancelled') {
-            return [
-                'success' => true,
-                'payment_status' => 'failed',
-                'booking_id' => $booking->id,
-                'message' => 'This booking was cancelled because payment was not completed in time.',
-            ];
-        }
-
         if ($booking->payment_status === 'paid') {
             return $this->statusResponse($booking, 'paid');
         }
 
-        if ($booking->payment_status === 'failed') {
-            return $this->statusResponse($booking, 'failed');
-        }
-
-        if ($this->isPaymentDeadlinePassed($booking)) {
-            $this->cancelForPaymentFailure($booking, 'Payment was not received before the deadline.');
-
-            return $this->statusResponse($booking->fresh(), 'failed');
-        }
-
+        // Always verify with payment gateway before cancelling or returning pending.
         $remote = $this->selcom->checkOrderStatus($orderId);
 
         if ($remote['paid'] ?? false) {
@@ -236,12 +218,56 @@ class BnbPaymentService
         }
 
         if ($remote['failed'] ?? false) {
-            $this->cancelForPaymentFailure($booking, 'Payment was declined or not completed.');
+            if ($booking->status !== 'cancelled') {
+                $this->cancelForPaymentFailure($booking, 'Payment was declined or not completed.');
+            }
+
+            return $this->statusResponse($booking->fresh(), 'failed');
+        }
+
+        if ($booking->status === 'cancelled' || $booking->payment_status === 'failed') {
+            return $this->statusResponse($booking, 'failed');
+        }
+
+        if ($this->isPaymentDeadlinePassed($booking)) {
+            $this->cancelForPaymentFailure($booking, 'Payment was not received before the deadline.');
 
             return $this->statusResponse($booking->fresh(), 'failed');
         }
 
         return $this->statusResponse($booking, 'pending');
+    }
+
+    /**
+     * Reconcile unpaid bookings for a guest (e.g. when opening My Stays).
+     */
+    public function syncPendingPaymentsForGuest(int $guestId): int
+    {
+        $bookings = BnbBooking::query()
+            ->with(['property', 'guest'])
+            ->where('guest_id', $guestId)
+            ->where('payment_status', 'pending')
+            ->whereNotNull('transaction_id')
+            ->whereNotIn('status', ['cancelled'])
+            ->get();
+
+        $synced = 0;
+
+        foreach ($bookings as $booking) {
+            $orderId = (string) ($booking->transaction_id ?? '');
+            if ($orderId === '') {
+                continue;
+            }
+
+            $remote = $this->selcom->checkOrderStatus($orderId);
+
+            if ($remote['paid'] ?? false) {
+                $this->confirmPayment($booking, $remote);
+                $synced++;
+            }
+        }
+
+        return $synced;
     }
 
     public function confirmByOrderId(string $orderId, array $meta = []): bool
@@ -254,10 +280,6 @@ class BnbPaymentService
             return false;
         }
 
-        if ($booking->status === 'cancelled') {
-            return false;
-        }
-
         if ($booking->payment_status !== 'paid') {
             $this->confirmPayment($booking, $meta);
         }
@@ -267,17 +289,17 @@ class BnbPaymentService
 
     public function confirmPayment(BnbBooking $booking, array $meta = []): void
     {
-        if ($booking->payment_status === 'paid') {
+        if ($booking->payment_status === 'paid' && $booking->status === 'confirmed') {
             return;
         }
 
         $property = $booking->property ?? BnbProperty::find($booking->property_id);
-        $status = ($property && ($property->instant_book ?? false)) ? 'confirmed' : 'pending';
 
         $booking->update([
             'payment_status' => 'paid',
-            'status' => $booking->status === 'cancelled' ? $booking->status : $status,
+            'status' => 'confirmed',
             'payment_deadline_at' => null,
+            'cancellation_reason' => null,
         ]);
 
         $booking->refresh();
@@ -346,6 +368,18 @@ class BnbPaymentService
             ->get();
 
         foreach ($bookings as $booking) {
+            $orderId = (string) ($booking->transaction_id ?? '');
+
+            if ($orderId !== '') {
+                $remote = $this->selcom->checkOrderStatus($orderId);
+
+                if ($remote['paid'] ?? false) {
+                    $this->confirmPayment($booking, $remote);
+
+                    continue;
+                }
+            }
+
             $reason = $booking->check_out && $booking->check_out->copy()->startOfDay()->lt(now()->startOfDay())
                 ? 'Payment was not completed and your stay dates have passed. This reservation has been cancelled.'
                 : 'Payment was not received within the allowed time. Your reservation has been released.';
