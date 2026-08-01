@@ -1,3 +1,5 @@
+import { resolveBnbPropertyPath } from './bnbNav';
+
 export type ListingKind = 'rental' | 'bnb';
 
 /** Detect short-stay / BnB rows from public API payloads. */
@@ -18,11 +20,7 @@ export function resolvePropertyDetailPath(
   if (id == null) return '/properties';
 
   if (isBnbListing(property)) {
-    if (options?.isAuthenticated && options.user) {
-      const role = options.user.userType || options.user.user_type || options.user.role || 'tenant';
-      return `/dashboard/${role}/bnb-property/${id}`;
-    }
-    return `/bnb/${id}`;
+    return resolveBnbPropertyPath(options?.user, id, options?.isAuthenticated);
   }
 
   return `/property/${id}`;

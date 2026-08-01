@@ -9,18 +9,28 @@ export function getDashboardRole(user: {
   return role as UserRole;
 }
 
+/** Roles whose dashboard includes a bnb-property detail route in App.tsx */
+const DASHBOARD_BNB_DETAIL_ROLES: UserRole[] = ['tenant', 'bnb_owner'];
+
+export function hasDashboardBnbDetail(
+  user: Parameters<typeof getDashboardRole>[0] | null | undefined,
+): boolean {
+  if (!user) return false;
+  return DASHBOARD_BNB_DETAIL_ROLES.includes(getDashboardRole(user));
+}
+
 /** Public property detail URL (no login required) */
 export function getPublicBnbPropertyPath(propertyId: number | string): string {
   return `/bnb/${propertyId}`;
 }
 
-/** Dashboard path when signed in; public path for guests */
+/** Dashboard path when signed in; public path for guests and roles without bnb-property route */
 export function resolveBnbPropertyPath(
   user: Parameters<typeof getDashboardRole>[0] | null | undefined,
   propertyId: number | string,
   isAuthenticated = !!user,
 ): string {
-  if (isAuthenticated) {
+  if (isAuthenticated && hasDashboardBnbDetail(user)) {
     return getBnbPropertyPath(user, propertyId);
   }
   return getPublicBnbPropertyPath(propertyId);
@@ -67,7 +77,7 @@ export function resolvePostLoginDestination(
   if (redirect) {
     const publicBnb = redirect.match(/^\/bnb\/(\d+)\/?$/);
     if (publicBnb) {
-      return getBnbPropertyPath(user, publicBnb[1]);
+      return resolveBnbPropertyPath(user, publicBnb[1], true);
     }
     if (!redirect.startsWith('/dashboard/')) {
       return redirect;

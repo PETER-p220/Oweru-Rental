@@ -8,6 +8,7 @@ import {
   getBnbPropertyPath,
   getMyStaysPath,
   getPublicBnbPropertyPath,
+  hasDashboardBnbDetail,
   saveBnbBookingDraft,
   loadBnbBookingDraft,
   clearBnbBookingDraft,
@@ -136,6 +137,7 @@ const BnbPropertyDetail = () => {
 
   useEffect(() => {
     if (authLoading || !isAuthenticated || !user || !id || !isPublicPage) return;
+    if (!hasDashboardBnbDetail(user)) return;
     navigate(getBnbPropertyPath(user, id), { replace: true });
   }, [authLoading, isAuthenticated, user, id, isPublicPage, navigate]);
 
