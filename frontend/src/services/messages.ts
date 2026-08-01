@@ -1,6 +1,8 @@
 import { TOKEN_KEY } from './api';
 
-const API_BASE_URL = 'https://rental.oweru.com';
+const API_BASE_URL = typeof window !== 'undefined'
+  ? window.location.origin
+  : (import.meta.env.VITE_API_URL || 'https://rental.oweru.com');
 
 export interface Message {
   id: number;

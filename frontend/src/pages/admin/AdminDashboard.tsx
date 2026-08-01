@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuthenticatedEffect } from '../../hooks/useAuthenticatedEffect';
+import { retryAsync } from '../../utils/apiErrors';
 import {
   C, body, pageWrap, pageInner, card, btnPrimary,
   ADMIN_CSS, adminHeaderStyle,
@@ -166,53 +167,62 @@ const AdminDashboard = () => {
   };
 
   const loadDashboard = useCallback(async (isRefresh = false) => {
+    if (!localStorage.getItem('token')) return;
+
     try {
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const [
-        usersRes, propsRes, txRes, commRes, contractRes,
-        verifyRes, alertRes, bnbRes, logsRes,
-      ] = await Promise.allSettled([
-        Api.getUserStats(),
-        Api.getAdminPropertyStats(),
-        Api.getAdminTransactionStats(),
-        Api.getCommissionStats(),
-        Api.getAdminContractStats(),
-        Api.getVerificationStats(),
-        Api.getAlertStats(),
-        Api.getAdminBnbAnalytics('30d'),
-        Api.getActivityLogs({ per_page: 10 }),
-      ]);
+      await retryAsync(async () => {
+        const [
+          usersRes, propsRes, txRes, commRes, contractRes,
+          verifyRes, alertRes, bnbRes, logsRes,
+        ] = await Promise.allSettled([
+          Api.getUserStats(),
+          Api.getAdminPropertyStats(),
+          Api.getAdminTransactionStats(),
+          Api.getCommissionStats(),
+          Api.getAdminContractStats(),
+          Api.getVerificationStats(),
+          Api.getAlertStats(),
+          Api.getAdminBnbAnalytics('30d'),
+          Api.getActivityLogs({ per_page: 10 }),
+        ]);
 
-      const pick = (res: PromiseSettledResult<any>) =>
-        res.status === 'fulfilled' ? (res.value?.data ?? res.value ?? null) : null;
+        const pick = (res: PromiseSettledResult<any>) =>
+          res.status === 'fulfilled' ? (res.value?.data ?? res.value ?? null) : null;
 
-      setReports({
-        users: pick(usersRes),
-        properties: pick(propsRes),
-        transactions: pick(txRes),
-        commissions: pick(commRes),
-        contracts: pick(contractRes),
-        verification: pick(verifyRes),
-        alerts: pick(alertRes),
-        bnb: pick(bnbRes),
+        const core = [usersRes, propsRes, txRes];
+        if (core.every((r) => r.status === 'rejected')) {
+          throw core[0].status === 'rejected' ? core[0].reason : new Error('Failed to load admin dashboard.');
+        }
+
+        setReports({
+          users: pick(usersRes),
+          properties: pick(propsRes),
+          transactions: pick(txRes),
+          commissions: pick(commRes),
+          contracts: pick(contractRes),
+          verification: pick(verifyRes),
+          alerts: pick(alertRes),
+          bnb: pick(bnbRes),
+        });
+
+        if (logsRes.status === 'fulfilled') {
+          const logs = Array.isArray(logsRes.value?.data) ? logsRes.value.data : [];
+          setRecentActivity(logs.map((log: any) => ({
+            id: String(log.id),
+            type: (log.action || '').toLowerCase().includes('login') ? 'user'
+              : (log.action || '').toLowerCase().includes('property') ? 'property'
+              : (log.action || '').toLowerCase().includes('payment') ? 'payment' : 'system',
+            message: log.description || log.action || 'Activity recorded',
+            time: formatTimeAgo(log.created_at),
+            status: (log.action || '').toLowerCase().includes('fail') ? 'error' : 'success',
+          })));
+        }
+
+        setLastUpdated(new Date());
       });
-
-      if (logsRes.status === 'fulfilled') {
-        const logs = Array.isArray(logsRes.value?.data) ? logsRes.value.data : [];
-        setRecentActivity(logs.map((log: any) => ({
-          id: String(log.id),
-          type: (log.action || '').toLowerCase().includes('login') ? 'user'
-            : (log.action || '').toLowerCase().includes('property') ? 'property'
-            : (log.action || '').toLowerCase().includes('payment') ? 'payment' : 'system',
-          message: log.description || log.action || 'Activity recorded',
-          time: formatTimeAgo(log.created_at),
-          status: (log.action || '').toLowerCase().includes('fail') ? 'error' : 'success',
-        })));
-      }
-
-      setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to load dashboard:', error);
     } finally {

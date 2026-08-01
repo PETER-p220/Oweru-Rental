@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import Api from '../services/api';
 import { useAuthenticatedEffect } from '../hooks/useAuthenticatedEffect';
-import { getApiErrorMessage, rejectedReason } from '../utils/apiErrors';
+import { getApiErrorMessage, rejectedReason, retryAsync } from '../utils/apiErrors';
 import DashboardLoadError from '../components/DashboardLoadError';
 
 // ── Design tokens — 1:1 with landlord_dashboard.dart kSlate* color system
@@ -74,33 +74,36 @@ const LandlordDashboard = () => {
   const [error, setError]             = useState('');
 
   const loadDashboard = useCallback(async () => {
+    if (!localStorage.getItem('token')) return;
+
     try {
       setLoading(true);
       setError('');
 
-      const [statsRes, propsRes, appsRes, contractsRes] = await Promise.allSettled([
-        Api.getOwnerDashboard(),
-        Api.getOwnerProperties(),
-        Api.getOwnerApplications(),
-        Api.getOwnerContracts(),
-      ]);
+      await retryAsync(async () => {
+        const [statsRes, propsRes, appsRes, contractsRes] = await Promise.allSettled([
+          Api.getOwnerDashboard(),
+          Api.getOwnerProperties(),
+          Api.getOwnerApplications(),
+          Api.getOwnerContracts(),
+        ]);
 
-      if (statsRes.status === 'fulfilled') {
+        if (statsRes.status === 'rejected') {
+          throw rejectedReason(statsRes);
+        }
+
         setStats(statsRes.value.data || {});
-      }
-      if (propsRes.status === 'fulfilled') {
-        setProperties(Array.isArray(propsRes.value.data) ? propsRes.value.data.slice(0, 5) : []);
-      }
-      if (appsRes.status === 'fulfilled') {
-        setApplicationCount(Array.isArray(appsRes.value.data) ? appsRes.value.data.length : 0);
-      }
-      if (contractsRes.status === 'fulfilled') {
-        setContracts(Array.isArray(contractsRes.value.data) ? contractsRes.value.data : []);
-      }
 
-      if (statsRes.status === 'rejected') {
-        setError(getApiErrorMessage(rejectedReason(statsRes), 'Failed to load dashboard data.'));
-      }
+        if (propsRes.status === 'fulfilled') {
+          setProperties(Array.isArray(propsRes.value.data) ? propsRes.value.data.slice(0, 5) : []);
+        }
+        if (appsRes.status === 'fulfilled') {
+          setApplicationCount(Array.isArray(appsRes.value.data) ? appsRes.value.data.length : 0);
+        }
+        if (contractsRes.status === 'fulfilled') {
+          setContracts(Array.isArray(contractsRes.value.data) ? contractsRes.value.data : []);
+        }
+      });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, 'Failed to load dashboard data.'));
     } finally {

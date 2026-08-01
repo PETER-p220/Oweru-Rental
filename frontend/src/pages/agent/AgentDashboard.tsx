@@ -4,7 +4,7 @@ import Api from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LeadsAndVisitorsSection from './LeadsAndVisitorsSection';
 import { useAuthenticatedEffect } from '../../hooks/useAuthenticatedEffect';
-import { getApiErrorMessage, rejectedReason } from '../../utils/apiErrors';
+import { getApiErrorMessage, rejectedReason, retryAsync } from '../../utils/apiErrors';
 import DashboardLoadError from '../../components/DashboardLoadError';
 import {
   agentEyebrowStyle,
@@ -25,25 +25,28 @@ const AgentDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   const loadDashboard = useCallback(async () => {
+    if (!localStorage.getItem('token')) return;
+
     try {
       setLoading(true);
       setError('');
 
-      const [dashboardRes, listingsRes] = await Promise.allSettled([
-        Api.getAgentDashboard(),
-        Api.getMyListings(),
-      ]);
+      await retryAsync(async () => {
+        const [dashboardRes, listingsRes] = await Promise.allSettled([
+          Api.getAgentDashboard(),
+          Api.getMyListings(),
+        ]);
 
-      if (dashboardRes.status === 'fulfilled') {
+        if (dashboardRes.status === 'rejected') {
+          throw rejectedReason(dashboardRes);
+        }
+
         setStats(dashboardRes.value.data || {});
-      }
-      if (listingsRes.status === 'fulfilled') {
-        setListings(Array.isArray(listingsRes.value.data) ? listingsRes.value.data.slice(0, 5) : []);
-      }
 
-      if (dashboardRes.status === 'rejected') {
-        setError(getApiErrorMessage(rejectedReason(dashboardRes), t('agent.dashboard.loadError')));
-      }
+        if (listingsRes.status === 'fulfilled') {
+          setListings(Array.isArray(listingsRes.value.data) ? listingsRes.value.data.slice(0, 5) : []);
+        }
+      });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, t('agent.dashboard.loadError')));
     } finally {

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Building2, TrendingUp, Users, DollarSign, Eye, Star, Plus, ArrowUpRight, ArrowDownRight, BarChart3, Calendar } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuthenticatedEffect } from '../../hooks/useAuthenticatedEffect';
-import { getApiErrorMessage } from '../../utils/apiErrors';
+import { getApiErrorMessage, retryAsync } from '../../utils/apiErrors';
 import DashboardLoadError from '../../components/DashboardLoadError';
 
 interface DashboardStats {
@@ -29,18 +29,22 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState('');
 
   const fetchDashboardData = useCallback(async () => {
+    if (!localStorage.getItem('token')) return;
+
     try {
       setLoading(true);
       setError('');
 
-      const response = await Api.getCommercialDashboard();
-      const data = response.data ?? response;
+      await retryAsync(async () => {
+        const response = await Api.getCommercialDashboard();
+        const data = response.data ?? response;
 
-      setStats(data.stats ?? null);
-      setRecentBookings(data.recent_payments || data.recent_bookings || []);
-      setPopularProperties(data.popular_properties || []);
-      setMonthlyRevenue(data.monthly_revenue || []);
-      setUser(data.user ?? null);
+        setStats(data.stats ?? null);
+        setRecentBookings(data.recent_payments || data.recent_bookings || []);
+        setPopularProperties(data.popular_properties || []);
+        setMonthlyRevenue(data.monthly_revenue || []);
+        setUser(data.user ?? null);
+      });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, 'Failed to load commercial dashboard.'));
     } finally {

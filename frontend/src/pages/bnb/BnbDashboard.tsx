@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuthenticatedEffect } from '../../hooks/useAuthenticatedEffect';
-import { getApiErrorMessage, rejectedReason } from '../../utils/apiErrors';
+import { getApiErrorMessage, rejectedReason, retryAsync } from '../../utils/apiErrors';
 import DashboardLoadError from '../../components/DashboardLoadError';
 
 function parseGuestFromNotes(notes?: string): { name: string; email: string; phone: string } | null {
@@ -54,17 +54,23 @@ const BnbDashboard = () => {
   const [error, setError] = useState('');
 
   const loadDashboardData = useCallback(async () => {
+    if (!localStorage.getItem('token')) return;
+
     try {
       setLoading(true);
       setError('');
 
-      const [analyticsRes, bookingsRes, propertiesRes] = await Promise.allSettled([
-        Api.getBnbAnalytics(),
-        Api.getBnbBookings(),
-        Api.getBnbProperties(),
-      ]);
+      await retryAsync(async () => {
+        const [analyticsRes, bookingsRes, propertiesRes] = await Promise.allSettled([
+          Api.getBnbAnalytics(),
+          Api.getBnbBookings(),
+          Api.getBnbProperties(),
+        ]);
 
-      if (analyticsRes.status === 'fulfilled') {
+        if (analyticsRes.status === 'rejected') {
+          throw rejectedReason(analyticsRes);
+        }
+
         const a = analyticsRes.value.data || {};
         setStats({
           totalProperties: a.totalProperties || 0,
@@ -74,19 +80,14 @@ const BnbDashboard = () => {
           averageRating: a.averageRating || 0,
           activeListings: a.activeListings || 0,
         });
-      }
 
-      if (bookingsRes.status === 'fulfilled') {
-        setRecentBookings((bookingsRes.value.data || []).slice(0, 5));
-      }
-
-      if (propertiesRes.status === 'fulfilled') {
-        setTopProperties((propertiesRes.value.data || []).slice(0, 3));
-      }
-
-      if (analyticsRes.status === 'rejected') {
-        setError(getApiErrorMessage(rejectedReason(analyticsRes), 'Failed to load BnB dashboard.'));
-      }
+        if (bookingsRes.status === 'fulfilled') {
+          setRecentBookings((bookingsRes.value.data || []).slice(0, 5));
+        }
+        if (propertiesRes.status === 'fulfilled') {
+          setTopProperties((propertiesRes.value.data || []).slice(0, 3));
+        }
+      });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, 'Failed to load BnB dashboard.'));
     } finally {

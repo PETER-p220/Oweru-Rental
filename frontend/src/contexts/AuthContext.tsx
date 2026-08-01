@@ -109,7 +109,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(normalized));
       lastValidatedAt.current = now;
-      bumpSession();
+      // Only refetch dashboards on background re-validation — not on initial app boot.
+      if (!force) {
+        bumpSession();
+      }
       return true;
     } catch (err: unknown) {
       if (isUnauthorizedError(err)) {
@@ -170,16 +173,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (!localStorage.getItem(TOKEN_KEY)) return;
       if (!isProtectedAppPath(window.location.pathname)) return;
 
-      const awayMs = hiddenAtRef.current ? Date.now() - hiddenAtRef.current : 0;
       hiddenAtRef.current = null;
 
-      void validateSession(false).then((ok) => {
-        if (!ok) return;
-        // After being away, refetch dashboard data without requiring a full refresh.
-        if (awayMs >= 2 * 60 * 1000) {
-          bumpSession();
-        }
-      });
+      void validateSession(false);
     };
 
     document.addEventListener('visibilitychange', onVisibility);

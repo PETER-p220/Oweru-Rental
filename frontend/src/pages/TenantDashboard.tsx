@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { formatCurrency } from './tenant/tenantPageStyles';
 import { useAuthenticatedEffect } from '../hooks/useAuthenticatedEffect';
-import { getApiErrorMessage, rejectedReason } from '../utils/apiErrors';
+import { getApiErrorMessage, rejectedReason, retryAsync } from '../utils/apiErrors';
 import DashboardLoadError from '../components/DashboardLoadError';
 
 interface DashboardData {
@@ -78,44 +78,40 @@ const TenantDashboard = () => {
   const [error, setError] = useState('');
 
   const loadDashboard = useCallback(async () => {
+    if (!localStorage.getItem('token')) return;
+
     try {
       setLoading(true);
       setError('');
 
-      const [dashboardRes, propertiesRes, contractsRes] = await Promise.allSettled([
-        Api.getTenantDashboard(),
-        Api.getProperties({ page: 1 }),
-        Api.getTenantDigitalContracts(),
-      ]);
+      await retryAsync(async () => {
+        const [dashboardRes, propertiesRes, contractsRes] = await Promise.allSettled([
+          Api.getTenantDashboard(),
+          Api.getProperties({ page: 1 }),
+          Api.getTenantDigitalContracts(),
+        ]);
 
-      if (dashboardRes.status === 'fulfilled') {
+        if (dashboardRes.status === 'rejected') {
+          throw rejectedReason(dashboardRes);
+        }
+
         setStats(dashboardRes.value.data || {});
-      }
 
-      if (propertiesRes.status === 'fulfilled') {
-        const payload = propertiesRes.value.data;
-        setProperties(
-          Array.isArray(payload?.data)
-            ? payload.data.slice(0, 4)
-            : Array.isArray(payload)
-              ? payload.slice(0, 4)
-              : [],
-        );
-      }
+        if (propertiesRes.status === 'fulfilled') {
+          const payload = propertiesRes.value.data;
+          setProperties(
+            Array.isArray(payload?.data)
+              ? payload.data.slice(0, 4)
+              : Array.isArray(payload)
+                ? payload.slice(0, 4)
+                : [],
+          );
+        }
 
-      if (contractsRes.status === 'fulfilled') {
-        setContracts(Array.isArray(contractsRes.value.data) ? contractsRes.value.data : []);
-      }
-
-      const failures = [dashboardRes, propertiesRes, contractsRes].filter(
-        (result) => result.status === 'rejected',
-      );
-
-      if (dashboardRes.status === 'rejected') {
-        setError(getApiErrorMessage(rejectedReason(dashboardRes), 'Failed to load tenant dashboard.'));
-      } else if (failures.length === failures.length) {
-        setError(getApiErrorMessage(rejectedReason(failures[0] as PromiseRejectedResult), 'Failed to load tenant dashboard.'));
-      }
+        if (contractsRes.status === 'fulfilled') {
+          setContracts(Array.isArray(contractsRes.value.data) ? contractsRes.value.data : []);
+        }
+      });
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, 'Failed to load tenant dashboard.'));
     } finally {

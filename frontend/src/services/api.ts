@@ -1,12 +1,19 @@
 // API service for connecting to Laravel backend
 function resolveApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    const isLocalDev = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+    // Production SPA is served by the same nginx host as /api — always use same origin.
+    if (!isLocalDev) {
+      return origin.replace(/\/$/, '');
+    }
+  }
+
   const fromEnv = import.meta.env.VITE_API_URL;
   if (fromEnv && String(fromEnv).trim()) {
     return String(fromEnv).replace(/\/$/, '');
   }
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin;
-  }
+
   return 'http://localhost:8000';
 }
 
@@ -217,7 +224,7 @@ class Api {
       // eslint-disable-next-line @typescript-eslint/no-throw-literal
       throw {
         response: {
-          data: { message: 'Unable to reach the server. Check your connection and try again.' },
+          data: { message: 'Request failed before reaching the server.' },
           status: 0,
         },
       };
