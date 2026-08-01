@@ -78,18 +78,40 @@ const TenantDashboard = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const [dashboardRes, propertiesRes, contractsRes] = await Promise.all([
+        const [dashboardRes, propertiesRes, contractsRes] = await Promise.allSettled([
           Api.getTenantDashboard(),
           Api.getProperties({ page: 1 }),
-          Api.getTenantDigitalContracts().catch(() => ({ data: [] })),
+          Api.getTenantDigitalContracts(),
         ]);
-        setStats(dashboardRes.data || {});
-        setProperties(
-          Array.isArray(propertiesRes.data?.data)
-            ? propertiesRes.data.data.slice(0, 4)
-            : []
+
+        if (dashboardRes.status === 'fulfilled') {
+          setStats(dashboardRes.value.data || {});
+        }
+
+        if (propertiesRes.status === 'fulfilled') {
+          const payload = propertiesRes.value.data;
+          setProperties(
+            Array.isArray(payload?.data)
+              ? payload.data.slice(0, 4)
+              : Array.isArray(payload)
+                ? payload.slice(0, 4)
+                : [],
+          );
+        }
+
+        if (contractsRes.status === 'fulfilled') {
+          setContracts(Array.isArray(contractsRes.value.data) ? contractsRes.value.data : []);
+        }
+
+        const failures = [dashboardRes, propertiesRes, contractsRes].filter(
+          (result) => result.status === 'rejected',
         );
-        setContracts(Array.isArray(contractsRes.data) ? contractsRes.data : []);
+        if (failures.length === failures.length) {
+          const err = (failures[0] as PromiseRejectedResult).reason;
+          setError(err?.response?.data?.message || 'Failed to load tenant dashboard.');
+        } else {
+          setError('');
+        }
       } catch (err: any) {
         setError(err?.response?.data?.message || 'Failed to load tenant dashboard.');
       } finally {

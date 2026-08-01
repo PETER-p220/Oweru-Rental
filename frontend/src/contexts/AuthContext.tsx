@@ -63,6 +63,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsAuthenticated(false);
     localStorage.removeItem('user');
     localStorage.removeItem(TOKEN_KEY);
+    redirectingRef.current = false;
+    lastValidatedAt.current = 0;
   }, []);
 
   const redirectToLogin = useCallback(() => {
@@ -90,7 +92,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const now = Date.now();
     if (!force && now - lastValidatedAt.current < SESSION_RECHECK_MS) {
-      return true;
+      return !!localStorage.getItem(TOKEN_KEY);
     }
 
     try {
@@ -143,7 +145,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const onFocus = () => {
       if (!localStorage.getItem(TOKEN_KEY)) return;
-      validateSession(false);
+      if (isProtectedAppPath(window.location.pathname)) {
+        validateSession(false);
+      }
     };
 
     const onVisibility = () => {

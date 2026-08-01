@@ -118,13 +118,53 @@ export interface LoginResponse {
 class Api {
   private static unauthorizedHandler: (() => void) | null = null;
   private static handlingUnauthorized = false;
+  private static sessionCheckPromise: Promise<boolean> | null = null;
 
   static setUnauthorizedHandler(handler: (() => void) | null) {
     this.unauthorizedHandler = handler;
   }
 
+  private static endpointPath(endpoint: string): string {
+    return endpoint.split('?')[0];
+  }
+
   private static isPublicAuthEndpoint(endpoint: string): boolean {
-    return /^(login|register|logout|auth\/|check-email)/.test(endpoint);
+    return /^(login|register|logout|auth\/|check-email)/.test(this.endpointPath(endpoint));
+  }
+
+  /** Public read endpoints — never attach Bearer token (stale tokens must not break browsing). */
+  private static isPublicDataEndpoint(endpoint: string): boolean {
+    return this.endpointPath(endpoint).startsWith('public/');
+  }
+
+  /** Confirm the stored token is rejected before clearing the whole session. */
+  private static async isSessionExpired(): Promise<boolean> {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return true;
+
+    if (!this.sessionCheckPromise) {
+      this.sessionCheckPromise = (async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/user`, {
+            headers: {
+              Accept: 'application/json',
+              Authorization: `Bearer ${token}`,
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+          });
+          return res.status === 401;
+        } catch {
+          // Network blip — keep the session; the page can retry.
+          return false;
+        } finally {
+          window.setTimeout(() => {
+            this.sessionCheckPromise = null;
+          }, 3000);
+        }
+      })();
+    }
+
+    return this.sessionCheckPromise;
   }
 
   private static async request<T>(
@@ -134,6 +174,7 @@ class Api {
     const url = `${API_BASE_URL}/api/${endpoint}`;
 
     const isFormData = options.body instanceof FormData;
+    const isPublicData = this.isPublicDataEndpoint(endpoint);
 
     const defaultHeaders: Record<string, string> = {
       'Accept': 'application/json',
@@ -144,9 +185,12 @@ class Api {
       defaultHeaders['Content-Type'] = 'application/json';
     }
 
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (token) {
-      defaultHeaders['Authorization'] = `Bearer ${token}`;
+    // Public listings/details work without auth — omit Bearer so expired tokens cannot break them.
+    if (!isPublicData) {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (token) {
+        defaultHeaders['Authorization'] = `Bearer ${token}`;
+      }
     }
 
     const response = await fetch(url, {
@@ -164,12 +208,15 @@ class Api {
       if (
         response.status === 401
         && !this.isPublicAuthEndpoint(endpoint)
+        && !isPublicData
         && !this.handlingUnauthorized
       ) {
         this.handlingUnauthorized = true;
         try {
-          // Defer to AuthContext — it skips redirect on public pages.
-          this.unauthorizedHandler?.();
+          const expired = await this.isSessionExpired();
+          if (expired) {
+            this.unauthorizedHandler?.();
+          }
         } finally {
           this.handlingUnauthorized = false;
         }
