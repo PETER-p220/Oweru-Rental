@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/utils/property_images.dart';
+import '../../../../core/utils/property_share.dart';
 import '../../../../shared/services/bnb_api_service.dart';
 import '../../../../shared/services/user_service.dart';
 import 'tenant_my_bnb_stays_page.dart';
@@ -488,13 +489,27 @@ class _TenantBnbPropertyDetailPageState extends State<TenantBnbPropertyDetailPag
     }
   }
 
+  Future<void> _shareWhatsApp() async {
+    final url = PropertyShare.buildUrl(widget.propertyId, kind: PropertyShareKind.bnb);
+    final title = _property['title']?.toString() ?? 'Short stay';
+    await PropertyShare.shareWhatsApp(PropertyShare.buildMessage(title, url));
+  }
+
   @override
   Widget build(BuildContext context) {
     final img = getPropertyImageUrl(_property);
 
     return Scaffold(
       backgroundColor: kBg,
-      appBar: tenantPageAppBar(_property['title']?.toString() ?? 'BnB Stay'),
+      appBar: tenantPageAppBar(
+        _property['title']?.toString() ?? 'BnB Stay',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_rounded, color: kSlate800),
+            onPressed: _shareWhatsApp,
+          ),
+        ],
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: kGold))
           : _error.isNotEmpty

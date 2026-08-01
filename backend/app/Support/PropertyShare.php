@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\BnbProperty;
 use App\Models\Property;
 
 class PropertyShare
@@ -13,7 +14,7 @@ class PropertyShare
 
     public static function apiOrigin(): string
     {
-        return rtrim((string) config('app.url'), '/');
+        return rtrim((string) self::ensureHttps((string) config('app.url')), '/');
     }
 
     public static function propertyPageUrl(int $propertyId, ?int $agentId = null): string
@@ -26,11 +27,17 @@ class PropertyShare
         return $url;
     }
 
-    /** URL crawled by WhatsApp/Facebook — serves Open Graph HTML with property image. */
-    public static function previewUrl(int $propertyId, ?int $agentId = null): string
+    public static function bnbPageUrl(int $propertyId): string
     {
-        $url = self::apiOrigin() . '/api/public/share/property/' . $propertyId;
-        if ($agentId !== null) {
+        return self::frontendOrigin() . '/bnb/' . $propertyId;
+    }
+
+    /** URL crawled by WhatsApp/Facebook — serves Open Graph HTML with property image. */
+    public static function previewUrl(int $propertyId, ?int $agentId = null, string $kind = 'property'): string
+    {
+        $segment = $kind === 'bnb' ? 'bnb' : 'property';
+        $url = self::apiOrigin() . '/api/public/share/' . $segment . '/' . $propertyId;
+        if ($agentId !== null && $kind !== 'bnb') {
             $url .= '?agent=' . $agentId;
         }
 
@@ -60,29 +67,51 @@ class PropertyShare
             }
         }
 
-        return self::frontendOrigin() . '/favicon.ico';
+        return self::defaultImageUrl();
+    }
+
+    public static function resolveBnbImageUrl(BnbProperty $property): string
+    {
+        $images = $property->images ?? [];
+        if (is_string($images)) {
+            $decoded = json_decode($images, true);
+            $images = is_array($decoded) ? $decoded : [];
+        }
+
+        if (! empty($images)) {
+            $first = $images[0];
+            $path = is_string($first)
+                ? $first
+                : ($first['image_path'] ?? $first['path'] ?? $first['url'] ?? '');
+
+            if ($path) {
+                return self::absoluteStorageUrl((string) $path);
+            }
+        }
+
+        return self::defaultImageUrl();
     }
 
     public static function absoluteStorageUrl(string $path): string
     {
         $path = trim($path);
         if ($path === '') {
-            return self::frontendOrigin() . '/favicon.ico';
+            return self::defaultImageUrl();
         }
 
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
+            return self::ensureHttps($path);
         }
 
         if (str_starts_with($path, '/storage/')) {
-            return self::apiOrigin() . $path;
+            return self::ensureHttps(self::apiOrigin() . $path);
         }
 
         if (str_starts_with($path, 'storage/')) {
-            return self::apiOrigin() . '/' . $path;
+            return self::ensureHttps(self::apiOrigin() . '/' . $path);
         }
 
-        return self::apiOrigin() . '/storage/' . ltrim($path, '/');
+        return self::ensureHttps(self::apiOrigin() . '/storage/' . ltrim($path, '/'));
     }
 
     public static function buildDescription(Property $property): string
@@ -98,5 +127,33 @@ class PropertyShare
         }
 
         return implode(' · ', $parts) ?: 'View this listing on Oweru Rental.';
+    }
+
+    public static function buildBnbDescription(BnbProperty $property): string
+    {
+        $parts = array_filter([
+            $property->location ?: $property->address,
+            $property->price ? 'TZS ' . number_format((float) $property->price, 0) . '/night' : null,
+            $property->max_guests ? $property->max_guests . ' guests max' : null,
+        ]);
+
+        if (! empty($property->description)) {
+            $desc = strip_tags((string) $property->description);
+            $parts[] = mb_strlen($desc) > 120 ? mb_substr($desc, 0, 117) . '...' : $desc;
+        }
+
+        return implode(' · ', $parts) ?: 'Book this short stay on Oweru Rental.';
+    }
+
+    private static function defaultImageUrl(): string
+    {
+        return self::ensureHttps(self::frontendOrigin() . '/favicon.ico');
+    }
+
+    private static function ensureHttps(string $url): string
+    {
+        return str_starts_with($url, 'http://')
+            ? 'https://' . substr($url, 7)
+            : $url;
     }
 }

@@ -1,5 +1,7 @@
 const DEFAULT_ORIGIN = 'https://rental.oweru.com';
 
+export type ShareListingKind = 'rental' | 'bnb';
+
 /** Origin used for share preview links (same host as API). */
 function getShareOrigin(): string {
   if (typeof window !== 'undefined') return window.location.origin;
@@ -8,23 +10,27 @@ function getShareOrigin(): string {
 
 /**
  * Share preview URL — crawled by WhatsApp with og:image for property photo preview.
- * Redirects humans to the SPA property page.
+ * Redirects humans to the SPA property page (must be deployed on backend).
  */
 export function buildPropertyShareUrl(
   propertyId: number | string,
   agentId?: number | string | null,
+  kind: ShareListingKind = 'rental',
 ): string {
   const base = getShareOrigin();
-  const q = agentId != null && `${agentId}`.trim() !== '' ? `?agent=${agentId}` : '';
-  return `${base}/api/public/share/property/${propertyId}${q}`;
+  const segment = kind === 'bnb' ? 'bnb' : 'property';
+  const q = kind === 'rental' && agentId != null && `${agentId}`.trim() !== '' ? `?agent=${agentId}` : '';
+  return `${base}/api/public/share/${segment}/${propertyId}${q}`;
 }
 
 /** Direct SPA link (no rich preview) — for copy/open in browser. */
 export function buildPropertyPageUrl(
   propertyId: number | string,
   agentId?: number | string | null,
+  kind: ShareListingKind = 'rental',
 ): string {
   const base = getShareOrigin();
+  if (kind === 'bnb') return `${base}/bnb/${propertyId}`;
   const q = agentId != null && `${agentId}`.trim() !== '' ? `?agent=${agentId}` : '';
   return `${base}/property/${propertyId}${q}`;
 }

@@ -8,6 +8,7 @@ import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import Api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { resolveBnbPropertyPath } from '../utils/bnbNav';
+import { isBnbListing, resolvePropertyDetailPath } from '../utils/propertyNav';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import { getPropertyThumbnail, PROPERTY_IMAGE_PLACEHOLDER, normalizeBnbProperty } from '../utils/propertyImages';
 import PropertyVideoBadge from '../components/PropertyVideoBadge';
@@ -327,8 +328,10 @@ const Home = () => {
   const clearSearch = () => { setSearchTerm(''); setSearchSection('all'); setPriceRange(''); setSearchActive(false); };
 
   // ── Card components ───────────────────────────────────────────────────────
-  const PropCard = memo(({ p, suffix = '/mo', showSave = true }: { p: any; suffix?: string; showSave?: boolean }) => (
-    <div className="prop-card" onClick={() => navigate(`/property/${p.id}`)}>
+  const PropCard = memo(({ p, suffix = '/mo', showSave = true }: { p: any; suffix?: string; showSave?: boolean }) => {
+    const detailPath = resolvePropertyDetailPath(p, { user, isAuthenticated });
+    return (
+    <div className="prop-card" onClick={() => navigate(detailPath)}>
       <div className="prop-img-wrap">
         <LazyImg src={getPropertyThumbnail(p)} alt={p.title} height={200} />
         <div className="prop-img-overlay" />
@@ -340,7 +343,9 @@ const Home = () => {
         <div className="prop-title">{p.title}</div>
         <div className="prop-loc"><MapPin size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />{p.location || p.address}</div>
         <div><span className="prop-price">{fmtPrice(p.price)}</span><span className="prop-price-sfx">{suffix}</span></div>
-        <button className="view-btn" onClick={e => { e.stopPropagation(); navigate(`/property/${p.id}`); }}>View Details</button>
+        <button className="view-btn" onClick={e => { e.stopPropagation(); navigate(detailPath); }}>
+          {isBnbListing(p) ? 'Book Now' : 'View Details'}
+        </button>
       </div>
       {showSave && (
         <div style={{ padding: '0 20px 18px', display: 'flex', justifyContent: 'flex-end' }}>
@@ -348,7 +353,8 @@ const Home = () => {
         </div>
       )}
     </div>
-  ));
+    );
+  });
 
   // ── Commercial card — mirrors Properties.tsx image logic exactly ──────────
   const CommCard = memo(({ p }: { p: any }) => {

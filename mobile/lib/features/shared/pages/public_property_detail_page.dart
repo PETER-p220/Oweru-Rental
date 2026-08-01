@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../../core/utils/property_nav.dart';
 import '../../../core/utils/property_share.dart';
-import '../../home/presentation/pages/home_page.dart';
+import '../../tenant/presentation/pages/tenant_bnb_property_detail_page.dart';
 
 // ==================== COLOR CONSTANTS ====================
 const Color kBg = Color(0xFFF8FAFC);
@@ -37,6 +38,17 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _redirectIfBnb());
+  }
+
+  void _redirectIfBnb() {
+    if (!PropertyNav.isBnbListing(widget.property)) return;
+    final id = PropertyNav.propertyId(widget.property);
+    if (id == null || !mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => TenantBnbPropertyDetailPage(propertyId: id)),
+    );
   }
 
   @override
@@ -167,7 +179,8 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
   Future<void> _shareWhatsApp() async {
     final id = _propertyId;
     if (id == null) return;
-    final url = PropertyShare.buildUrl(id);
+    final kind = PropertyShare.kindFor(widget.property);
+    final url = PropertyShare.buildUrl(id, kind: kind);
     final message = PropertyShare.buildMessage(_title, url);
     await PropertyShare.shareWhatsApp(message);
   }

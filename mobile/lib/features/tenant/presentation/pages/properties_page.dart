@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'tenant_theme.dart';
+import '../../../../core/utils/property_nav.dart';
 import 'property_detail_page.dart';
 import '../../../../shared/services/tenant_api_service.dart';
 import '../../../../shared/services/user_service.dart';
@@ -940,8 +941,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
                         onSave: () => _handleSave(_properties[i]),
                         onApply: () => _handleApply(_properties[i]),
                         onShare: () => _handleShare(_properties[i]),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => PropertyDetailPage(property: _properties[i]))),
+                        onTap: () => PropertyNav.openDetail(context, _properties[i], useTenantPage: true),
                       ),
                       childCount: _properties.length,
                     ),
@@ -964,8 +964,7 @@ class _PropertiesPageState extends State<PropertiesPage> {
                         onSave: () => _handleSave(_properties[i]),
                         onApply: () => _handleApply(_properties[i]),
                         onShare: () => _handleShare(_properties[i]),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(
-                          builder: (_) => PropertyDetailPage(property: _properties[i]))),
+                        onTap: () => PropertyNav.openDetail(context, _properties[i], useTenantPage: true),
                         isList: true,
                       ),
                     ),

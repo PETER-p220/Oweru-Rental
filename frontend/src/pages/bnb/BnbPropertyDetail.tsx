@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useMatch } from 'react-router-dom';
-import { ArrowLeft, MapPin, Star, Users, Calendar, CreditCard, Smartphone } from 'lucide-react';
+import { ArrowLeft, MapPin, Star, Users, Calendar, CreditCard, Smartphone, MessageCircle } from 'lucide-react';
 import Api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -16,6 +16,7 @@ import {
 import { DASHBOARD_LISTING_CSS } from '../../styles/dashboardListingStyles';
 import BnbAvailabilityCalendar from '../../components/bnb/BnbAvailabilityCalendar';
 import { usePaymentPolling } from '../../hooks/usePaymentPolling';
+import { buildPropertyShareMessage, buildPropertyShareUrl, openWhatsAppShare } from '../../utils/propertyShare';
 
 const GOLD = '#C89128';
 
@@ -232,6 +233,12 @@ const BnbPropertyDetail = () => {
   };
 
   const backLabel = isPublicPage ? 'Back to short stays' : 'Back to Browse BnB Stays';
+
+  const handleWhatsAppShare = () => {
+    if (!property?.id) return;
+    const url = buildPropertyShareUrl(property.id, null, 'bnb');
+    openWhatsAppShare(buildPropertyShareMessage(property.title || 'Short stay', url));
+  };
 
   const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -458,6 +465,19 @@ const BnbPropertyDetail = () => {
                     : isAuthenticated
                       ? 'Continue to payment'
                       : 'Sign in to continue to payment'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleWhatsAppShare}
+                  style={{
+                    width: '100%', marginTop: 10, minHeight: 44, padding: '12px',
+                    background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 10,
+                    color: '#15803D', fontWeight: 600, cursor: 'pointer', fontSize: 13,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  }}
+                >
+                  <MessageCircle size={16} /> Share on WhatsApp
                 </button>
 
                 {!isAuthenticated && (

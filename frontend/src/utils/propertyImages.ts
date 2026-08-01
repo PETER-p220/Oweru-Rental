@@ -181,6 +181,7 @@ export function normalizeBnbProperty(raw: Record<string, unknown>): Record<strin
 
   return {
     ...raw,
+    listing_type: 'bnb',
     images: images.length > 0 ? images : parseImagesField(raw.images),
     thumbnail,
   };

@@ -7,8 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/utils/payment_duration.dart';
 import '../../../../core/utils/property_images.dart';
+import '../../../../core/utils/property_nav.dart';
 import '../../../../core/utils/property_share.dart';
 import '../../../../core/constants/api_config.dart';
+import 'tenant_bnb_property_detail_page.dart';
 import 'tenant_theme.dart';
 
 class PropertyDetailPage extends StatefulWidget {
@@ -95,9 +97,20 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
   Future<void> _shareWhatsApp() async {
     final id = _propertyId;
     if (id == null) return;
-    final url = PropertyShare.buildUrl(id);
+    final kind = PropertyShare.kindFor(p);
+    final url = PropertyShare.buildUrl(id, kind: kind);
     final message = PropertyShare.buildMessage(_title, url);
     await PropertyShare.shareWhatsApp(message);
+  }
+
+  void _redirectIfBnb() {
+    if (!PropertyNav.isBnbListing(widget.property)) return;
+    final id = PropertyNav.propertyId(widget.property);
+    if (id == null || !mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => TenantBnbPropertyDetailPage(propertyId: id)),
+    );
   }
 
   // ── Lifecycle ─────────────────────────────────────────────
@@ -110,6 +123,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
     _fadeAnim  = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
     _loadFullProperty();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _redirectIfBnb());
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,

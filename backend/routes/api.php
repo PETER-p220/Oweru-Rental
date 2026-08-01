@@ -40,7 +40,8 @@ Route::post('/auth/google/register', [AuthController::class, 'registerWithGoogle
 // Public property routes
 Route::get('/public/properties',            [PropertyController::class, 'publicIndex']);
 Route::get('/public/properties/{property}', [PropertyController::class, 'publicShow']);
-Route::get('/public/share/property/{property}', [PropertyShareController::class, 'show']);
+Route::get('/public/share/property/{property}', [PropertyShareController::class, 'showProperty']);
+Route::get('/public/share/bnb/{property}', [PropertyShareController::class, 'showBnb']);
 Route::get('/public/bnb',                   [PropertyController::class, 'publicBnbIndex']);
 
 // Public lead creation (property contact forms)

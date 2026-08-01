@@ -3,8 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../shared/widgets/app_navbar.dart';
-import '../../../shared/pages/public_property_detail_page.dart';
-import '../../../tenant/presentation/pages/tenant_bnb_property_detail_page.dart';
+import '../../../../core/utils/property_nav.dart';
 import '../../../../core/utils/payment_duration.dart';
 import '../../../../core/utils/property_images.dart';
 
@@ -104,6 +103,7 @@ Future<List<Map<String, dynamic>>> fetchResidential() async {
 Future<List<Map<String, dynamic>>> fetchBnb() async {
   Map<String, dynamic> normalizeBnb(Map<String, dynamic> p) {
     final row = Map<String, dynamic>.from(p);
+    row['listing_type'] = 'bnb';
     final thumb = getPropertyImageUrl(p);
     if (thumb.isNotEmpty) row['thumbnail'] = thumb;
     return row;
@@ -1028,20 +1028,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void _navigateToProperty(Map<String, dynamic> property) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => PublicPropertyDetailPage(property: property)),
-    );
+    PropertyNav.openDetail(context, property);
   }
 
   void _navigateToBnbProperty(Map<String, dynamic> property) {
-    final rawId = property['id'];
-    final id = rawId is int ? rawId : int.tryParse(rawId?.toString() ?? '');
-    if (id == null || id <= 0) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => TenantBnbPropertyDetailPage(propertyId: id)),
-    );
+    PropertyNav.openDetail(context, property);
   }
 }
 

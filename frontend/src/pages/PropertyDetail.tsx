@@ -11,6 +11,7 @@ import { formatPaymentDuration, formatPaymentPeriodLabel, periodRentTotal } from
 import PropertyMediaGallery from '../components/PropertyMediaGallery';
 import { propertyHasVideos } from '../utils/propertyImages';
 import { buildPropertyShareMessage, buildPropertyShareUrl, openWhatsAppShare } from '../utils/propertyShare';
+import { isBnbListing } from '../utils/propertyNav';
 
 /* ─── TOKENS — matches landlord design system ─── */
 const t = {
@@ -109,14 +110,31 @@ const PropertyDetail = () => {
         const propertyId = Number(id);
         if (isNaN(propertyId) || propertyId <= 0) throw new Error('Invalid property ID');
         const res = await Api.getPropertyWithParams(propertyId, searchParams.toString());
-        setProperty(res.data);
+        const data = res.data;
+        if (isBnbListing(data)) {
+          navigate(`/bnb/${propertyId}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`, { replace: true });
+          return;
+        }
+        setProperty(data);
       } catch (err: any) {
+        // BnB listings live in a separate table — try short-stay API when rental lookup fails.
+        try {
+          const propertyId = Number(id);
+          const bnbRes = await Api.getBnbPropertyDetails(propertyId);
+          const bnbData = bnbRes.data || bnbRes;
+          if (bnbData?.id) {
+            navigate(`/bnb/${propertyId}`, { replace: true });
+            return;
+          }
+        } catch {
+          /* fall through */
+        }
         setError(err?.response?.data?.message || err?.message || 'Property not found');
       } finally {
         setLoading(false);
       }
     })();
-  }, [id, searchParams]);
+  }, [id, searchParams, navigate]);
 
   const getFeatures = (p: any) => {
     if (!p) return [];
