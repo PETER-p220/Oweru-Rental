@@ -333,46 +333,7 @@ const TenantDashboard = () => {
                 </div>
               </div>
 
-              {/* Featured picks */}
-              <div className="td-section">
-                <div className="td-section-label">Featured Picks</div>
-                {loading ? (
-                  <div className="td-skel-grid">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="td-skel-shimmer td-skel-card" />
-                    ))}
-                  </div>
-                ) : properties.length > 0 ? (
-                  <div className="td-property-grid">
-                    {properties.map((property) => (
-                      <div key={property.id} className="td-card">
-                        <div className="td-card-media">
-                          {property.images && property.images.length > 0 && property.images[0]
-                            ? <img
-                                src={imageUrl(property.images[0])}
-                                alt={property.title || 'Property'}
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            : null}
-                          <div className="td-card-price-tag">{formatCurrency(property.price)}</div>
-                        </div>
-                        <div className="td-card-body">
-                          <div className="td-card-title">{property.title || 'Untitled property'}</div>
-                          <div className="td-card-location">{property.location || 'No location'}</div>
-                          <div className="td-card-specs">
-                            <span className="td-spec"><b>{property.bedrooms ?? 0}</b> bd</span>
-                            <span className="td-spec"><b>{property.bathrooms ?? 0}</b> ba</span>
-                            <span className="td-spec"><b>{property.area ?? 0}</b> m²</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="td-empty">No featured properties yet.</div>
-                )}
-              </div>
+              
             </>
           )}
         </div>
