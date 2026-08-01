@@ -341,17 +341,15 @@ class BnbPaymentService
     {
         $bookings = BnbBooking::query()
             ->with(['property', 'guest'])
-            ->where('status', 'pending')
-            ->whereIn('payment_status', ['pending', 'failed'])
-            ->whereNotNull('payment_deadline_at')
-            ->where('payment_deadline_at', '<', now())
+            ->unpaidPaymentExpired($this->bookingHoldMinutes())
             ->get();
 
         foreach ($bookings as $booking) {
-            $this->cancelForPaymentFailure(
-                $booking,
-                'Payment was not received within the allowed time. Your reservation has been released.'
-            );
+            $reason = $booking->check_out && $booking->check_out->copy()->startOfDay()->lt(now()->startOfDay())
+                ? 'Payment was not completed and your stay dates have passed. This reservation has been cancelled.'
+                : 'Payment was not received within the allowed time. Your reservation has been released.';
+
+            $this->cancelForPaymentFailure($booking, $reason);
         }
 
         return $bookings->count();
@@ -359,10 +357,24 @@ class BnbPaymentService
 
     public function isPaymentDeadlinePassed(BnbBooking $booking): bool
     {
-        return $booking->payment_deadline_at
-            && $booking->payment_deadline_at->isPast()
-            && $booking->payment_status !== 'paid'
-            && $booking->status !== 'cancelled';
+        if ($booking->payment_status === 'paid' || $booking->status === 'cancelled') {
+            return false;
+        }
+
+        if ($booking->payment_deadline_at?->isPast()) {
+            return true;
+        }
+
+        if ($booking->check_out && $booking->check_out->copy()->startOfDay()->lt(now()->startOfDay())) {
+            return true;
+        }
+
+        if (! $booking->payment_deadline_at
+            && $booking->created_at?->lt(now()->subMinutes($this->bookingHoldMinutes()))) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

@@ -240,17 +240,46 @@ class BnbBooking extends Model
         return $query->where('check_out', '<', now()->format('Y-m-d'));
     }
 
+    /** Unpaid bookings whose payment window or stay dates have expired. */
+    public function scopeUnpaidPaymentExpired($query, int $holdMinutes = 30)
+    {
+        $holdMinutes = max(5, $holdMinutes);
+
+        return $query->where('status', 'pending')
+            ->whereIn('payment_status', ['pending', 'failed'])
+            ->where(function ($q) use ($holdMinutes) {
+                $q->where(function ($q2) {
+                    $q2->whereNotNull('payment_deadline_at')
+                        ->where('payment_deadline_at', '<', now());
+                })
+                    ->orWhereDate('check_out', '<', now()->toDateString())
+                    ->orWhere(function ($q2) use ($holdMinutes) {
+                        $q2->whereNull('payment_deadline_at')
+                            ->where('created_at', '<', now()->subMinutes($holdMinutes));
+                    });
+            });
+    }
+
     /** Bookings that still hold dates on the calendar (paid/confirmed or unpaid within deadline). */
     public function scopeBlockingAvailability($query)
     {
-        return $query->where(function ($q) {
+        $holdMinutes = max(5, (int) config('services.payment.bnb_booking_hold_minutes', 30));
+
+        return $query->where(function ($q) use ($holdMinutes) {
             $q->where('status', 'confirmed')
-                ->orWhere(function ($q2) {
+                ->orWhere(function ($q2) use ($holdMinutes) {
                     $q2->where('status', 'pending')
                         ->where('payment_status', '!=', 'failed')
-                        ->where(function ($q3) {
-                            $q3->whereNull('payment_deadline_at')
-                                ->orWhere('payment_deadline_at', '>', now());
+                        ->where(function ($q3) use ($holdMinutes) {
+                            $q3->where(function ($q4) {
+                                $q4->whereNotNull('payment_deadline_at')
+                                    ->where('payment_deadline_at', '>', now());
+                            })
+                                ->orWhere(function ($q4) use ($holdMinutes) {
+                                    $q4->whereNull('payment_deadline_at')
+                                        ->where('created_at', '>=', now()->subMinutes($holdMinutes))
+                                        ->whereDate('check_out', '>=', now()->toDateString());
+                                });
                         });
                 });
         });
