@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'agent_theme.dart';
 import '../../../shared/services/agent_api_service.dart';
+import '../../../../core/utils/property_share.dart';
 import 'agent_add_listing_page.dart';
 
 class MyListingsPage extends StatefulWidget {
@@ -60,6 +61,17 @@ class _MyListingsPageState extends State<MyListingsPage> {
       return 'TZS ${(numericValue / 1000).toStringAsFixed(1)}K';
     }
     return 'TZS ${numericValue.toStringAsFixed(0)}';
+  }
+
+  Future<void> _shareListingWhatsApp(Map<String, dynamic> item) async {
+    final id = item['id'];
+    final propertyId = id is int ? id : int.tryParse(id?.toString() ?? '');
+    if (propertyId == null) return;
+    final title = item['title'] as String? ?? 'Property';
+    final url = PropertyShare.buildUrl(propertyId);
+    final message = PropertyShare.buildMessage(title, url);
+    await AgentApiService.recordShare(propertyId);
+    await PropertyShare.shareWhatsApp(message);
   }
 
   @override
@@ -200,6 +212,7 @@ class _MyListingsPageState extends State<MyListingsPage> {
                             Expanded(flex: 2, child: Text('Owner', style: TextStyle(color: kSlate, fontSize: 12, fontWeight: FontWeight.w600))),
                             Expanded(flex: 1, child: Text('Price', style: TextStyle(color: kSlate, fontSize: 12, fontWeight: FontWeight.w600))),
                             Expanded(flex: 1, child: Text('Status', style: TextStyle(color: kSlate, fontSize: 12, fontWeight: FontWeight.w600))),
+                            Expanded(flex: 1, child: Text('Share', style: TextStyle(color: kSlate, fontSize: 12, fontWeight: FontWeight.w600))),
                           ],
                         ),
                       ),
@@ -287,6 +300,19 @@ class _MyListingsPageState extends State<MyListingsPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: TextButton(
+              onPressed: () => _shareListingWhatsApp(item),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF15803D),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('WhatsApp', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
             ),
           ),
         ],

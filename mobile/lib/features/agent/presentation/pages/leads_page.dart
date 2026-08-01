@@ -45,9 +45,10 @@ class _LeadsPageState extends State<LeadsPage> {
     if (_searchQuery.isEmpty) return _leads;
     return _leads.where((item) {
       final name = (item['name'] as String? ?? item['user']?['first_name'] as String? ?? '').toLowerCase();
-      final email = (item['email'] as String? ?? '').toLowerCase();
       final propertyTitle = (item['property']?['title'] as String? ?? '').toLowerCase();
-      return name.contains(_searchQuery.toLowerCase()) || email.contains(_searchQuery.toLowerCase()) || propertyTitle.contains(_searchQuery.toLowerCase());
+      final status = (item['status'] as String? ?? '').toLowerCase();
+      final q = _searchQuery.toLowerCase();
+      return name.contains(q) || propertyTitle.contains(q) || status.contains(q);
     }).toList();
   }
 
@@ -206,8 +207,6 @@ class _LeadsPageState extends State<LeadsPage> {
 
   Widget _buildLeadCard(Map<String, dynamic> lead) {
     final name = lead['name'] as String? ?? lead['user']?['first_name'] as String? ?? 'Lead';
-    final email = lead['email'] as String? ?? '';
-    final phone = lead['phone'] as String? ?? '';
     final status = lead['status'] as String? ?? 'new';
     final createdAt = lead['created_at'] as String?;
     final property = lead['property'] as Map<String, dynamic>?;
@@ -232,14 +231,11 @@ class _LeadsPageState extends State<LeadsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(name, style: const TextStyle(color: kCream, fontSize: 16, fontWeight: FontWeight.w600)),
-                    if (email.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(email, style: const TextStyle(color: kSlate, fontSize: 13)),
-                    ],
-                    if (phone.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(phone, style: const TextStyle(color: kSlate, fontSize: 13)),
-                    ],
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Contact details managed by Oweru',
+                      style: TextStyle(color: kSlate, fontSize: 12, fontStyle: FontStyle.italic),
+                    ),
                   ],
                 ),
               ),
@@ -283,43 +279,6 @@ class _LeadsPageState extends State<LeadsPage> {
               Text(_formatDate(createdAt), style: const TextStyle(color: kCream, fontSize: 13)),
             ],
           ),
-          // Actions
-          if (email.isNotEmpty || phone.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                if (email.isNotEmpty)
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kGold.withValues(alpha: 0.15),
-                        foregroundColor: kGold,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        side: BorderSide(color: kBorder),
-                      ),
-                      child: const Text('Email', style: TextStyle(fontWeight: FontWeight.w600)),
-                    ),
-                  ),
-                if (email.isNotEmpty && phone.isNotEmpty) const SizedBox(width: 12),
-                if (phone.isNotEmpty)
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kGold.withValues(alpha: 0.15),
-                        foregroundColor: kGold,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        side: BorderSide(color: kBorder),
-                      ),
-                      child: const Text('Call', style: TextStyle(fontWeight: FontWeight.w600)),
-                    ),
-                  ),
-              ],
-            ),
-          ],
         ],
       ),
     );

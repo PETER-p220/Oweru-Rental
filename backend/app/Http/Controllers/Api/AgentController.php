@@ -430,7 +430,10 @@ class AgentController extends Controller
             ->paginate(20);
 
         return response()->json([
-            'data' => $leads->items(),
+            'data' => collect($leads->items())
+                ->map(fn (Lead $lead) => $this->formatLeadForAgent($lead))
+                ->values()
+                ->all(),
             'pagination' => [
                 'current_page' => $leads->currentPage(),
                 'last_page'    => $leads->lastPage(),
@@ -1048,6 +1051,38 @@ class AgentController extends Controller
     private function leadTablesAvailable(): bool
     {
         return Schema::hasTable('leads') && class_exists(Lead::class);
+    }
+
+    /**
+     * Agent-facing lead payload — no tenant contact details (email/phone/message).
+     *
+     * @return array<string, mixed>
+     */
+    private function formatLeadForAgent(Lead $lead): array
+    {
+        $data = $lead->toArray();
+        unset($data['email'], $data['phone'], $data['message']);
+
+        if ($lead->relationLoaded('user') && $lead->user) {
+            $data['user'] = [
+                'id' => $lead->user->id,
+                'first_name' => $lead->user->first_name,
+                'last_name' => $lead->user->last_name,
+            ];
+        }
+
+        if ($lead->relationLoaded('property') && $lead->property) {
+            $data['property'] = [
+                'id' => $lead->property->id,
+                'title' => $lead->property->title,
+                'location' => $lead->property->location,
+                'type' => $lead->property->type,
+            ];
+        }
+
+        $data['contact_protected'] = true;
+
+        return $data;
     }
 
     private function commissionTablesAvailable(): bool

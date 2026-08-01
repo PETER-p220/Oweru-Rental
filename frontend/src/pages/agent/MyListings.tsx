@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Api from '../../services/api';
+import { buildPropertyShareMessage, buildPropertyShareUrl, openWhatsAppShare } from '../../utils/propertyShare';
+import { useAuth } from '../../contexts/AuthContext';
 
 const formatCurrency = (value: number | string | undefined) => {
   if (value === undefined || value === null) return 'TZS 0';
@@ -9,6 +11,7 @@ const formatCurrency = (value: number | string | undefined) => {
 };
 
 const MyListings = () => {
+  const { user } = useAuth();
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,6 +31,13 @@ const MyListings = () => {
     };
     load();
   }, []);
+
+  const handleWhatsAppShare = async (item: { id: number; title?: string }) => {
+    const url = buildPropertyShareUrl(item.id, user?.id);
+    const message = buildPropertyShareMessage(item.title || 'Property', url);
+    try { await Api.recordShare(item.id); } catch { /* non-blocking */ }
+    openWhatsAppShare(message);
+  };
 
   const filtered = useMemo(() => 
     listings.filter((item) => 
@@ -210,13 +220,14 @@ const MyListings = () => {
                   <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Owner</th>
                   <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Price</th>
                   <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</th>
+                  <th style={{ padding: '12px', textAlign: 'left', color: '#64748B', fontWeight: 600, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Share</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>Loading listings...</td></tr>
+                  <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>Loading listings...</td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>No listings found.</td></tr>
+                  <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>No listings found.</td></tr>
                 ) : (
                   filtered.map((item) => (
                     <tr key={item.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
@@ -237,6 +248,25 @@ const MyListings = () => {
                         }}>
                           {item.available ? 'Available' : 'Occupied'}
                         </span>
+                      </td>
+                      <td style={{ padding: '12px', verticalAlign: 'top' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleWhatsAppShare(item)}
+                          style={{
+                            padding: '8px 12px',
+                            background: '#F0FDF4',
+                            border: '1px solid #BBF7D0',
+                            borderRadius: '8px',
+                            color: '#15803D',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          WhatsApp
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -281,6 +311,24 @@ const MyListings = () => {
                         <div style={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>{formatCurrency(item.price)}</div>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleWhatsAppShare(item)}
+                      style={{
+                        marginTop: '12px',
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: '#F0FDF4',
+                        border: '1px solid #BBF7D0',
+                        borderRadius: '8px',
+                        color: '#15803D',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Share on WhatsApp
+                    </button>
                   </div>
                 ))}
               </div>

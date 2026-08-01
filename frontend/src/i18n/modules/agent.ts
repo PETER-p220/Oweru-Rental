@@ -41,6 +41,7 @@ export const agentEn = {
     viewProperty: 'View Property',
     email: 'Email',
     call: 'Call',
+    contactProtected: 'Contact details managed by Oweru',
     loadError: 'Unable to load leads.',
   },
   listing: {
@@ -100,6 +101,7 @@ export const agentSw: typeof agentEn = {
     viewProperty: 'Angalia Mali',
     email: 'Barua pepe',
     call: 'Piga simu',
+    contactProtected: 'Maelezo ya mawasiliano yanadhibitiwa na Oweru',
     loadError: 'Imeshindwa kupakia wateja watari.',
   },
   listing: {

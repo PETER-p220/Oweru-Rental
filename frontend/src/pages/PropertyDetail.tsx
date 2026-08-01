@@ -3,13 +3,14 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   MapPin, Bed, Bath, Shield, CheckCircle,
   ArrowLeft, X, Star, Bookmark,
-  Home,
+  Home, MessageCircle,
 } from 'lucide-react';
 import Api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatPaymentDuration, formatPaymentPeriodLabel, periodRentTotal } from '../utils/paymentDuration';
 import PropertyMediaGallery from '../components/PropertyMediaGallery';
 import { propertyHasVideos } from '../utils/propertyImages';
+import { buildPropertyShareMessage, buildPropertyShareUrl, openWhatsAppShare } from '../utils/propertyShare';
 
 /* ─── TOKENS — matches landlord design system ─── */
 const t = {
@@ -156,6 +157,17 @@ const PropertyDetail = () => {
     } catch (err: any) {
       alert(err?.response?.data?.message || 'Failed to submit application. Please try again.');
     }
+  };
+
+  const handleWhatsAppShare = async () => {
+    if (!property) return;
+    const agentId = searchParams.get('agent') ?? (user?.user_type === 'agent' ? user.id : null);
+    const url = buildPropertyShareUrl(property.id, agentId);
+    const message = buildPropertyShareMessage(property.title || 'Property', url);
+    if (user?.user_type === 'agent') {
+      try { await Api.recordShare(property.id); } catch { /* non-blocking */ }
+    }
+    openWhatsAppShare(message);
   };
 
   const formatPrice = (price: number) =>
@@ -390,7 +402,9 @@ const PropertyDetail = () => {
                   <button style={solidBtn} className="pd-btn" onClick={handleApply} disabled={!property}>
                     Apply for this Property
                   </button>
-
+                  <button style={ghostBtn('#25D366')} className="pd-btn" onClick={handleWhatsAppShare} disabled={!property}>
+                    <MessageCircle size={16} /> Share on WhatsApp
+                  </button>
                 </div>
 
                 {/* Location */}

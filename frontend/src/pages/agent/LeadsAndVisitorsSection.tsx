@@ -54,7 +54,7 @@ const LeadsAndVisitorsSection = ({
 
   const filtered = useMemo(() => {
     const list = leads.filter((item) =>
-      `${item.name || ''} ${item.email || ''} ${item.property?.title || ''}`
+      `${item.name || ''} ${item.user?.first_name || ''} ${item.user?.last_name || ''} ${item.property?.title || ''} ${item.status || ''}`
         .toLowerCase()
         .includes(search.toLowerCase()),
     );
@@ -237,10 +237,9 @@ const LeadsAndVisitorsSection = ({
                     <tr key={item.id} style={{ borderBottom: `1px solid ${agentWorkspace.border}` }}>
                       <td style={lightTdStyle}>
                         <div style={{ fontWeight: 600 }}>{item.name || item.user?.first_name || t('agent.dashboard.lead')}</div>
-                        <div style={{ color: agentWorkspace.textMuted, marginTop: '4px', fontSize: '13px' }}>{item.email}</div>
-                        {item.phone && (
-                          <div style={{ color: agentWorkspace.textMuted, marginTop: '4px', fontSize: '13px' }}>{item.phone}</div>
-                        )}
+                        <div style={{ color: agentWorkspace.textMuted, marginTop: '4px', fontSize: '12px', fontStyle: 'italic' }}>
+                          {t('agent.leads.contactProtected')}
+                        </div>
                       </td>
                       <td style={lightTdStyle}>
                         <div>{item.property?.title || t('agent.leads.generalInterest')}</div>
@@ -256,45 +255,7 @@ const LeadsAndVisitorsSection = ({
                         )}
                       </td>
                       <td style={lightTdStyle}>{item.status || 'new'}</td>
-                      <td style={lightTdStyle}>
-                        <div>{formatDate(item.created_at, locale)}</div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
-                          {item.email && (
-                            <a
-                              href={`mailto:${item.email}`}
-                              style={{
-                                padding: '8px 12px',
-                                background: '#F8FAFC',
-                                border: `1px solid ${agentWorkspace.border}`,
-                                borderRadius: '6px',
-                                textDecoration: 'none',
-                                color: agentWorkspace.textSub,
-                                fontSize: '13px',
-                                fontWeight: 500,
-                              }}
-                            >
-                              {t('agent.leads.email')}
-                            </a>
-                          )}
-                          {item.phone && (
-                            <a
-                              href={`tel:${item.phone}`}
-                              style={{
-                                padding: '8px 12px',
-                                background: '#F8FAFC',
-                                border: `1px solid ${agentWorkspace.border}`,
-                                borderRadius: '6px',
-                                textDecoration: 'none',
-                                color: agentWorkspace.textSub,
-                                fontSize: '13px',
-                                fontWeight: 500,
-                              }}
-                            >
-                              {t('agent.leads.call')}
-                            </a>
-                          )}
-                        </div>
-                      </td>
+                      <td style={lightTdStyle}>{formatDate(item.created_at, locale)}</td>
                     </tr>
                   ))
                 )}

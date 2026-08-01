@@ -248,4 +248,13 @@ class AgentApiService {
     } catch (_) {}
     return {};
   }
+
+  static Future<void> recordShare(int propertyId) async {
+    try {
+      await http.post(
+        Uri.parse('$_baseUrl/agent/listings/$propertyId/share'),
+        headers: _headers,
+      );
+    } catch (_) {}
+  }
 }

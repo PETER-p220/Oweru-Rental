@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../../core/utils/property_share.dart';
 import '../../home/presentation/pages/home_page.dart';
 
 // ==================== COLOR CONSTANTS ====================
@@ -156,6 +157,21 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
     return _type[0].toUpperCase() + _type.substring(1).replaceAll('_', ' ');
   }
 
+  int? get _propertyId {
+    final id = widget.property['id'];
+    if (id is int) return id;
+    if (id is String) return int.tryParse(id);
+    return null;
+  }
+
+  Future<void> _shareWhatsApp() async {
+    final id = _propertyId;
+    if (id == null) return;
+    final url = PropertyShare.buildUrl(id);
+    final message = PropertyShare.buildMessage(_title, url);
+    await PropertyShare.shareWhatsApp(message);
+  }
+
   List<Map<String, dynamic>> get _amenities {
     final amenities = widget.property['amenities'];
     if (amenities is List) {
@@ -192,7 +208,7 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
           ),
           IconButton(
             icon: const Icon(Icons.share, color: kSlate800),
-            onPressed: () {},
+            onPressed: _shareWhatsApp,
           ),
         ],
       ),
@@ -479,6 +495,35 @@ class _PublicPropertyDetailPageState extends State<PublicPropertyDetailPage> {
                         ),
                       ),
                     ),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: _shareWhatsApp,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFBBF7D0)),
+                        borderRadius: BorderRadius.circular(10),
+                        color: const Color(0xFFF0FDF4),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.chat, size: 16, color: Color(0xFF15803D)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Share on WhatsApp',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF15803D),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   GestureDetector(
                     onTap: () {},

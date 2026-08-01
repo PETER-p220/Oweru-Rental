@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/utils/payment_duration.dart';
 import '../../../../core/utils/property_images.dart';
+import '../../../../core/utils/property_share.dart';
 import '../../../../core/constants/api_config.dart';
 import 'tenant_theme.dart';
 
@@ -83,6 +84,21 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
   }
 
   String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+  int? get _propertyId {
+    final id = p['id'];
+    if (id is int) return id;
+    if (id is String) return int.tryParse(id);
+    return null;
+  }
+
+  Future<void> _shareWhatsApp() async {
+    final id = _propertyId;
+    if (id == null) return;
+    final url = PropertyShare.buildUrl(id);
+    final message = PropertyShare.buildMessage(_title, url);
+    await PropertyShare.shareWhatsApp(message);
+  }
 
   // ── Lifecycle ─────────────────────────────────────────────
   @override
@@ -200,6 +216,21 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
       ),
     ),
     actions: [
+      Padding(
+        padding: const EdgeInsets.all(8),
+        child: GestureDetector(
+          onTap: _shareWhatsApp,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              shape: BoxShape.circle,
+              border: Border.all(color: kGoldBorder),
+            ),
+            child: const Icon(Icons.share_rounded, color: kCream, size: 18),
+          ),
+        ),
+      ),
       Padding(
         padding: const EdgeInsets.all(8),
         child: GestureDetector(
@@ -585,6 +616,8 @@ class _PropertyDetailPageState extends State<PropertyDetailPage>
       icon: Icons.send_rounded,
       onTap: _showApplyDialog,
     ),
+    const SizedBox(height: 10),
+    TGhostButton(label: 'SHARE ON WHATSAPP', onTap: _shareWhatsApp),
     const SizedBox(height: 10),
     GestureDetector(
       onTap: () => setState(() => _isSaved = !_isSaved),

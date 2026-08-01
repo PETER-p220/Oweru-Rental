@@ -364,7 +364,7 @@ class _AgentDashboardState extends State<AgentDashboard> {
 
   Widget _buildLeadRow(Map<String, dynamic> lead) {
     final name = lead['name'] as String? ?? lead['user']?['first_name'] as String? ?? 'Lead';
-    final email = lead['email'] as String? ?? '';
+    final propertyTitle = lead['property']?['title'] as String? ?? 'General interest';
     final source = lead['source'] as String? ?? 'website';
     final status = lead['status'] as String? ?? 'new';
 
@@ -374,7 +374,7 @@ class _AgentDashboardState extends State<AgentDashboard> {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(name, style: const TextStyle(color: kCream, fontSize: 13, fontWeight: FontWeight.w500)),
           const SizedBox(height: 2),
-          Text(email, style: const TextStyle(color: kSlate, fontSize: 11)),
+          Text(propertyTitle, style: const TextStyle(color: kSlate, fontSize: 11)),
         ])),
         const SizedBox(width: 8),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
