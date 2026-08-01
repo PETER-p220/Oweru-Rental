@@ -173,6 +173,11 @@ class AuthService {
         if (body is Map<String, dynamic>) return body;
         if (body is Map) return Map<String, dynamic>.from(body);
       }
+
+      if (response.statusCode == 401) {
+        await UserService().clear();
+        AuthService.setToken(null);
+      }
     } catch (_) {}
     return null;
   }

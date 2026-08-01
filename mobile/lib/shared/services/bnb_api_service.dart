@@ -1,11 +1,18 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../core/network/authenticated_http.dart';
 import '../services/auth_service.dart';
 import 'user_service.dart';
 import '../../core/constants/api_config.dart';
 
 class BnbApiService {
   static const String _baseUrl = ApiConfig.apiPath;
+
+  static Future<http.Response> _authGet(String path) =>
+      AuthenticatedHttp.get(Uri.parse('$_baseUrl$path'));
+
+  static Future<http.Response> _authPost(String path, {Object? body}) =>
+      AuthenticatedHttp.post(Uri.parse('$_baseUrl$path'), body: body);
 
   // Get My Properties
   static Future<List<Map<String, dynamic>>> getProperties() async {
@@ -270,13 +277,7 @@ class BnbApiService {
   static Future<List<Map<String, dynamic>>> getMyBookings({String? status}) async {
     try {
       final q = (status != null && status != 'all') ? '?status=$status&per_page=100' : '?per_page=100';
-      final response = await http.get(
-        Uri.parse('$_baseUrl/my/bnb/bookings$q'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${AuthService.token}',
-        },
-      );
+      final response = await _authGet('/my/bnb/bookings$q');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final list = data['data'] ?? data;

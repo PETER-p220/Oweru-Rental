@@ -39,6 +39,13 @@ const Login = () => {
   useEffect(() => {
     const prefill = searchParams.get('email');
     if (prefill) setEmail(prefill);
+    if (searchParams.get('session') === 'expired') {
+      setAlert({
+        variant: 'info',
+        title: 'Session expired',
+        messages: ['Please sign in again to continue.'],
+      });
+    }
   }, [searchParams]);
 
   const handleGoogleLogin = () => {

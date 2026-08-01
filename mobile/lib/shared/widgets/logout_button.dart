@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../services/user_service.dart';
 
 class LogoutButton extends StatelessWidget {
@@ -6,14 +7,16 @@ class LogoutButton extends StatelessWidget {
 
   const LogoutButton({super.key, this.onLogout});
 
-  void _handleLogout(BuildContext context) {
-    // Clear user service
-    UserService().clear();
-    
+  Future<void> _handleLogout(BuildContext context) async {
+    await AuthService.logout();
+    await UserService().clear();
+    AuthService.setToken(null);
+
     onLogout?.call();
-    
-    // Navigate back to home
-    Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+
+    if (context.mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
   }
 
   @override

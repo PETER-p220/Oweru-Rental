@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { type User, TOKEN_KEY } from '../services/api';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import Api, { type User, TOKEN_KEY } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
@@ -13,13 +13,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper to safely read from localStorage
+function normalizeStoredUser(raw: Record<string, unknown>): User {
+  const userType = (raw.userType ?? raw.user_type ?? 'tenant') as User['user_type'];
+
+  return {
+    ...(raw as User),
+    user_type: userType,
+    userType,
+    firstName: (raw.firstName ?? raw.first_name ?? '') as string,
+    lastName: (raw.lastName ?? raw.last_name ?? '') as string,
+  };
+}
+
 const getStoredUser = (): User | null => {
   try {
     const raw = localStorage.getItem('user');
     const token = localStorage.getItem(TOKEN_KEY);
     if (raw && token) {
-      return JSON.parse(raw) as User;
+      return normalizeStoredUser(JSON.parse(raw) as Record<string, unknown>);
     }
   } catch {
     localStorage.removeItem('user');
@@ -33,57 +44,82 @@ const hasValidSession = (): boolean => {
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Lazy initializers read localStorage synchronously on first render.
-  // This prevents the "isAuthenticated = false flash" that causes logout on refresh.
   const [user, setUser] = useState<User | null>(getStoredUser);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(hasValidSession);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const validatingRef = useRef(false);
 
-  useEffect(() => {
-    console.log('AuthContext - useEffect running');
-    const raw = localStorage.getItem('user');
-    const token = localStorage.getItem(TOKEN_KEY);
-    console.log('AuthContext - Loading user from localStorage:', raw);
-    console.log('AuthContext - Current token:', token);
-    
-    if (raw && token) {
-      try {
-        const parsedUser = JSON.parse(raw);
-        console.log('AuthContext - Parsed user:', parsedUser);
-        console.log('AuthContext - User type:', parsedUser.userType);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-        console.log('AuthContext - Authentication state set to true');
-      } catch (e) {
-        console.error('Error parsing user:', e);
-        setUser(null);
-        setIsAuthenticated(false);
-        localStorage.removeItem('user');
-        localStorage.removeItem(TOKEN_KEY);
-      }
-    } else {
-      console.log('AuthContext - No user or token found in localStorage');
-      console.log('AuthContext - User found:', !!raw);
-      console.log('AuthContext - Token found:', !!token);
-      setUser(null);
-      setIsAuthenticated(false);
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = (userData: User, token: string) => {
-    setUser(userData);
-    setIsAuthenticated(true);
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem(TOKEN_KEY, token);
-  };
-
-  const logout = () => {
+  const clearSession = useCallback(() => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('user');
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem('TOKEN_KEY');
+  }, []);
+
+  const validateSession = useCallback(async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      clearSession();
+      return false;
+    }
+
+    try {
+      const response = await Api.getUser();
+      const normalized = normalizeStoredUser(response.data as Record<string, unknown>);
+      setUser(normalized);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(normalized));
+      return true;
+    } catch {
+      clearSession();
+      return false;
+    }
+  }, [clearSession]);
+
+  const logout = useCallback(() => {
+    Api.logout().catch(() => {});
+    clearSession();
+  }, [clearSession]);
+
+  useEffect(() => {
+    Api.setUnauthorizedHandler(() => {
+      clearSession();
+      const path = window.location.pathname + window.location.search;
+      if (!path.startsWith('/login') && !path.startsWith('/register')) {
+        window.location.href = `/login?redirect=${encodeURIComponent(path)}&session=expired`;
+      }
+    });
+
+    return () => Api.setUnauthorizedHandler(null);
+  }, [clearSession]);
+
+  useEffect(() => {
+    if (validatingRef.current) return;
+    validatingRef.current = true;
+
+    (async () => {
+      await validateSession();
+      setIsLoading(false);
+      validatingRef.current = false;
+    })();
+  }, [validateSession]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (!localStorage.getItem(TOKEN_KEY)) return;
+      validateSession().catch(() => clearSession());
+    };
+
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [validateSession, clearSession]);
+
+  const login = (userData: User, token: string) => {
+    const normalized = normalizeStoredUser(userData as unknown as Record<string, unknown>);
+    setUser(normalized);
+    setIsAuthenticated(true);
+    localStorage.setItem('user', JSON.stringify(normalized));
+    localStorage.setItem(TOKEN_KEY, token);
   };
 
   const value: AuthContextType = {

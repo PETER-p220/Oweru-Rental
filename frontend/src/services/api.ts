@@ -116,6 +116,17 @@ export interface LoginResponse {
 
 
 class Api {
+  private static unauthorizedHandler: (() => void) | null = null;
+  private static handlingUnauthorized = false;
+
+  static setUnauthorizedHandler(handler: (() => void) | null) {
+    this.unauthorizedHandler = handler;
+  }
+
+  private static isPublicAuthEndpoint(endpoint: string): boolean {
+    return /^(login|register|logout|auth\/|check-email)/.test(endpoint);
+  }
+
   private static async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -149,6 +160,20 @@ class Api {
     if (!response.ok) {
       let errorBody: any = {};
       try { errorBody = await response.json(); } catch { /* ignore */ }
+
+      if (
+        response.status === 401
+        && !this.isPublicAuthEndpoint(endpoint)
+        && !this.handlingUnauthorized
+      ) {
+        this.handlingUnauthorized = true;
+        try {
+          this.unauthorizedHandler?.();
+        } finally {
+          this.handlingUnauthorized = false;
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-throw-literal
       throw { response: { data: errorBody, status: response.status } };
     }

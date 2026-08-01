@@ -168,26 +168,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $user->tokens()->delete();
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-        $tokenHash = hash('sha256', $token);
-
-        UserSession::where('user_id', $user->id)->where('is_active', true)->update([
-            'is_active' => false,
-            'logout_at' => now(),
-        ]);
-
-        UserSession::create([
-            'user_id' => $user->id,
-            'device_fingerprint' => $deviceFingerprint,
-            'token_hash' => $tokenHash,
-            'ip_address' => $ipAddress,
-            'user_agent' => $userAgent,
-            'is_active' => true,
-            'login_at' => now(),
-            'last_seen_at' => now(),
-        ]);
+        $token = $this->issueAuthToken($user, $request);
 
         $user->activityLogs()->create([
             'action' => 'login',
@@ -214,10 +195,14 @@ class AuthController extends Controller
         $user = $request->user();
         $user?->currentAccessToken()?->delete();
 
-        $user?->sessions()->where('is_active', true)->update([
-            'is_active' => false,
-            'logout_at' => now(),
-        ]);
+        $deviceFingerprint = $this->buildDeviceFingerprint($request);
+        $user?->sessions()
+            ->where('device_fingerprint', $deviceFingerprint)
+            ->where('is_active', true)
+            ->update([
+                'is_active' => false,
+                'logout_at' => now(),
+            ]);
 
         $user?->activityLogs()->create([
             'action' => 'logout',
@@ -250,6 +235,7 @@ class AuthController extends Controller
             'email'            => $user->email,
             'phone'            => $user->phone,
             'userType'         => $user->user_type,
+            'user_type'        => $user->user_type,
             'profileImage'     => $user->profile_image,
             'bio'              => $user->bio,
             'isActive'         => $user->is_active,
@@ -265,6 +251,41 @@ class AuthController extends Controller
         $userAgent = $request->header('User-Agent', 'unknown');
 
         return hash('sha256', $ipAddress . '|' . $userAgent);
+    }
+
+    /**
+     * Create a Sanctum token scoped to this device/browser without logging out other devices.
+     */
+    private function issueAuthToken(User $user, Request $request): string
+    {
+        $deviceFingerprint = $this->buildDeviceFingerprint($request);
+        $tokenName = 'auth_' . substr($deviceFingerprint, 0, 32);
+
+        $user->tokens()->where('name', $tokenName)->delete();
+
+        $plainToken = $user->createToken($tokenName)->plainTextToken;
+        $tokenHash = hash('sha256', $plainToken);
+
+        UserSession::where('user_id', $user->id)
+            ->where('device_fingerprint', $deviceFingerprint)
+            ->where('is_active', true)
+            ->update([
+                'is_active' => false,
+                'logout_at' => now(),
+            ]);
+
+        UserSession::create([
+            'user_id' => $user->id,
+            'device_fingerprint' => $deviceFingerprint,
+            'token_hash' => $tokenHash,
+            'ip_address' => $this->resolveIpAddress($request),
+            'user_agent' => $request->header('User-Agent', 'unknown'),
+            'is_active' => true,
+            'login_at' => now(),
+            'last_seen_at' => now(),
+        ]);
+
+        return $plainToken;
     }
 
     private function resolveIpAddress(Request $request): string
@@ -424,10 +445,7 @@ class AuthController extends Controller
                 return redirect()->away($redirectUrl);
             }
             
-            // Revoke previous tokens
-            $user->tokens()->delete();
-            
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $this->issueAuthToken($user, $request);
             
             // Redirect to frontend with token and user data
             $frontendUrl = config('app.frontend_url', 'https://rental.oweru.com');
@@ -505,10 +523,7 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Account is inactive'], 401);
             }
             
-            // Revoke previous tokens
-            $user->tokens()->delete();
-            
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $this->issueAuthToken($user, $request);
             
             return response()->json([
                 'message' => 'Login successful',

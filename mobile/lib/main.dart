@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'core/network/authenticated_http.dart';
 import 'app/routes.dart';
 
 void main() {
@@ -23,6 +24,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: AuthenticatedHttp.navigatorKey,
       title: 'Oweru Rental',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
