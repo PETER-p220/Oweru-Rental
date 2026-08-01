@@ -172,6 +172,9 @@ class BnbBookingController extends Controller
             ? [$request->special_requests]
             : null;
 
+        $paymentService = app(BnbPaymentService::class);
+        $paymentDeadline = $paymentService->deadlineForNewBooking();
+
         $bnbBooking = BnbBooking::create([
             'property_id' => $property->id,
             'guest_id' => $user->id,
@@ -182,6 +185,7 @@ class BnbBookingController extends Controller
             'status' => $status,
             'special_requests' => $special,
             'payment_status' => 'pending',
+            'payment_deadline_at' => $paymentDeadline,
             'notes' => $notes,
         ]);
 
@@ -199,6 +203,7 @@ class BnbBookingController extends Controller
                 'total_price' => $total,
                 'status' => $status,
                 'payment_status' => 'pending',
+                'payment_deadline_at' => $paymentDeadline->toIso8601String(),
                 'requires_payment' => true,
             ],
         ], 201);

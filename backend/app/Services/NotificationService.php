@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Mail\RentDueReminderMail;
+use App\Mail\BnbBookingCancelledMail;
 use App\Mail\SystemNotificationMail;
 use App\Models\Notification;
 use App\Models\Payment;
+use App\Models\BnbBooking;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -202,6 +204,14 @@ class NotificationService
      */
     public function sendTenDayRentPeriodReminder(Payment $payment): bool
     {
+        return $this->sendRentPeriodReminder($payment, 10);
+    }
+
+    /**
+     * Professional rent-period reminder (email + in-app) N days before due date.
+     */
+    public function sendRentPeriodReminder(Payment $payment, int $daysRemaining): bool
+    {
         $payment->loadMissing('property', 'user');
         $user = $payment->user;
         $property = $payment->property;
@@ -211,12 +221,13 @@ class NotificationService
         }
 
         $metadata = $payment->metadata ?? [];
-        if (! empty($metadata['reminder_10d_sent_at'])) {
+        $sentKey = "reminder_{$daysRemaining}d_sent_at";
+        if (! empty($metadata[$sentKey])) {
             return false;
         }
 
         $daysUntilDue = (int) now()->startOfDay()->diffInDays($payment->due_date->copy()->startOfDay(), false);
-        if ($daysUntilDue !== 10) {
+        if ($daysUntilDue !== $daysRemaining) {
             return false;
         }
 
@@ -224,12 +235,22 @@ class NotificationService
         $dueDate = $payment->due_date->format('d M Y');
         $periodLabel = $payment->due_date->format('F Y');
         $tenantName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: ($user->email ?? 'Tenant');
+        $frontend = rtrim((string) config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/');
+        $paymentsUrl = $frontend ? "{$frontend}/dashboard/tenant/payments" : null;
 
-        $title = 'Rent period ending in 10 days';
-        $message = "Your next rent for {$property->title} ({$periodLabel}) is TZS {$dueAmount}, due on {$dueDate}. "
-            . 'Pay on time to continue your rental without interruption.';
+        $title = match ($daysRemaining) {
+            1 => 'Rent due tomorrow',
+            3 => 'Rent due in 3 days',
+            default => 'Rent period ending in 10 days',
+        };
 
-        $this->notifyUser($user, $title, $message, 'rent_period_reminder', false);
+        $message = match ($daysRemaining) {
+            1 => "Your rent for {$property->title} ({$periodLabel}) — TZS {$dueAmount} — is due tomorrow ({$dueDate}). Please pay on time to avoid interruption.",
+            3 => "Your rent for {$property->title} ({$periodLabel}) — TZS {$dueAmount} — is due in 3 days on {$dueDate}.",
+            default => "Your next rent for {$property->title} ({$periodLabel}) is TZS {$dueAmount}, due on {$dueDate}. Pay on time to continue your rental without interruption.",
+        };
+
+        $this->notifyUser($user, $title, $message, 'rent_period_reminder', false, $paymentsUrl);
 
         if ($user->email && $this->emailNotificationsEnabled()) {
             try {
@@ -238,13 +259,15 @@ class NotificationService
                     'property_title' => $property->title ?? 'Your property',
                     'amount' => $dueAmount,
                     'due_date' => $dueDate,
-                    'days_remaining' => 10,
+                    'days_remaining' => $daysRemaining,
                     'period_label' => $periodLabel,
+                    'payments_url' => $paymentsUrl,
                 ]));
             } catch (\Throwable $e) {
                 Log::error('Failed to send rent reminder email', [
                     'payment_id' => $payment->id,
                     'user_id' => $user->id,
+                    'days_remaining' => $daysRemaining,
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -252,15 +275,64 @@ class NotificationService
 
         $payment->update([
             'metadata' => array_merge($metadata, [
-                'reminder_10d_sent_at' => now()->toIso8601String(),
+                $sentKey => now()->toIso8601String(),
             ]),
         ]);
 
-        if (Schema::hasColumn('payments', 'is_reminder_sent')) {
+        if ($daysRemaining === 10 && Schema::hasColumn('payments', 'is_reminder_sent')) {
             $payment->update(['is_reminder_sent' => true]);
         }
 
         return true;
+    }
+
+    /**
+     * Notify guest that a short-stay booking was cancelled (payment not completed).
+     */
+    public function sendBnbBookingCancelled(BnbBooking $booking, string $reason): void
+    {
+        $booking->loadMissing('property', 'guest');
+        $guest = $booking->guest;
+        $property = $booking->property;
+
+        if (! $guest) {
+            return;
+        }
+
+        $guestName = trim(($guest->first_name ?? '') . ' ' . ($guest->last_name ?? '')) ?: 'Guest';
+        $frontend = rtrim((string) config('app.frontend_url', env('FRONTEND_URL', config('app.url'))), '/');
+        $browseUrl = $frontend ? "{$frontend}/#bnb" : null;
+        $title = $property?->title ?? 'Short stay';
+        $dates = $booking->check_in && $booking->check_out
+            ? $booking->check_in->format('d M Y') . ' → ' . $booking->check_out->format('d M Y')
+            : 'your selected dates';
+
+        $this->notifyUser(
+            $guest->id,
+            'Booking cancelled',
+            "Your booking for {$title} ({$dates}) was cancelled. {$reason}",
+            'bnb_booking_cancelled',
+            false,
+            $browseUrl,
+        );
+
+        if ($guest->email && $this->emailNotificationsEnabled()) {
+            try {
+                Mail::to($guest->email)->send(new BnbBookingCancelledMail([
+                    'guest_name' => $guestName,
+                    'property_title' => $title,
+                    'check_in' => $booking->check_in?->format('d M Y') ?? '—',
+                    'check_out' => $booking->check_out?->format('d M Y') ?? '—',
+                    'reason' => $reason,
+                    'browse_url' => $browseUrl,
+                ]));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send BnB cancellation email', [
+                    'booking_id' => $booking->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Application;
+use App\Models\BnbBooking;
+use App\Services\BnbPaymentService;
 use App\Services\PaymentProcessingService;
 use App\Services\PaymentSplitService;
 use App\Services\SelcomPaymentService;
@@ -192,9 +194,11 @@ class PaymentController extends Controller
                         ->where('rent_payment_status', 'pending')
                         ->update(['rent_payment_status' => 'failed']);
 
-                    \App\Models\BnbBooking::where('transaction_id', $transid)
-                        ->where('payment_status', 'pending')
-                        ->update(['payment_status' => 'failed']);
+                    $this->cancelUnpaidBnbBookingByOrderId($transid);
+                }
+
+                if ($reference && $reference !== $transid) {
+                    $this->cancelUnpaidBnbBookingByOrderId((string) $reference);
                 }
             } catch (\Exception $e) {
                 Log::error('Error marking payment as failed', ['error' => $e->getMessage()]);
@@ -202,5 +206,22 @@ class PaymentController extends Controller
         }
 
         return response()->json(['status' => 'received'], 200);
+    }
+
+    private function cancelUnpaidBnbBookingByOrderId(string $orderId): void
+    {
+        $booking = BnbBooking::query()
+            ->where('transaction_id', $orderId)
+            ->where('payment_status', 'pending')
+            ->first();
+
+        if (! $booking) {
+            return;
+        }
+
+        app(BnbPaymentService::class)->cancelForPaymentFailure(
+            $booking,
+            'Payment was declined or not completed within the allowed time.'
+        );
     }
 }

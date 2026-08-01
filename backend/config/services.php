@@ -68,7 +68,9 @@ return [
     'payment' => [
         'commission_percentage' => env('PAYMENT_COMMISSION_PERCENTAGE', 10),
         'service_charge_default' => env('PAYMENT_SERVICE_CHARGE', 0),
-        'payment_timeout_minutes' => env('PAYMENT_TIMEOUT_MINUTES', 2),
+        'payment_timeout_minutes' => env('PAYMENT_TIMEOUT_MINUTES', 30),
+        'bnb_booking_hold_minutes' => env('BNB_BOOKING_HOLD_MINUTES', 30),
+        'bnb_bank_checkout_minutes' => env('BNB_BANK_CHECKOUT_MINUTES', 60),
     ],
 
     'google' => [

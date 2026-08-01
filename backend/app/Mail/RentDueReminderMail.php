@@ -19,16 +19,24 @@ class RentDueReminderMail extends Mailable
      *   amount:string,
      *   due_date:string,
      *   days_remaining:int,
-     *   period_label:string
+     *   period_label:string,
+     *   payments_url?:string|null
      * }  $payload
      */
     public function __construct(public array $payload) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(
-            subject: "Rent due in {$this->payload['days_remaining']} days — {$this->payload['property_title']}",
-        );
+        $days = (int) ($this->payload['days_remaining'] ?? 10);
+        $property = $this->payload['property_title'];
+
+        $subject = match ($days) {
+            1 => "Action required: rent due tomorrow — {$property}",
+            3 => "Rent due in 3 days — {$property}",
+            default => "Rent reminder: payment due in 10 days — {$property}",
+        };
+
+        return new Envelope(subject: $subject);
     }
 
     public function content(): Content

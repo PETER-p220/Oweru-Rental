@@ -24,6 +24,7 @@ class BnbBooking extends Model
         'payment_status',
         'payment_method',
         'transaction_id',
+        'payment_deadline_at',
         'notes',
     ];
 
@@ -32,6 +33,7 @@ class BnbBooking extends Model
         'check_out' => 'date',
         'guests' => 'integer',
         'total_price' => 'decimal:2',
+        'payment_deadline_at' => 'datetime',
         'special_requests' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -121,6 +123,7 @@ class BnbBooking extends Model
         return match($this->payment_status) {
             'paid' => 'green',
             'pending' => 'orange',
+            'failed' => 'red',
             'refunded' => 'red',
             'partial' => 'blue',
             default => 'gray',
@@ -235,5 +238,21 @@ class BnbBooking extends Model
     public function scopePast($query)
     {
         return $query->where('check_out', '<', now()->format('Y-m-d'));
+    }
+
+    /** Bookings that still hold dates on the calendar (paid/confirmed or unpaid within deadline). */
+    public function scopeBlockingAvailability($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('status', 'confirmed')
+                ->orWhere(function ($q2) {
+                    $q2->where('status', 'pending')
+                        ->where('payment_status', '!=', 'failed')
+                        ->where(function ($q3) {
+                            $q3->whereNull('payment_deadline_at')
+                                ->orWhere('payment_deadline_at', '>', now());
+                        });
+                });
+        });
     }
 }

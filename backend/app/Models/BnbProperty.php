@@ -212,7 +212,7 @@ class BnbProperty extends Model
     public function isAvailableForDates($checkIn, $checkOut): bool
     {
         return ! $this->bookings()
-            ->whereIn('status', ['pending', 'confirmed'])
+            ->blockingAvailability()
             ->where('check_in', '<', $checkOut)
             ->where('check_out', '>', $checkIn)
             ->exists();
