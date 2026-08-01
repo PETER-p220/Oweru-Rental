@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'agent_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/utils/property_share.dart';
 import '../../../../shared/services/agent_api_service.dart';
 
 class AgentShareTrackPage extends StatefulWidget {
@@ -110,8 +111,14 @@ class _AgentShareTrackPageState extends State<AgentShareTrackPage>
   }
 
   Future<void> _handleWhatsApp(Map<String, dynamic> item) async {
-    final url = item['tracking_url'] as String? ?? '';
-    final wa = 'https://wa.me/?text=${Uri.encodeComponent('Check out this property: $url')}';
+    final propertyId = item['id'];
+    final id = propertyId is int ? propertyId : int.tryParse(propertyId?.toString() ?? '');
+    if (id == null) return;
+    final title = item['title'] as String? ?? 'Property';
+    final shareUrl = item['share_url'] as String? ?? PropertyShare.buildUrl(id);
+    final message = PropertyShare.buildMessage(title, shareUrl);
+    await AgentApiService.recordShare(id);
+    final wa = 'https://wa.me/?text=${Uri.encodeComponent(message)}';
     final uri = Uri.parse(wa);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);

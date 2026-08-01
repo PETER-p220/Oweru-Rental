@@ -16,6 +16,7 @@ use App\Models\BnbProperty;
 use App\Models\BnbBooking;
 use App\Models\BnbReview;
 use App\Models\Lead;
+use App\Support\PropertyShare;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -318,12 +319,14 @@ class AgentController extends Controller
         $properties = Property::where('agent_id', $user->id)->get();
 
         $links = $properties->map(function ($property) use ($user) {
-            $trackingUrl = url("/property/{$property->id}?agent={$user->id}");
+            $trackingUrl = PropertyShare::propertyPageUrl($property->id, $user->id);
+            $shareUrl = PropertyShare::previewUrl($property->id, $user->id);
 
             return [
                 'id'           => $property->id,
                 'title'        => $property->title,
                 'tracking_url' => $trackingUrl,
+                'share_url'    => $shareUrl,
                 'qr_code_url'  => url("/api/agent/qr-codes/{$property->id}"),
                 'shares'       => $property->shares ?? 0,
                 'clicks'       => $property->clicks ?? 0,
@@ -388,7 +391,8 @@ class AgentController extends Controller
             'property_title'     => $property->title,
             'agent_id'           => $property->agent_id,
             'user_id'            => $user->id,
-            'tracking_url'       => url("/property/{$property->id}?agent={$user->id}"),
+            'tracking_url'       => PropertyShare::propertyPageUrl($property->id, $user->id),
+            'share_url'          => PropertyShare::previewUrl($property->id, $user->id),
             'clicks'             => $property->clicks ?? 0,
             'shares'             => $property->shares ?? 0,
             'database_columns'   => $schema,

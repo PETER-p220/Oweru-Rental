@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PropertyController;
+use App\Http\Controllers\Api\PropertyShareController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AdminController;
@@ -39,6 +40,7 @@ Route::post('/auth/google/register', [AuthController::class, 'registerWithGoogle
 // Public property routes
 Route::get('/public/properties',            [PropertyController::class, 'publicIndex']);
 Route::get('/public/properties/{property}', [PropertyController::class, 'publicShow']);
+Route::get('/public/share/property/{property}', [PropertyShareController::class, 'show']);
 Route::get('/public/bnb',                   [PropertyController::class, 'publicBnbIndex']);
 
 // Public lead creation (property contact forms)

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { buildPropertyShareMessage, buildPropertyShareUrl, openWhatsAppShare } from '../../utils/propertyShare';
 
 // ── Inline SVG Icons ──────────────────────────────────────────────────────────
 const CopyIcon = () => (
@@ -41,6 +43,7 @@ const POLL_INTERVAL_MS = 15_000;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const ShareAndTrack = () => {
+  const { user } = useAuth();
   const [links, setLinks]           = useState<TrackingLink[]>([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -98,7 +101,8 @@ const ShareAndTrack = () => {
     setLinks(prev => prev.map(l => l.id === item.id ? { ...l, shares: l.shares + 1 } : l));
     await Api.recordShare(item.id);
     fetchLinks(true);
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Check out this property: ${item.tracking_url}`)}`, '_blank');
+    const url = buildPropertyShareUrl(item.id, user?.id);
+    openWhatsAppShare(buildPropertyShareMessage(item.title, url));
   };
 
   return (
