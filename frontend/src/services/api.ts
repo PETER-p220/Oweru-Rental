@@ -168,6 +168,7 @@ class Api {
       ) {
         this.handlingUnauthorized = true;
         try {
+          // Defer to AuthContext — it skips redirect on public pages.
           this.unauthorizedHandler?.();
         } finally {
           this.handlingUnauthorized = false;

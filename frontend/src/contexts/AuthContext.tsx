@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import Api, { type User, TOKEN_KEY } from '../services/api';
+import { isPublicAppPath, isProtectedAppPath } from '../utils/authPaths';
 
 interface AuthContextType {
   user: User | null;
@@ -66,12 +67,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const redirectToLogin = useCallback(() => {
     if (redirectingRef.current) return;
-    const path = window.location.pathname + window.location.search;
+
+    const path = window.location.pathname;
     if (path.startsWith('/login') || path.startsWith('/register')) return;
 
+    if (isPublicAppPath(path) && !isProtectedAppPath(path)) {
+      clearSession();
+      return;
+    }
+
     redirectingRef.current = true;
-    window.location.href = `/login?redirect=${encodeURIComponent(path)}&session=expired`;
-  }, []);
+    const fullPath = path + window.location.search;
+    window.location.href = `/login?redirect=${encodeURIComponent(fullPath)}&session=expired`;
+  }, [clearSession]);
 
   const validateSession = useCallback(async (force = false) => {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -96,9 +104,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err: unknown) {
       if (isUnauthorizedError(err)) {
         clearSession();
-        redirectToLogin();
+        if (isProtectedAppPath(window.location.pathname)) {
+          redirectToLogin();
+        }
       }
-      // Network/server errors: keep existing session — do not log the user out.
       return false;
     }
   }, [clearSession, redirectToLogin]);
@@ -112,7 +121,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     Api.setUnauthorizedHandler(() => {
       clearSession();
-      redirectToLogin();
+      if (isProtectedAppPath(window.location.pathname)) {
+        redirectToLogin();
+      }
     });
 
     return () => Api.setUnauthorizedHandler(null);

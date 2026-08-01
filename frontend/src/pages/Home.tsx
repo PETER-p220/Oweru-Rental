@@ -142,7 +142,7 @@ const BookingForm = ({ property, onClose, onSuccess, bnbPath }: { property: any;
 ══════════════════════════════════════════ */
 const Home = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const bnbPropertyPath = (propertyId: number) =>
     resolveBnbPropertyPath(user, propertyId, isAuthenticated);
@@ -191,6 +191,12 @@ const Home = () => {
 
   // ── Optimized: fetch residential first, then defer secondary sections ─────
   useEffect(() => { loadInitialData(); }, []);
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      loadSavedProperties();
+    }
+  }, [authLoading, isAuthenticated]);
 
   useEffect(() => {
     if (window.location.hash === '#bnb') {
@@ -269,9 +275,6 @@ const Home = () => {
       console.error('Secondary load error:', err);
       setBnbLoading(false); setOweruLoading(false); setCommercialLoading(false);
     });
-
-    // 3. Saved properties — non-critical
-    loadSavedProperties();
   };
 
   const loadSavedProperties = async () => {
