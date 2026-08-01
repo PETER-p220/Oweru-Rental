@@ -8,6 +8,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   setIsAuthenticated: (isAuthenticated: boolean) => void;
   isLoading: boolean;
+  /** Increments when session is established or re-validated — use to refetch dashboard data. */
+  sessionEpoch: number;
   login: (userData: User, token: string) => void;
   logout: () => void;
 }
@@ -54,9 +56,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(getStoredUser);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(hasValidSession);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [sessionEpoch, setSessionEpoch] = useState(0);
   const validatingRef = useRef(false);
   const lastValidatedAt = useRef(0);
   const redirectingRef = useRef(false);
+
+  const bumpSession = useCallback(() => {
+    setSessionEpoch((n) => n + 1);
+  }, []);
 
   const clearSession = useCallback(() => {
     setUser(null);
@@ -102,6 +109,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(normalized));
       lastValidatedAt.current = now;
+      bumpSession();
       return true;
     } catch (err: unknown) {
       if (isUnauthorizedError(err)) {
@@ -112,7 +120,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       return false;
     }
-  }, [clearSession, redirectToLogin]);
+  }, [clearSession, redirectToLogin, bumpSession]);
 
   const logout = useCallback(() => {
     Api.logout().catch(() => {});
@@ -133,6 +141,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     if (validatingRef.current) return;
+
+    // Google OAuth callback stores the token from the URL — skip competing validation.
+    if (window.location.pathname.startsWith('/auth/google/callback')) {
+      setIsLoading(false);
+      return;
+    }
+
     validatingRef.current = true;
 
     (async () => {
@@ -142,28 +157,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     })();
   }, [validateSession]);
 
+  const hiddenAtRef = useRef<number | null>(null);
+
   useEffect(() => {
-    const onFocus = () => {
-      if (!localStorage.getItem(TOKEN_KEY)) return;
-      if (isProtectedAppPath(window.location.pathname)) {
-        validateSession(false);
-      }
-    };
-
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        onFocus();
+      if (document.visibilityState === 'hidden') {
+        hiddenAtRef.current = Date.now();
+        return;
       }
+
+      if (document.visibilityState !== 'visible') return;
+      if (!localStorage.getItem(TOKEN_KEY)) return;
+      if (!isProtectedAppPath(window.location.pathname)) return;
+
+      const awayMs = hiddenAtRef.current ? Date.now() - hiddenAtRef.current : 0;
+      hiddenAtRef.current = null;
+
+      void validateSession(false).then((ok) => {
+        if (!ok) return;
+        // After being away, refetch dashboard data without requiring a full refresh.
+        if (awayMs >= 2 * 60 * 1000) {
+          bumpSession();
+        }
+      });
     };
 
-    window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [validateSession]);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [validateSession, bumpSession]);
 
   const login = (userData: User, token: string) => {
     const normalized = normalizeStoredUser(userData as unknown as Record<string, unknown>);
@@ -173,6 +194,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem(TOKEN_KEY, token);
     lastValidatedAt.current = Date.now();
     redirectingRef.current = false;
+    bumpSession();
   };
 
   const value: AuthContextType = {
@@ -181,6 +203,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAuthenticated,
     setIsAuthenticated,
     isLoading,
+    sessionEpoch,
     login,
     logout,
   };

@@ -446,11 +446,11 @@ class AuthController extends Controller
             }
             
             $token = $this->issueAuthToken($user, $request);
-            
-            // Redirect to frontend with token and user data
+
             $frontendUrl = config('app.frontend_url', 'https://rental.oweru.com');
-            $redirectUrl = "{$frontendUrl}/auth/google/callback?token={$token}&user_type={$user->user_type}";
-            
+            $redirectUrl = $frontendUrl . '/auth/google/callback?token=' . urlencode($token)
+                . '&user_type=' . urlencode($user->user_type);
+
             return redirect()->away($redirectUrl);
             
         } catch (\Exception $e) {

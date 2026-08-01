@@ -17,15 +17,17 @@ const GoogleCallback = () => {
       return;
     }
 
+    const decodedToken = decodeURIComponent(token);
+
     let cancelled = false;
 
     (async () => {
       try {
-        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(TOKEN_KEY, decodedToken);
         const response = await Api.getUser();
         if (cancelled) return;
         const user = response.data;
-        login(user, token);
+        login(user, decodedToken);
         navigate(`/dashboard/${userType}`, { replace: true });
       } catch (err) {
         console.error('Failed to complete Google sign-in:', err);

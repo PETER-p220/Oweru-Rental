@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Search, MapPin, Bed, Bath, Square, Share2,
   SlidersHorizontal, X, ChevronDown, LayoutGrid, List,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Api from '../services/api';
 import { usePaymentPolling } from '../hooks/usePaymentPolling';
+import { useAuth } from '../contexts/AuthContext';
 import { paymentConfirmationMessage, parsePaymentStatus } from '../utils/paymentStatus';
 import PropertyThumbnail from '../components/PropertyThumbnail';
 import { getStorageOrigin } from '../utils/propertyImages';
@@ -1056,6 +1057,9 @@ type SourceFilter = 'all'  | 'agent' | 'landlord' | 'admin';
 
 const Properties = () => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { isLoading: authLoading, isAuthenticated, sessionEpoch } = useAuth();
+  const isDashboardRoute = pathname.includes('/dashboard/');
   const [searchTerm,    setSearchTerm]   = useState('');
   const [selectedType,  setSelectedType] = useState('');
   const [priceRange,    setPriceRange]   = useState('');
@@ -1088,15 +1092,14 @@ const Properties = () => {
   useEffect(() => { setCurrentPage(1); }, [debouncedSearch, selectedType, priceRange, bedrooms, furnished, sourceFilter]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     (async () => {
       try {
-        if (localStorage.getItem('token')) {
-          const r = await Api.getTenantApplications();
-          setApplications(r.data || []);
-        }
+        const r = await Api.getTenantApplications();
+        setApplications(r.data || []);
       } catch { /* silent */ }
     })();
-  }, []);
+  }, [isAuthenticated, sessionEpoch]);
 
   useEffect(() => {
     const p = sessionStorage.getItem('pendingApplication');
@@ -1138,7 +1141,10 @@ const Properties = () => {
     }
   }, [buildParams]);
 
-  useEffect(() => { loadProperties(currentPage); }, [currentPage, loadProperties]);
+  useEffect(() => {
+    if (isDashboardRoute && authLoading) return;
+    loadProperties(currentPage);
+  }, [currentPage, loadProperties, sessionEpoch, authLoading, isDashboardRoute]);
 
   useEffect(() => {
     const origin = getStorageOrigin();

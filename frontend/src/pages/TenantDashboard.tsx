@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { formatCurrency } from './tenant/tenantPageStyles';
+import { useAuthenticatedEffect } from '../hooks/useAuthenticatedEffect';
 
 interface DashboardData {
   total_properties?: number;
@@ -74,52 +75,54 @@ const TenantDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const [dashboardRes, propertiesRes, contractsRes] = await Promise.allSettled([
-          Api.getTenantDashboard(),
-          Api.getProperties({ page: 1 }),
-          Api.getTenantDigitalContracts(),
-        ]);
+  const loadDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
 
-        if (dashboardRes.status === 'fulfilled') {
-          setStats(dashboardRes.value.data || {});
-        }
+      const [dashboardRes, propertiesRes, contractsRes] = await Promise.allSettled([
+        Api.getTenantDashboard(),
+        Api.getProperties({ page: 1 }),
+        Api.getTenantDigitalContracts(),
+      ]);
 
-        if (propertiesRes.status === 'fulfilled') {
-          const payload = propertiesRes.value.data;
-          setProperties(
-            Array.isArray(payload?.data)
-              ? payload.data.slice(0, 4)
-              : Array.isArray(payload)
-                ? payload.slice(0, 4)
-                : [],
-          );
-        }
-
-        if (contractsRes.status === 'fulfilled') {
-          setContracts(Array.isArray(contractsRes.value.data) ? contractsRes.value.data : []);
-        }
-
-        const failures = [dashboardRes, propertiesRes, contractsRes].filter(
-          (result) => result.status === 'rejected',
-        );
-        if (failures.length === failures.length) {
-          const err = (failures[0] as PromiseRejectedResult).reason;
-          setError(err?.response?.data?.message || 'Failed to load tenant dashboard.');
-        } else {
-          setError('');
-        }
-      } catch (err: any) {
-        setError(err?.response?.data?.message || 'Failed to load tenant dashboard.');
-      } finally {
-        setLoading(false);
+      if (dashboardRes.status === 'fulfilled') {
+        setStats(dashboardRes.value.data || {});
       }
-    };
-    load();
+
+      if (propertiesRes.status === 'fulfilled') {
+        const payload = propertiesRes.value.data;
+        setProperties(
+          Array.isArray(payload?.data)
+            ? payload.data.slice(0, 4)
+            : Array.isArray(payload)
+              ? payload.slice(0, 4)
+              : [],
+        );
+      }
+
+      if (contractsRes.status === 'fulfilled') {
+        setContracts(Array.isArray(contractsRes.value.data) ? contractsRes.value.data : []);
+      }
+
+      const failures = [dashboardRes, propertiesRes, contractsRes].filter(
+        (result) => result.status === 'rejected',
+      );
+
+      if (failures.length === failures.length) {
+        const err = (failures[0] as PromiseRejectedResult).reason;
+        setError(err?.response?.data?.message || 'Failed to load tenant dashboard.');
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to load tenant dashboard.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useAuthenticatedEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
 
   const imageUrl = (path?: string) => {
     if (!path) return '';
@@ -289,7 +292,18 @@ const TenantDashboard = () => {
         </div>
 
         <div className="td-wrap">
-          {error && !loading && <div className="td-error">{error}</div>}
+          {error && !loading && (
+            <div className="td-error">
+              {error}
+              <button
+                type="button"
+                onClick={() => void loadDashboard()}
+                style={{ display: 'block', margin: '12px auto 0', padding: '8px 16px', background: '#0F172A', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}
+              >
+                Try again
+              </button>
+            </div>
+          )}
 
           {!error && (
             <>
