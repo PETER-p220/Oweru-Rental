@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BnbBooking;
 use App\Models\BnbProperty;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Log;
 
 class BnbPaymentService
@@ -29,12 +30,12 @@ class BnbPaymentService
         return max(15, (int) config('services.payment.bnb_bank_checkout_minutes', 60));
     }
 
-    public function deadlineForNewBooking(): \Illuminate\Support\Carbon
+    public function deadlineForNewBooking(): CarbonInterface
     {
         return now()->addMinutes($this->bookingHoldMinutes());
     }
 
-    public function deadlineForPaymentMode(string $mode): \Illuminate\Support\Carbon
+    public function deadlineForPaymentMode(string $mode): CarbonInterface
     {
         $minutes = $mode === 'bank' ? $this->bankCheckoutMinutes() : $this->mobilePaymentMinutes();
 

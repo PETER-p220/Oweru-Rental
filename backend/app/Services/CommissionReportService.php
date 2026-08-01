@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Commission;
 use App\Models\Payment;
 use App\Models\User;
-use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Collection;
@@ -20,7 +20,7 @@ class CommissionReportService
      *
      * @return array<string, mixed>
      */
-    public function buildDailyReport(Carbon $date): array
+    public function buildDailyReport(CarbonInterface $date): array
     {
         $start = $date->copy()->startOfDay();
         $end = $date->copy()->endOfDay();
@@ -172,7 +172,7 @@ class CommissionReportService
         return $dompdf->output();
     }
 
-    public function reportFilename(Carbon $date): string
+    public function reportFilename(CarbonInterface $date): string
     {
         return 'oweru-commission-report-' . $date->format('Y-m-d') . '.pdf';
     }
