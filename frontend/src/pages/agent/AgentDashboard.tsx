@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Api from '../../services/api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import LeadsAndVisitorsSection from './LeadsAndVisitorsSection';
+import { useAuthenticatedEffect } from '../../hooks/useAuthenticatedEffect';
+import { getApiErrorMessage, rejectedReason } from '../../utils/apiErrors';
+import DashboardLoadError from '../../components/DashboardLoadError';
 import {
   agentEyebrowStyle,
   agentHeaderInnerStyle,
@@ -21,24 +24,36 @@ const AgentDashboard = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const [dashboardRes, listingsRes] = await Promise.all([
-          Api.getAgentDashboard(),
-          Api.getMyListings(),
-        ]);
-        setStats(dashboardRes.data || {});
-        setListings(Array.isArray(listingsRes.data) ? listingsRes.data.slice(0, 5) : []);
-      } catch (err: any) {
-        setError(err?.response?.data?.message || t('agent.dashboard.loadError'));
-      } finally {
-        setLoading(false);
+  const loadDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const [dashboardRes, listingsRes] = await Promise.allSettled([
+        Api.getAgentDashboard(),
+        Api.getMyListings(),
+      ]);
+
+      if (dashboardRes.status === 'fulfilled') {
+        setStats(dashboardRes.value.data || {});
       }
-    };
-    load();
+      if (listingsRes.status === 'fulfilled') {
+        setListings(Array.isArray(listingsRes.value.data) ? listingsRes.value.data.slice(0, 5) : []);
+      }
+
+      if (dashboardRes.status === 'rejected') {
+        setError(getApiErrorMessage(rejectedReason(dashboardRes), t('agent.dashboard.loadError')));
+      }
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, t('agent.dashboard.loadError')));
+    } finally {
+      setLoading(false);
+    }
   }, [t]);
+
+  useAuthenticatedEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
 
   return (
     <div
@@ -130,18 +145,7 @@ const AgentDashboard = () => {
 
       {error && (
         <div style={{ maxWidth: agentWorkspace.maxContent, margin: '24px auto 0' }} className="agent-pad">
-          <div
-            style={{
-              padding: '12px 16px',
-              background: 'rgba(220,38,38,0.08)',
-              border: '1px solid rgba(220,38,38,0.25)',
-              borderRadius: '8px',
-              color: '#dc2626',
-              fontSize: '14px',
-            }}
-          >
-            {error}
-          </div>
+          <DashboardLoadError message={error} onRetry={() => void loadDashboard()} />
         </div>
       )}
 

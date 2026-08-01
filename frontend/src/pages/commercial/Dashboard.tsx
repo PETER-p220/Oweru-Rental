@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, TrendingUp, Users, DollarSign, Eye, Star, Plus, ArrowUpRight, ArrowDownRight, BarChart3, Calendar } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import Api from '../../services/api';
+import { useAuthenticatedEffect } from '../../hooks/useAuthenticatedEffect';
+import { getApiErrorMessage } from '../../utils/apiErrors';
+import DashboardLoadError from '../../components/DashboardLoadError';
 
 interface DashboardStats {
   total_properties: number; active_properties: number; total_bookings: number;
@@ -24,25 +26,31 @@ const Dashboard: React.FC = () => {
   const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
   const [user, setUser] = useState<CommercialUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => { fetchDashboardData(); }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/api/commercial/dashboard`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.stats);
-        setRecentBookings(data.recent_payments || data.recent_bookings || []);
-        setPopularProperties(data.popular_properties || []);
-        setMonthlyRevenue(data.monthly_revenue || []);
-        setUser(data.user);
-      }
-    } catch (error) { console.error(error); } finally { setLoading(false); }
-  };
+      setLoading(true);
+      setError('');
+
+      const response = await Api.getCommercialDashboard();
+      const data = response.data ?? response;
+
+      setStats(data.stats ?? null);
+      setRecentBookings(data.recent_payments || data.recent_bookings || []);
+      setPopularProperties(data.popular_properties || []);
+      setMonthlyRevenue(data.monthly_revenue || []);
+      setUser(data.user ?? null);
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to load commercial dashboard.'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useAuthenticatedEffect(() => {
+    void fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const fmt = (n: number) => new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
   const fmtDate = (s: string) => new Date(s).toLocaleDateString('en-TZ', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -68,6 +76,23 @@ const Dashboard: React.FC = () => {
   ];
 
   const maxRevenue = Math.max(...monthlyRevenue.map(m => m.revenue), 1);
+
+  if (loading) {
+    return (
+      <div className="cd-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ width: 36, height: 36, border: '3px solid #E2E8F0', borderTop: '3px solid #0F172A', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="cd-page">
+        <DashboardLoadError message={error} onRetry={() => void fetchDashboardData()} />
+      </div>
+    );
+  }
 
   return (
     <div className="cd-page"> 

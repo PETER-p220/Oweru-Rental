@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Home, Calendar, DollarSign, Users, Star, TrendingUp, Bed, Bath, Wifi,
   Car, Dumbbell, Wind, Utensils, Monitor, Tv, Shirt, MapPin,
   Plus, CheckCircle, Clock, XCircle, Award, AlertCircle,
 } from 'lucide-react';
 import Api from '../../services/api';
+import { useAuthenticatedEffect } from '../../hooks/useAuthenticatedEffect';
+import { getApiErrorMessage, rejectedReason } from '../../utils/apiErrors';
+import DashboardLoadError from '../../components/DashboardLoadError';
 
 function parseGuestFromNotes(notes?: string): { name: string; email: string; phone: string } | null {
   if (!notes) return null;
@@ -48,22 +51,52 @@ const BnbDashboard = () => {
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [topProperties, setTopProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => { loadDashboardData(); }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      const [analyticsRes, bookingsRes, propertiesRes] = await Promise.all([
-        Api.getBnbAnalytics(), Api.getBnbBookings(), Api.getBnbProperties(),
+      setError('');
+
+      const [analyticsRes, bookingsRes, propertiesRes] = await Promise.allSettled([
+        Api.getBnbAnalytics(),
+        Api.getBnbBookings(),
+        Api.getBnbProperties(),
       ]);
-      const a = analyticsRes.data || {};
-      setStats({ totalProperties: a.totalProperties || 0, totalBookings: a.totalBookings || 0, totalRevenue: a.totalRevenue || 0, occupancyRate: a.occupancyRate || 0, averageRating: a.averageRating || 0, activeListings: a.activeListings || 0 });
-      setRecentBookings((bookingsRes.data || []).slice(0, 5));
-      setTopProperties((propertiesRes.data || []).slice(0, 3));
-    } catch (e) { console.error('Failed to load BNB dashboard:', e); }
-    finally { setLoading(false); }
-  };
+
+      if (analyticsRes.status === 'fulfilled') {
+        const a = analyticsRes.value.data || {};
+        setStats({
+          totalProperties: a.totalProperties || 0,
+          totalBookings: a.totalBookings || 0,
+          totalRevenue: a.totalRevenue || 0,
+          occupancyRate: a.occupancyRate || 0,
+          averageRating: a.averageRating || 0,
+          activeListings: a.activeListings || 0,
+        });
+      }
+
+      if (bookingsRes.status === 'fulfilled') {
+        setRecentBookings((bookingsRes.value.data || []).slice(0, 5));
+      }
+
+      if (propertiesRes.status === 'fulfilled') {
+        setTopProperties((propertiesRes.value.data || []).slice(0, 3));
+      }
+
+      if (analyticsRes.status === 'rejected') {
+        setError(getApiErrorMessage(rejectedReason(analyticsRes), 'Failed to load BnB dashboard.'));
+      }
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to load BnB dashboard.'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useAuthenticatedEffect(() => {
+    void loadDashboardData();
+  }, [loadDashboardData]);
 
   const fmtCurrency = (n: number) => new Intl.NumberFormat('en-TZ', { style: 'currency', currency: 'TZS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
   const fmtCompactCurrency = (n: number) => {
@@ -88,8 +121,16 @@ const BnbDashboard = () => {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, backgroundColor: t.bg, minHeight: '100vh' }}>
-        <div style={{ width: 36, height: 36, border: `2px solid ${t.border}`, borderTop: `2px solid ${t.gold}`, borderRadius: '50%', animation: 'bnb-spin 0.8s linear infinite' }} />
-        <style>{`@keyframes bnb-spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ width: 40, height: 40, border: `3px solid ${t.border}`, borderTop: `3px solid ${t.gold}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ backgroundColor: t.bg, minHeight: '100vh' }}>
+        <DashboardLoadError message={error} onRetry={() => void loadDashboardData()} />
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users, Building, DollarSign, TrendingUp, AlertCircle,
@@ -7,6 +7,7 @@ import {
   UserCheck, Briefcase, Home, Bell, BarChart3,
 } from 'lucide-react';
 import Api from '../../services/api';
+import { useAuthenticatedEffect } from '../../hooks/useAuthenticatedEffect';
 import {
   C, body, pageWrap, pageInner, card, btnPrimary,
   ADMIN_CSS, adminHeaderStyle,
@@ -220,7 +221,9 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  useEffect(() => { loadDashboard(); }, [loadDashboard]);
+  useAuthenticatedEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
 
   const getActivityIcon = (type: string) =>
     ({ user: Users, property: Building, payment: CreditCard, system: Activity }[type] ?? Activity);

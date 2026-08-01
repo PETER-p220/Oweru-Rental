@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import Api from '../services/api';
 import { formatCurrency } from './tenant/tenantPageStyles';
 import { useAuthenticatedEffect } from '../hooks/useAuthenticatedEffect';
+import { getApiErrorMessage, rejectedReason } from '../utils/apiErrors';
+import DashboardLoadError from '../components/DashboardLoadError';
 
 interface DashboardData {
   total_properties?: number;
@@ -109,12 +111,13 @@ const TenantDashboard = () => {
         (result) => result.status === 'rejected',
       );
 
-      if (failures.length === failures.length) {
-        const err = (failures[0] as PromiseRejectedResult).reason;
-        setError(err?.response?.data?.message || 'Failed to load tenant dashboard.');
+      if (dashboardRes.status === 'rejected') {
+        setError(getApiErrorMessage(rejectedReason(dashboardRes), 'Failed to load tenant dashboard.'));
+      } else if (failures.length === failures.length) {
+        setError(getApiErrorMessage(rejectedReason(failures[0] as PromiseRejectedResult), 'Failed to load tenant dashboard.'));
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to load tenant dashboard.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to load tenant dashboard.'));
     } finally {
       setLoading(false);
     }
@@ -293,16 +296,7 @@ const TenantDashboard = () => {
 
         <div className="td-wrap">
           {error && !loading && (
-            <div className="td-error">
-              {error}
-              <button
-                type="button"
-                onClick={() => void loadDashboard()}
-                style={{ display: 'block', margin: '12px auto 0', padding: '8px 16px', background: '#0F172A', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}
-              >
-                Try again
-              </button>
-            </div>
+            <DashboardLoadError message={error} onRetry={() => void loadDashboard()} />
           )}
 
           {!error && (

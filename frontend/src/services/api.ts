@@ -1,5 +1,16 @@
 // API service for connecting to Laravel backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+function resolveApiBaseUrl(): string {
+  const fromEnv = import.meta.env.VITE_API_URL;
+  if (fromEnv && String(fromEnv).trim()) {
+    return String(fromEnv).replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+  return 'http://localhost:8000';
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 // ── The single source of truth for the token key ──────────────────────────────
 export const TOKEN_KEY = 'token';
@@ -193,13 +204,24 @@ class Api {
       }
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options.headers,
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers: {
+          ...defaultHeaders,
+          ...options.headers,
+        },
+      });
+    } catch {
+      // eslint-disable-next-line @typescript-eslint/no-throw-literal
+      throw {
+        response: {
+          data: { message: 'Unable to reach the server. Check your connection and try again.' },
+          status: 0,
+        },
+      };
+    }
 
     if (!response.ok) {
       let errorBody: any = {};
@@ -1168,6 +1190,12 @@ class Api {
 
   static async getAnalytics() {
     return this.request<any>('analytics');
+  }
+
+  // ── Commercial ──────────────────────────────────────────────────────────────
+
+  static async getCommercialDashboard() {
+    return this.request<any>('commercial/dashboard');
   }
 
   

@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, BarChart3, Building, DollarSign, FileText,
   Plus, Users, Home, MapPin, Bell, ChevronRight, Settings,
 } from 'lucide-react';
 import Api from '../services/api';
+import { useAuthenticatedEffect } from '../hooks/useAuthenticatedEffect';
+import { getApiErrorMessage, rejectedReason } from '../utils/apiErrors';
+import DashboardLoadError from '../components/DashboardLoadError';
 
 // ── Design tokens — 1:1 with landlord_dashboard.dart kSlate* color system
 const C = {
@@ -70,25 +73,44 @@ const LandlordDashboard = () => {
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState('');
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true); setError('');
-        const [statsRes, propsRes, appsRes, contractsRes] = await Promise.all([
-          Api.getOwnerDashboard(),
-          Api.getOwnerProperties(),
-          Api.getOwnerApplications(),
-          Api.getOwnerContracts().catch(() => ({ data: [] })),
-        ]);
-        setStats(statsRes.data || {});
-        setProperties(Array.isArray(propsRes.data) ? propsRes.data.slice(0, 5) : []);
-        setApplicationCount(Array.isArray(appsRes.data) ? appsRes.data.length : 0);
-        setContracts(Array.isArray(contractsRes.data) ? contractsRes.data : []);
-      } catch (err: any) {
-        setError(err?.response?.data?.message || 'Failed to load dashboard data.');
-      } finally { setLoading(false); }
-    })();
+  const loadDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const [statsRes, propsRes, appsRes, contractsRes] = await Promise.allSettled([
+        Api.getOwnerDashboard(),
+        Api.getOwnerProperties(),
+        Api.getOwnerApplications(),
+        Api.getOwnerContracts(),
+      ]);
+
+      if (statsRes.status === 'fulfilled') {
+        setStats(statsRes.value.data || {});
+      }
+      if (propsRes.status === 'fulfilled') {
+        setProperties(Array.isArray(propsRes.value.data) ? propsRes.value.data.slice(0, 5) : []);
+      }
+      if (appsRes.status === 'fulfilled') {
+        setApplicationCount(Array.isArray(appsRes.value.data) ? appsRes.value.data.length : 0);
+      }
+      if (contractsRes.status === 'fulfilled') {
+        setContracts(Array.isArray(contractsRes.value.data) ? contractsRes.value.data : []);
+      }
+
+      if (statsRes.status === 'rejected') {
+        setError(getApiErrorMessage(rejectedReason(statsRes), 'Failed to load dashboard data.'));
+      }
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to load dashboard data.'));
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useAuthenticatedEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
 
   // Matches _statsRow items in Dart (_StatItem list)
   const statCards = useMemo(() => [
@@ -117,8 +139,8 @@ const LandlordDashboard = () => {
   );
 
   if (error) return (
-    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div style={{ background: C.redBg, border: `1px solid rgba(220,38,38,0.22)`, borderRadius: 12, padding: '20px 24px', color: C.red, fontSize: 14, maxWidth: 480 }}>{error}</div>
+    <div style={{ backgroundColor: C.pageBg, minHeight: '100vh' }}>
+      <DashboardLoadError message={error} onRetry={() => void loadDashboard()} />
     </div>
   );
 
