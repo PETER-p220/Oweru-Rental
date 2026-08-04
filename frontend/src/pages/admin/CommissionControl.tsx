@@ -49,6 +49,9 @@ const normalizeCommissionPayment = (payment: any): CommissionPayment => ({
   grossAmount: Number(payment.gross_amount ?? payment.grossAmount ?? payment.amount ?? 0),
   oweruAmount: Number(payment.oweru_amount ?? payment.oweruAmount ?? 0),
   percentage: Number(payment.percentage || 0),
+  agentRate: Number(payment.agent_rate ?? payment.agentRate ?? payment.percentage ?? 0),
+  oweruRate: Number(payment.oweru_rate ?? payment.oweruRate ?? 0),
+  splitLabel: payment.split_label ?? payment.splitLabel ?? '',
   status: payment.status,
   dueDate: payment.dueDate || payment.due_date,
   paidDate: payment.paidDate || payment.paid_date,
@@ -59,6 +62,7 @@ const normalizeCommissionPayment = (payment: any): CommissionPayment => ({
   disbursementBatchId: payment.disbursement_batch_id ?? payment.disbursementBatchId,
   autoDisbursed: Boolean(payment.auto_disbursed ?? payment.autoDisbursed),
   canMarkPaid: payment.can_mark_paid ?? payment.canMarkPaid ?? true,
+  canRevertPayment: Boolean(payment.can_revert_payment ?? payment.canRevertPayment),
   createdAt: payment.createdAt || payment.created_at,
   updatedAt: payment.updatedAt || payment.updated_at,
 });
@@ -100,9 +104,17 @@ const CommissionControl = () => {
   const [agentReport, setAgentReport] = useState<any>(null);
   const [periodLoading, setPeriodLoading] = useState(false);
   const [payoutSummary, setPayoutSummary] = useState<any[]>([]);
+  const [disbursementTotals, setDisbursementTotals] = useState<any>(null);
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [batchPayingAgentId, setBatchPayingAgentId] = useState<number | null>(null);
+  const [confirmingAll, setConfirmingAll] = useState(false);
+  const [showConfirmAllModal, setShowConfirmAllModal] = useState(false);
+  const [confirmAllReference, setConfirmAllReference] = useState('');
   const [payoutMessage, setPayoutMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  const [agentLedgerFilter, setAgentLedgerFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
+  const [confirmPaymentTarget, setConfirmPaymentTarget] = useState<CommissionPayment | null>(null);
+  const [paymentReference, setPaymentReference] = useState('');
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
 
   useEffect(() => { loadCommissionData(); }, [activeTab]);
 
@@ -140,9 +152,13 @@ const CommissionControl = () => {
       ]);
       setOweruReport(oweruRes.data || oweruRes);
       setAgentReport(agentRes.data || agentRes);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to load period reports:', e);
-      setReportMessage({ text: 'Could not load period reports.', ok: false });
+      const status = e?.response?.status;
+      const msg = status === 404
+        ? 'Period report endpoints are not available on the server yet. Deploy the latest backend and run migrations.'
+        : (e?.response?.data?.message || 'Could not load period reports.');
+      setReportMessage({ text: msg, ok: false });
     } finally {
       setPeriodLoading(false);
     }
@@ -152,31 +168,64 @@ const CommissionControl = () => {
     try {
       setPayoutLoading(true);
       const res = await Api.getAgentPayoutSummary();
-      setPayoutSummary(Array.isArray(res.data) ? res.data : []);
-    } catch (e) {
+      const block = res.data;
+      if (Array.isArray(block)) {
+        setPayoutSummary(block);
+        setDisbursementTotals(null);
+      } else {
+        setPayoutSummary(block?.agents ?? []);
+        setDisbursementTotals(block?.totals ?? null);
+      }
+    } catch (e: any) {
       console.error('Failed to load payout summary:', e);
+      if (e?.response?.status === 404) {
+        setPayoutMessage({
+          text: 'Payout summary is not available on the server yet. Deploy the latest backend and run migrations.',
+          ok: false,
+        });
+      }
     } finally {
       setPayoutLoading(false);
     }
   };
 
-  const handleBatchPayAgent = async (agentRow: any) => {
-    const ids = agentRow.payable_commission_ids || [];
+  const handleBatchPayAgent = async (agentRow: any, reference?: string) => {
+    const ids = [
+      ...(agentRow.payable_commission_ids || []),
+      ...(agentRow.sync_commission_ids || []),
+    ];
     if (ids.length === 0) {
-      setPayoutMessage({ text: 'No payable commissions for this agent.', ok: false });
+      setPayoutMessage({ text: 'No agent commissions awaiting Oweru disbursement.', ok: false });
       return;
     }
     try {
       setBatchPayingAgentId(agentRow.agent_id);
       setPayoutMessage(null);
-      const res = await Api.processBatchAgentPayout(ids);
-      setPayoutMessage({ text: res.message || 'Batch payout recorded.', ok: true });
+      const res = await Api.processBatchAgentPayout(ids, undefined, reference?.trim() || undefined);
+      setPayoutMessage({ text: res.message || 'Oweru → agent disbursement recorded.', ok: true });
       await loadCommissionData();
       await loadPayoutSummary();
     } catch (e: any) {
-      setPayoutMessage({ text: e?.response?.data?.message || 'Batch payout failed.', ok: false });
+      setPayoutMessage({ text: e?.response?.data?.message || 'Could not record disbursement.', ok: false });
     } finally {
       setBatchPayingAgentId(null);
+    }
+  };
+
+  const handleConfirmAllDisbursements = async () => {
+    try {
+      setConfirmingAll(true);
+      setPayoutMessage(null);
+      const res = await Api.confirmAllAgentDisbursements(confirmAllReference.trim() || undefined);
+      setPayoutMessage({ text: res.message || 'All agent commissions recorded as disbursed by Oweru.', ok: true });
+      setShowConfirmAllModal(false);
+      setConfirmAllReference('');
+      await loadCommissionData();
+      await loadPayoutSummary();
+    } catch (e: any) {
+      setPayoutMessage({ text: e?.response?.data?.message || 'Could not confirm all commissions.', ok: false });
+    } finally {
+      setConfirmingAll(false);
     }
   };
 
@@ -234,19 +283,51 @@ const CommissionControl = () => {
     }
   };
 
-  const handleMarkAsPaid = async (id: number) => {
+  const handleMarkAsPaid = async (id: number, reference?: string) => {
     const payment = payments.find((p) => p.id === id);
     if (payment?.autoDisbursed) {
       setPayoutMessage({ text: 'Already sent via Selcom — syncing status only.', ok: true });
     }
     try {
-      const response = await Api.updateCommissionPaymentStatus(id, 'paid');
+      const response = await Api.updateCommissionPaymentStatus(id, 'paid', reference);
       setPayments((prev) => prev.map((p) => p.id === id ? normalizeCommissionPayment(response.data) : p));
+      setPayoutMessage({ text: response.message || 'Oweru → agent disbursement recorded.', ok: true });
       await refreshCommissionStats();
       await loadPayoutSummary();
     } catch (e: any) {
-      console.error('Failed to mark commission as paid:', e);
-      setPayoutMessage({ text: e?.response?.data?.message || 'Could not mark as paid.', ok: false });
+      console.error('Failed to confirm agent payment:', e);
+      setPayoutMessage({ text: e?.response?.data?.message || 'Could not confirm payment.', ok: false });
+    }
+  };
+
+  const openConfirmPayment = (payment: CommissionPayment) => {
+    setConfirmPaymentTarget(payment);
+    setPaymentReference('');
+  };
+
+  const submitConfirmPayment = async () => {
+    if (!confirmPaymentTarget) return;
+    try {
+      setConfirmingPayment(true);
+      await handleMarkAsPaid(confirmPaymentTarget.id, paymentReference.trim() || undefined);
+      setConfirmPaymentTarget(null);
+      setPaymentReference('');
+      closePaymentModal();
+    } finally {
+      setConfirmingPayment(false);
+    }
+  };
+
+  const handleRevertPayment = async (id: number) => {
+    if (!window.confirm('Revert this payment confirmation? The commission will return to pending.')) return;
+    try {
+      const response = await Api.revertAgentCommissionPayment(id);
+      setPayments((prev) => prev.map((p) => p.id === id ? normalizeCommissionPayment(response.data) : p));
+      setPayoutMessage({ text: response.message || 'Payment reverted.', ok: true });
+      await refreshCommissionStats();
+      await loadPayoutSummary();
+    } catch (e: any) {
+      setPayoutMessage({ text: e?.response?.data?.message || 'Could not revert payment.', ok: false });
     }
   };
 
@@ -315,7 +396,16 @@ const CommissionControl = () => {
     );
   }
 
-  const filteredPayments = payments.filter((p) => statusFilter === 'all' || p.status === statusFilter);
+  const filteredPayments = payments.filter((p) => {
+    if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+    return true;
+  });
+
+  const filteredAgentLedger = payoutSummary.filter((row) => {
+    if (agentLedgerFilter === 'unpaid') return row.payment_status === 'unpaid' || row.payment_status === 'sync_needed';
+    if (agentLedgerFilter === 'paid') return row.is_fully_paid;
+    return true;
+  });
 
   /* ── Render ── */
   return (
@@ -481,42 +571,113 @@ const CommissionControl = () => {
             </div>
           )}
 
-          <div style={{ marginBottom: 22, padding: 16, background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-              <h4 style={{ ...body, fontSize: 14, fontWeight: 700, color: C.text, margin: 0 }}>Smart agent payouts</h4>
-              <button type="button" style={ghostBtn(C.textMuted)} className="cc-btn" onClick={loadPayoutSummary} disabled={payoutLoading}>
-                <RefreshCw size={13} /> Refresh
-              </button>
+          <div style={{ marginBottom: 22, padding: 16, background: 'linear-gradient(135deg, #FFFBEB 0%, #F8FAFC 100%)', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+            <div style={{ ...body, fontSize: 13, color: C.text, marginBottom: 10, lineHeight: 1.6 }}>
+              <strong>How it works:</strong> Tenant pays Oweru the full rent → Oweru keeps <strong>30%</strong> → Oweru pays agent <strong>70%</strong>.
+              Use this screen to <strong>record when Oweru has sent the agent their commission</strong> (M-Pesa, bank, etc.).
             </div>
-            <p style={{ ...body, fontSize: 12, color: C.textMuted, margin: '0 0 14px', lineHeight: 1.5 }}>
-              Pay each agent once per batch. Commissions already sent via Selcom are skipped automatically — no duplicate sends.
-            </p>
-            {payoutLoading ? (
-              <div style={{ ...body, fontSize: 13, color: C.textMuted }}>Loading payout summary…</div>
-            ) : payoutSummary.length === 0 ? (
-              <div style={{ ...body, fontSize: 13, color: C.textMuted }}>No agent commissions yet.</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {payoutSummary.filter((r) => r.pending_count > 0 || r.auto_disbursed_pending_sync > 0).slice(0, 8).map((row) => (
-                  <div key={row.agent_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '10px 12px', background: '#fff', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                    <div>
-                      <div style={{ ...body, fontSize: 13, fontWeight: 700, color: C.text }}>{row.agent_name}</div>
-                      <div style={{ ...body, fontSize: 11, color: C.textMuted }}>
-                        {row.agent_code} · Pending {fmt(row.pending_amount)} ({row.pending_count})
-                        {row.auto_disbursed_pending_sync > 0 && ` · ${row.auto_disbursed_pending_sync} auto-paid (sync)`}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      style={solidBtn}
-                      className="cc-btn"
-                      disabled={batchPayingAgentId === row.agent_id || row.pending_count === 0}
-                      onClick={() => handleBatchPayAgent(row)}
-                    >
-                      {batchPayingAgentId === row.agent_id ? 'Processing…' : row.pending_count === 0 ? 'Synced' : `Mark ${row.pending_count} paid`}
-                    </button>
+            {disbursementTotals && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 10, marginBottom: 14 }}>
+                {[
+                  { label: 'Awaiting disbursement', value: fmt(disbursementTotals.pending_amount), sub: `${disbursementTotals.pending_count} commission(s)` },
+                  { label: 'Agents to pay', value: disbursementTotals.agents_awaiting, sub: 'need Oweru payout' },
+                  { label: 'Already disbursed', value: fmt(disbursementTotals.paid_amount), sub: 'recorded' },
+                ].map(({ label, value, sub }) => (
+                  <div key={label} style={{ background: '#fff', borderRadius: 8, padding: '10px 12px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ ...labelStyle, marginBottom: 4 }}>{label}</div>
+                    <div style={{ ...body, fontSize: 18, fontWeight: 700, color: C.text }}>{value}</div>
+                    <div style={{ ...body, fontSize: 11, color: C.textMuted }}>{sub}</div>
                   </div>
                 ))}
+              </div>
+            )}
+            {(disbursementTotals?.pending_count ?? 0) > 0 && (
+              <button
+                type="button"
+                style={{ ...solidBtn, width: '100%', justifyContent: 'center' }}
+                className="cc-btn"
+                onClick={() => { setShowConfirmAllModal(true); setConfirmAllReference(''); }}
+                disabled={confirmingAll || payoutLoading}
+              >
+                {confirmingAll ? 'Recording…' : `Confirm all agent commissions (${disbursementTotals?.pending_count ?? 0})`}
+              </button>
+            )}
+          </div>
+
+          <div style={{ marginBottom: 22, padding: 16, background: '#F8FAFC', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+              <h4 style={{ ...body, fontSize: 14, fontWeight: 700, color: C.text, margin: 0 }}>Oweru → Agent disbursement ledger</h4>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <select value={agentLedgerFilter} onChange={(e) => setAgentLedgerFilter(e.target.value as any)} className="admin-input" style={{ ...selectCss, padding: '6px 10px', fontSize: 12 }}>
+                  <option value="all">All agents</option>
+                  <option value="unpaid">Awaiting Oweru payout</option>
+                  <option value="paid">Fully disbursed</option>
+                </select>
+                <button type="button" style={ghostBtn(C.textMuted)} className="cc-btn" onClick={loadPayoutSummary} disabled={payoutLoading}>
+                  <RefreshCw size={13} /> Refresh
+                </button>
+              </div>
+            </div>
+            <p style={{ ...body, fontSize: 12, color: C.textMuted, margin: '0 0 14px', lineHeight: 1.5 }}>
+              Track which agents Oweru has already paid. Confirm per agent or use the button above to confirm everyone at once.
+            </p>
+            {payoutLoading ? (
+              <div style={{ ...body, fontSize: 13, color: C.textMuted }}>Loading agent ledger…</div>
+            ) : filteredAgentLedger.length === 0 ? (
+              <div style={{ ...body, fontSize: 13, color: C.textMuted }}>No agents match this filter.</div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', ...body, fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: '#1e293b', color: '#fff' }}>
+                      {['Agent', 'Status', 'Earned (70%)', 'Disbursed', 'Oweru owes', 'Last disbursement', 'Action'].map((h) => (
+                        <th key={h} style={{ textAlign: ['Earned', 'Paid', 'Pending'].includes(h) ? 'right' : 'left', padding: '8px 10px' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAgentLedger.map((row) => (
+                      <tr key={row.agent_id} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                        <td style={{ padding: '10px' }}>
+                          <div style={{ fontWeight: 700, color: C.text }}>{row.agent_name}</div>
+                          <div style={{ fontSize: 11, color: C.textMuted }}>{row.agent_code}</div>
+                        </td>
+                        <td style={{ padding: '10px' }}>
+                          <span style={pill(row.is_fully_paid ? C.green : row.payment_status === 'sync_needed' ? C.blue : C.amber)}>
+                            {row.is_fully_paid ? 'Disbursed' : row.payment_status === 'sync_needed' ? 'Selcom sync' : 'Oweru owes'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px', textAlign: 'right' }}>{fmt(row.total_earned)}</td>
+                        <td style={{ padding: '10px', textAlign: 'right', color: C.green, fontWeight: 600 }}>{fmt(row.paid_amount)}</td>
+                        <td style={{ padding: '10px', textAlign: 'right', color: row.pending_amount > 0 ? C.amber : C.textMuted, fontWeight: 600 }}>
+                          {fmt(row.pending_amount)}
+                          {row.pending_count > 0 && ` (${row.pending_count})`}
+                        </td>
+                        <td style={{ padding: '10px', fontSize: 11, color: C.textMuted }}>
+                          {row.last_paid_at || '—'}
+                          {row.last_disbursement_reference && (
+                            <div style={{ fontFamily: 'monospace' }}>{row.last_disbursement_reference}</div>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px' }}>
+                          {(row.pending_count > 0 || row.auto_disbursed_pending_sync > 0) ? (
+                            <button
+                              type="button"
+                              style={{ ...solidBtn, padding: '7px 12px', fontSize: 11 }}
+                              className="cc-btn"
+                              disabled={batchPayingAgentId === row.agent_id}
+                              onClick={() => handleBatchPayAgent(row)}
+                            >
+                              {batchPayingAgentId === row.agent_id ? '…' : 'Record disbursement'}
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: 11, color: C.green }}>✓ Up to date</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -552,11 +713,22 @@ const CommissionControl = () => {
                         {payment.agent.name}
                       </h4>
                       <p style={{ ...body, fontSize: 12, color: C.textMuted, margin: '0 0 6px' }}>
-                        {payment.property.title} · Agent share {fmt(payment.amount)}
-                        {payment.oweruAmount > 0 && (
-                          <> · Oweru {fmt(payment.oweruAmount)}</>
-                        )}
+                        {payment.property.title}
+                        {payment.grossAmount > 0 && <> · Gross {fmt(payment.grossAmount)}</>}
+                        {' · '}Agent {fmt(payment.amount)}
+                        {payment.oweruAmount > 0 && <> · Oweru {fmt(payment.oweruAmount)}</>}
                       </p>
+                      {payment.type === 'rent' && (
+                        <div style={{ marginBottom: 8, maxWidth: 280 }}>
+                          <div style={{ ...body, fontSize: 10.5, color: C.textMuted, marginBottom: 4 }}>
+                            {payment.splitLabel || '70% agent / 30% Oweru'}
+                          </div>
+                          <SplitBar
+                            agentPct={payment.agentRate || payment.percentage || 70}
+                            oweruPct={payment.oweruRate || (100 - (payment.percentage || 70))}
+                          />
+                        </div>
+                      )}
                       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 5, ...body, fontSize: 11.5, color: C.textMuted }}>
                           <User size={11} /> {payment.agent.code}
@@ -578,8 +750,11 @@ const CommissionControl = () => {
                         {payment.autoDisbursed && (
                           <span style={pill(C.blue)}>Selcom auto</span>
                         )}
+                        {payment.disbursementMethod === 'oweru_disbursement' && payment.status === 'paid' && (
+                          <span style={pill(C.purple)}>Oweru disbursed</span>
+                        )}
                         {payment.disbursementMethod === 'manual' && payment.status === 'paid' && (
-                          <span style={pill(C.purple)}>Manual</span>
+                          <span style={pill(C.purple)}>Oweru disbursed</span>
                         )}
                       </div>
                     </div>
@@ -601,25 +776,36 @@ const CommissionControl = () => {
 
                   {/* Action buttons */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {payment.status === 'pending' && (
+                    {['pending', 'approved'].includes(payment.status) && (
                       <>
-                        <button
-                          style={ghostBtn(C.blue)}
-                          className="cc-btn"
-                          onClick={() => handleApprovePayment(payment.id)}
-                        >
-                          <CheckCircle size={13} /> Approve
-                        </button>
+                        {payment.status === 'pending' && (
+                          <button
+                            style={ghostBtn(C.blue)}
+                            className="cc-btn"
+                            onClick={() => handleApprovePayment(payment.id)}
+                          >
+                            <CheckCircle size={13} /> Approve
+                          </button>
+                        )}
                         {payment.canMarkPaid !== false && (
                           <button
                             style={ghostBtn(C.green)}
                             className="cc-btn"
-                            onClick={() => handleMarkAsPaid(payment.id)}
+                            onClick={() => openConfirmPayment(payment)}
                           >
-                            <DollarSign size={13} /> {payment.autoDisbursed ? 'Sync paid' : 'Mark as Paid'}
+                            <DollarSign size={13} /> {payment.autoDisbursed ? 'Sync Selcom' : 'Record Oweru paid agent'}
                           </button>
                         )}
                       </>
+                    )}
+                    {payment.canRevertPayment && (
+                      <button
+                        style={ghostBtn(C.red)}
+                        className="cc-btn"
+                        onClick={() => handleRevertPayment(payment.id)}
+                      >
+                        Undo payment
+                      </button>
                     )}
                     {/* ✅ FIX: was onClick={() => setSelectedPayment(payment); setShowPaymentModal(true)}
                            Now uses a proper block body so both statements execute */}
@@ -1102,6 +1288,121 @@ const CommissionControl = () => {
         </div>
       )}
 
+      {/* ══ CONFIRM ALL DISBURSEMENTS MODAL ══ */}
+      {showConfirmAllModal && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.78)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 20, zIndex: 1000,
+        }}>
+          <div style={{ ...card, padding: 28, maxWidth: 480, width: '100%', position: 'relative' }}>
+            <button
+              onClick={() => setShowConfirmAllModal(false)}
+              style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer' }}
+            >
+              <X size={18} />
+            </button>
+
+            <h3 style={{ ...body, fontSize: 18, fontWeight: 600, color: C.text, margin: '0 0 8px' }}>
+              Confirm all agent commissions
+            </h3>
+            <p style={{ ...body, fontSize: 13, color: C.textMuted, margin: '0 0 18px', lineHeight: 1.5 }}>
+              Record that Oweru has disbursed agent shares for{' '}
+              <strong style={{ color: C.text }}>{disbursementTotals?.pending_count ?? 0} commission(s)</strong>
+              {' '}totalling <strong style={{ color: C.text }}>{fmt(disbursementTotals?.pending_amount ?? 0)}</strong>.
+              This will mark all awaiting payouts as disbursed in one batch.
+            </p>
+
+            <label style={labelCss}>Disbursement reference (optional — e.g. bulk M-Pesa batch ID)</label>
+            <input
+              type="text"
+              className="admin-input"
+              style={{ ...inputCss, marginBottom: 18 }}
+              placeholder="Reference for your records"
+              value={confirmAllReference}
+              onChange={(e) => setConfirmAllReference(e.target.value)}
+            />
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                style={{ ...solidBtn, flex: 1, justifyContent: 'center' }}
+                className="cc-btn"
+                disabled={confirmingAll}
+                onClick={handleConfirmAllDisbursements}
+              >
+                {confirmingAll ? 'Recording all…' : 'Confirm all disbursements'}
+              </button>
+              <button
+                style={{ ...ghostBtn(C.textMuted), flex: 1, justifyContent: 'center' }}
+                className="cc-btn"
+                onClick={() => setShowConfirmAllModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ CONFIRM AGENT PAYMENT MODAL ══ */}
+      {confirmPaymentTarget && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.78)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 20, zIndex: 1000,
+        }}>
+          <div style={{ ...card, padding: 28, maxWidth: 440, width: '100%', position: 'relative' }}>
+            <button
+              onClick={() => setConfirmPaymentTarget(null)}
+              style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer' }}
+            >
+              <X size={18} />
+            </button>
+
+            <h3 style={{ ...body, fontSize: 18, fontWeight: 600, color: C.text, margin: '0 0 8px' }}>
+              Record Oweru → agent disbursement
+            </h3>
+            <p style={{ ...body, fontSize: 13, color: C.textMuted, margin: '0 0 18px', lineHeight: 1.5 }}>
+              Tenant payment is already with Oweru. Confirm you have sent{' '}
+              <strong style={{ color: C.text }}>{fmt(confirmPaymentTarget.amount)}</strong> (agent 70% share) to{' '}
+              <strong style={{ color: C.text }}>{confirmPaymentTarget.agent.name}</strong>.
+            </p>
+
+            <label style={labelCss}>Disbursement reference (optional)</label>
+            <input
+              type="text"
+              className="admin-input"
+              style={{ ...inputCss, marginBottom: 18 }}
+              placeholder="M-Pesa ID, bank ref, etc."
+              value={paymentReference}
+              onChange={(e) => setPaymentReference(e.target.value)}
+            />
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                style={{ ...solidBtn, flex: 1, justifyContent: 'center' }}
+                className="cc-btn"
+                disabled={confirmingPayment}
+                onClick={submitConfirmPayment}
+              >
+                {confirmingPayment ? 'Recording…' : confirmPaymentTarget.autoDisbursed ? 'Sync Selcom' : 'Record disbursement'}
+              </button>
+              <button
+                style={{ ...ghostBtn(C.textMuted), flex: 1, justifyContent: 'center' }}
+                className="cc-btn"
+                onClick={() => setConfirmPaymentTarget(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══ PAYMENT DETAIL MODAL ══ */}
       {showPaymentModal && selectedPayment && (
         <div style={{
@@ -1143,11 +1444,13 @@ const CommissionControl = () => {
               { label: 'Property',      value: selectedPayment.property.title },
               { label: 'Location',      value: selectedPayment.property.address },
               { label: 'Property Price',value: fmt(selectedPayment.property.price) },
+              selectedPayment.grossAmount > 0 ? { label: 'Gross collected', value: fmt(selectedPayment.grossAmount) } : null,
+              { label: 'Split policy',  value: selectedPayment.splitLabel || (selectedPayment.type === 'rent' ? '70% agent / 30% Oweru' : '50% agent / 50% Oweru') },
               { label: 'Agent share',   value: `${fmt(selectedPayment.amount)} (${selectedPayment.percentage}%)` },
-              selectedPayment.oweruAmount > 0 ? { label: 'Oweru share', value: fmt(selectedPayment.oweruAmount) } : null,
+              selectedPayment.oweruAmount > 0 ? { label: 'Oweru share', value: `${fmt(selectedPayment.oweruAmount)} (${selectedPayment.oweruRate || 30}%)` } : null,
               { label: 'Due Date',      value: fmtDate(selectedPayment.dueDate) },
-              selectedPayment.paidDate ? { label: 'Paid Date', value: fmtDate(selectedPayment.paidDate) } : null,
-              selectedPayment.disbursementReference ? { label: 'Disbursement ref', value: selectedPayment.disbursementReference } : null,
+              selectedPayment.paidDate ? { label: 'Confirmed at', value: fmtDate(selectedPayment.paidDate) } : null,
+              selectedPayment.disbursementReference ? { label: 'Payment ref', value: selectedPayment.disbursementReference } : null,
               selectedPayment.disbursementBatchId ? { label: 'Batch ID', value: selectedPayment.disbursementBatchId } : null,
               selectedPayment.notes    ? { label: 'Notes',     value: selectedPayment.notes }               : null,
             ].filter(Boolean).map(({ label, value }: any) => (
@@ -1160,26 +1463,42 @@ const CommissionControl = () => {
               </div>
             ))}
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+            {selectedPayment.type === 'rent' && (
+              <div style={{ marginTop: 12 }}>
+                <SplitBar
+                  agentPct={selectedPayment.agentRate || selectedPayment.percentage || 70}
+                  oweruPct={selectedPayment.oweruRate || (100 - (selectedPayment.percentage || 70))}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 20, flexWrap: 'wrap' }}>
+              {['pending', 'approved'].includes(selectedPayment.status) && selectedPayment.canMarkPaid !== false && (
+                <button
+                  style={{ ...ghostBtn(C.green), flex: 1, justifyContent: 'center', minWidth: 140 }}
+                  className="cc-btn"
+                  onClick={() => { closePaymentModal(); openConfirmPayment(selectedPayment); }}
+                >
+                  <DollarSign size={13} /> Confirm agent payment
+                </button>
+              )}
+              {selectedPayment.canRevertPayment && (
+                <button
+                  style={{ ...ghostBtn(C.red), flex: 1, justifyContent: 'center', minWidth: 120 }}
+                  className="cc-btn"
+                  onClick={() => { handleRevertPayment(selectedPayment.id); closePaymentModal(); }}
+                >
+                  Undo payment
+                </button>
+              )}
               {selectedPayment.status === 'pending' && (
-                <>
-                  <button
-                    style={{ ...ghostBtn(C.blue), flex: 1, justifyContent: 'center' }}
-                    className="cc-btn"
-                    onClick={() => { handleApprovePayment(selectedPayment.id); closePaymentModal(); }}
-                  >
-                    <CheckCircle size={13} /> Approve
-                  </button>
-                  {selectedPayment.canMarkPaid !== false && (
-                    <button
-                      style={{ ...ghostBtn(C.green), flex: 1, justifyContent: 'center' }}
-                      className="cc-btn"
-                      onClick={() => { handleMarkAsPaid(selectedPayment.id); closePaymentModal(); }}
-                    >
-                      <DollarSign size={13} /> {selectedPayment.autoDisbursed ? 'Sync paid' : 'Mark Paid'}
-                    </button>
-                  )}
-                </>
+                <button
+                  style={{ ...ghostBtn(C.blue), flex: 1, justifyContent: 'center', minWidth: 120 }}
+                  className="cc-btn"
+                  onClick={() => { handleApprovePayment(selectedPayment.id); closePaymentModal(); }}
+                >
+                  <CheckCircle size={13} /> Approve
+                </button>
               )}
               <button
                 style={{ ...ghostBtn(C.textMuted), flex: 1, justifyContent: 'center' }}

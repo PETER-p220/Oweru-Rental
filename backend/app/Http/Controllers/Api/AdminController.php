@@ -991,47 +991,7 @@ class AdminController extends Controller
         $payments = Commission::with(['agent', 'property', 'payment'])
             ->latest()
             ->get()
-            ->map(function (Commission $commission) use ($payouts) {
-                $payment = $commission->payment;
-                $split = $payment
-                    ? app(CommissionShareService::class)->splitAmounts($payment)
-                    : ['gross' => (float) $commission->amount, 'oweru' => 0.0, 'agent' => (float) $commission->amount];
-
-                $paymentType = $payment?->type ?? ($commission->percentage >= 45 && $commission->percentage <= 55 ? 'site_visit' : 'rent');
-                $autoDisbursed = $payouts->isAutoDisbursed($commission);
-
-                return [
-                    'id' => $commission->id,
-                    'agent' => [
-                        'id' => $commission->agent?->id,
-                        'name' => $commission->agent?->fullName() ?? 'Unknown Agent',
-                        'email' => $commission->agent?->email,
-                        'code' => 'AGT-' . str_pad((string) ($commission->agent_id ?? 0), 3, '0', STR_PAD_LEFT),
-                    ],
-                    'property' => [
-                        'id' => $commission->property?->id,
-                        'title' => $commission->property?->title ?? 'Unknown Property',
-                        'address' => $commission->property?->address ?? $commission->property?->location,
-                        'price' => (float) ($commission->property?->price ?? 0),
-                    ],
-                    'type' => $paymentType === 'site_visit' ? 'site_visit' : 'rent',
-                    'gross_amount' => (float) ($split['gross'] ?? $commission->amount),
-                    'oweru_amount' => (float) ($split['oweru'] ?? 0),
-                    'amount' => (float) $commission->amount,
-                    'percentage' => (float) ($commission->percentage ?? 0),
-                    'status' => $commission->status,
-                    'disbursement_method' => $commission->disbursement_method,
-                    'disbursement_reference' => $commission->disbursement_reference,
-                    'disbursement_batch_id' => $commission->disbursement_batch_id,
-                    'auto_disbursed' => $autoDisbursed,
-                    'can_mark_paid' => $commission->status !== 'paid' && ! $autoDisbursed,
-                    'due_date' => optional($commission->payment?->due_date ?? $commission->created_at)?->toISOString(),
-                    'paid_date' => optional($commission->paid_at)?->toISOString(),
-                    'reference' => 'COM-' . str_pad((string) $commission->id, 5, '0', STR_PAD_LEFT),
-                    'created_at' => optional($commission->created_at)?->toISOString(),
-                    'updated_at' => optional($commission->updated_at)?->toISOString(),
-                ];
-            });
+            ->map(fn (Commission $commission) => $this->formatCommissionPaymentRow($commission));
 
         return response()->json(['data' => $payments]);
     }
@@ -1111,11 +1071,15 @@ class AdminController extends Controller
 
         if ($request->status === 'paid') {
             try {
+                $wasAuto = $payouts->isAutoDisbursed($commission);
                 $commission = $payouts->markPaid(
                     $commission,
-                    $payouts->isAutoDisbursed($commission) ? 'selcom_auto' : 'manual',
+                    $wasAuto ? 'selcom_auto' : 'oweru_disbursement',
                     $request->input('disbursement_reference'),
                 );
+                $message = $wasAuto
+                    ? 'Selcom already sent agent share — status synced.'
+                    : 'Oweru → agent disbursement recorded.';
             } catch (\InvalidArgumentException $e) {
                 return response()->json(['message' => $e->getMessage()], 422);
             }
@@ -1125,10 +1089,27 @@ class AdminController extends Controller
                 'paid_at' => null,
             ]);
             $commission->refresh();
+            $message = 'Commission payment updated successfully';
         }
 
         return response()->json([
-            'message' => 'Commission payment updated successfully',
+            'message' => $message ?? 'Commission payment updated successfully',
+            'data' => $this->formatCommissionPaymentRow($commission),
+        ]);
+    }
+
+    public function revertAgentCommissionPayment(Request $request, $commissionId): JsonResponse
+    {
+        $commission = Commission::with(['agent', 'property', 'payment'])->findOrFail($commissionId);
+
+        try {
+            $commission = app(AgentPayoutService::class)->revertManualPayment($commission);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message' => 'Agent payment reverted — commission is pending again.',
             'data' => $this->formatCommissionPaymentRow($commission),
         ]);
     }
@@ -1136,11 +1117,22 @@ class AdminController extends Controller
     public function getAgentPayoutSummary(Request $request): JsonResponse
     {
         if (! $this->hasTables(['commissions'])) {
-            return response()->json(['data' => []]);
+            return response()->json(['data' => [
+                'agents' => [],
+                'totals' => [
+                    'pending_amount' => 0, 'pending_count' => 0, 'agents_awaiting' => 0, 'paid_amount' => 0, 'agent_count' => 0,
+                ],
+            ]]);
         }
 
+        $service = app(AgentPayoutService::class);
+        $agents = $service->getAgentPayoutSummary();
+
         return response()->json([
-            'data' => app(AgentPayoutService::class)->getAgentPayoutSummary(),
+            'data' => [
+                'agents' => $agents,
+                'totals' => $service->buildDisbursementTotals($agents),
+            ],
         ]);
     }
 
@@ -1150,6 +1142,7 @@ class AdminController extends Controller
             'commission_ids' => 'required|array|min:1',
             'commission_ids.*' => 'integer|exists:commissions,id',
             'batch_reference' => 'nullable|string|max:64',
+            'disbursement_reference' => 'nullable|string|max:128',
         ]);
 
         if ($validator->fails()) {
@@ -1159,18 +1152,52 @@ class AdminController extends Controller
             ], 422);
         }
 
-        $result = app(AgentPayoutService::class)->processBatchPayout(
+        $service = app(AgentPayoutService::class);
+        $batchId = $request->input('batch_reference') ?? ('OWERU-BATCH-' . now()->format('YmdHis'));
+        $disbursementRef = $request->input('disbursement_reference');
+
+        $result = $service->processBatchPayoutWithReference(
             $request->input('commission_ids'),
-            $request->input('batch_reference'),
+            $batchId,
+            $disbursementRef,
         );
 
         return response()->json([
             'message' => sprintf(
-                'Batch complete: %d paid, %d auto-synced, %d skipped.',
+                'Oweru → agent disbursement recorded: %d paid, %d auto-synced, %d skipped.',
                 count($result['paid']),
                 count($result['synced_auto']),
                 count($result['skipped']),
             ),
+            'data' => $result,
+        ]);
+    }
+
+    public function confirmAllAgentDisbursements(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'batch_reference' => 'nullable|string|max:64',
+            'disbursement_reference' => 'nullable|string|max:128',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $result = app(AgentPayoutService::class)->confirmAllPendingDisbursements(
+            $request->input('batch_reference'),
+            $request->input('disbursement_reference'),
+        );
+
+        if (($result['paid'] ?? []) === [] && ($result['synced_auto'] ?? []) === [] && isset($result['message'])) {
+            return response()->json(['message' => $result['message']], 422);
+        }
+
+        return response()->json([
+            'message' => $result['message'],
             'data' => $result,
         ]);
     }
@@ -1213,6 +1240,20 @@ class AdminController extends Controller
         $payment = $commission->payment;
         $payouts = app(AgentPayoutService::class);
         $autoDisbursed = $payouts->isAutoDisbursed($commission);
+        $split = $payment
+            ? app(CommissionShareService::class)->splitAmounts($payment)
+            : [
+                'gross' => (float) $commission->amount,
+                'oweru' => 0.0,
+                'agent' => (float) $commission->amount,
+                'agent_rate' => ((float) ($commission->percentage ?? 70)) / 100,
+                'oweru_rate' => 1 - (((float) ($commission->percentage ?? 70)) / 100),
+            ];
+
+        $paymentType = $payment?->type ?? (
+            ($commission->percentage >= 45 && $commission->percentage <= 55) ? 'site_visit' : 'rent'
+        );
+        $isRental = $paymentType !== 'site_visit';
 
         return [
             'id' => $commission->id,
@@ -1228,15 +1269,22 @@ class AdminController extends Controller
                 'address' => $commission->property?->address ?? $commission->property?->location,
                 'price' => (float) ($commission->property?->price ?? 0),
             ],
-            'type' => 'rent',
+            'type' => $paymentType === 'site_visit' ? 'site_visit' : 'rent',
+            'gross_amount' => (float) ($split['gross'] ?? $commission->amount),
+            'oweru_amount' => (float) ($split['oweru'] ?? 0),
             'amount' => (float) $commission->amount,
-            'percentage' => (float) ($commission->percentage ?? 0),
+            'percentage' => (float) ($commission->percentage ?? round(($split['agent_rate'] ?? 0) * 100, 2)),
+            'agent_rate' => round(($split['agent_rate'] ?? 0) * 100, 1),
+            'oweru_rate' => round(($split['oweru_rate'] ?? 0) * 100, 1),
+            'split_label' => $isRental ? '70% agent / 30% Oweru' : '50% agent / 50% Oweru',
             'status' => $commission->status,
             'disbursement_method' => $commission->disbursement_method,
             'disbursement_reference' => $commission->disbursement_reference,
             'disbursement_batch_id' => $commission->disbursement_batch_id,
             'auto_disbursed' => $autoDisbursed,
-            'can_mark_paid' => $commission->status !== 'paid' && ! $autoDisbursed,
+            'can_mark_paid' => in_array($commission->status, ['pending', 'approved'], true),
+            'can_revert_payment' => $commission->status === 'paid'
+                && in_array($commission->disbursement_method, ['manual', 'oweru_disbursement'], true),
             'due_date' => optional($commission->payment?->due_date ?? $commission->created_at)?->toISOString(),
             'paid_date' => optional($commission->paid_at)?->toISOString(),
             'reference' => 'COM-' . str_pad((string) $commission->id, 5, '0', STR_PAD_LEFT),
@@ -1721,6 +1769,20 @@ class AdminController extends Controller
 
     public function getAdminBnbAnalytics(Request $request): JsonResponse
     {
+        if (! $this->hasTables(['bnb_properties', 'bnb_bookings'])) {
+            return response()->json([
+                'totalRevenue' => 0,
+                'totalBookings' => 0,
+                'completedBookings' => 0,
+                'totalProperties' => 0,
+                'activeProperties' => 0,
+                'occupancyRate' => 0,
+                'monthlyRevenue' => array_fill(0, 12, 0),
+                'topProperties' => [],
+                'dateRange' => $request->get('date_range', '30d'),
+            ]);
+        }
+
         $dateRange = $request->get('date_range', '30d');
         $startDate = match($dateRange) {
             '7d' => now()->subDays(7),
@@ -1736,9 +1798,9 @@ class AdminController extends Controller
         $completedBookings = BnbBooking::where('status', 'completed')
                                      ->where('created_at', '>=', $startDate)->count();
         $totalRevenue = BnbBooking::where('status', 'completed')
-                                  ->where('created_at', '>=', $startDate)->sum('total_amount');
+                                  ->where('created_at', '>=', $startDate)->sum('total_price');
 
-        $monthlyRevenue = BnbBooking::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(total_amount) as revenue')
+        $monthlyRevenue = BnbBooking::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(total_price) as revenue')
             ->where('status', 'completed')
             ->where('created_at', '>=', now()->subYear())
             ->groupBy('month')
@@ -1753,7 +1815,7 @@ class AdminController extends Controller
         }
 
         $topProperties = BnbProperty::withCount(['bookings' => fn($q) => $q->where('created_at', '>=', $startDate)])
-            ->withSum(['bookings as revenue' => fn($q) => $q->where('status', 'completed')->where('created_at', '>=', $startDate)])
+            ->withSum(['bookings as revenue' => fn($q) => $q->where('status', 'completed')->where('created_at', '>=', $startDate)], 'total_price')
             ->orderByDesc('bookings_count')
             ->limit(10)
             ->get()

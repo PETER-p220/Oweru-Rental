@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Search, Download, Eye, Edit, Plus,
   Bed, Bath, Users, Star, MapPin, Wifi, Car,
@@ -7,6 +8,7 @@ import {
   XCircle, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import Api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 /* ─── TOKENS ─────────────────────────────────────────── */
 /* Same warm-paper / brass identity as the tenant dashboard */
@@ -222,6 +224,9 @@ const amenityIcon = (a: string) => {
 
 /* ─── MAIN COMPONENT ────────────────────────────────── */
 export default function BnbProperties() {
+  const location = useLocation();
+  const { user } = useAuth();
+  const isAdminView = user?.user_type === 'admin' || location.pathname.includes('/admin/');
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading]       = useState(true);
   const [searchInput, setSearchInput] = useState('');
@@ -245,14 +250,16 @@ export default function BnbProperties() {
       const filters: any = {};
       if (searchTerm) filters.search = searchTerm;
       if (statusFilter !== 'all') filters.status = statusFilter;
-      const res = await Api.getBnbProperties(filters);
+      const res = isAdminView
+        ? await Api.getAdminBnbProperties(filters)
+        : await Api.getBnbProperties(filters);
       setProperties(res.data || []);
     } catch {
       setProperties([]);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, isAdminView]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -274,13 +281,17 @@ export default function BnbProperties() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.ink, margin: '0 0 6px' }}>BNB Properties</h1>
+          <h1 style={{ ...serif, fontSize: 32, fontWeight: 600, color: t.ink, margin: '0 0 6px' }}>
+            {isAdminView ? 'BNB Properties (Admin)' : 'BNB Properties'}
+          </h1>
           <p style={{ fontSize: 15, color: t.muted, margin: 0 }}>
             {loading ? 'Loading…' : `${properties.length} listing${properties.length !== 1 ? 's' : ''}`}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.onAccent }}><Plus size={15}/>Add Property</button>
+          {!isAdminView && (
+            <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.onAccent }}><Plus size={15}/>Add Property</button>
+          )}
           <button onClick={handleExport}           style={{ ...btn, backgroundColor: `${t.green}18`, color: t.green }}><Download size={15}/>Export</button>
           <button onClick={load}                   style={{ ...btn, backgroundColor: `${t.blue}18`, color: t.blue }}><RefreshCw size={15}/>Refresh</button>
         </div>
@@ -301,9 +312,20 @@ export default function BnbProperties() {
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           style={{ ...body, padding: '9px 12px', backgroundColor: t.surface2, border: `1px solid ${t.border}`, borderRadius: 8, color: t.ink, fontSize: 14 }}>
           <option value="all">All Status</option>
-          <option value="available">Available</option>
-          <option value="occupied">Occupied</option>
-          <option value="maintenance">Maintenance</option>
+          {isAdminView ? (
+            <>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+              <option value="pending">Pending</option>
+            </>
+          ) : (
+            <>
+              <option value="available">Available</option>
+              <option value="occupied">Occupied</option>
+              <option value="maintenance">Maintenance</option>
+            </>
+          )}
         </select>
       </div>
 
@@ -315,8 +337,12 @@ export default function BnbProperties() {
           <div style={{ ...card, gridColumn: '1/-1', textAlign: 'center', padding: 60, animation: 'fadeIn 0.4s ease' }}>
             <Home size={48} style={{ color: t.muted, marginBottom: 16 }} />
             <div style={{ ...serif, fontSize: 20, color: t.ink, marginBottom: 8 }}>No properties found</div>
-            <div style={{ color: t.muted, marginBottom: 24 }}>Start by adding your first listing</div>
-            <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.onAccent }}><Plus size={15}/>Add Property</button>
+            <div style={{ color: t.muted, marginBottom: 24 }}>
+              {isAdminView ? 'No BNB listings match your filters.' : 'Start by adding your first listing'}
+            </div>
+            {!isAdminView && (
+              <button onClick={() => setShowAdd(true)} style={{ ...btn, backgroundColor: t.gold, color: t.onAccent }}><Plus size={15}/>Add Property</button>
+            )}
           </div>
         ) : (
           properties.map((p: any) => (

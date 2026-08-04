@@ -487,14 +487,32 @@ class Api {
     });
   }
 
+  static async revertAgentCommissionPayment(id: number) {
+    return this.request<any>(`admin/commission/payments/${id}/revert`, { method: 'POST' });
+  }
+
   static async getAgentPayoutSummary() {
     return this.request<any[]>('admin/commission/payouts/summary');
   }
 
-  static async processBatchAgentPayout(commissionIds: number[], batchReference?: string) {
+  static async processBatchAgentPayout(commissionIds: number[], batchReference?: string, disbursementReference?: string) {
     return this.request<any>('admin/commission/payouts/batch', {
       method: 'POST',
-      body: JSON.stringify({ commission_ids: commissionIds, batch_reference: batchReference }),
+      body: JSON.stringify({
+        commission_ids: commissionIds,
+        batch_reference: batchReference,
+        disbursement_reference: disbursementReference,
+      }),
+    });
+  }
+
+  static async confirmAllAgentDisbursements(disbursementReference?: string, batchReference?: string) {
+    return this.request<any>('admin/commission/payouts/confirm-all', {
+      method: 'POST',
+      body: JSON.stringify({
+        batch_reference: batchReference,
+        disbursement_reference: disbursementReference,
+      }),
     });
   }
 
