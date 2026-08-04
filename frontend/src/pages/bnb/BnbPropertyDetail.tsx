@@ -400,7 +400,7 @@ const BnbPropertyDetail = () => {
               <p style={{ margin: '0 0 14px', fontSize: 13, color: '#64748B' }}>
                 Live calendar — booked dates update automatically as guests reserve this stay.
               </p>
-              <BnbAvailabilityCalendar propertyId={property.id} mode="guest" accent={GOLD} refreshIntervalMs={45000} />
+              <BnbAvailabilityCalendar propertyId={property.id} mode="guest" accent={GOLD} refreshIntervalMs={45000} showDateFields={false} />
             </div>
           </div>
 
@@ -423,7 +423,9 @@ const BnbPropertyDetail = () => {
                 <input required className="bnb-inp" placeholder="Phone (for payment)" value={booking.customer_phone} onChange={(e) => setBooking((p) => ({ ...p, customer_phone: e.target.value }))} />
 
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, marginBottom: 8 }}>Select dates on the calendar</div>
+                  <div style={{ fontSize: 11, color: '#64748B', fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Your stay dates
+                  </div>
                   <BnbAvailabilityCalendar
                     propertyId={property.id}
                     mode="guest"
@@ -431,20 +433,11 @@ const BnbPropertyDetail = () => {
                     checkIn={booking.check_in}
                     checkOut={booking.check_out}
                     refreshIntervalMs={45000}
-                    onRangeChange={(checkIn, checkOut) => setBooking((p) => ({ ...p, check_in: checkIn, check_out: checkOut }))}
+                    onRangeChange={(checkIn, checkOut) => {
+                      setBooking((p) => ({ ...p, check_in: checkIn, check_out: checkOut }));
+                      setError('');
+                    }}
                   />
-                  {(booking.check_in || booking.check_out) && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-                      <div style={{ fontSize: 12, color: '#475569' }}>
-                        <span style={{ fontWeight: 700, color: '#64748B' }}>Check-in: </span>
-                        {booking.check_in || '—'}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#475569' }}>
-                        <span style={{ fontWeight: 700, color: '#64748B' }}>Check-out: </span>
-                        {booking.check_out || '—'}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <label style={{ fontSize: 11, color: '#64748B', fontWeight: 700 }}>Guests

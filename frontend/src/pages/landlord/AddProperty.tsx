@@ -52,6 +52,9 @@ const AddProperty = () => {
     type: 'house',
     location: '',
     address: '',
+    district: '',
+    ward: '',
+    street: '',
     price: '',
     payment_duration_months: 3,
     bedrooms: 1,
@@ -60,8 +63,6 @@ const AddProperty = () => {
     images: [] as ImageFile[],
     videos: [] as VideoFile[],
     featured: false,
-    latitude: '',
-    longitude: '',
   });
 
   const propertyTypes = [
@@ -139,6 +140,9 @@ const AddProperty = () => {
       if (!formData.description.trim()) errs.push('Description is required');
       if (!formData.location.trim())    errs.push('Location is required');
       if (!formData.address.trim())     errs.push('Address is required');
+      if (!formData.district.trim())    errs.push('District is required');
+      if (!formData.ward.trim())        errs.push('Ward is required');
+      if (!formData.street.trim())      errs.push('Street is required');
     }
     if (step === 2) {
       if (!formData.price || Number(formData.price) <= 0) errs.push('Price must be greater than 0');
@@ -173,6 +177,9 @@ const AddProperty = () => {
       formDataToSend.append('payment_duration_months', String(formData.payment_duration_months));
       formDataToSend.append('location', formData.location);
       formDataToSend.append('address', formData.address);
+      formDataToSend.append('district', formData.district);
+      formDataToSend.append('ward', formData.ward);
+      formDataToSend.append('street', formData.street);
       formDataToSend.append('type', isOweruProperty ? 'oweru_rental' : formData.type);
       formDataToSend.append('bedrooms', formData.bedrooms.toString());
       formDataToSend.append('bathrooms', formData.bathrooms.toString());
@@ -227,7 +234,8 @@ const AddProperty = () => {
           location: formData.location, address: formData.address,
           type: isOweruProperty ? 'oweru_rental' : formData.type,
           bedrooms: formData.bedrooms, bathrooms: formData.bathrooms,
-          featured: formData.featured, latitude: formData.latitude, longitude: formData.longitude,
+          featured: formData.featured,
+          district: formData.district, ward: formData.ward, street: formData.street,
           amenities: formData.amenities,
           owner_id: user?.id || 1,
           landlord_name: 'Oweru Rental',
@@ -391,14 +399,32 @@ const AddProperty = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '18px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Location *</label>
+                  <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>City / Region *</label>
                   <input className="ap-input" type="text" name="location" value={formData.location} onChange={handleInputChange}
-                    style={inputCss} placeholder="e.g., Dar es Salaam, Masaki" required />
+                    style={inputCss} placeholder="e.g., Dar es Salaam" required />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>District *</label>
+                  <input className="ap-input" type="text" name="district" value={formData.district} onChange={handleInputChange}
+                    style={inputCss} placeholder="e.g., Kinondoni" required />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '18px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Ward *</label>
+                  <input className="ap-input" type="text" name="ward" value={formData.ward} onChange={handleInputChange}
+                    style={inputCss} placeholder="e.g., Masaki" required />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Street *</label>
+                  <input className="ap-input" type="text" name="street" value={formData.street} onChange={handleInputChange}
+                    style={inputCss} placeholder="e.g., Toure Drive" required />
                 </div>
                 <div>
                   <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Full Address *</label>
                   <input className="ap-input" type="text" name="address" value={formData.address} onChange={handleInputChange}
-                    style={inputCss} placeholder="e.g., 34 Toure Drive, Masaki" required />
+                    style={inputCss} placeholder="e.g., Plot 34, Toure Drive" required />
                 </div>
               </div>
 
@@ -457,16 +483,6 @@ const AddProperty = () => {
                   <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Bathrooms</label>
                   <input className="ap-input" type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange}
                     style={inputCss} min="0" max="20" />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Location Coordinates <span style={{ color: C.textMuted, fontWeight: 400 }}>(optional)</span></label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <input className="ap-input" type="number" name="latitude" value={formData.latitude} onChange={handleInputChange}
-                    style={inputCss} placeholder="Latitude" step="any" />
-                  <input className="ap-input" type="number" name="longitude" value={formData.longitude} onChange={handleInputChange}
-                    style={inputCss} placeholder="Longitude" step="any" />
                 </div>
               </div>
 

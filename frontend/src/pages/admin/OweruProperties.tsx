@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Building, Plus, Edit2, Trash2, Search, MapPin, Bed, Bath,
-  Square, Shield, DollarSign, Upload, X, Check, Video, CheckCircle,
+  Shield, DollarSign, Upload, X, Check, Video, CheckCircle,
 } from 'lucide-react';
 import Api from '../../services/api';
 import {
@@ -52,8 +52,8 @@ const getImage = (property: any): string => {
 };
 
 const emptyForm = () => ({
-  title: '', description: '', location: '', address: '', price: '',
-  type: 'oweru_rental', bedrooms: '', bathrooms: '', area: '',
+  title: '', description: '', location: '', address: '', district: '', ward: '', street: '', price: '',
+  type: 'oweru_rental', bedrooms: '', bathrooms: '',
   featured: true, available: true,
   amenities: [] as string[],
   images: [] as MediaItem[],
@@ -183,8 +183,9 @@ const OweruProperties = () => {
       const payload = {
         title: formData.title, description: formData.description,
         location: formData.location, address: formData.address,
+        district: formData.district, ward: formData.ward, street: formData.street,
         price: formData.price, type: formData.type,
-        bedrooms: formData.bedrooms, bathrooms: formData.bathrooms, area: formData.area,
+        bedrooms: formData.bedrooms, bathrooms: formData.bathrooms,
         featured: formData.featured, available: formData.available,
         amenities: formData.amenities, images, videos,
         landlord_name: 'Oweru Rental',
@@ -214,9 +215,10 @@ const OweruProperties = () => {
     setFormData({
       title: property.title || '', description: property.description || '',
       location: property.location || '', address: property.address || '',
+      district: property.district || '', ward: property.ward || '', street: property.street || '',
       price: property.price || '', type: property.type || 'oweru_rental',
       bedrooms: property.bedrooms || '', bathrooms: property.bathrooms || '',
-      area: property.area || '', featured: property.featured ?? true,
+      featured: property.featured ?? true,
       available: property.available ?? true,
       amenities: parseAmenities(property.amenities),
       images: (property.images || []).map((url: string) => ({ preview: mediaUrl(url), uploadedUrl: url })),
@@ -364,11 +366,10 @@ const OweruProperties = () => {
                     {formatCurrency(property.price)}
                     <span style={{ fontSize: '12px', color: C.textMuted, fontWeight: 500, marginLeft: '4px' }}>/month</span>
                   </div>
-                  {(property.bedrooms || property.bathrooms || property.area) && (
+                  {(property.bedrooms || property.bathrooms) && (
                     <div style={{ display: 'flex', gap: '14px', fontSize: '12px', color: C.textSub, marginBottom: '10px' }}>
                       {property.bedrooms > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Bed size={12} />{property.bedrooms}</span>}
                       {property.bathrooms > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Bath size={12} />{property.bathrooms}</span>}
-                      {property.area > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Square size={12} />{property.area}m²</span>}
                     </div>
                   )}
                   {parseAmenities(property.amenities).length > 0 && (
@@ -444,18 +445,30 @@ const OweruProperties = () => {
                   <input className="admin-input" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} style={inputCss} placeholder="e.g., Modern 2BR Apartment in Masaki" />
                 </div>
                 <div>
-                  <label style={labelCss}>Location *</label>
-                  <input className="admin-input" required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} style={inputCss} placeholder="Dar es Salaam, Masaki" />
+                  <label style={labelCss}>City / Region *</label>
+                  <input className="admin-input" required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} style={inputCss} placeholder="Dar es Salaam" />
+                </div>
+                <div>
+                  <label style={labelCss}>District *</label>
+                  <input className="admin-input" required value={formData.district} onChange={e => setFormData({ ...formData, district: e.target.value })} style={inputCss} placeholder="Kinondoni" />
+                </div>
+                <div>
+                  <label style={labelCss}>Ward *</label>
+                  <input className="admin-input" required value={formData.ward} onChange={e => setFormData({ ...formData, ward: e.target.value })} style={inputCss} placeholder="Masaki" />
+                </div>
+                <div>
+                  <label style={labelCss}>Street *</label>
+                  <input className="admin-input" required value={formData.street} onChange={e => setFormData({ ...formData, street: e.target.value })} style={inputCss} placeholder="Toure Drive" />
                 </div>
                 <div>
                   <label style={labelCss}>Address</label>
-                  <input className="admin-input" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={inputCss} placeholder="Full street address" />
+                  <input className="admin-input" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={inputCss} placeholder="Plot or building details" />
                 </div>
                 <div>
                   <label style={labelCss}>Monthly Price (TZS) *</label>
                   <input className="admin-input" type="number" required min="0" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} style={inputCss} placeholder="800000" />
                 </div>
-                <div className="admin-grid-3" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', gridColumn: '1 / -1' }}>
+                <div className="admin-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', gridColumn: '1 / -1' }}>
                   <div>
                     <label style={labelCss}>Bedrooms</label>
                     <input className="admin-input" type="number" min="0" value={formData.bedrooms} onChange={e => setFormData({ ...formData, bedrooms: e.target.value })} style={inputCss} />
@@ -463,10 +476,6 @@ const OweruProperties = () => {
                   <div>
                     <label style={labelCss}>Bathrooms</label>
                     <input className="admin-input" type="number" min="0" value={formData.bathrooms} onChange={e => setFormData({ ...formData, bathrooms: e.target.value })} style={inputCss} />
-                  </div>
-                  <div>
-                    <label style={labelCss}>Area (m²)</label>
-                    <input className="admin-input" type="number" min="0" step="0.1" value={formData.area} onChange={e => setFormData({ ...formData, area: e.target.value })} style={inputCss} />
                   </div>
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>

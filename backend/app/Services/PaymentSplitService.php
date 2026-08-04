@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Commission;
 use App\Models\Payment;
 use App\Models\Property;
 use App\Models\User;
@@ -81,6 +82,8 @@ class PaymentSplitService
                 'oweru_retained_amount' => $oweruRetainedAmount,
                 'agent_amount' => $recipientAmount,
             ]);
+
+            $this->markLinkedCommissionAutoPaid($payment);
         } catch (\Exception $e) {
             Log::error('Site visit payment splitting failed', [
                 'payment_id' => $payment->id,
@@ -197,6 +200,10 @@ class PaymentSplitService
                 'recipient_amount' => $recipientAmount,
                 'recipient_type' => $recipientType,
             ]);
+
+            if ($recipientType === 'agent') {
+                $this->markLinkedCommissionAutoPaid($payment);
+            }
         } catch (\Exception $e) {
             Log::error('Payment splitting failed', [
                 'payment_id' => $payment->id,
@@ -287,6 +294,19 @@ class PaymentSplitService
                 'body' => $createResponse->body(),
             ]);
         }
+    }
+
+    private function markLinkedCommissionAutoPaid(Payment $payment): void
+    {
+        if (! \Schema::hasTable('commissions')) {
+            return;
+        }
+
+        Commission::where('payment_id', $payment->id)->update([
+            'status' => 'paid',
+            'paid_at' => now(),
+            'disbursement_method' => 'selcom_auto',
+        ]);
     }
 
     private function normalizePhone(string $phone): string

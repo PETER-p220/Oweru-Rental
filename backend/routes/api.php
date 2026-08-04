@@ -398,6 +398,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/commission/payments',                         [AdminController::class, 'getCommissionPayments']);
         Route::get('/admin/commission/stats',                            [AdminController::class, 'getCommissionStats']);
         Route::patch('/admin/commission/payments/{commission}/status',   [AdminController::class, 'updateCommissionPaymentStatus']);
+        Route::get('/admin/commission/payouts/summary',                  [AdminController::class, 'getAgentPayoutSummary']);
+        Route::post('/admin/commission/payouts/batch',                  [AdminController::class, 'processBatchAgentPayout']);
+        Route::get('/admin/commission/reports/oweru',                   [AdminController::class, 'getOweruPeriodReport']);
+        Route::get('/admin/commission/reports/agents',                  [AdminController::class, 'getAgentPeriodReport']);
         Route::get('/admin/commission/reports/preview',                  [AdminController::class, 'getCommissionReportPreview']);
         Route::get('/admin/commission/reports/pdf',                      [AdminController::class, 'downloadCommissionReportPdf']);
         Route::post('/admin/commission/reports/send',                    [AdminController::class, 'sendCommissionReportEmail']);

@@ -480,11 +480,38 @@ class Api {
   static async getCommissionDistribution() { return this.request<any>('admin/commission/distribution'); }
   static async getCommissionPayments() { return this.request<any[]>('admin/commission/payments'); }
   static async getCommissionStats()    { return this.request<any>('admin/commission/stats'); }
-  static async updateCommissionPaymentStatus(id: number, status: string) {
+  static async updateCommissionPaymentStatus(id: number, status: string, disbursementReference?: string) {
     return this.request<any>(`admin/commission/payments/${id}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, disbursement_reference: disbursementReference }),
     });
+  }
+
+  static async getAgentPayoutSummary() {
+    return this.request<any[]>('admin/commission/payouts/summary');
+  }
+
+  static async processBatchAgentPayout(commissionIds: number[], batchReference?: string) {
+    return this.request<any>('admin/commission/payouts/batch', {
+      method: 'POST',
+      body: JSON.stringify({ commission_ids: commissionIds, batch_reference: batchReference }),
+    });
+  }
+
+  static async getOweruPeriodReport(from?: string, to?: string) {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const q = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any>(`admin/commission/reports/oweru${q}`);
+  }
+
+  static async getAgentPeriodReport(from?: string, to?: string) {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const q = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any>(`admin/commission/reports/agents${q}`);
   }
 
   static async getCommissionReportPreview(date?: string) {

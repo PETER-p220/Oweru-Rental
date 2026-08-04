@@ -12,6 +12,7 @@ import { isBnbListing, resolvePropertyDetailPath } from '../utils/propertyNav';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import { getPropertyThumbnail, PROPERTY_IMAGE_PLACEHOLDER, normalizeBnbProperty } from '../utils/propertyImages';
 import PropertyVideoBadge from '../components/PropertyVideoBadge';
+import BnbAvailabilityCalendar from '../components/bnb/BnbAvailabilityCalendar';
 
 const _rawBase     = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const API_BASE     = _rawBase.endsWith('/') ? _rawBase.slice(0, -1) : _rawBase;
@@ -111,9 +112,16 @@ const BookingForm = ({ property, onClose, onSuccess, bnbPath }: { property: any;
         <input required style={inp} placeholder="Your name" value={fd.guest_name} onChange={e => setFd(p => ({ ...p, guest_name: e.target.value }))} />
         <input required type="email" style={inp} placeholder="Email" value={fd.guest_email} onChange={e => setFd(p => ({ ...p, guest_email: e.target.value }))} />
         <input required style={inp} placeholder="Phone" value={fd.guest_phone} onChange={e => setFd(p => ({ ...p, guest_phone: e.target.value }))} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <input required type="date" style={inp} value={fd.check_in} onChange={e => setFd(p => ({ ...p, check_in: e.target.value }))} />
-          <input required type="date" style={inp} value={fd.check_out} onChange={e => setFd(p => ({ ...p, check_out: e.target.value }))} />
+        <div style={{ marginBottom: 10 }}>
+          <BnbAvailabilityCalendar
+            propertyId={property.id}
+            mode="guest"
+            accent="#C89128"
+            checkIn={fd.check_in}
+            checkOut={fd.check_out}
+            refreshIntervalMs={0}
+            onRangeChange={(checkIn, checkOut) => setFd(p => ({ ...p, check_in: checkIn, check_out: checkOut }))}
+          />
         </div>
         <input required type="number" min={1} max={20} style={inp} placeholder="Guests" value={fd.guest_count} onChange={e => setFd(p => ({ ...p, guest_count: Number(e.target.value) }))} />
         <textarea style={{ ...inp, resize: 'vertical', minHeight: 70 }} placeholder="Special requests (optional)" value={fd.special_requests} onChange={e => setFd(p => ({ ...p, special_requests: e.target.value }))} />

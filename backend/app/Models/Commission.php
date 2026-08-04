@@ -18,6 +18,9 @@ class Commission extends Model
         'percentage',
         'status',
         'paid_at',
+        'disbursement_method',
+        'disbursement_reference',
+        'disbursement_batch_id',
     ];
 
     protected $casts = [

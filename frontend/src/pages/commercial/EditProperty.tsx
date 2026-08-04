@@ -9,18 +9,21 @@ interface Amenity { id: number; name: string; icon: string; }
 
 interface Property {
   id: number; title: string; description: string; type: string; location: string;
-  address: string; price: number; price_type: string; payment_duration_months?: number; area: number; bedrooms?: number;
+  address: string; district?: string; ward?: string; street?: string;
+  price: number; price_type: string; payment_duration_months?: number;
+  bedrooms?: number;
   bathrooms?: number; parking_spaces?: number; furnished: boolean; available_from: string;
-  contact_phone: string; contact_email: string; latitude?: number; longitude?: number;
+  contact_phone: string; contact_email: string;
   amenities: Array<{ id: number; name: string; icon: string }>;
   images: Array<{ id: number; image_path: string; is_primary: boolean }>;
 }
 
 interface FormData {
   title: string; description: string; type: string; location: string; address: string;
-  price: number; price_type: string; payment_duration_months: number; area: number; bedrooms: number; bathrooms: number;
+  district: string; ward: string; street: string;
+  price: number; price_type: string; payment_duration_months: number; bedrooms: number; bathrooms: number;
   parking_spaces: number; furnished: boolean; available_from: string;
-  contact_phone: string; contact_email: string; latitude: number; longitude: number; amenities: number[];
+  contact_phone: string; contact_email: string; amenities: number[];
 }
 
 const EditProperty: React.FC = () => {
@@ -37,9 +40,10 @@ const EditProperty: React.FC = () => {
 
   const [formData, setFormData] = useState<FormData>({
     title: '', description: '', type: 'residential', location: '', address: '',
-    price: 0, price_type: 'monthly', payment_duration_months: 3, area: 0, bedrooms: 0, bathrooms: 0,
+    district: '', ward: '', street: '',
+    price: 0, price_type: 'monthly', payment_duration_months: 3, bedrooms: 0, bathrooms: 0,
     parking_spaces: 0, furnished: false, available_from: '',
-    contact_phone: '', contact_email: '', latitude: 0, longitude: 0, amenities: []
+    contact_phone: '', contact_email: '', amenities: []
   });
 
   useEffect(() => { if (id) { fetchProperty(); fetchAmenities(); } }, [id]);
@@ -91,10 +95,12 @@ const EditProperty: React.FC = () => {
         type: data.type || 'commercial',
         location: data.location || '',
         address: data.address || '',
+        district: data.district || '',
+        ward: data.ward || '',
+        street: data.street || '',
         price: Number(data.price) || 0,
         price_type: data.price_type || 'monthly',
         payment_duration_months: Number(data.payment_duration_months) || 3,
-        area: Number(data.area) || 0,
         bedrooms: Number(data.bedrooms) || 0,
         bathrooms: Number(data.bathrooms) || 0,
         parking_spaces: Number(data.parking_spaces) || 0,
@@ -102,8 +108,6 @@ const EditProperty: React.FC = () => {
         available_from: availableFrom,
         contact_phone: data.contact_phone || '',
         contact_email: data.contact_email || '',
-        latitude: Number(data.latitude) || 0,
-        longitude: Number(data.longitude) || 0,
         amenities: amenityList.map((a: any) => Number(a.id)).filter(Boolean),
       });
     } catch (e) {
@@ -178,9 +182,11 @@ const EditProperty: React.FC = () => {
     if (!formData.title.trim()) e.title = 'Title is required';
     if (!formData.description.trim()) e.description = 'Description is required';
     if (!formData.location.trim()) e.location = 'Location is required';
+    if (!formData.district.trim()) e.district = 'District is required';
+    if (!formData.ward.trim()) e.ward = 'Ward is required';
+    if (!formData.street.trim()) e.street = 'Street is required';
     if (!formData.address.trim()) e.address = 'Address is required';
     if (!formData.price || formData.price <= 0) e.price = 'Price must be greater than 0';
-    if (!formData.area || formData.area <= 0) e.area = 'Area must be greater than 0';
     if (!formData.available_from) e.available_from = 'Available date is required';
     if (!formData.contact_phone.trim()) e.contact_phone = 'Contact phone is required';
     if (!formData.contact_email.trim()) e.contact_email = 'Contact email is required';
@@ -604,24 +610,41 @@ const EditProperty: React.FC = () => {
             <div className="cd-form-body">
               <div className="cd-field-grid-2">
                 <div>
-                  <label className="cd-form-label">Location / Area <span style={{ color: '#EF4444' }}>*</span></label>
-                  <input type="text" name="location" value={formData.location} onChange={handleChange} className="cd-form-input" placeholder="Kigali, Rwanda" />
+                  <label className="cd-form-label">City / Region <span style={{ color: '#EF4444' }}>*</span></label>
+                  <input type="text" name="location" value={formData.location} onChange={handleChange} className="cd-form-input" placeholder="Dar es Salaam" />
                   {errors.location && <p className="cd-error">{errors.location}</p>}
                 </div>
                 <div>
+                  <label className="cd-form-label">District <span style={{ color: '#EF4444' }}>*</span></label>
+                  <input type="text" name="district" value={formData.district} onChange={handleChange} className="cd-form-input" placeholder="Kinondoni" />
+                  {errors.district && <p className="cd-error">{errors.district}</p>}
+                </div>
+              </div>
+              <div className="cd-field-grid-3" style={{ marginTop: 16 }}>
+                <div>
+                  <label className="cd-form-label">Ward <span style={{ color: '#EF4444' }}>*</span></label>
+                  <input type="text" name="ward" value={formData.ward} onChange={handleChange} className="cd-form-input" placeholder="Masaki" />
+                  {errors.ward && <p className="cd-error">{errors.ward}</p>}
+                </div>
+                <div>
+                  <label className="cd-form-label">Street <span style={{ color: '#EF4444' }}>*</span></label>
+                  <input type="text" name="street" value={formData.street} onChange={handleChange} className="cd-form-input" placeholder="Ohio Street" />
+                  {errors.street && <p className="cd-error">{errors.street}</p>}
+                </div>
+                <div>
                   <label className="cd-form-label">Full Address <span style={{ color: '#EF4444' }}>*</span></label>
-                  <input type="text" name="address" value={formData.address} onChange={handleChange} className="cd-form-input" placeholder="KN 123 Street, Kigali" />
+                  <input type="text" name="address" value={formData.address} onChange={handleChange} className="cd-form-input" placeholder="Building or plot details" />
                   {errors.address && <p className="cd-error">{errors.address}</p>}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Pricing & Size */}
+          {/* Pricing */}
           <div className="cd-form-card">
             <div className="cd-form-header">
               <DollarSign size={18} style={{ color: '#3B82F6' }} />
-              <span style={{ fontWeight: 700, color: '#0F172A' }}>Pricing &amp; Size</span>
+              <span style={{ fontWeight: 700, color: '#0F172A' }}>Pricing</span>
             </div>
             <div className="cd-form-body">
               <div className="cd-field-grid-3">
@@ -646,11 +669,6 @@ const EditProperty: React.FC = () => {
                     </select>
                   </div>
                 )}
-                <div>
-                  <label className="cd-form-label">Area (m²) <span style={{ color: '#EF4444' }}>*</span></label>
-                  <input type="number" name="area" value={formData.area} onChange={handleChange} className="cd-form-input" placeholder="120" />
-                  {errors.area && <p className="cd-error">{errors.area}</p>}
-                </div>
               </div>
               
               {formData.price_type !== 'sale' && formData.price > 0 && (

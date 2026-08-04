@@ -12,7 +12,8 @@ import {
 
 interface PropertyData {
   title: string; description: string; price: number; payment_duration_months: number; location: string;
-  bedrooms: number; bathrooms: number; area: number; type: string;
+  address: string; district: string; ward: string; street: string;
+  bedrooms: number; bathrooms: number; type: string;
   featured: boolean; available: boolean; images: string[];
   owner_id: number; landlord_name: string; landlord_phone: string;
 }
@@ -26,7 +27,8 @@ const AddListing: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState<PropertyData>({
     title: '', description: '', price: 0, payment_duration_months: 3, location: '',
-    bedrooms: 1, bathrooms: 1, area: 1, type: 'house',
+    address: '', district: '', ward: '', street: '',
+    bedrooms: 1, bathrooms: 1, type: 'house',
     featured: false, available: true, images: [],
     owner_id: 0, landlord_name: '', landlord_phone: ''
   });
@@ -121,6 +123,9 @@ const AddListing: React.FC = () => {
     if (!formData.price || formData.price <= 0) return 'Price must be greater than 0';
     if (!formData.payment_duration_months) return 'Payment period is required';
     if (!formData.location.trim()) return 'Location is required';
+    if (!formData.district.trim()) return 'District is required';
+    if (!formData.ward.trim()) return 'Ward is required';
+    if (!formData.street.trim()) return 'Street is required';
     if (!formData.bedrooms || formData.bedrooms <= 0) return 'Bedrooms must be > 0';
     if (!formData.bathrooms || formData.bathrooms <= 0) return 'Bathrooms must be > 0';
     return '';
@@ -320,8 +325,24 @@ const AddListing: React.FC = () => {
             <div className="al-sec-body">
               <div className="g2">
                 <div className="al-fld">
-                  <label className="al-lbl">Location *</label>
-                  <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="al-inp" placeholder="e.g., Masaki, Dar es Salaam" required />
+                  <label className="al-lbl">City / Region *</label>
+                  <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="al-inp" placeholder="e.g., Dar es Salaam" required />
+                </div>
+                <div className="al-fld">
+                  <label className="al-lbl">District *</label>
+                  <input type="text" name="district" value={formData.district} onChange={handleInputChange} className="al-inp" placeholder="e.g., Kinondoni" required />
+                </div>
+                <div className="al-fld">
+                  <label className="al-lbl">Ward *</label>
+                  <input type="text" name="ward" value={formData.ward} onChange={handleInputChange} className="al-inp" placeholder="e.g., Masaki" required />
+                </div>
+                <div className="al-fld">
+                  <label className="al-lbl">Street *</label>
+                  <input type="text" name="street" value={formData.street} onChange={handleInputChange} className="al-inp" placeholder="e.g., Toure Drive" required />
+                </div>
+                <div className="al-fld">
+                  <label className="al-lbl">Full Address</label>
+                  <input type="text" name="address" value={formData.address} onChange={handleInputChange} className="al-inp" placeholder="Plot number or building name" />
                 </div>
                 <div className="al-fld">
                   <label className="al-lbl">Monthly Rent (TZS) *</label>
@@ -359,10 +380,6 @@ const AddListing: React.FC = () => {
                 <div className="al-fld">
                   <label className="al-lbl">Bathrooms *</label>
                   <input type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} className="al-inp" min="1" required />
-                </div>
-                <div className="al-fld">
-                  <label className="al-lbl">Area (m²)</label>
-                  <input type="number" name="area" value={formData.area} onChange={handleInputChange} className="al-inp" min="1" />
                 </div>
               </div>
             </div>

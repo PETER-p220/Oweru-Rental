@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Services\ActivityLogService;
+use App\Services\AgentPayoutService;
 use App\Services\CommissionReportService;
 use App\Services\CommissionShareService;
 use App\Mail\DailyCommissionReportMail;
@@ -472,12 +473,14 @@ class AdminController extends Controller
             'description' => 'required|string',
             'location' => 'required|string|max:255',
             'address' => 'nullable|string|max:255',
+            'district' => 'nullable|string|max:255',
+            'ward' => 'nullable|string|max:255',
+            'street' => 'nullable|string|max:255',
             'price' => 'required|numeric|min:0',
             'payment_duration_months' => 'required|integer|in:1,3,6,12',
             'type' => 'sometimes|in:Master-bedroom,house,Single-room,oweru_rental',
             'bedrooms' => 'nullable|integer|min:0',
             'bathrooms' => 'nullable|integer|min:0',
-            'area' => 'nullable|numeric|min:0',
             'featured' => 'boolean',
             'available' => 'boolean',
             'images' => 'nullable|array',
@@ -502,12 +505,14 @@ class AdminController extends Controller
             'description' => $request->description,
             'location' => $request->location,
             'address' => $request->address,
+            'district' => $request->district,
+            'ward' => $request->ward,
+            'street' => $request->street,
             'price' => $request->price,
             'payment_duration_months' => (int) $request->input('payment_duration_months', 1),
             'type' => $request->type,
             'bedrooms' => $request->bedrooms,
             'bathrooms' => $request->bathrooms,
-            'area' => $request->area ?: null,
             'featured' => $request->boolean('featured', true),
             'available' => $request->boolean('available', true),
             'images' => $request->images ?? [],
@@ -532,12 +537,14 @@ class AdminController extends Controller
             'description' => 'sometimes|string',
             'location' => 'sometimes|string|max:255',
             'address' => 'sometimes|string|max:255',
+            'district' => 'sometimes|string|max:255',
+            'ward' => 'sometimes|string|max:255',
+            'street' => 'sometimes|string|max:255',
             'price' => 'sometimes|numeric|min:0',
             'payment_duration_months' => 'sometimes|integer|in:1,3,6,12',
             'type' => 'sometimes|in:Master-bedroom,house,Single-room,oweru_rental',
             'bedrooms' => 'sometimes|integer|min:0',
             'bathrooms' => 'sometimes|integer|min:0',
-            'area' => 'sometimes|numeric|min:0',
             'featured' => 'sometimes|boolean',
             'available' => 'sometimes|boolean',
             'images' => 'sometimes|array',
@@ -977,16 +984,21 @@ class AdminController extends Controller
             return response()->json(['data' => []]);
         }
 
+        app(AgentPayoutService::class)->syncAutoDisbursedCommissions();
+
+        $payouts = app(AgentPayoutService::class);
+
         $payments = Commission::with(['agent', 'property', 'payment'])
             ->latest()
             ->get()
-            ->map(function (Commission $commission) {
+            ->map(function (Commission $commission) use ($payouts) {
                 $payment = $commission->payment;
                 $split = $payment
                     ? app(CommissionShareService::class)->splitAmounts($payment)
                     : ['gross' => (float) $commission->amount, 'oweru' => 0.0, 'agent' => (float) $commission->amount];
 
                 $paymentType = $payment?->type ?? ($commission->percentage >= 45 && $commission->percentage <= 55 ? 'site_visit' : 'rent');
+                $autoDisbursed = $payouts->isAutoDisbursed($commission);
 
                 return [
                     'id' => $commission->id,
@@ -1008,6 +1020,11 @@ class AdminController extends Controller
                     'amount' => (float) $commission->amount,
                     'percentage' => (float) ($commission->percentage ?? 0),
                     'status' => $commission->status,
+                    'disbursement_method' => $commission->disbursement_method,
+                    'disbursement_reference' => $commission->disbursement_reference,
+                    'disbursement_batch_id' => $commission->disbursement_batch_id,
+                    'auto_disbursed' => $autoDisbursed,
+                    'can_mark_paid' => $commission->status !== 'paid' && ! $autoDisbursed,
                     'due_date' => optional($commission->payment?->due_date ?? $commission->created_at)?->toISOString(),
                     'paid_date' => optional($commission->paid_at)?->toISOString(),
                     'reference' => 'COM-' . str_pad((string) $commission->id, 5, '0', STR_PAD_LEFT),
@@ -1079,6 +1096,7 @@ class AdminController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:pending,approved,paid,cancelled',
+            'disbursement_reference' => 'nullable|string|max:128',
         ]);
 
         if ($validator->fails()) {
@@ -1088,39 +1106,143 @@ class AdminController extends Controller
             ], 422);
         }
 
-        $commission = Commission::findOrFail($commissionId);
-        $commission->update([
-            'status' => $request->status,
-            'paid_at' => $request->status === 'paid' ? now() : null,
-        ]);
+        $commission = Commission::with(['agent', 'property', 'payment'])->findOrFail($commissionId);
+        $payouts = app(AgentPayoutService::class);
+
+        if ($request->status === 'paid') {
+            try {
+                $commission = $payouts->markPaid(
+                    $commission,
+                    $payouts->isAutoDisbursed($commission) ? 'selcom_auto' : 'manual',
+                    $request->input('disbursement_reference'),
+                );
+            } catch (\InvalidArgumentException $e) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+        } else {
+            $commission->update([
+                'status' => $request->status,
+                'paid_at' => null,
+            ]);
+            $commission->refresh();
+        }
 
         return response()->json([
             'message' => 'Commission payment updated successfully',
-            'data' => [
-                'id' => $commission->id,
-                'agent' => [
-                    'id' => $commission->agent?->id,
-                    'name' => $commission->agent?->fullName() ?? 'Unknown Agent',
-                    'email' => $commission->agent?->email,
-                    'code' => 'AGT-' . str_pad((string) ($commission->agent_id ?? 0), 3, '0', STR_PAD_LEFT),
-                ],
-                'property' => [
-                    'id' => $commission->property?->id,
-                    'title' => $commission->property?->title ?? 'Unknown Property',
-                    'address' => $commission->property?->address ?? $commission->property?->location,
-                    'price' => (float) ($commission->property?->price ?? 0),
-                ],
-                'type' => 'rent',
-                'amount' => (float) $commission->amount,
-                'percentage' => (float) ($commission->percentage ?? 0),
-                'status' => $commission->status,
-                'due_date' => optional($commission->payment?->due_date ?? $commission->created_at)?->toISOString(),
-                'paid_date' => optional($commission->paid_at)?->toISOString(),
-                'reference' => 'COM-' . str_pad((string) $commission->id, 5, '0', STR_PAD_LEFT),
-                'created_at' => optional($commission->created_at)?->toISOString(),
-                'updated_at' => optional($commission->updated_at)?->toISOString(),
-            ],
+            'data' => $this->formatCommissionPaymentRow($commission),
         ]);
+    }
+
+    public function getAgentPayoutSummary(Request $request): JsonResponse
+    {
+        if (! $this->hasTables(['commissions'])) {
+            return response()->json(['data' => []]);
+        }
+
+        return response()->json([
+            'data' => app(AgentPayoutService::class)->getAgentPayoutSummary(),
+        ]);
+    }
+
+    public function processBatchAgentPayout(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'commission_ids' => 'required|array|min:1',
+            'commission_ids.*' => 'integer|exists:commissions,id',
+            'batch_reference' => 'nullable|string|max:64',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $result = app(AgentPayoutService::class)->processBatchPayout(
+            $request->input('commission_ids'),
+            $request->input('batch_reference'),
+        );
+
+        return response()->json([
+            'message' => sprintf(
+                'Batch complete: %d paid, %d auto-synced, %d skipped.',
+                count($result['paid']),
+                count($result['synced_auto']),
+                count($result['skipped']),
+            ),
+            'data' => $result,
+        ]);
+    }
+
+    public function getOweruPeriodReport(Request $request, CommissionReportService $reports): JsonResponse
+    {
+        [$from, $to] = $this->parseReportDateRange($request);
+
+        return response()->json([
+            'data' => $reports->buildOweruPeriodReport($from, $to),
+        ]);
+    }
+
+    public function getAgentPeriodReport(Request $request, CommissionReportService $reports): JsonResponse
+    {
+        [$from, $to] = $this->parseReportDateRange($request);
+
+        return response()->json([
+            'data' => $reports->buildAgentPeriodReport($from, $to),
+        ]);
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    private function parseReportDateRange(Request $request): array
+    {
+        $from = Carbon::parse($request->input('from', now()->subDays(30)->toDateString()))->startOfDay();
+        $to = Carbon::parse($request->input('to', now()->toDateString()))->endOfDay();
+
+        if ($from->gt($to)) {
+            [$from, $to] = [$to->copy()->startOfDay(), $from->copy()->endOfDay()];
+        }
+
+        return [$from, $to];
+    }
+
+    private function formatCommissionPaymentRow(Commission $commission): array
+    {
+        $payment = $commission->payment;
+        $payouts = app(AgentPayoutService::class);
+        $autoDisbursed = $payouts->isAutoDisbursed($commission);
+
+        return [
+            'id' => $commission->id,
+            'agent' => [
+                'id' => $commission->agent?->id,
+                'name' => $commission->agent?->fullName() ?? 'Unknown Agent',
+                'email' => $commission->agent?->email,
+                'code' => 'AGT-' . str_pad((string) ($commission->agent_id ?? 0), 3, '0', STR_PAD_LEFT),
+            ],
+            'property' => [
+                'id' => $commission->property?->id,
+                'title' => $commission->property?->title ?? 'Unknown Property',
+                'address' => $commission->property?->address ?? $commission->property?->location,
+                'price' => (float) ($commission->property?->price ?? 0),
+            ],
+            'type' => 'rent',
+            'amount' => (float) $commission->amount,
+            'percentage' => (float) ($commission->percentage ?? 0),
+            'status' => $commission->status,
+            'disbursement_method' => $commission->disbursement_method,
+            'disbursement_reference' => $commission->disbursement_reference,
+            'disbursement_batch_id' => $commission->disbursement_batch_id,
+            'auto_disbursed' => $autoDisbursed,
+            'can_mark_paid' => $commission->status !== 'paid' && ! $autoDisbursed,
+            'due_date' => optional($commission->payment?->due_date ?? $commission->created_at)?->toISOString(),
+            'paid_date' => optional($commission->paid_at)?->toISOString(),
+            'reference' => 'COM-' . str_pad((string) $commission->id, 5, '0', STR_PAD_LEFT),
+            'created_at' => optional($commission->created_at)?->toISOString(),
+            'updated_at' => optional($commission->updated_at)?->toISOString(),
+        ];
     }
 
     public function getCommissionReportPreview(Request $request, CommissionReportService $reports): JsonResponse

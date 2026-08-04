@@ -57,11 +57,13 @@ const EditLandlordProperty = () => {
     type: 'house',
     location: '',
     address: '',
+    district: '',
+    ward: '',
+    street: '',
     price: '',
     payment_duration_months: 3,
     bedrooms: 1,
     bathrooms: 1,
-    area: '',
     available: true,
     featured: false,
     amenities: [] as string[],
@@ -92,11 +94,13 @@ const EditLandlordProperty = () => {
         type: p.type || 'house',
         location: p.location || '',
         address: p.address || '',
+        district: p.district || '',
+        ward: p.ward || '',
+        street: p.street || '',
         price: p.price != null ? String(p.price) : '',
         payment_duration_months: Number(p.payment_duration_months) || 3,
         bedrooms: Number(p.bedrooms) || 0,
         bathrooms: Number(p.bathrooms) || 0,
-        area: p.area != null ? String(p.area) : '',
         available: p.available !== false,
         featured: Boolean(p.featured),
         amenities,
@@ -150,11 +154,13 @@ const EditLandlordProperty = () => {
         type: formData.type,
         location: formData.location.trim(),
         address: formData.address.trim(),
+        district: formData.district.trim(),
+        ward: formData.ward.trim(),
+        street: formData.street.trim(),
         price: Number(formData.price),
         payment_duration_months: formData.payment_duration_months,
         bedrooms: formData.bedrooms,
         bathrooms: formData.bathrooms,
-        area: formData.area ? Number(formData.area) : 0,
         available: formData.available,
         featured: formData.featured,
         amenities: formData.amenities,
@@ -267,8 +273,23 @@ const EditLandlordProperty = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '18px' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Location *</label>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>City / Region *</label>
                 <input className="ep-input" type="text" name="location" value={formData.location} onChange={handleInputChange} style={inputCss} required />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>District</label>
+                <input className="ep-input" type="text" name="district" value={formData.district} onChange={handleInputChange} style={inputCss} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '18px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Ward</label>
+                <input className="ep-input" type="text" name="ward" value={formData.ward} onChange={handleInputChange} style={inputCss} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Street</label>
+                <input className="ep-input" type="text" name="street" value={formData.street} onChange={handleInputChange} style={inputCss} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Full Address</label>
@@ -299,7 +320,7 @@ const EditLandlordProperty = () => {
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '18px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '18px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Bedrooms</label>
                 <input className="ep-input" type="number" name="bedrooms" value={formData.bedrooms} onChange={handleInputChange} style={inputCss} min="0" />
@@ -307,10 +328,6 @@ const EditLandlordProperty = () => {
               <div>
                 <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Bathrooms</label>
                 <input className="ep-input" type="number" name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} style={inputCss} min="0" />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '7px', fontWeight: 700, fontSize: '13px', color: C.text }}>Area (m²)</label>
-                <input className="ep-input" type="number" name="area" value={formData.area} onChange={handleInputChange} style={inputCss} min="0" />
               </div>
             </div>
 

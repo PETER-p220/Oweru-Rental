@@ -3,6 +3,7 @@ import { X, Calendar, User, Phone, Mail, MessageSquare } from 'lucide-react';
 import { TOKEN_KEY } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { resolveBnbPropertyPath } from '../utils/bnbNav';
+import BnbAvailabilityCalendar from './bnb/BnbAvailabilityCalendar';
 
 interface BookingFormProps {
   property: any;
@@ -227,71 +228,26 @@ const BookingForm = ({ property, onClose, onSuccess }: BookingFormProps) => {
         </div>
 
         {/* Booking Dates */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: 8, 
-              fontSize: 14, 
-              fontWeight: 600, 
-              color: '#fff' 
-            }}>
-              <Calendar size={16} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
-              Check In *
-            </label>
-            <input
-              type="date"
-              name="checkIn"
-              value={formData.checkIn}
-              onChange={handleChange}
-              min={new Date().toISOString().split('T')[0]}
-              required
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: '#1e293b',
-                border: '1px solid #334155',
-                borderRadius: 8,
-                color: '#fff',
-                fontSize: 14,
-                outline: 'none',
-                transition: 'all 0.2s'
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = '#fbbf24')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = '#334155')}
-            />
-          </div>
-
-          <div>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: 8, 
-              fontSize: 14, 
-              fontWeight: 600, 
-              color: '#fff' 
-            }}>
-              Check Out *
-            </label>
-            <input
-              type="date"
-              name="checkOut"
-              value={formData.checkOut}
-              onChange={handleChange}
-              min={formData.checkIn || new Date().toISOString().split('T')[0]}
-              required
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: '#1e293b',
-                border: '1px solid #334155',
-                borderRadius: 8,
-                color: '#fff',
-                fontSize: 14,
-                outline: 'none',
-                transition: 'all 0.2s'
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = '#fbbf24')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = '#334155')}
+        <div>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: 8, 
+            fontSize: 14, 
+            fontWeight: 600, 
+            color: '#fff' 
+          }}>
+            <Calendar size={16} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
+            Check-in & Check-out *
+          </label>
+          <div style={{ marginBottom: 16 }}>
+            <BnbAvailabilityCalendar
+              propertyId={property.id}
+              mode="guest"
+              accent="#fbbf24"
+              checkIn={formData.checkIn}
+              checkOut={formData.checkOut}
+              refreshIntervalMs={0}
+              onRangeChange={(checkIn, checkOut) => setFormData(prev => ({ ...prev, checkIn, checkOut }))}
             />
           </div>
         </div>

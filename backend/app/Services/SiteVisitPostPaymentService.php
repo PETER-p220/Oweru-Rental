@@ -160,6 +160,7 @@ class SiteVisitPostPaymentService
                 'percentage' => $pct,
                 'status' => $splitDone ? 'paid' : 'pending',
                 'paid_at' => $splitDone ? now() : null,
+                'disbursement_method' => $splitDone ? 'selcom_auto' : null,
             ],
         );
     }

@@ -68,10 +68,13 @@ class AgentController extends Controller
             'price'          => 'required|numeric|min:0',
             'payment_duration_months' => 'required|integer|in:1,3,6,12',
             'location'       => 'required|string|max:255',
+            'address'        => 'nullable|string|max:500',
+            'district'       => 'nullable|string|max:255',
+            'ward'           => 'nullable|string|max:255',
+            'street'         => 'nullable|string|max:255',
             'type'           => 'sometimes|in:Master-bedroom,house,Single-room',
             'bedrooms'       => 'required|integer|min:0',
             'bathrooms'      => 'required|integer|min:0',
-            'area'           => 'sometimes|integer|min:0',
             'owner_id'       => 'required|exists:users,id',
             'images'         => 'sometimes|array',
             'images.*'       => 'image|mimes:jpeg,png,jpg,gif|max:5048',
@@ -131,10 +134,12 @@ class AgentController extends Controller
             'payment_duration_months' => (int) $request->input('payment_duration_months', 1),
             'location'       => $request->location,
             'address'        => $request->address ?? '',
+            'district'       => $request->district,
+            'ward'           => $request->ward,
+            'street'         => $request->street,
             'type'           => $request->type,
             'bedrooms'       => $request->bedrooms,
             'bathrooms'      => $request->bathrooms,
-            'area'           => $request->area,
             'owner_id'       => $request->owner_id,
             'agent_id'       => $user->id,
             'available'      => true,
@@ -176,10 +181,13 @@ class AgentController extends Controller
             'price'       => 'sometimes|numeric|min:0',
             'payment_duration_months' => 'sometimes|integer|in:1,3,6,12',
             'location'    => 'sometimes|string|max:255',
+            'address'     => 'sometimes|string|max:500',
+            'district'    => 'sometimes|string|max:255',
+            'ward'        => 'sometimes|string|max:255',
+            'street'      => 'sometimes|string|max:255',
             'type'        => 'sometimes|in:Master-bedroom,house,Single-room',
             'bedrooms'    => 'sometimes|integer|min:0',
             'bathrooms'   => 'sometimes|integer|min:0',
-            'area'        => 'sometimes|integer|min:0',
             'available'   => 'sometimes|boolean',
         ]);
 
@@ -191,8 +199,9 @@ class AgentController extends Controller
         }
 
         $property->update($request->only([
-            'title', 'description', 'price', 'payment_duration_months', 'location', 'type',
-            'bedrooms', 'bathrooms', 'area', 'available',
+            'title', 'description', 'price', 'payment_duration_months', 'location', 'address',
+            'district', 'ward', 'street', 'type',
+            'bedrooms', 'bathrooms', 'available',
         ]));
 
         return response()->json([

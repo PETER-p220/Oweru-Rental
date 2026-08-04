@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, X } from 'lucide-react';
 import Api from '../../services/api';
 
 export interface BnbAvailabilityCalendarProps {
@@ -10,9 +10,11 @@ export interface BnbAvailabilityCalendarProps {
   onRangeChange?: (checkIn: string, checkOut: string) => void;
   refreshIntervalMs?: number;
   accent?: string;
+  /** Show check-in / check-out fields above the grid (booking mode). */
+  showDateFields?: boolean;
 }
 
-type DayStatus = 'available' | 'booked' | 'pending' | 'past' | 'selected' | 'in-range';
+type DayStatus = 'available' | 'booked' | 'pending' | 'past' | 'selected' | 'in-range' | 'preview';
 
 interface AvailabilityData {
   blocked_dates: string[];
@@ -51,6 +53,15 @@ function daysBetween(a: string, b: string): number {
   return Math.round((parseDate(b).getTime() - parseDate(a).getTime()) / 86400000);
 }
 
+function formatDisplayDate(dateStr: string): string {
+  if (!dateStr) return 'Select date';
+  return parseDate(dateStr).toLocaleDateString('en-TZ', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 const BnbAvailabilityCalendar = ({
   propertyId,
   mode = 'guest',
@@ -59,12 +70,18 @@ const BnbAvailabilityCalendar = ({
   onRangeChange,
   refreshIntervalMs = 45000,
   accent = '#C89128',
+  showDateFields,
 }: BnbAvailabilityCalendarProps) => {
+  const interactive = !!onRangeChange;
+  const showFields = showDateFields ?? interactive;
+
   const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
+
+  const todayStr = useMemo(() => toDateStr(today), [today]);
 
   const [viewMonth, setViewMonth] = useState(() => {
     const base = checkIn ? parseDate(checkIn) : new Date();
@@ -75,11 +92,15 @@ const BnbAvailabilityCalendar = ({
   const [picking, setPicking] = useState<'check_in' | 'check_out'>('check_in');
   const [localCheckIn, setLocalCheckIn] = useState(checkIn);
   const [localCheckOut, setLocalCheckOut] = useState(checkOut);
+  const [hoverDate, setHoverDate] = useState('');
   const [lastSync, setLastSync] = useState<string>('');
+  const [rangeError, setRangeError] = useState('');
 
   useEffect(() => {
     setLocalCheckIn(checkIn);
     setLocalCheckOut(checkOut);
+    if (checkIn && !checkOut) setPicking('check_out');
+    else if (checkIn && checkOut) setPicking('check_in');
   }, [checkIn, checkOut]);
 
   const monthKey = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth() + 1).padStart(2, '0')}`;
@@ -114,15 +135,27 @@ const BnbAvailabilityCalendar = ({
   const blockedSet = useMemo(() => new Set(availability?.blocked_dates ?? []), [availability]);
   const statusMap = availability?.date_status ?? {};
 
+  const previewEnd = useMemo(() => {
+    if (!interactive || picking !== 'check_out' || !localCheckIn || !hoverDate) return '';
+    if (hoverDate <= localCheckIn) return '';
+    return hoverDate;
+  }, [interactive, picking, localCheckIn, hoverDate]);
+
   const getDayStatus = (dateStr: string): DayStatus => {
     const d = parseDate(dateStr);
     if (d < today) return 'past';
 
-    if (localCheckIn && localCheckOut && dateStr >= localCheckIn && dateStr < localCheckOut) {
-      if (dateStr === localCheckIn) return 'selected';
-      return 'in-range';
+    if (localCheckIn && localCheckOut) {
+      if (dateStr === localCheckIn || dateStr === localCheckOut) return 'selected';
+      if (dateStr > localCheckIn && dateStr < localCheckOut) return 'in-range';
+    } else if (localCheckIn && dateStr === localCheckIn) {
+      return 'selected';
     }
-    if (localCheckIn && dateStr === localCheckIn) return 'selected';
+
+    if (previewEnd && localCheckIn) {
+      if (dateStr === previewEnd) return 'preview';
+      if (dateStr > localCheckIn && dateStr < previewEnd) return 'in-range';
+    }
 
     if (blockedSet.has(dateStr)) {
       return statusMap[dateStr] === 'pending' ? 'pending' : 'booked';
@@ -147,10 +180,20 @@ const BnbAvailabilityCalendar = ({
     return false;
   };
 
+  const clearDates = () => {
+    setLocalCheckIn('');
+    setLocalCheckOut('');
+    setPicking('check_in');
+    setHoverDate('');
+    setRangeError('');
+    onRangeChange?.('', '');
+  };
+
   const handleDayClick = (dateStr: string) => {
     if (!onRangeChange || isDateBlockedForSelection(dateStr)) return;
+    setRangeError('');
 
-    if (picking === 'check_in' || !localCheckIn || dateStr <= localCheckIn) {
+    if (localCheckIn && localCheckOut && dateStr !== localCheckIn && dateStr !== localCheckOut) {
       setLocalCheckIn(dateStr);
       setLocalCheckOut('');
       setPicking('check_out');
@@ -158,13 +201,47 @@ const BnbAvailabilityCalendar = ({
       return;
     }
 
+    if (picking === 'check_in' || !localCheckIn || dateStr <= localCheckIn) {
+      setLocalCheckIn(dateStr);
+      setLocalCheckOut('');
+      setPicking('check_out');
+      onRangeChange(dateStr, '');
+      const month = parseDate(dateStr);
+      setViewMonth(new Date(month.getFullYear(), month.getMonth(), 1));
+      return;
+    }
+
     const nights = daysBetween(localCheckIn, dateStr);
-    if (nights < 1) return;
-    if (rangeHasBlocked(localCheckIn, dateStr)) return;
+    if (nights < 1) {
+      setRangeError('Check-out must be after check-in.');
+      return;
+    }
+    if (rangeHasBlocked(localCheckIn, dateStr)) {
+      setRangeError('Some nights in this range are already booked. Pick different dates.');
+      return;
+    }
 
     setLocalCheckOut(dateStr);
     setPicking('check_in');
+    setHoverDate('');
     onRangeChange(localCheckIn, dateStr);
+  };
+
+  const handleDateFieldClick = (field: 'check_in' | 'check_out') => {
+    if (!interactive) return;
+    if (field === 'check_out' && !localCheckIn) {
+      setPicking('check_in');
+      return;
+    }
+    setPicking(field);
+    setRangeError('');
+    if (field === 'check_in' && localCheckIn) {
+      const month = parseDate(localCheckIn);
+      setViewMonth(new Date(month.getFullYear(), month.getMonth(), 1));
+    } else if (field === 'check_out' && localCheckOut) {
+      const month = parseDate(localCheckOut);
+      setViewMonth(new Date(month.getFullYear(), month.getMonth(), 1));
+    }
   };
 
   const calendarDays = useMemo(() => {
@@ -183,6 +260,7 @@ const BnbAvailabilityCalendar = ({
   }, [viewMonth]);
 
   const monthLabel = viewMonth.toLocaleDateString('en-TZ', { month: 'long', year: 'numeric' });
+  const nights = localCheckIn && localCheckOut ? daysBetween(localCheckIn, localCheckOut) : 0;
 
   const statusColors: Record<DayStatus, { bg: string; color: string; border: string }> = {
     available: { bg: '#fff', color: '#0F172A', border: '#E2E8F0' },
@@ -191,10 +269,106 @@ const BnbAvailabilityCalendar = ({
     past: { bg: '#F8FAFC', color: '#CBD5E1', border: '#F1F5F9' },
     selected: { bg: accent, color: '#0F172A', border: accent },
     'in-range': { bg: `${accent}33`, color: '#0F172A', border: `${accent}55` },
+    preview: { bg: `${accent}66`, color: '#0F172A', border: accent },
   };
+
+  const pickingHint = !localCheckIn
+    ? 'Tap your check-in date on the calendar'
+    : !localCheckOut
+      ? 'Now tap your check-out date'
+      : `${nights} night${nights === 1 ? '' : 's'} selected — tap a date to change`;
 
   return (
     <div style={{ fontFamily: 'DM Sans, Inter, sans-serif' }}>
+      {showFields && interactive && (
+        <div style={{ marginBottom: 14 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              border: `1.5px solid ${accent}`,
+              borderRadius: 12,
+              overflow: 'hidden',
+              background: '#fff',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleDateFieldClick('check_in')}
+              style={{
+                padding: '12px 14px',
+                border: 'none',
+                borderRight: '1px solid #E2E8F0',
+                background: picking === 'check_in' ? `${accent}14` : '#fff',
+                cursor: 'pointer',
+                textAlign: 'left',
+                fontFamily: 'inherit',
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                Check-in
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: localCheckIn ? '#0F172A' : '#94A3B8' }}>
+                {formatDisplayDate(localCheckIn)}
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDateFieldClick('check_out')}
+              style={{
+                padding: '12px 14px',
+                border: 'none',
+                background: picking === 'check_out' ? `${accent}14` : '#fff',
+                cursor: localCheckIn ? 'pointer' : 'not-allowed',
+                textAlign: 'left',
+                opacity: localCheckIn ? 1 : 0.65,
+                fontFamily: 'inherit',
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                Check-out
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: localCheckOut ? '#0F172A' : '#94A3B8' }}>
+                {formatDisplayDate(localCheckOut)}
+              </div>
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 10 }}>
+            <p style={{ margin: 0, fontSize: 12, color: picking === 'check_out' && localCheckIn ? accent : '#64748B', fontWeight: 600, lineHeight: 1.4 }}>
+              {pickingHint}
+            </p>
+            {(localCheckIn || localCheckOut) && (
+              <button
+                type="button"
+                onClick={clearDates}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  background: 'none', border: 'none', color: '#64748B',
+                  fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '4px 0',
+                  fontFamily: 'inherit', flexShrink: 0,
+                }}
+              >
+                <X size={12} /> Clear
+              </button>
+            )}
+          </div>
+
+          {rangeError && (
+            <p style={{ margin: '8px 0 0', fontSize: 12, color: '#DC2626', fontWeight: 600 }}>{rangeError}</p>
+          )}
+
+          {nights > 0 && (
+            <div style={{
+              marginTop: 10, padding: '8px 12px', background: `${accent}12`,
+              borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#0F172A',
+            }}>
+              {nights} night{nights === 1 ? '' : 's'} · {formatDisplayDate(localCheckIn)} → {formatDisplayDate(localCheckOut)}
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <button
           type="button"
@@ -232,6 +406,12 @@ const BnbAvailabilityCalendar = ({
         </div>
       </div>
 
+      {!interactive && (
+        <p style={{ margin: '0 0 10px', fontSize: 12, color: '#64748B' }}>
+          Red dates are booked. Select your stay dates in the booking panel →
+        </p>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 4 }}>
         {WEEKDAYS.map((wd) => (
           <div key={wd} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#64748B', padding: '4px 0' }}>
@@ -240,14 +420,19 @@ const BnbAvailabilityCalendar = ({
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, opacity: loading ? 0.65 : 1, transition: 'opacity 0.2s' }}>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, opacity: loading ? 0.65 : 1, transition: 'opacity 0.2s' }}
+        onMouseLeave={() => setHoverDate('')}
+      >
         {calendarDays.map((cell, idx) => {
           if (!cell.dateStr || cell.day === null) {
             return <div key={`empty-${idx}`} style={{ aspectRatio: '1', minHeight: 36 }} />;
           }
           const status = getDayStatus(cell.dateStr);
           const colors = statusColors[status];
-          const clickable = onRangeChange && status !== 'past' && status !== 'booked' && status !== 'pending';
+          const blocked = status === 'booked' || status === 'pending';
+          const clickable = interactive && status !== 'past' && !blocked;
+          const isToday = cell.dateStr === todayStr;
 
           return (
             <button
@@ -255,19 +440,25 @@ const BnbAvailabilityCalendar = ({
               type="button"
               disabled={!clickable}
               onClick={() => handleDayClick(cell.dateStr!)}
+              onMouseEnter={() => {
+                if (interactive && picking === 'check_out' && localCheckIn && !blocked && parseDate(cell.dateStr!) >= today) {
+                  setHoverDate(cell.dateStr!);
+                }
+              }}
               title={blockedSet.has(cell.dateStr) ? (statusMap[cell.dateStr] === 'pending' ? 'Pending booking' : 'Booked') : undefined}
               style={{
                 aspectRatio: '1',
                 minHeight: 36,
-                border: `1px solid ${colors.border}`,
+                border: isToday && status === 'available' ? `2px solid ${accent}` : `1px solid ${colors.border}`,
                 borderRadius: 8,
                 background: colors.bg,
                 color: colors.color,
                 fontSize: 12,
-                fontWeight: status === 'selected' ? 800 : 500,
+                fontWeight: status === 'selected' || status === 'preview' ? 800 : 500,
                 cursor: clickable ? 'pointer' : 'default',
                 padding: 0,
                 opacity: status === 'past' ? 0.7 : 1,
+                position: 'relative',
               }}
             >
               {cell.day}
@@ -281,7 +472,7 @@ const BnbAvailabilityCalendar = ({
           { label: 'Available', status: 'available' as DayStatus },
           { label: 'Booked', status: 'booked' as DayStatus },
           { label: 'Pending', status: 'pending' as DayStatus },
-          { label: 'Your dates', status: 'selected' as DayStatus },
+          { label: 'Your stay', status: 'selected' as DayStatus },
         ].map(({ label, status }) => (
           <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             <span style={{

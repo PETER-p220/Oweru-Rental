@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   MapPin, Bed, Bath, Shield, CheckCircle,
   ArrowLeft, X, Star, Bookmark,
-  Home, MessageCircle,
+  Home, MessageCircle, Car, Sofa, Phone, Mail,
 } from 'lucide-react';
 import Api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -141,17 +141,52 @@ const PropertyDetail = () => {
     const f: { icon: any; label: string; value: string }[] = [];
     if (p.bedrooms > 0)  f.push({ icon: Bed,    label: 'Bedrooms',  value: String(p.bedrooms) });
     if (p.bathrooms > 0) f.push({ icon: Bath,   label: 'Bathrooms', value: String(p.bathrooms) });
-    if (p.type)          f.push({ icon: Home,   label: 'Type',      value: p.type.charAt(0).toUpperCase() + p.type.slice(1) });
+    if (p.type)          f.push({ icon: Home,   label: 'Type',      value: p.type.charAt(0).toUpperCase() + p.type.slice(1).replace(/-/g, ' ') });
+    if (p.parking_spaces > 0) f.push({ icon: Car, label: 'Parking', value: String(p.parking_spaces) });
+    if (p.furnished)     f.push({ icon: Sofa,   label: 'Furnished', value: 'Yes' });
     return f;
   };
 
   const getAmenities = (p: any): string[] => {
-    if (!p?.amenities || !Array.isArray(p.amenities) || p.amenities.length === 0) return [];
-    return p.amenities;
+    if (!p?.amenities) return [];
+    let list = p.amenities;
+    if (typeof list === 'string') {
+      try { list = JSON.parse(list); } catch { return list.split(',').map((a: string) => a.trim()).filter(Boolean); }
+    }
+    if (!Array.isArray(list) || list.length === 0) return [];
+    return list.map((a: any) => (typeof a === 'string' ? a : a?.name)).filter(Boolean);
+  };
+
+  const formatLocationLine = (p: any) => {
+    const parts = [p?.street, p?.ward, p?.district, p?.location].filter(Boolean);
+    if (parts.length > 0) return parts.join(', ');
+    return p?.address || 'Location not specified';
+  };
+
+  const getDetailRows = (p: any) => {
+    if (!p) return [];
+    const rows: { label: string; value: string; color?: string }[] = [];
+    if (p.type) rows.push({ label: 'Property Type', value: p.type.charAt(0).toUpperCase() + p.type.slice(1).replace(/-/g, ' ') });
+    rows.push({ label: 'Availability', value: p.available !== false ? 'Available Now' : 'Not Available', color: p.available !== false ? t.green : t.red });
+    if (p.payment_duration_months) rows.push({ label: 'Payment Period', value: formatPaymentDuration(p.payment_duration_months) });
+    if (p.bedrooms > 0) rows.push({ label: 'Bedrooms', value: String(p.bedrooms) });
+    if (p.bathrooms > 0) rows.push({ label: 'Bathrooms', value: String(p.bathrooms) });
+    if (p.parking_spaces > 0) rows.push({ label: 'Parking Spaces', value: String(p.parking_spaces) });
+    if (p.furnished) rows.push({ label: 'Furnished', value: 'Yes' });
+    if (p.district) rows.push({ label: 'District', value: p.district });
+    if (p.ward) rows.push({ label: 'Ward', value: p.ward });
+    if (p.street) rows.push({ label: 'Street', value: p.street });
+    if (p.address) rows.push({ label: 'Address', value: p.address });
+    if (p.available_from) rows.push({ label: 'Available From', value: new Date(p.available_from).toLocaleDateString('en-TZ', { year: 'numeric', month: 'long', day: 'numeric' }) });
+    if (p.contact_phone) rows.push({ label: 'Contact Phone', value: p.contact_phone });
+    if (p.contact_email) rows.push({ label: 'Contact Email', value: p.contact_email });
+    if (p.landlord_name) rows.push({ label: 'Listed By', value: p.landlord_name });
+    return rows;
   };
 
   const features  = getFeatures(property);
   const amenities = getAmenities(property);
+  const detailRows = getDetailRows(property);
   const hasVideos = propertyHasVideos(property);
 
   const handleToggleSave = async () => {
@@ -329,8 +364,9 @@ const PropertyDetail = () => {
                   </h1>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', ...body, fontSize: 13, color: t.slate600 }}>
                     <MapPin size={13} style={{ color: t.gold, flexShrink: 0 }} />
-                    {property.location || property.address || 'Location not specified'}
+                    {formatLocationLine(property)}
                     {property.available !== false && <span style={pill(t.green)}>Available</span>}
+                    {property.featured && <span style={pill(t.gold)}>Featured</span>}
                     {hasVideos && <span style={pill(t.slate700)}>Video Tour</span>}
                   </div>
                 </div>
@@ -369,10 +405,25 @@ const PropertyDetail = () => {
                   </div>
                 )}
 
-                {/* Amenities */}
-                {amenities.length > 0 && (
+                {/* Property details */}
+                {detailRows.length > 0 && (
                   <div style={card({ padding: '24px 26px', overflow: 'visible' })}>
-                    <div className="section-tag" style={{ marginBottom: 18, display: 'inline-flex' }}>Amenities & Features</div>
+                    <div className="section-tag" style={{ marginBottom: 18, display: 'inline-flex' }}>Property Details</div>
+                    <div>
+                      {detailRows.map(({ label, value, color }) => (
+                        <div key={label} className="pd-detail-row">
+                          <span style={{ ...body, fontSize: 12, color: t.slate600 }}>{label}</span>
+                          <span style={{ ...body, fontSize: 12.5, fontWeight: 600, color: color ?? t.slate900, textTransform: label === 'Availability' ? 'capitalize' : 'none', textAlign: 'right', maxWidth: '60%' }}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Amenities */}
+                <div style={card({ padding: '24px 26px', overflow: 'visible' })}>
+                  <div className="section-tag" style={{ marginBottom: 18, display: 'inline-flex' }}>Amenities & Features</div>
+                  {amenities.length > 0 ? (
                     <div className="pd-amenities-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                       {amenities.map((a: string) => (
                         <div key={a} className="pd-amenity-tag">
@@ -381,8 +432,10 @@ const PropertyDetail = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p style={{ ...body, fontSize: 13, color: t.slate600, margin: 0 }}>No amenities listed for this property.</p>
+                  )}
+                </div>
               </div>
 
               {/* ══ RIGHT SIDEBAR ══ */}
@@ -405,8 +458,9 @@ const PropertyDetail = () => {
                   </div>
 
                   {[
-                    { label: 'Property Type', value: property.type ? property.type.charAt(0).toUpperCase() + property.type.slice(1) : 'N/A' },
+                    { label: 'Property Type', value: property.type ? property.type.charAt(0).toUpperCase() + property.type.slice(1).replace(/-/g, ' ') : 'N/A' },
                     { label: 'Availability',  value: property.available !== false ? 'Available Now' : 'Not Available', color: property.available !== false ? t.green : t.red },
+                    ...(property.payment_duration_months ? [{ label: 'Payment Period', value: formatPaymentDuration(property.payment_duration_months) }] : []),
                   ].map(({ label, value, color }) => (
                     <div key={label} className="pd-detail-row">
                       <span style={{ ...body, fontSize: 12, color: t.slate600 }}>{label}</span>
@@ -432,9 +486,36 @@ const PropertyDetail = () => {
                     <span style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold }}>Location</span>
                   </div>
                   <div style={{ ...body, fontSize: 13, color: t.slate900, lineHeight: 1.6 }}>
-                    {property.location || property.address || 'Location not specified'}
+                    {formatLocationLine(property)}
                   </div>
+                  {(property.district || property.ward || property.street || property.address) && (
+                    <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {property.district && <div style={{ ...body, fontSize: 12, color: t.slate600 }}><strong style={{ color: t.slate900 }}>District:</strong> {property.district}</div>}
+                      {property.ward && <div style={{ ...body, fontSize: 12, color: t.slate600 }}><strong style={{ color: t.slate900 }}>Ward:</strong> {property.ward}</div>}
+                      {property.street && <div style={{ ...body, fontSize: 12, color: t.slate600 }}><strong style={{ color: t.slate900 }}>Street:</strong> {property.street}</div>}
+                      {property.address && <div style={{ ...body, fontSize: 12, color: t.slate600 }}><strong style={{ color: t.slate900 }}>Address:</strong> {property.address}</div>}
+                    </div>
+                  )}
                 </div>
+
+                {(property.contact_phone || property.contact_email) && (
+                  <div style={card({ padding: '18px 20px', overflow: 'visible' })}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <Phone size={13} style={{ color: t.gold }} />
+                      <span style={{ ...body, fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: t.gold }}>Contact</span>
+                    </div>
+                    {property.contact_phone && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 13, color: t.slate900, marginBottom: property.contact_email ? 8 : 0 }}>
+                        <Phone size={14} style={{ color: t.slate600 }} /> {property.contact_phone}
+                      </div>
+                    )}
+                    {property.contact_email && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, ...body, fontSize: 13, color: t.slate900 }}>
+                        <Mail size={14} style={{ color: t.slate600 }} /> {property.contact_email}
+                      </div>
+                    )}
+                  </div>
+                )}
 
               
                 {/* Trust row — matches Home CTA bullets */}
