@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   DollarSign, Eye, Calendar,
   CheckCircle, User, FileText, Percent, Target,
@@ -82,7 +83,13 @@ const monthStartIso = () => {
 };
 
 const CommissionControl = () => {
-  const [activeTab, setActiveTab] = useState<'rules' | 'payments' | 'analytics' | 'reports'>('rules');
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const initialTab = tabFromUrl === 'rules' || tabFromUrl === 'analytics' || tabFromUrl === 'reports'
+    ? tabFromUrl
+    : 'payments';
+
+  const [activeTab, setActiveTab] = useState<'rules' | 'payments' | 'analytics' | 'reports'>(initialTab);
   const [reportView, setReportView] = useState<'oweru' | 'agents' | 'daily'>('oweru');
   const [rules, setRules] = useState<CommissionRule[]>([]);
   const [payments, setPayments] = useState<CommissionPayment[]>([]);
@@ -116,7 +123,11 @@ const CommissionControl = () => {
   const [paymentReference, setPaymentReference] = useState('');
   const [confirmingPayment, setConfirmingPayment] = useState(false);
 
-  useEffect(() => { loadCommissionData(); }, [activeTab]);
+  useEffect(() => { loadCommissionData(); loadPayoutSummary(); }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'rules') loadCommissionData();
+  }, [activeTab]);
 
   const loadReportPreview = async (date = reportDate) => {
     try {
@@ -401,6 +412,12 @@ const CommissionControl = () => {
     return true;
   });
 
+  const pendingPaymentRows = payments.filter((p) => ['pending', 'approved'].includes(p.status));
+  const pendingCountFallback = pendingPaymentRows.length;
+  const pendingAmountFallback = pendingPaymentRows.reduce((s, p) => s + (p.amount || 0), 0);
+  const effectivePendingCount = disbursementTotals?.pending_count ?? pendingCountFallback;
+  const effectivePendingAmount = disbursementTotals?.pending_amount ?? pendingAmountFallback;
+
   const filteredAgentLedger = payoutSummary.filter((row) => {
     if (agentLedgerFilter === 'unpaid') return row.payment_status === 'unpaid' || row.payment_status === 'sync_needed';
     if (agentLedgerFilter === 'paid') return row.is_fully_paid;
@@ -423,7 +440,7 @@ const CommissionControl = () => {
             <div style={{ fontSize: 11, letterSpacing: '0.20em', textTransform: 'uppercase', color: C.textLight, fontWeight: 700, marginBottom: 6 }}>Admin · Commission</div>
             <h1 style={{ ...body, fontSize: 'clamp(20px,3.5vw,26px)', fontWeight: 800, color: '#fff', margin: '0 0 6px' }}>Commission Control</h1>
             <p style={{ color: C.textLight, ...body, fontSize: 14, margin: 0 }}>
-              Manage commission rules, process payments, and track agent earnings.
+              Record when Oweru pays agents their 70% commission share. Open the <strong style={{ color: '#fff' }}>Confirm Payouts</strong> tab.
             </p>
           </div>
         </div>
@@ -449,22 +466,22 @@ const CommissionControl = () => {
       )}
 
       {/* ── Tab toggle ── */}
-      <div style={{ ...card, padding: 4, marginBottom: 20, display: 'flex', gap: 4 }}>
-        {(['rules', 'payments', 'analytics', 'reports'] as const).map((tab) => (
+      <div style={{ ...card, padding: 4, marginBottom: 20, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        {(['payments', 'rules', 'analytics', 'reports'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             style={{
-              flex: 1, padding: '8px 14px',
+              flex: 1, minWidth: 120, padding: '8px 14px',
               backgroundColor: activeTab === tab ? C.gold : 'transparent',
               border: `1px solid ${activeTab === tab ? C.gold : 'rgba(37,99,235,0.15)'}`,
               color: activeTab === tab ? '#111' : C.textMuted,
               borderRadius: 6, ...body, fontSize: 13, fontWeight: 600,
               cursor: 'pointer', transition: 'all 0.2s',
-              textTransform: 'capitalize', letterSpacing: '0.04em',
+              letterSpacing: '0.04em',
             }}
           >
-            {tab === 'rules' ? 'Rules' : tab === 'payments' ? 'Payments' : tab === 'analytics' ? 'Analytics' : 'Reports'}
+            {tab === 'payments' ? '✓ Confirm Payouts' : tab === 'rules' ? 'Rules' : tab === 'analytics' ? 'Analytics' : 'Reports'}
           </button>
         ))}
       </div>
@@ -550,7 +567,7 @@ const CommissionControl = () => {
       {activeTab === 'payments' && (
         <div style={{ ...card, padding: '22px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-            <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: 0 }}>Commission Payments</h3>
+            <h3 style={{ ...body, fontSize: 18, fontWeight: 500, color: C.text, margin: 0 }}>Confirm Oweru → Agent Payouts</h3>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="admin-input" style={selectCss}>
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -576,12 +593,12 @@ const CommissionControl = () => {
               <strong>How it works:</strong> Tenant pays Oweru the full rent → Oweru keeps <strong>30%</strong> → Oweru pays agent <strong>70%</strong>.
               Use this screen to <strong>record when Oweru has sent the agent their commission</strong> (M-Pesa, bank, etc.).
             </div>
-            {disbursementTotals && (
+            {(disbursementTotals || pendingCountFallback > 0) && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 10, marginBottom: 14 }}>
                 {[
-                  { label: 'Awaiting disbursement', value: fmt(disbursementTotals.pending_amount), sub: `${disbursementTotals.pending_count} commission(s)` },
-                  { label: 'Agents to pay', value: disbursementTotals.agents_awaiting, sub: 'need Oweru payout' },
-                  { label: 'Already disbursed', value: fmt(disbursementTotals.paid_amount), sub: 'recorded' },
+                  { label: 'Awaiting disbursement', value: fmt(effectivePendingAmount), sub: `${effectivePendingCount} commission(s)` },
+                  { label: 'Agents to pay', value: disbursementTotals?.agents_awaiting ?? '—', sub: 'need Oweru payout' },
+                  { label: 'Already disbursed', value: fmt(disbursementTotals?.paid_amount ?? payments.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0)), sub: 'recorded' },
                 ].map(({ label, value, sub }) => (
                   <div key={label} style={{ background: '#fff', borderRadius: 8, padding: '10px 12px', border: '1px solid #E2E8F0' }}>
                     <div style={{ ...labelStyle, marginBottom: 4 }}>{label}</div>
@@ -591,7 +608,7 @@ const CommissionControl = () => {
                 ))}
               </div>
             )}
-            {(disbursementTotals?.pending_count ?? 0) > 0 && (
+            {effectivePendingCount > 0 ? (
               <button
                 type="button"
                 style={{ ...solidBtn, width: '100%', justifyContent: 'center' }}
@@ -599,8 +616,12 @@ const CommissionControl = () => {
                 onClick={() => { setShowConfirmAllModal(true); setConfirmAllReference(''); }}
                 disabled={confirmingAll || payoutLoading}
               >
-                {confirmingAll ? 'Recording…' : `Confirm all agent commissions (${disbursementTotals?.pending_count ?? 0})`}
+                {confirmingAll ? 'Recording…' : `Confirm all agent commissions (${effectivePendingCount})`}
               </button>
+            ) : (
+              <div style={{ ...body, fontSize: 13, color: C.textMuted, textAlign: 'center', padding: '8px 0' }}>
+                No agent commissions awaiting Oweru disbursement.
+              </div>
             )}
           </div>
 
@@ -1310,8 +1331,8 @@ const CommissionControl = () => {
             </h3>
             <p style={{ ...body, fontSize: 13, color: C.textMuted, margin: '0 0 18px', lineHeight: 1.5 }}>
               Record that Oweru has disbursed agent shares for{' '}
-              <strong style={{ color: C.text }}>{disbursementTotals?.pending_count ?? 0} commission(s)</strong>
-              {' '}totalling <strong style={{ color: C.text }}>{fmt(disbursementTotals?.pending_amount ?? 0)}</strong>.
+              <strong style={{ color: C.text }}>{effectivePendingCount} commission(s)</strong>
+              {' '}totalling <strong style={{ color: C.text }}>{fmt(effectivePendingAmount)}</strong>.
               This will mark all awaiting payouts as disbursed in one batch.
             </p>
 

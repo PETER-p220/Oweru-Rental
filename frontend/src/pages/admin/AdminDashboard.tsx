@@ -384,6 +384,15 @@ const AdminDashboard = () => {
 
         {/* Commissions */}
         <ReportSection title="Commission Reports" badge="Commission" icon={PieChart} href="/dashboard/admin/commission">
+          <div style={{ marginBottom: 12 }}>
+            <Link to="/dashboard/admin/commission?tab=payouts" style={{
+              ...body, display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '10px 16px', borderRadius: 8, textDecoration: 'none',
+              background: C.gold, color: '#111', fontSize: 13, fontWeight: 700,
+            }}>
+              Confirm agent payouts (Oweru → Agent)
+            </Link>
+          </div>
           <div style={statGrid}>
             <StatItem label="Total" value={fmt(cm?.totalCommissions)} accent={C.gold} />
             <StatItem label="Total Amount" value={fmtCurrency(cm?.totalAmount)} accent={C.green} />
@@ -519,7 +528,8 @@ const AdminDashboard = () => {
               { label: 'All Properties', href: '/dashboard/admin/properties', icon: Home },
               { label: 'Oweru Rentals', href: '/dashboard/admin/oweru-properties', icon: Briefcase },
               { label: 'Transactions', href: '/dashboard/admin/transactions', icon: CreditCard },
-              { label: 'Commission Control', href: '/dashboard/admin/commission', icon: PieChart },
+              { label: 'Confirm Agent Payouts', href: '/dashboard/admin/commission?tab=payouts', icon: DollarSign },
+              { label: 'Commission Rules & Reports', href: '/dashboard/admin/commission', icon: PieChart },
               { label: 'Contracts', href: '/dashboard/admin/contracts', icon: FileText },
               { label: 'Verification Queue', href: '/dashboard/admin/verification', icon: UserCheck },
               { label: 'System Alerts', href: '/dashboard/admin/alerts', icon: AlertCircle },
