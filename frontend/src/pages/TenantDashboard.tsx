@@ -43,7 +43,7 @@ const formatStatus = (value: string | undefined | null, fallback = 'unknown') =>
   (value ?? fallback).replace(/_/g, ' ');
 
 // ── Icon set (shared between stat cards & quick actions, keeps the two families visually tied together) ──
-const Icon = ({ name }: { name: 'home' | 'heart' | 'clipboard' | 'file' | 'chat' }) => {
+const Icon = ({ name }: { name: 'home' | 'heart' | 'clipboard' | 'file' | 'chat' | 'wrench' }) => {
   const common = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   switch (name) {
     case 'home':
@@ -56,6 +56,8 @@ const Icon = ({ name }: { name: 'home' | 'heart' | 'clipboard' | 'file' | 'chat'
       return <svg {...common}><path d="M6.5 2.5h8l5 5v13a1 1 0 0 1-1 1h-12a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1z" /><path d="M14.5 2.5v5h5" /><path d="M8.5 13.5h7M8.5 17h7" /></svg>;
     case 'chat':
       return <svg {...common}><path d="M21 12a8.5 8.5 0 0 1-12.7 7.4L3 20.5l1.3-4.3A8.5 8.5 0 1 1 21 12z" /></svg>;
+    case 'wrench':
+      return <svg {...common}><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-3.4-3.4 2.1-2.1z" /></svg>;
   }
 };
 
@@ -143,10 +145,11 @@ const TenantDashboard = () => {
     { label: 'Unread Messages', value: stats.messages ?? 0, icon: 'chat', tone: 'violet' },
   ];
 
-  const quickActions: { to: string; icon: 'home' | 'heart' | 'clipboard' | 'file' | 'chat'; label: string; tone: 'blue' | 'rose' | 'amber' | 'emerald' | 'violet'; primary?: boolean }[] = [
+  const quickActions: { to: string; icon: 'home' | 'heart' | 'clipboard' | 'file' | 'chat' | 'wrench'; label: string; tone: 'blue' | 'rose' | 'amber' | 'emerald' | 'violet'; primary?: boolean }[] = [
     { to: '/properties', icon: 'home', label: 'Browse Properties', tone: 'blue', primary: true },
     { to: '/dashboard/tenant/saved-properties', icon: 'heart', label: 'Saved Properties', tone: 'rose' },
     { to: '/dashboard/tenant/applications', icon: 'clipboard', label: 'My Applications', tone: 'amber' },
+    { to: '/dashboard/tenant/compliance', icon: 'wrench', label: 'Compliance & Maintenance', tone: 'emerald' },
     { to: '/dashboard/tenant/digital-contracts', icon: 'file', label: 'Digital Contracts', tone: 'emerald' },
     { to: '/dashboard/tenant/messages', icon: 'chat', label: 'Messages', tone: 'violet' },
   ];

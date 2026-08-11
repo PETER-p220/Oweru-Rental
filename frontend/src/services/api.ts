@@ -187,7 +187,8 @@ class Api {
 
   private static async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    preserveEnvelope = false,
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}/api/${endpoint}`;
 
@@ -256,6 +257,9 @@ class Api {
     }
 
     const data = await response.json();
+    if (preserveEnvelope) {
+      return { data: data as T, message: data.message, status: response.status };
+    }
     return {
       data: data.data ?? data,
       message: data.message,
@@ -1063,6 +1067,55 @@ class Api {
 
   static async deleteNotification(id: number) {
     return this.request(`tenant/notifications/${id}`, { method: 'DELETE' });
+  }
+
+  // ── Compliance requests ─────────────────────────────────────────────────────
+
+  static async getTenantComplianceRequests(status?: string) {
+    const q = status ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await this.request<{
+      data: any[];
+      stats: { total: number; open: number; in_progress: number; resolved: number };
+      properties?: { id: number; title: string; location?: string }[];
+    }>(`tenant/compliance-requests${q}`, {}, true);
+    return res.data;
+  }
+
+  static async createTenantComplianceRequest(payload: {
+    property_id: number;
+    category: string;
+    priority: string;
+    title: string;
+    description: string;
+    location_in_property?: string;
+    preferred_date?: string;
+  }) {
+    const res = await this.request<{ data: any }>('tenant/compliance-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+    return { ...res.data, message: res.message };
+  }
+
+  static async getOwnerComplianceRequests(status?: string) {
+    const q = status ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await this.request<{
+      data: any[];
+      stats: { total: number; open: number; in_progress: number; resolved: number };
+    }>(`owner/compliance-requests${q}`, {}, true);
+    return res.data;
+  }
+
+  static async updateOwnerComplianceRequest(id: number, payload: {
+    status?: string;
+    owner_response?: string;
+    resolution_notes?: string;
+  }) {
+    const res = await this.request<{ data: any }>(`owner/compliance-requests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+    return { ...res.data, message: res.message };
   }
 
   // ── Agent ───────────────────────────────────────────────────────────────────

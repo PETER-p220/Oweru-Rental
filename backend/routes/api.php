@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PropertyController;
 use App\Http\Controllers\Api\PropertyShareController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ComplianceRequestController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\TenantController;
 use App\Http\Controllers\Api\AgentController;
@@ -185,6 +186,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Analytics
         Route::get('/tenant/analytics', [TenantController::class, 'getAnalytics']);
 
+        // Compliance & maintenance requests (tenant → owner)
+        Route::get('/tenant/compliance-requests',              [ComplianceRequestController::class, 'tenantIndex']);
+        Route::post('/tenant/compliance-requests',             [ComplianceRequestController::class, 'tenantStore']);
+        Route::get('/tenant/compliance-requests/{complianceRequest}', [ComplianceRequestController::class, 'tenantShow']);
+
         // Rental Workflow
         Route::post('/workflow/apply',                           [RentalWorkflowController::class, 'applyForProperty']);
         Route::get('/workflow/property/{property}/status',       [RentalWorkflowController::class, 'getWorkflowStatus']);
@@ -350,6 +356,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Messages
         Route::get('/owner/messages',  [OwnerController::class, 'getMessages']);
         Route::post('/owner/messages', [OwnerController::class, 'sendMessage']);
+
+        // Compliance requests from tenants
+        Route::get('/owner/compliance-requests',                        [ComplianceRequestController::class, 'ownerIndex']);
+        Route::get('/owner/compliance-requests/{complianceRequest}',    [ComplianceRequestController::class, 'ownerShow']);
+        Route::patch('/owner/compliance-requests/{complianceRequest}',  [ComplianceRequestController::class, 'ownerUpdate']);
 
         // Rental Workflow (Owner)
         Route::get('/workflow/property/{property}/applications',       [RentalWorkflowController::class, 'getApplicationsForProperty']);

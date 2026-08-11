@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, BarChart3, Building, DollarSign, FileText,
-  Plus, Users, Home, MapPin, Bell, ChevronRight, Settings,
+  Plus, Users, Home, MapPin, Bell, ChevronRight, Settings, ClipboardList,
 } from 'lucide-react';
 import Api from '../services/api';
 import { useAuthenticatedEffect } from '../hooks/useAuthenticatedEffect';
@@ -129,6 +129,7 @@ const LandlordDashboard = () => {
     { label: 'Add Property',      icon: Plus,     to: 'add-property',      accent: C.slate800 },
     { label: 'My Properties',     icon: Building, to: 'my-properties',     accent: C.blue     },
     { label: 'Applications',      icon: FileText, to: 'applications',      accent: C.blue     },
+    { label: 'Tenant Requests',   icon: ClipboardList, to: 'compliance',   accent: C.amber    },
     { label: 'Digital Contracts', icon: FileText, to: 'digital-contracts', accent: C.amber    },
     { label: 'Analytics',         icon: BarChart3,to: 'analytics',         accent: C.green    },
     { label: 'Rent Collection',   icon: DollarSign,to:'rent-collection',   accent: C.green    },

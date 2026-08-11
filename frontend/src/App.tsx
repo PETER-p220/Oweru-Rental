@@ -35,6 +35,7 @@ import BnbPaymentReturn from './pages/bnb/BnbPaymentReturn';
 import BrowseBnbStays from './pages/bnb/BrowseBnbStays';
 import { BnbPaymentReturnPublicRedirect } from './pages/bnb/BnbPublicRedirect';
 import TenantAnalyticsPage from './pages/tenant/AnalyticsPage';
+import ComplianceRequestsPage from './pages/compliance/ComplianceRequestsPage';
 
 // Landlord pages
 import MyProperties from './pages/landlord/MyProperties';
@@ -144,6 +145,7 @@ const TenantRoutes = () => (
         <Route path="bnb-stays" element={<MyBnbStays />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="messages" element={<Messages />} />
+        <Route path="compliance" element={<ComplianceRequestsPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </DashboardLayout>
@@ -166,6 +168,7 @@ const LandlordRoutes = () => (
         <Route path="receipts" element={<ReceiptsPage />} />
         <Route path="analytics" element={<LandlordAnalyticsPage />} />
         <Route path="messages" element={<LandlordMessagesPage />} />
+        <Route path="compliance" element={<ComplianceRequestsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="test-edit" element={<EditPropertySimple />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -7,7 +7,7 @@ import {
   ChevronRight, QrCode, Link2, ShieldCheck, CreditCard, Wallet,
   Receipt, MessageSquare, AlertCircle, PieChart,
   RefreshCw, BookOpen, Landmark, Eye,
-  Calendar, Hotel, Briefcase, Activity,
+  Calendar, Hotel, Briefcase, Activity, ClipboardList, Wrench,
 } from 'lucide-react';
 import LOGO from '../assets/IMG-20260326-WA0006.jpg';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -78,6 +78,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'My Applications',   icon: FileText,      href: 'applications'                 },
       { name: 'Saved Properties',  icon: Star,          href: 'saved-properties'             },
       { name: 'Digital Contracts', icon: FileText,      href: 'digital-contracts'            },
+      { name: 'Compliance & Maintenance', icon: Wrench, href: 'compliance'                   },
       { name: 'Rent Payments',     icon: CreditCard,    href: 'payments'                     },
       { name: 'Payment History',   icon: Receipt,       href: 'payment-history'              },
       { name: 'My Stays',          icon: Calendar,      href: 'bnb-stays'                    },
@@ -90,6 +91,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Add Property',       icon: Plus,          href: 'add-property'   },
       { name: 'Applications',       icon: FileText,      href: 'applications'   },
       { name: 'My Tenants',         icon: Users,         href: 'tenants'        },
+      { name: 'Tenant Requests',    icon: ClipboardList, href: 'compliance'     },
       { name: 'Digital Contracts',  icon: BookOpen,      href: 'digital-contracts' },
       { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection'},
       { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts'       },
@@ -156,13 +158,13 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const sectionMap: Record<UserRole, { label: string; items: string[] }[]> = {
     tenant: [
       { label: 'Explore',   items: ['Overview','Browse Properties','Browse BnB Stays','Saved Properties'] },
-      { label: 'My Rental', items: ['My Applications','Digital Contracts','Rent Payments','Payment History'] },
+      { label: 'My Rental', items: ['My Applications','Digital Contracts','Compliance & Maintenance','Rent Payments','Payment History'] },
       { label: 'Stays',     items: ['My Stays'] },
       { label: 'Connect',   items: ['Messages','Notifications'] },
     ],
     landlord: [
       { label: 'Properties', items: ['Overview','My Properties','Add Property'] },
-      { label: 'Tenants',    items: ['Applications','My Tenants','Digital Contracts'] },
+      { label: 'Tenants',    items: ['Applications','My Tenants','Tenant Requests','Digital Contracts'] },
       { label: 'Finance',    items: ['Rent Collection','Payment Receipts','Commission Reports'] },
       { label: 'Insights',   items: ['Analytics','Messages'] },
     ],
