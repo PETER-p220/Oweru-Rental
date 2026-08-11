@@ -54,6 +54,10 @@ export const sidebarEn = {
   business: 'Business',
   account: 'Account',
   commissionReports: 'Commission Reports',
+  complianceRequests: 'Compliance Requests',
+  tenantCompliance: 'Tenant Compliance',
+  complianceMaintenance: 'Compliance & Maintenance',
+  host: 'Host',
 };
 
 export const sidebarSw: typeof sidebarEn = {
@@ -111,6 +115,10 @@ export const sidebarSw: typeof sidebarEn = {
   business: 'Biashara',
   account: 'Akaunti',
   commissionReports: 'Ripoti za Kamisheni',
+  complianceRequests: 'Maombi ya Uzingatiaji',
+  tenantCompliance: 'Uzingatiaji wa Wapangaji',
+  complianceMaintenance: 'Uzingatiaji na Matengenezo',
+  host: 'Mwenyeji',
 };
 
 export const rolesEn = {

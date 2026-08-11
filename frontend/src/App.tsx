@@ -14,7 +14,7 @@ import AuthError from './pages/AuthError';
 import TenantDashboard from './pages/TenantDashboard';
 import LandlordDashboard from './pages/LandlordDashboard';
 import SettingsPage from './pages/Settings';
-import DashboardLayout, { type UserRole } from './components/DashboardLayout';
+import DashboardLayout, { type UserRole, resolveDashboardRole } from './components/DashboardLayout';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -287,7 +287,7 @@ const DashboardRedirect = () => {
       return;
     }
 
-    const userType: UserRole = (user.user_type || user.role || 'tenant') as UserRole;
+    const userType: UserRole = resolveDashboardRole(user);
 
     const redirectMap: Record<UserRole, string> = {
       admin: '/dashboard/admin',

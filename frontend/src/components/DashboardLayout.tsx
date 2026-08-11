@@ -21,6 +21,27 @@ interface DashboardLayoutProps {
 
 export type UserRole = 'tenant' | 'landlord' | 'agent' | 'admin' | 'bnb_owner' | 'commercial';
 
+type NavItem = { name: string; icon: any; href: string; section: string; badge?: string };
+
+const VALID_ROLES: UserRole[] = ['tenant', 'landlord', 'agent', 'admin', 'bnb_owner', 'commercial'];
+
+/** Normalize API / legacy role strings to dashboard role keys. */
+export function resolveDashboardRole(user: {
+  userType?: string;
+  user_type?: string;
+  role?: string;
+  userRole?: string;
+} | null | undefined): UserRole {
+  const raw = String(
+    user?.userType || user?.user_type || user?.role || user?.userRole || 'tenant',
+  ).toLowerCase().trim();
+
+  if (raw === 'owner' || raw === 'property_owner' || raw === 'landlord') return 'landlord';
+  if (raw === 'bnb' || raw === 'bnbowner' || raw === 'bnb_owner') return 'bnb_owner';
+  if (VALID_ROLES.includes(raw as UserRole)) return raw as UserRole;
+  return 'tenant';
+}
+
 // ── Pure slate/white token system — no accent colors in nav
 const T = {
   // Page & surfaces
@@ -65,90 +86,89 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
   const { pathname } = useLocation();
   const { user, logout: authLogout } = useAuth();
 
-  const userType: UserRole = (
-    user?.userType || user?.user_type || user?.role || user?.userRole || 'tenant'
-  ) as UserRole;
+  const userType = resolveDashboardRole(user);
 
-  // ── Navigation items — all icons use inherited slate color (no per-item accent)
-  const navigation: Record<UserRole, { name: string; icon: any; href: string; badge?: string }[]> = {
+  // ── Navigation — every item has a section label; all items always render in sidebar
+  const navigation: Record<UserRole, NavItem[]> = {
     tenant: [
-      { name: 'Overview',          icon: Home,          href: ''                             },
-      { name: 'Browse Properties', icon: Search,        href: '/dashboard/tenant/properties' },
-      { name: 'Browse BnB Stays',  icon: Hotel,         href: 'browse-bnb-stays'             },
-      { name: 'My Applications',   icon: FileText,      href: 'applications'                 },
-      { name: 'Saved Properties',  icon: Star,          href: 'saved-properties'             },
-      { name: 'Digital Contracts', icon: FileText,      href: 'digital-contracts'            },
-      { name: 'Compliance & Maintenance', icon: Wrench, href: 'compliance'                   },
-      { name: 'Rent Payments',     icon: CreditCard,    href: 'payments'                     },
-      { name: 'Payment History',   icon: Receipt,       href: 'payment-history'              },
-      { name: 'My Stays',          icon: Calendar,      href: 'bnb-stays'                    },
-      { name: 'Messages',          icon: MessageSquare, href: 'messages'                     },
-      { name: 'Notifications',     icon: Bell,          href: 'notifications'                },
+      { name: 'Overview',          icon: Home,          href: '',                             section: 'Explore' },
+      { name: 'Browse Properties', icon: Search,        href: '/dashboard/tenant/properties', section: 'Explore' },
+      { name: 'Browse BnB Stays',  icon: Hotel,         href: 'browse-bnb-stays',             section: 'Explore' },
+      { name: 'My Applications',   icon: FileText,      href: 'applications',                 section: 'My Rental' },
+      { name: 'Saved Properties',  icon: Star,          href: 'saved-properties',             section: 'Explore' },
+      { name: 'Digital Contracts', icon: FileText,      href: 'digital-contracts',            section: 'My Rental' },
+      { name: 'Compliance & Maintenance', icon: Wrench, href: 'compliance',                   section: 'My Rental' },
+      { name: 'Rent Payments',     icon: CreditCard,    href: 'payments',                     section: 'My Rental' },
+      { name: 'Payment History',   icon: Receipt,       href: 'payment-history',              section: 'My Rental' },
+      { name: 'My Stays',          icon: Calendar,      href: 'bnb-stays',                    section: 'Stays' },
+      { name: 'Messages',          icon: MessageSquare, href: 'messages',                     section: 'Connect' },
+      { name: 'Notifications',     icon: Bell,          href: 'notifications',                section: 'Connect' },
     ],
     landlord: [
-      { name: 'Overview',           icon: Home,          href: ''               },
-      { name: 'My Properties',      icon: Building,      href: 'my-properties'  },
-      { name: 'Add Property',       icon: Plus,          href: 'add-property'   },
-      { name: 'Applications',       icon: FileText,      href: 'applications'   },
-      { name: 'My Tenants',         icon: Users,         href: 'tenants'        },
-      { name: 'Tenant Requests',    icon: ClipboardList, href: 'compliance'     },
-      { name: 'Digital Contracts',  icon: BookOpen,      href: 'digital-contracts' },
-      { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection'},
-      { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts'       },
-      { name: 'Analytics',          icon: BarChart3,     href: 'analytics'      },
-      { name: 'Messages',           icon: MessageSquare, href: 'messages'       },
+      { name: 'Overview',           icon: Home,          href: '',               section: 'Properties' },
+      { name: 'My Properties',      icon: Building,      href: 'my-properties',  section: 'Properties' },
+      { name: 'Add Property',       icon: Plus,          href: 'add-property',   section: 'Properties' },
+      { name: 'Applications',       icon: FileText,      href: 'applications',   section: 'Tenants' },
+      { name: 'My Tenants',         icon: Users,         href: 'tenants',        section: 'Tenants' },
+      { name: 'Compliance Requests', icon: ClipboardList, href: 'compliance',     section: 'Tenants' },
+      { name: 'Digital Contracts',  icon: BookOpen,      href: 'digital-contracts', section: 'Tenants' },
+      { name: 'Rent Collection',    icon: Wallet,        href: 'rent-collection', section: 'Finance' },
+      { name: 'Payment Receipts',   icon: Receipt,       href: 'receipts',       section: 'Finance' },
+      { name: 'Analytics',          icon: BarChart3,     href: 'analytics',      section: 'Insights' },
+      { name: 'Messages',           icon: MessageSquare, href: 'messages',       section: 'Insights' },
     ],
     agent: [
-      { name: 'Overview',         icon: Home,          href: ''              },
-      { name: 'My Listings',      icon: Building,      href: 'my-listings'   },
-      { name: 'Add Listing',      icon: Plus,          href: 'listings/add'  },
-      { name: 'Linked Owners',    icon: Landmark,      href: 'linked-owners' },
-      { name: 'Share & Track',    icon: Link2,         href: 'tracking'      },
-      { name: 'QR Codes',         icon: QrCode,        href: 'qr-codes'      },
-      { name: 'Leads & Visitors', icon: Eye,           href: 'leads'         },
-      { name: 'Applications',     icon: FileText,      href: 'applications'  },
-      { name: 'My Commissions',   icon: DollarSign,    href: 'commissions'   },
-      { name: 'Rent Payments',    icon: Wallet,        href: 'rent-payments' },
-      { name: 'Payout History',   icon: Receipt,       href: 'payouts'       },
-      { name: 'Analytics',        icon: TrendingUp,    href: 'analytics'     },
-      { name: 'Messages',         icon: MessageSquare, href: 'messages'      },
+      { name: 'Overview',         icon: Home,          href: '',              section: 'Listings' },
+      { name: 'My Listings',      icon: Building,      href: 'my-listings',   section: 'Listings' },
+      { name: 'Add Listing',      icon: Plus,          href: 'listings/add',  section: 'Listings' },
+      { name: 'Linked Owners',    icon: Landmark,      href: 'linked-owners', section: 'Listings' },
+      { name: 'Share & Track',    icon: Link2,         href: 'tracking',      section: 'Tracking' },
+      { name: 'QR Codes',         icon: QrCode,        href: 'qr-codes',      section: 'Tracking' },
+      { name: 'Leads & Visitors', icon: Eye,           href: 'leads',         section: 'Tracking' },
+      { name: 'Applications',     icon: FileText,      href: 'applications',  section: 'Tracking' },
+      { name: 'My Commissions',   icon: DollarSign,    href: 'commissions',   section: 'Finance' },
+      { name: 'Rent Payments',    icon: Wallet,        href: 'rent-payments', section: 'Finance' },
+      { name: 'Payout History',   icon: Receipt,       href: 'payouts',       section: 'Finance' },
+      { name: 'Analytics',        icon: TrendingUp,    href: 'analytics',     section: 'Insights' },
+      { name: 'Messages',         icon: MessageSquare, href: 'messages',      section: 'Insights' },
     ],
     admin: [
-      { name: 'Overview',             icon: Home,        href: ''                 },
-      { name: 'Users',                icon: Users,       href: 'users'            },
-      { name: 'Properties',           icon: Building,    href: 'properties'       },
-      { name: 'Add Oweru Properties', icon: Plus,        href: 'oweru-properties' },
-      { name: 'BNB Properties',       icon: Hotel,       href: 'bnb-properties'   },
-      { name: 'Agent Payouts',        icon: DollarSign,  href: 'commission'       },
-      { name: 'Tenant Compliance',    icon: ClipboardList, href: 'compliance'     },
-      { name: 'Transactions',         icon: RefreshCw,   href: 'transactions'     },
-      { name: 'Contracts',            icon: BookOpen,    href: 'contracts'        },
-      { name: 'Verification',         icon: ShieldCheck, href: 'verification'     },
-      { name: 'Alerts',               icon: AlertCircle, href: 'alerts'           },
-      { name: 'Activity Logs',        icon: Activity,    href: 'activity-logs'    },
-      { name: 'Settings',             icon: Settings,    href: 'settings'         },
+      { name: 'Overview',             icon: Home,        href: '',                 section: 'Platform' },
+      { name: 'Users',                icon: Users,       href: 'users',            section: 'Platform' },
+      { name: 'Properties',           icon: Building,    href: 'properties',       section: 'Platform' },
+      { name: 'Add Oweru Properties', icon: Plus,        href: 'oweru-properties', section: 'Platform' },
+      { name: 'Verification',         icon: ShieldCheck, href: 'verification',     section: 'Platform' },
+      { name: 'Tenant Compliance',    icon: ClipboardList, href: 'compliance',     section: 'Operations' },
+      { name: 'Agent Payouts',        icon: DollarSign,  href: 'commission',       section: 'Operations' },
+      { name: 'Transactions',         icon: RefreshCw,   href: 'transactions',     section: 'Operations' },
+      { name: 'Payments',             icon: CreditCard,  href: 'payments',         section: 'Operations' },
+      { name: 'Contracts',            icon: BookOpen,    href: 'contracts',        section: 'Operations' },
+      { name: 'BNB Properties',       icon: Hotel,       href: 'bnb-properties',   section: 'Operations' },
+      { name: 'Alerts',               icon: AlertCircle, href: 'alerts',           section: 'Monitoring' },
+      { name: 'Activity Logs',        icon: Activity,    href: 'activity-logs',    section: 'Monitoring' },
+      { name: 'Settings',             icon: Settings,    href: 'settings',         section: 'Monitoring' },
     ],
     bnb_owner: [
-      { name: 'Overview',          icon: Home,          href: ''                    },
-      { name: 'My BNB Properties', icon: Building,      href: 'bnb-properties'      },
-      { name: 'Bookings',          icon: Calendar,      href: 'bnb-bookings'        },
-      { name: 'Tenant Requests',   icon: ClipboardList, href: 'compliance'          },
-      { name: 'Reviews',           icon: Star,          href: 'bnb-reviews'         },
-      { name: 'Analytics',         icon: BarChart3,     href: 'bnb-analytics'       },
-      { name: 'Settings',          icon: Settings,      href: 'settings'            },
+      { name: 'Overview',          icon: Home,          href: '',                    section: 'Host' },
+      { name: 'My BNB Properties', icon: Building,      href: 'bnb-properties',      section: 'Host' },
+      { name: 'Bookings',          icon: Calendar,      href: 'bnb-bookings',        section: 'Host' },
+      { name: 'Compliance Requests', icon: ClipboardList, href: 'compliance',          section: 'Host' },
+      { name: 'Reviews',           icon: Star,          href: 'bnb-reviews',         section: 'Host' },
+      { name: 'Analytics',         icon: BarChart3,     href: 'bnb-analytics',       section: 'Insights' },
+      { name: 'Settings',          icon: Settings,      href: 'settings',            section: 'Insights' },
     ],
     commercial: [
-      { name: 'Overview',      icon: Home,          href: ''               },
-      { name: 'My Properties', icon: Building,      href: 'my-properties'  },
-      { name: 'Add Property',  icon: Plus,          href: 'properties/add' },
-      { name: 'Applications',  icon: FileText,      href: 'applications'   },
-      { name: 'Tenant Requests', icon: ClipboardList, href: 'compliance'   },
-      { name: 'Payments',      icon: CreditCard,    href: 'payments'       },
-      { name: 'Analytics',     icon: BarChart3,     href: 'analytics'      },
-      { name: 'Reports',       icon: PieChart,      href: 'reports'        },
-      { name: 'Notifications', icon: Bell,          href: 'notifications'  },
-      { name: 'Profile',       icon: Briefcase,     href: 'profile'        },
-      { name: 'Settings',      icon: Settings,      href: 'settings'       },
+      { name: 'Overview',      icon: Home,          href: '',               section: 'Properties' },
+      { name: 'My Properties', icon: Building,      href: 'my-properties',  section: 'Properties' },
+      { name: 'Add Property',  icon: Plus,          href: 'properties/add', section: 'Properties' },
+      { name: 'Applications',  icon: FileText,      href: 'applications',   section: 'Business' },
+      { name: 'Compliance Requests', icon: ClipboardList, href: 'compliance',   section: 'Business' },
+      { name: 'Payments',      icon: CreditCard,    href: 'payments',       section: 'Business' },
+      { name: 'Analytics',     icon: BarChart3,     href: 'analytics',      section: 'Business' },
+      { name: 'Reports',       icon: PieChart,      href: 'reports',        section: 'Business' },
+      { name: 'Notifications', icon: Bell,          href: 'notifications',  section: 'Account' },
+      { name: 'Profile',       icon: Briefcase,     href: 'profile',        section: 'Account' },
+      { name: 'Settings',      icon: Settings,      href: 'settings',       section: 'Account' },
     ],
   };
 
@@ -158,44 +178,8 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     admin: 'Admin', bnb_owner: 'BNB Owner', commercial: 'Commercial',
   };
 
-  const sectionMap: Record<UserRole, { label: string; items: string[] }[]> = {
-    tenant: [
-      { label: 'Explore',   items: ['Overview','Browse Properties','Browse BnB Stays','Saved Properties'] },
-      { label: 'My Rental', items: ['My Applications','Digital Contracts','Compliance & Maintenance','Rent Payments','Payment History'] },
-      { label: 'Stays',     items: ['My Stays'] },
-      { label: 'Connect',   items: ['Messages','Notifications'] },
-    ],
-    landlord: [
-      { label: 'Properties', items: ['Overview','My Properties','Add Property'] },
-      { label: 'Tenants',    items: ['Applications','My Tenants','Tenant Requests','Digital Contracts'] },
-      { label: 'Finance',    items: ['Rent Collection','Payment Receipts','Commission Reports'] },
-      { label: 'Insights',   items: ['Analytics','Messages'] },
-    ],
-    agent: [
-      { label: 'Listings', items: ['Overview','My Listings','Add Listing','Linked Owners'] },
-      { label: 'Tracking', items: ['Share & Track','QR Codes','Leads & Visitors','Applications'] },
-      { label: 'Finance',  items: ['My Commissions','Rent Payments','Payout History'] },
-      { label: 'Insights', items: ['Analytics','Messages'] },
-    ],
-    admin: [
-      { label: 'Platform',   items: ['Overview','Users','Properties','Verification','Add Oweru Properties'] },
-      { label: 'Operations', items: ['Transactions','Commission','Tenant Compliance','Payments','Contracts','BNB Properties'] },
-      { label: 'Monitoring', items: ['Alerts', 'Activity Logs', 'Settings'] },
-    ],
-    bnb_owner: [
-      { label: 'Host',       items: ['Overview','My BNB Properties','Bookings','Tenant Requests','Reviews'] },
-      { label: 'Insights',  items: ['Analytics','Settings'] },
-    ],
-    commercial: [
-      { label: 'Properties', items: ['Overview','My Properties','Add Property'] },
-      { label: 'Business',   items: ['Applications','Tenant Requests','Payments','Analytics','Reports'] },
-      { label: 'Account',    items: ['Notifications','Profile','Settings'] },
-    ],
-  };
-
   const dashboardRoot = `/dashboard/${userType}`;
   const navItems      = navigation[userType] ?? navigation.tenant;
-  const sections      = sectionMap[userType]  ?? sectionMap.tenant;
   const label         = tx(roleLabel[userType]   ?? 'User');
 
   const getFullPath = (href: string) => {
@@ -486,26 +470,24 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
         {/* Nav */}
         <div className="dl-sidebar-scroll">
           <nav className="dl-nav">
-            {sections.map(section => {
-              const items = navItems.filter(i => section.items.includes(i.name));
-              if (!items.length) return null;
+            {navItems.map((item, index) => {
+              const showSectionHeader = index === 0 || navItems[index - 1].section !== item.section;
               return (
-                <div key={section.label}>
-                  <div className="dl-nav-section">{tx(section.label)}</div>
-                  {items.map(item => (
-                    <Link
-                      key={item.name}
-                      to={getFullPath(item.href)}
-                      className={`dl-nav-link${isActive(item.href) ? ' active' : ''}`}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <span className="dl-nav-icon">
-                        <item.icon size={14} />
-                      </span>
-                      {tx(item.name)}
-                      {item.badge && <span className="dl-nav-badge">{item.badge}</span>}
-                    </Link>
-                  ))}
+                <div key={`${item.section}-${item.href}-${item.name}`}>
+                  {showSectionHeader && (
+                    <div className="dl-nav-section">{tx(item.section)}</div>
+                  )}
+                  <Link
+                    to={getFullPath(item.href)}
+                    className={`dl-nav-link${isActive(item.href) ? ' active' : ''}`}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <span className="dl-nav-icon">
+                      <item.icon size={14} />
+                    </span>
+                    {tx(item.name)}
+                    {item.badge && <span className="dl-nav-badge">{item.badge}</span>}
+                  </Link>
                 </div>
               );
             })}

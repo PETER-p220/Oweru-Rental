@@ -129,7 +129,7 @@ const LandlordDashboard = () => {
     { label: 'Add Property',      icon: Plus,     to: 'add-property',      accent: C.slate800 },
     { label: 'My Properties',     icon: Building, to: 'my-properties',     accent: C.blue     },
     { label: 'Applications',      icon: FileText, to: 'applications',      accent: C.blue     },
-    { label: 'Tenant Requests',   icon: ClipboardList, to: 'compliance',   accent: C.amber    },
+    { label: 'Compliance Requests', icon: ClipboardList, to: 'compliance',   accent: C.amber    },
     { label: 'Digital Contracts', icon: FileText, to: 'digital-contracts', accent: C.amber    },
     { label: 'Analytics',         icon: BarChart3,to: 'analytics',         accent: C.green    },
     { label: 'Rent Collection',   icon: DollarSign,to:'rent-collection',   accent: C.green    },

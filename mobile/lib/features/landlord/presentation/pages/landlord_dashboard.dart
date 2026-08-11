@@ -15,6 +15,7 @@ import 'landlord_applications.dart';
 import 'landlord_rent_collection.dart';
 import 'landlord_digital_contract.dart';
 import 'landlord_commission_reports.dart';
+import 'landlord_compliance.dart';
 
 // ── Color System ──────────────────────────────────────────────
 const Color kWhite      = Color(0xFFFFFFFF);
@@ -76,6 +77,7 @@ class _LandlordDashboardState extends State<LandlordDashboard>
 
   final _drawerItems = const [
     {'label': 'Applications', 'icon': Icons.person_add_outlined,        'index': 4},
+    {'label': 'Compliance',     'icon': Icons.build_circle_outlined,     'index': 11},
     {'label': 'Receipts',     'icon': Icons.receipt_long_outlined,       'index': 5},
     {'label': 'Analytics',    'icon': Icons.bar_chart_outlined,          'index': 6},
     {'label': 'Messages',     'icon': Icons.chat_bubble_outline_rounded, 'index': 7},
@@ -304,6 +306,7 @@ class _LandlordDashboardState extends State<LandlordDashboard>
       case 8:  return const LandlordDigitalContractPage();
       case 9:  return const LandlordCommissionReportsPage();
       case 10: return _settings();
+      case 11: return const LandlordCompliancePage();
       default: return _dashboard();
     }
   }

@@ -450,4 +450,51 @@ class LandlordApiService {
     } catch (_) {}
     return null;
   }
+
+  static Future<Map<String, dynamic>> getComplianceRequests({String? status}) async {
+    try {
+      await UserService().ensureLoaded();
+      final q = status != null && status.isNotEmpty && status != 'all'
+          ? '?status=${Uri.encodeComponent(status)}'
+          : '';
+      final response = await http.get(
+        Uri.parse('$_baseUrl/owner/compliance-requests$q'),
+        headers: _headers,
+      );
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body is Map<String, dynamic>) return body;
+      }
+    } catch (e) {
+      print('getComplianceRequests error: $e');
+    }
+    return {'data': [], 'stats': {}};
+  }
+
+  static Future<Map<String, dynamic>> updateComplianceRequest(
+    int id, {
+    String? status,
+    String? ownerResponse,
+    String? resolutionNotes,
+  }) async {
+    try {
+      await UserService().ensureLoaded();
+      final payload = <String, dynamic>{};
+      if (status != null) payload['status'] = status;
+      if (ownerResponse != null) payload['owner_response'] = ownerResponse;
+      if (resolutionNotes != null) payload['resolution_notes'] = resolutionNotes;
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/owner/compliance-requests/$id'),
+        headers: _headers,
+        body: jsonEncode(payload),
+      );
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body is Map<String, dynamic>) return body;
+      }
+    } catch (e) {
+      print('updateComplianceRequest error: $e');
+    }
+    return {};
+  }
 }
