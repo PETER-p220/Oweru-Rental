@@ -153,6 +153,11 @@ class ComplianceRequestController extends Controller
     {
         $this->assertOwnerOwns($complianceRequest);
 
+        return $this->applyOwnerUpdate($request, $complianceRequest);
+    }
+
+    private function applyOwnerUpdate(Request $request, ComplianceRequest $complianceRequest): JsonResponse
+    {
         $validator = Validator::make($request->all(), [
             'status' => ['sometimes', Rule::in(ComplianceRequest::STATUSES)],
             'owner_response' => 'nullable|string|max:3000',
@@ -206,6 +211,42 @@ class ComplianceRequestController extends Controller
         ]);
     }
 
+    public function adminIndex(Request $request): JsonResponse
+    {
+        if (! $this->tableReady()) {
+            return response()->json(['data' => [], 'stats' => $this->emptyStats()]);
+        }
+
+        $query = ComplianceRequest::with(['property:id,title,location,type', 'tenantUser:id,first_name,last_name,email,phone', 'owner:id,first_name,last_name'])
+            ->whereHas('property', fn ($q) => $q->where('type', 'oweru_rental'))
+            ->latest();
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        return response()->json([
+            'data' => $query->get()->map(fn (ComplianceRequest $r) => $this->format($r, 'admin')),
+            'stats' => $this->statsForOweru(),
+        ]);
+    }
+
+    public function adminShow(ComplianceRequest $complianceRequest): JsonResponse
+    {
+        $this->assertOweruProperty($complianceRequest);
+
+        return response()->json([
+            'data' => $this->format($complianceRequest->load(['property', 'tenantUser', 'owner']), 'admin'),
+        ]);
+    }
+
+    public function adminUpdate(Request $request, ComplianceRequest $complianceRequest): JsonResponse
+    {
+        $this->assertOweruProperty($complianceRequest);
+
+        return $this->applyOwnerUpdate($request, $complianceRequest);
+    }
+
     private function tableReady(): bool
     {
         return Schema::hasTable('compliance_requests');
@@ -236,6 +277,18 @@ class ComplianceRequestController extends Controller
     private function statsForOwner(int $ownerId): array
     {
         $rows = ComplianceRequest::where('owner_id', $ownerId);
+
+        return [
+            'total' => (clone $rows)->count(),
+            'open' => (clone $rows)->whereIn('status', ['submitted', 'acknowledged', 'in_progress'])->count(),
+            'in_progress' => (clone $rows)->where('status', 'in_progress')->count(),
+            'resolved' => (clone $rows)->whereIn('status', ['resolved', 'closed'])->count(),
+        ];
+    }
+
+    private function statsForOweru(): array
+    {
+        $rows = ComplianceRequest::whereHas('property', fn ($q) => $q->where('type', 'oweru_rental'));
 
         return [
             'total' => (clone $rows)->count(),
@@ -296,6 +349,14 @@ class ComplianceRequestController extends Controller
         }
     }
 
+    private function assertOweruProperty(ComplianceRequest $request): void
+    {
+        $request->loadMissing('property');
+        if ($request->property?->type !== 'oweru_rental') {
+            abort(403, 'This compliance request is not for an Oweru-managed property.');
+        }
+    }
+
     private function nextReference(): string
     {
         $prefix = 'CMP-' . now()->format('Ymd');
@@ -343,9 +404,11 @@ class ComplianceRequestController extends Controller
                 'email' => $request->tenantUser->email,
                 'phone' => $request->tenantUser->phone,
             ] : null,
-            'owner' => $viewer === 'tenant' && $request->owner ? [
-                'name' => $request->owner->fullName(),
-            ] : null,
+            'owner' => match ($viewer) {
+                'tenant' => $request->owner ? ['name' => $request->owner->fullName()] : null,
+                'admin' => $request->owner ? ['name' => $request->owner->fullName()] : null,
+                default => null,
+            },
         ];
     }
 }

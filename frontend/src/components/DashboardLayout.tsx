@@ -120,6 +120,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Add Oweru Properties', icon: Plus,        href: 'oweru-properties' },
       { name: 'BNB Properties',       icon: Hotel,       href: 'bnb-properties'   },
       { name: 'Agent Payouts',        icon: DollarSign,  href: 'commission'       },
+      { name: 'Tenant Compliance',    icon: ClipboardList, href: 'compliance'     },
       { name: 'Transactions',         icon: RefreshCw,   href: 'transactions'     },
       { name: 'Contracts',            icon: BookOpen,    href: 'contracts'        },
       { name: 'Verification',         icon: ShieldCheck, href: 'verification'     },
@@ -131,6 +132,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'Overview',          icon: Home,          href: ''                    },
       { name: 'My BNB Properties', icon: Building,      href: 'bnb-properties'      },
       { name: 'Bookings',          icon: Calendar,      href: 'bnb-bookings'        },
+      { name: 'Tenant Requests',   icon: ClipboardList, href: 'compliance'          },
       { name: 'Reviews',           icon: Star,          href: 'bnb-reviews'         },
       { name: 'Analytics',         icon: BarChart3,     href: 'bnb-analytics'       },
       { name: 'Settings',          icon: Settings,      href: 'settings'            },
@@ -140,6 +142,7 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
       { name: 'My Properties', icon: Building,      href: 'my-properties'  },
       { name: 'Add Property',  icon: Plus,          href: 'properties/add' },
       { name: 'Applications',  icon: FileText,      href: 'applications'   },
+      { name: 'Tenant Requests', icon: ClipboardList, href: 'compliance'   },
       { name: 'Payments',      icon: CreditCard,    href: 'payments'       },
       { name: 'Analytics',     icon: BarChart3,     href: 'analytics'      },
       { name: 'Reports',       icon: PieChart,      href: 'reports'        },
@@ -176,16 +179,16 @@ const DashboardLayout = ({ children, title }: DashboardLayoutProps) => {
     ],
     admin: [
       { label: 'Platform',   items: ['Overview','Users','Properties','Verification','Add Oweru Properties'] },
-      { label: 'Operations', items: ['Transactions','Commission','Payments','Contracts','BNB Properties'] },
+      { label: 'Operations', items: ['Transactions','Commission','Tenant Compliance','Payments','Contracts','BNB Properties'] },
       { label: 'Monitoring', items: ['Alerts', 'Activity Logs', 'Settings'] },
     ],
     bnb_owner: [
-      { label: 'Host',       items: ['Overview','My BNB Properties','Bookings','Reviews'] },
+      { label: 'Host',       items: ['Overview','My BNB Properties','Bookings','Tenant Requests','Reviews'] },
       { label: 'Insights',  items: ['Analytics','Settings'] },
     ],
     commercial: [
       { label: 'Properties', items: ['Overview','My Properties','Add Property'] },
-      { label: 'Business',   items: ['Applications','Payments','Analytics','Reports'] },
+      { label: 'Business',   items: ['Applications','Tenant Requests','Payments','Analytics','Reports'] },
       { label: 'Account',    items: ['Notifications','Profile','Settings'] },
     ],
   };

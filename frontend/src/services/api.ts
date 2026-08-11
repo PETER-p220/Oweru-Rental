@@ -1118,6 +1118,27 @@ class Api {
     return { ...res.data, message: res.message };
   }
 
+  static async getAdminComplianceRequests(status?: string) {
+    const q = status ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await this.request<{
+      data: any[];
+      stats: { total: number; open: number; in_progress: number; resolved: number };
+    }>(`admin/compliance-requests${q}`, {}, true);
+    return res.data;
+  }
+
+  static async updateAdminComplianceRequest(id: number, payload: {
+    status?: string;
+    owner_response?: string;
+    resolution_notes?: string;
+  }) {
+    const res = await this.request<{ data: any }>(`admin/compliance-requests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+    return { ...res.data, message: res.message };
+  }
+
   // ── Agent ───────────────────────────────────────────────────────────────────
 
   static async getAgentDashboard()        { return this.request<any>('agent/dashboard'); }

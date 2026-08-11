@@ -304,6 +304,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/commercial/settings', [DashboardController::class, 'updateCommercialSettings']);
     });
 
+    // ── Compliance requests (property owners + Oweru admin) ───────────────────
+    Route::middleware('role:landlord,commercial,bnb_owner')->group(function () {
+        Route::get('/owner/compliance-requests',                       [ComplianceRequestController::class, 'ownerIndex']);
+        Route::get('/owner/compliance-requests/{complianceRequest}',   [ComplianceRequestController::class, 'ownerShow']);
+        Route::patch('/owner/compliance-requests/{complianceRequest}', [ComplianceRequestController::class, 'ownerUpdate']);
+    });
+
     // ── Owner (landlord) routes ───────────────────────────────────────
     Route::middleware('role:landlord')->group(function () {
         Route::get('/owner/dashboard', [OwnerController::class, 'getDashboard']);
@@ -356,11 +363,6 @@ Route::middleware('auth:sanctum')->group(function () {
         // Messages
         Route::get('/owner/messages',  [OwnerController::class, 'getMessages']);
         Route::post('/owner/messages', [OwnerController::class, 'sendMessage']);
-
-        // Compliance requests from tenants
-        Route::get('/owner/compliance-requests',                        [ComplianceRequestController::class, 'ownerIndex']);
-        Route::get('/owner/compliance-requests/{complianceRequest}',    [ComplianceRequestController::class, 'ownerShow']);
-        Route::patch('/owner/compliance-requests/{complianceRequest}',  [ComplianceRequestController::class, 'ownerUpdate']);
 
         // Rental Workflow (Owner)
         Route::get('/workflow/property/{property}/applications',       [RentalWorkflowController::class, 'getApplicationsForProperty']);
@@ -441,6 +443,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Payments
         Route::get('/admin/payments/stats', [AdminController::class, 'getAdminPaymentStats']);
         Route::get('/admin/payments',       [AdminController::class, 'getAdminPayments']);
+
+        // Tenant compliance on Oweru-managed rental properties
+        Route::get('/admin/compliance-requests',                       [ComplianceRequestController::class, 'adminIndex']);
+        Route::get('/admin/compliance-requests/{complianceRequest}',   [ComplianceRequestController::class, 'adminShow']);
+        Route::patch('/admin/compliance-requests/{complianceRequest}', [ComplianceRequestController::class, 'adminUpdate']);
     });
 
     // ── BNB Owner routes ──────────────────────────────────────────────────────

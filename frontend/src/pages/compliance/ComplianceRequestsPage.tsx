@@ -15,8 +15,16 @@ import {
   formatComplianceDate, priorityTone, statusTone,
 } from './complianceShared';
 
-type Role = 'tenant' | 'landlord';
+type ViewerRole = 'tenant' | 'owner' | 'admin';
 
+const OWNER_TYPES = new Set(['landlord', 'commercial', 'bnb_owner']);
+
+function resolveViewerRole(user: { user_type?: string; userType?: string } | null): ViewerRole {
+  const t = user?.user_type || user?.userType || 'tenant';
+  if (t === 'admin') return 'admin';
+  if (OWNER_TYPES.has(t)) return 'owner';
+  return 'tenant';
+}
 const categoryIcon = (cat: string) => {
   switch (cat) {
     case 'safety': return Shield;
@@ -25,9 +33,16 @@ const categoryIcon = (cat: string) => {
   }
 };
 
+const PORTAL_LABEL: Record<ViewerRole, string> = {
+  tenant: 'Tenant portal',
+  owner: 'Property owner portal',
+  admin: 'Oweru admin portal',
+};
+
 export default function ComplianceRequestsPage() {
   const { user } = useAuth();
-  const role: Role = (user?.user_type === 'landlord' || user?.userType === 'landlord') ? 'landlord' : 'tenant';
+  const role = resolveViewerRole(user);
+  const canManage = role === 'owner' || role === 'admin';
 
   const [items, setItems] = useState<ComplianceRequestItem[]>([]);
   const [stats, setStats] = useState<ComplianceStats | null>(null);
@@ -64,7 +79,9 @@ export default function ComplianceRequestsPage() {
       setError('');
       const payload = role === 'tenant'
         ? await Api.getTenantComplianceRequests(statusFilter !== 'all' ? statusFilter : undefined)
-        : await Api.getOwnerComplianceRequests(statusFilter !== 'all' ? statusFilter : undefined);
+        : role === 'admin'
+          ? await Api.getAdminComplianceRequests(statusFilter !== 'all' ? statusFilter : undefined)
+          : await Api.getOwnerComplianceRequests(statusFilter !== 'all' ? statusFilter : undefined);
       setItems(Array.isArray(payload.data) ? payload.data : []);
       setStats(payload.stats ?? null);
       if (role === 'tenant' && payload.properties) {
@@ -137,7 +154,9 @@ export default function ComplianceRequestsPage() {
     try {
       setUpdating(true);
       setMessage(null);
-      const res = await Api.updateOwnerComplianceRequest(selected.id, ownerForm);
+      const res = role === 'admin'
+        ? await Api.updateAdminComplianceRequest(selected.id, ownerForm)
+        : await Api.updateOwnerComplianceRequest(selected.id, ownerForm);
       setMessage({ text: res.message || 'Request updated.', ok: true });
       setSelected(null);
       await load();
@@ -166,7 +185,7 @@ export default function ComplianceRequestsPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: palette.goldLight, marginBottom: 8 }}>
-              {role === 'tenant' ? 'Tenant portal' : 'Landlord portal'}
+              {PORTAL_LABEL[role]}
             </div>
             <h1 style={{ ...headingLightStyle, margin: '0 0 8px' }}>
               Compliance & maintenance
@@ -174,7 +193,9 @@ export default function ComplianceRequestsPage() {
             <p style={{ ...descriptionLightStyle, margin: 0, maxWidth: 560 }}>
               {role === 'tenant'
                 ? 'Submit professional maintenance and compliance requests directly to your property owner. Every submission receives a reference number and status tracking.'
-                : 'Review and respond to tenant maintenance, safety, and compliance submissions across your properties.'}
+                : role === 'admin'
+                  ? 'Review and respond to tenant compliance submissions on Oweru-managed rental properties.'
+                  : 'Review and respond to tenant maintenance, safety, and compliance submissions across your properties.'}
             </p>
           </div>
           {role === 'tenant' && (
@@ -322,7 +343,7 @@ export default function ComplianceRequestsPage() {
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Building2 size={12} /> {item.property?.title}
                         </span>
-                        {role === 'landlord' && item.tenant && (
+                        {canManage && item.tenant && (
                           <span>Tenant: {item.tenant.name}</span>
                         )}
                         <span>{formatComplianceDate(item.created_at)}</span>
@@ -438,7 +459,8 @@ export default function ComplianceRequestsPage() {
             {[
               { label: 'Property', value: selected.property?.title },
               selected.location_in_property ? { label: 'Location', value: selected.location_in_property } : null,
-              role === 'landlord' && selected.tenant ? { label: 'Tenant', value: `${selected.tenant.name}${selected.tenant.phone ? ` · ${selected.tenant.phone}` : ''}` } : null,
+              canManage && selected.tenant ? { label: 'Tenant', value: `${selected.tenant.name}${selected.tenant.phone ? ` · ${selected.tenant.phone}` : ''}` } : null,
+              role === 'admin' && selected.owner ? { label: 'Property owner', value: selected.owner.name } : null,
               { label: 'Submitted', value: formatComplianceDate(selected.created_at) },
               selected.preferred_date ? { label: 'Preferred date', value: selected.preferred_date } : null,
             ].filter(Boolean).map((row: any) => (
@@ -460,7 +482,7 @@ export default function ComplianceRequestsPage() {
               </div>
             )}
 
-            {role === 'landlord' && (
+            {canManage && (
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 16, borderTop: `1px solid ${palette.slate200}` }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: palette.slate900 }}>Update request</div>
                 <label>

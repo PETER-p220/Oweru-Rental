@@ -221,6 +221,7 @@ const AdminRoutes = () => (
         <Route path="alerts" element={<AlertsManagement />} />
         <Route path="activity-logs" element={<ActivityLogs />} />
         <Route path="bnb-properties" element={<BnbProperties />} />
+        <Route path="compliance" element={<ComplianceRequestsPage />} />
         <Route path="settings" element={<SystemSettings />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
@@ -243,6 +244,7 @@ const BnbOwnerRoutes = () => (
         <Route path="bnb-bookings" element={<BnbBookings />} />
         <Route path="bnb-reviews" element={<BnbReviews />} />
         <Route path="bnb-analytics" element={<BnbAnalytics />} />
+        <Route path="compliance" element={<ComplianceRequestsPage />} />
         <Route path="messages" element={<BnbMessages />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -261,6 +263,7 @@ const CommercialRoutes = () => (
         <Route path="properties/add" element={<CommercialAddProperty />} />
         <Route path="properties/:id/edit" element={<CommercialEditProperty />} />
         <Route path="applications" element={<CommercialApplications />} />
+        <Route path="compliance" element={<ComplianceRequestsPage />} />
         <Route path="payments" element={<CommercialPayments />} />
         <Route path="analytics" element={<CommercialAnalytics />} />
         <Route path="reports" element={<CommercialReports />} />
